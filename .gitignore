@@ -29,3 +29,6 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+languages/api.json
+languages/translates/*/*.bak.*.json
+**/*.wrapped.*

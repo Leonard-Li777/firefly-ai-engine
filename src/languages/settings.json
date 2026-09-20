@@ -1,0 +1,74 @@
+{
+  "languages": [
+    {
+      "name": "zh-CN",
+      "title": "简体中文",
+      "nativeTitle": "简体中文",
+      "active": true,
+      "default": true
+    },
+    {
+      "name": "en-US",
+      "title": "English",
+      "nativeTitle": "English (United States)"
+    },
+    {
+      "name": "es-ES",
+      "title": "Español",
+      "nativeTitle": "Español (España)"
+    },
+    {
+      "name": "ar-EG",
+      "title": "العربية",
+      "nativeTitle": "العربية (مصر)"
+    },
+    {
+      "name": "pt-PT",
+      "title": "Português",
+      "nativeTitle": "Português (Portugal)"
+    },
+    {
+      "name": "ru-RU",
+      "title": "Русский",
+      "nativeTitle": "Русский (Россия)"
+    },
+    {
+      "name": "ja-JP",
+      "title": "日本語",
+      "nativeTitle": "日本語 (日本)"
+    },
+    {
+      "name": "de-DE",
+      "title": "Deutsch",
+      "nativeTitle": "Deutsch (Deutschland)"
+    },
+    {
+      "name": "fr-FR",
+      "title": "Français",
+      "nativeTitle": "Français (France)"
+    },
+    {
+      "name": "ko-KR",
+      "title": "한국어",
+      "nativeTitle": "한국어 (대한민국)"
+    }
+  ],
+  "namespaces": {},
+  "patterns": [
+    "!.md",
+    "!out/**",
+    "!out_build/**",
+    "!public/**",
+    "!scripts/**",
+    "!**/*demo*",
+    "!**/*test*",
+    "!**/*example*",
+    "!pro/**",
+    "!**/*.wraper.*"
+  ],
+  "defaultNamespace": "default",
+  "fallbackLanguage": "en-US",
+  "library": false,
+  "debug": false,
+  "autoSet": true
+}

@@ -42,13 +42,14 @@ pub fn run() {
 
             // 加载配置
             let config_store = ConfigStore::new(data_dir.clone());
-            let config = config_store.load().unwrap_or_default();
-            let models_dir = config.models_dir.clone();
+            let loaded_config = config_store.load().unwrap_or_default();
+            let base_port = loaded_config.base_port;
+            let models_dir = loaded_config.models_dir.clone();
 
             // 确保模型目录存在
             std::fs::create_dir_all(&models_dir).ok();
 
-            let config = Arc::new(Mutex::new(config));
+            let config = Arc::new(Mutex::new(loaded_config));
 
             // 初始化硬件检测器（以 app_dir 为 bin 搜索起点）
             let app_install_dir = app_handle
@@ -72,12 +73,6 @@ pub fn run() {
             let coordinator_clone = coordinator.clone();
             let proxy_state = ProxyState::new();
             let proxy_state_clone = proxy_state.clone();
-
-            // 读取基准端口
-            let base_port = {
-                let rt = tokio::runtime::Handle::current();
-                rt.block_on(async { config.lock().await.base_port })
-            };
 
             // 在后台启动 Axum HTTP 服务器
             tauri::async_runtime::spawn(async move {
