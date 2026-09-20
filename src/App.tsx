@@ -91,45 +91,47 @@ export const App: React.FC = () => {
   return (
     <div dir={dir} className="min-h-screen bg-background text-foreground flex flex-col font-sans transition-colors duration-200">
       {/* 顶部导航与状态条 */}
-      <header className="sticky top-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur-md px-6 py-3.5 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-xs">
-            <Zap className="h-5 w-5 fill-current" />
+      <header className="sticky top-0 z-50 border-b border-border/30 bg-background/90 backdrop-blur-md px-5 py-3 flex flex-wrap lg:flex-nowrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3 shrink-0 min-w-0">
+          <div className="flex h-8.5 w-8.5 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-xs">
+            <Zap className="h-4.5 w-4.5 fill-current" />
           </div>
-          <div className="flex flex-col">
-            <div className="flex items-center gap-2">
-              <span className="text-base font-black tracking-tight">{t('app.title')}</span>
-              <Badge variant="outline" className="text-[10px] h-4.5 px-1.5 py-0 font-bold">
+          <div className="flex flex-col min-w-0">
+            <div className="flex items-center gap-2 flex-nowrap">
+              <span className="text-sm font-bold tracking-tight text-foreground whitespace-nowrap">{t('app.title')}</span>
+              <Badge variant="outline" className="text-[10px] h-5 px-1.5 py-0 font-bold whitespace-nowrap shrink-0 rounded-md border-primary/30 text-primary bg-primary/8">
                 Tier 2 独立引擎
               </Badge>
               {isMock && (
-                <Badge variant="secondary" className="text-[10px] h-4.5 px-1.5 py-0 font-bold">
-                  沙盒 Mock 模式
+                <Badge variant="secondary" className="text-[10px] h-5 px-1.5 py-0 font-bold whitespace-nowrap shrink-0 rounded-md">
+                  沙盒 Mock
                 </Badge>
               )}
             </div>
-            <span className="text-[11px] text-muted-foreground font-medium">
+            <span className="text-[11px] text-muted-foreground/80 font-medium truncate max-w-[340px] sm:max-w-none">
               {t('app.subtitle')}
             </span>
           </div>
         </div>
 
-        {/* 顶部右侧快捷状态 */}
-        <div className="flex items-center gap-2.5">
+        {/* 顶部右侧快捷状态与设置 */}
+        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap justify-end shrink-0">
           {/* 网络探针状态 */}
           <div
-            className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-muted/50 border border-border/50 text-xs font-bold cursor-pointer hover:bg-muted transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-muted/30 border border-border/30 text-xs font-semibold cursor-pointer hover:bg-muted/60 transition-colors shrink-0"
             title="点击重新探测网络环境与镜像加速源"
             onClick={() => runRegionDetection(true)}
           >
-            <Globe2 className="h-3.5 w-3.5 text-primary" />
-            <span>网络镜像: {regionInfo?.region === 'cn' ? '国内高速加速 (CN)' : '海外官方 (Global)'}</span>
-            <RefreshCw className="h-3 w-3 text-muted-foreground ml-0.5" />
+            <Globe2 className="h-3.5 w-3.5 text-primary shrink-0" />
+            <span className="truncate max-w-[130px] sm:max-w-[200px]">
+              {regionInfo?.region === 'cn' ? '国内高速源 (CN)' : '海外官方 (Global)'}
+            </span>
+            <RefreshCw className="h-3 w-3 text-muted-foreground ml-0.5 shrink-0" />
           </div>
 
           {/* 服务状态指示 */}
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 text-xs font-black">
-            <span className="relative flex h-2 w-2">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 text-xs font-bold shrink-0">
+            <span className="relative flex h-2 w-2 shrink-0">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
@@ -141,23 +143,23 @@ export const App: React.FC = () => {
 
           {/* 明暗模式 Switch 开关 */}
           <div
-            className="flex items-center gap-2 px-3 py-1 rounded-xl bg-muted/50 border border-border/50 text-xs font-semibold cursor-pointer select-none hover:bg-muted/80 transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-muted/30 border border-border/30 text-xs font-semibold cursor-pointer select-none hover:bg-muted/60 transition-colors shrink-0"
             onClick={() => handleThemeChange(!isDarkMode)}
             title={isDarkMode ? '切换至明亮模式' : '切换至暗色模式'}
           >
             {isDarkMode ? (
-              <Moon className="h-3.5 w-3.5 text-primary" />
+              <Moon className="h-3.5 w-3.5 text-primary shrink-0" />
             ) : (
-              <Sun className="h-3.5 w-3.5 text-amber-500" />
+              <Sun className="h-3.5 w-3.5 text-amber-500 shrink-0" />
             )}
-            <span className="text-[11px] text-muted-foreground font-bold min-w-[24px]">
+            <span className="text-[11px] text-muted-foreground font-semibold min-w-[24px]">
               {isDarkMode ? '暗色' : '明亮'}
             </span>
             <Switch
               checked={isDarkMode}
               onCheckedChange={handleThemeChange}
               aria-label="切换明暗主题"
-              className="scale-90 pointer-events-none"
+              className="scale-85 pointer-events-none"
             />
           </div>
         </div>

@@ -1,61 +1,89 @@
 @import "tailwindcss";
 
-@layer base {
-  :root {
-    /* Desktop 海洋蓝 (Ocean Blue) - 亮色模式 */
-    --background: 210 40% 98%;
-    --foreground: 217 12% 15%;
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-    --primary: 217 91% 60%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 214 32% 91%;
-    --secondary-foreground: 222 47% 11%;
-    --muted: 214 32% 91%;
-    --muted-foreground: 217 12% 45%;
-    --accent: 217 30% 94%;
-    --accent-foreground: 217 12% 15%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 217 91% 60%;
-    --radius: 0.75rem;
-  }
+@custom-variant dark (&:is(.dark *));
 
-  .dark {
-    /* Desktop 海洋蓝 (Ocean Blue) - 暗色模式 */
-    --background: 220 50% 6%;
-    --foreground: 217 20% 95%;
-    --card: 220 45% 10%;
-    --card-foreground: 210 40% 98%;
-    --popover: 220 45% 10%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 195 85% 45%;
-    --primary-foreground: 220 50% 10%;
-    --secondary: 215 35% 15%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 215 35% 15%;
-    --muted-foreground: 217 20% 65%;
-    --accent: 217 20% 12%;
-    --accent-foreground: 217 30% 95%;
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 215 35% 20%;
-    --input: 215 35% 20%;
-    --ring: 195 85% 45%;
+:root {
+  /* Desktop 海洋蓝 (Ocean Blue) - 亮色模式 */
+  --background: oklch(0.985 0.01 240);
+  --foreground: oklch(0.145 0.02 250);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0.02 250);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0.02 250);
+  --primary: oklch(0.55 0.18 240);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.96 0.01 240);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.96 0.01 240);
+  --muted-foreground: oklch(0.52 0.02 240);
+  --accent: oklch(0.93 0.02 240);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.985 0 0);
+  --border: oklch(0.90 0.01 240);
+  --input: oklch(0.90 0.01 240);
+  --ring: oklch(0.55 0.18 240);
+  --radius: 0.75rem;
+}
+
+.dark {
+  /* Desktop 海洋蓝 (Ocean Blue) - 暗色模式：沉稳深邃海洋夜蓝，低反差极轻微光切线 */
+  --background: oklch(0.14 0.035 250);
+  --foreground: oklch(0.96 0.02 250);
+  --card: oklch(0.17 0.04 250);
+  --card-foreground: oklch(0.96 0.02 250);
+  --popover: oklch(0.17 0.04 250);
+  --popover-foreground: oklch(0.96 0.02 250);
+  --primary: oklch(0.62 0.16 230);
+  --primary-foreground: oklch(0.98 0.01 240);
+  --secondary: oklch(0.21 0.04 250);
+  --secondary-foreground: oklch(0.96 0.02 250);
+  --muted: oklch(0.20 0.035 250);
+  --muted-foreground: oklch(0.65 0.04 250);
+  --accent: oklch(0.23 0.05 240);
+  --accent-foreground: oklch(0.96 0.02 250);
+  --destructive: oklch(0.396 0.141 25.723);
+  --destructive-foreground: oklch(0.98 0.01 240);
+  --border: oklch(0.22 0.035 250);
+  --input: oklch(0.22 0.035 250);
+  --ring: oklch(0.62 0.16 230);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+}
+
+@layer base {
+  * {
+    @apply border-border;
   }
 
   body {
-    background-color: hsl(var(--background));
-    color: hsl(var(--foreground));
+    background-color: var(--background);
+    color: var(--foreground);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
   }
 
-  /* 对齐桌面端性能优先的主题过渡动画 */
+  /* 对齐桌面端性能优先的主题平滑过渡 */
   body,
   .bg-background,
   .bg-card,
@@ -69,4 +97,25 @@
   .border-border {
     transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out, color 0.15s ease-in-out;
   }
+}
+
+/* ==========================================================================
+   多语言自适应排版样式规则（针对德语、俄语、西班牙语等长拉丁西文）
+   ========================================================================== */
+html:lang(en) :where(body),
+html:lang(de) :where(body),
+html:lang(es) :where(body),
+html:lang(fr) :where(body),
+html:lang(pt) :where(body),
+html:lang(ru) :where(body) {
+  letter-spacing: -0.012em;
+}
+
+html:lang(en) :where(button span, .badge, th),
+html:lang(de) :where(button span, .badge, th),
+html:lang(es) :where(button span, .badge, th),
+html:lang(fr) :where(button span, .badge, th),
+html:lang(pt) :where(button span, .badge, th),
+html:lang(ru) :where(button span, .badge, th) {
+  font-size: calc(1em - 0.5px);
 }

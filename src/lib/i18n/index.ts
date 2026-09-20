@@ -2,15 +2,16 @@ import { create } from 'zustand'
 import { SupportedLanguage, SUPPORTED_LANGUAGES } from './types'
 import { zhCN, TranslationKeys } from './locales/zh-CN'
 import { enUS } from './locales/en-US'
+import { deDE } from './locales/de-DE'
 
-// 翻译字典映射，默认提供 zh-CN 与 en-US，其余语言平滑回退到 en-US
+// 翻译字典映射，默认提供 zh-CN、en-US 与 de-DE，其余语言平滑回退
 const translations: Record<SupportedLanguage, TranslationKeys> = {
   'zh-CN': zhCN,
   'en-US': enUS,
   'ja-JP': enUS,
   'ko-KR': enUS,
   'fr-FR': enUS,
-  'de-DE': enUS,
+  'de-DE': deDE,
   'es-ES': enUS,
   'ru-RU': enUS,
   'pt-PT': enUS,

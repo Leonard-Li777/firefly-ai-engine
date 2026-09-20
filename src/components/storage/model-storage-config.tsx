@@ -5,8 +5,10 @@ import { Input } from '../ui/input'
 import { Button } from '../ui/button'
 import { Label } from '../ui/label'
 import { useEngineStore } from '../../stores/engine-store'
+import { useI18nStore } from '../../lib/i18n'
 
 export const ModelStorageConfig: React.FC = () => {
+  const { t } = useI18nStore()
   const { modelsDir, updateStoragePath, rescanModels, loading } = useEngineStore()
   const [inputPath, setInputPath] = useState(modelsDir)
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
@@ -69,20 +71,20 @@ export const ModelStorageConfig: React.FC = () => {
   }
 
   return (
-    <Card className="p-6 border-border/70 rounded-3xl bg-card shadow-sm space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1">
+    <Card className="p-5 border-border/30 rounded-xl bg-card shadow-xs space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1.5">
         <div>
-          <Label className="text-base font-black tracking-tight text-foreground flex items-center gap-2">
+          <Label className="text-base font-bold tracking-tight text-foreground flex items-center gap-2">
             <FolderOpen className="h-4 w-4 text-primary" />
-            <span>模型存储路径与自定义重定向</span>
+            <span>{t('storage.title')}</span>
           </Label>
-          <p className="text-xs text-muted-foreground font-medium mt-1">
-            模型文件体积庞大（单模型约 1~8GB），建议将存放目录重定向至充足空间的高速固态硬盘分区
+          <p className="text-xs text-muted-foreground/80 font-normal mt-1 leading-relaxed">
+            {t('storage.desc')}
           </p>
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-2.5">
+      <div className="flex flex-col lg:flex-row gap-2.5">
         <div className="relative flex-1">
           <Input
             value={inputPath}
@@ -91,25 +93,25 @@ export const ModelStorageConfig: React.FC = () => {
               if (e.key === 'Enter') handleSave()
             }}
             placeholder="例如: D:\AI_Models 或 /Volumes/Data/AI_Models"
-            className="h-10.5 font-mono text-xs pr-10 rounded-xl bg-background/70 border-border"
+            className="h-9.5 font-mono text-xs pr-10 rounded-lg bg-background/60 border-border/40 focus:border-primary/50"
           />
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="outline"
             onClick={handleBrowse}
-            className="h-10.5 px-4 font-black text-xs rounded-xl border-border hover:bg-muted"
+            className="h-9.5 px-3.5 font-bold text-xs rounded-lg border-border/40 hover:bg-muted/50"
           >
             <FolderOpen className="h-3.5 w-3.5 mr-1.5" />
-            浏览选择
+            {t('storage.btnBrowse')}
           </Button>
 
           <Button
             variant="default"
             disabled={isSaving || inputPath === modelsDir}
             onClick={() => handleSave()}
-            className="h-10.5 px-5 font-black text-xs rounded-xl shadow-xs"
+            className="h-9.5 px-4 font-bold text-xs rounded-lg shadow-xs"
           >
             保存并生效
           </Button>
@@ -118,17 +120,17 @@ export const ModelStorageConfig: React.FC = () => {
             variant="secondary"
             disabled={loading}
             onClick={() => rescanModels()}
-            className="h-10.5 px-4 font-black text-xs rounded-xl bg-muted/80 hover:bg-muted text-foreground"
+            className="h-9.5 px-3.5 font-bold text-xs rounded-lg bg-muted/60 hover:bg-muted text-foreground border border-border/30"
           >
             <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${loading ? 'animate-spin' : ''}`} />
-            重新扫描
+            {t('storage.btnRescan')}
           </Button>
         </div>
       </div>
 
       {feedback && (
         <div
-          className={`flex items-center gap-2 text-xs font-bold px-3 py-2 rounded-xl border ${
+          className={`flex items-center gap-2 text-xs font-semibold px-3 py-2 rounded-lg border ${
             feedback.type === 'success'
               ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20'
               : 'bg-destructive/10 text-destructive border-destructive/20'
@@ -145,3 +147,4 @@ export const ModelStorageConfig: React.FC = () => {
     </Card>
   )
 }
+
