@@ -4,11 +4,9 @@
 use axum::{
     body::Body,
     extract::{Request, State},
-    http::{HeaderValue, StatusCode, Uri},
+    http::StatusCode,
     response::Response,
 };
-use bytes::Bytes;
-use hyper::body::Incoming;
 use reqwest::Client;
 use std::sync::Arc;
 use tokio::sync::Mutex;

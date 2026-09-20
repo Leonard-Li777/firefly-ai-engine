@@ -58,9 +58,11 @@ impl EngineScheduler {
             return vec![];
         }
 
-        let is_darwin = cfg!(target_os = "macos");
-        let _is_win = cfg!(windows);
-        let _is_darwin = is_darwin;
+        let server_name = if cfg!(windows) {
+            "llama-server.exe"
+        } else {
+            "llama-server"
+        };
 
         let mut engines = vec![];
 
