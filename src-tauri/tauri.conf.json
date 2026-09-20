@@ -4,10 +4,10 @@
   "identifier": "com.firefly.ai-engine",
   "version": "0.1.0",
   "build": {
-    "frontendDist": "../src",
-    "devUrl": "http://localhost:1421",
-    "beforeDevCommand": "",
-    "beforeBuildCommand": ""
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:38410",
+    "beforeDevCommand": "pnpm dev",
+    "beforeBuildCommand": "pnpm build"
   },
   "app": {
     "withGlobalTauri": false,
