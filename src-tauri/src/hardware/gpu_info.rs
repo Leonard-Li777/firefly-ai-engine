@@ -215,6 +215,12 @@ static PASCAL_GPU_PATTERNS: &[&str] = &[
 pub fn is_pascal_arch_gpu(gpu_name: &str) -> bool {
     let name_lower = gpu_name.to_lowercase();
 
+    for pattern in PASCAL_GPU_PATTERNS {
+        if name_lower.contains(pattern) {
+            return true;
+        }
+    }
+
     // 正则级模式检测 GTX 10xx 系列
     let gtx10xx = regex::Regex::new(r"gtx\s*10(3|5|6|7|8)0(\s*ti)?").unwrap();
     if gtx10xx.is_match(&name_lower) {

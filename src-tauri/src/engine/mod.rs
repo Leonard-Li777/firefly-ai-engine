@@ -10,10 +10,8 @@ pub use scheduler::{EngineScheduler, InstalledEngine};
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use tracing::info;
-use anyhow::Result;
 
-use crate::hardware::{DriverComplianceService, HardwareDetector, SystemResources};
+use crate::hardware::{DriverComplianceService, HardwareDetector};
 use crate::config::EngineConfig;
 
 /// 引擎服务状态（对外暴露）

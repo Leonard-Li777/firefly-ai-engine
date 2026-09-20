@@ -34,6 +34,7 @@ pub struct EngineScheduler {
     /// 驱动合规服务
     compliance: Arc<DriverComplianceService>,
     /// 当前正在使用的引擎（用于防止重启死循环）
+    #[allow(dead_code)]
     current_engine: Mutex<Option<InstalledEngine>>,
     /// 当前已降级的层级（防止反复降级）
     degraded_tier: Mutex<Option<AccelerationTier>>,
@@ -270,6 +271,7 @@ impl EngineScheduler {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::path::Path;
     use tempfile::TempDir;
 
     fn create_fake_engine(dir: &Path, name: &str) {

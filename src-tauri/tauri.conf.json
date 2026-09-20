@@ -44,10 +44,7 @@
   },
   "plugins": {
     "shell": {
-      "all": false,
-      "execute": true,
-      "sidecar": false,
-      "open": false
+      "open": true
     }
   }
 }

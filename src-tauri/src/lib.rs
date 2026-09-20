@@ -80,7 +80,6 @@ pub fn run() {
             };
 
             // 在后台启动 Axum HTTP 服务器
-            let app_handle_clone = app_handle.clone();
             tauri::async_runtime::spawn(async move {
                 match server::start_server(base_port, coordinator_clone.clone(), proxy_state_clone).await {
                     Ok(actual_port) => {

@@ -3,16 +3,15 @@
 // 功能：进程生命周期管理 + 实时 stderr/stdout 监控 + 错误结构化分类
 
 use anyhow::{anyhow, Result};
-use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::{Child, Command};
 use tokio::sync::{Mutex, broadcast};
-use tracing::{debug, error, info, warn};
+use tracing::{debug, info, warn};
 
-use crate::hardware::{DowngradeReason, DriverComplianceService, SystemResources};
+use crate::hardware::{DowngradeReason, DriverComplianceService};
 
 use super::scheduler::InstalledEngine;
 
@@ -225,7 +224,6 @@ impl ProcessGuard {
 
     /// 等待 llama-server 就绪（健康检测端口可达）
     pub async fn wait_ready(&self, port: u16, timeout_secs: u64) -> Result<()> {
-        let url = format!("http://127.0.0.1:{}/health", port);
         let deadline = std::time::Instant::now() + Duration::from_secs(timeout_secs);
 
         loop {

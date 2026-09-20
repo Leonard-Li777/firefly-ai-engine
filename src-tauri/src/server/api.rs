@@ -8,7 +8,7 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
-use serde_json::{json, Value};
+use serde_json::json;
 use std::sync::Arc;
 use tracing::info;
 

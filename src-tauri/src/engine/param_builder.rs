@@ -6,7 +6,7 @@
 use serde::{Deserialize, Serialize};
 use tracing::info;
 
-use crate::hardware::gpu_info::{AccelerationTier, GpuVendor, SystemResources};
+use crate::hardware::gpu_info::SystemResources;
 
 /// 引擎启动参数（计算结果）
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -149,7 +149,7 @@ impl ParamBuilder {
     fn apple_silicon_params(
         resources: &SystemResources,
         model: &ModelInfo,
-        vram_mb: u64,
+        _vram_mb: u64,
         _backend: &str,
     ) -> EngineParams {
         let total_mem_gb = resources.memory.total_gb();
@@ -203,7 +203,7 @@ impl ParamBuilder {
         resources: &SystemResources,
         model: &ModelInfo,
         vram_mb: u64,
-        backend: &str,
+        _backend: &str,
     ) -> EngineParams {
         let vram_gb = vram_mb as f64 / 1024.0;
         let model_size_gb = model.effective_size_gb();
