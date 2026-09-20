@@ -1,0 +1,53 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "firefly-ai-engine",
+  "identifier": "com.firefly.ai-engine",
+  "version": "0.1.0",
+  "build": {
+    "frontendDist": "../src",
+    "devUrl": "http://localhost:1421",
+    "beforeDevCommand": "",
+    "beforeBuildCommand": ""
+  },
+  "app": {
+    "withGlobalTauri": false,
+    "windows": [
+      {
+        "label": "main",
+        "title": "Firefly AI Engine",
+        "width": 900,
+        "height": 660,
+        "resizable": true,
+        "fullscreen": false,
+        "visible": false,
+        "decorations": true
+      }
+    ],
+    "trayIcon": {
+      "id": "firefly-ai-engine-tray",
+      "iconPath": "icons/icon.png",
+      "iconAsTemplate": true,
+      "menuOnLeftClick": true,
+      "tooltip": "Firefly AI Engine"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  },
+  "plugins": {
+    "shell": {
+      "all": false,
+      "execute": true,
+      "sidecar": false,
+      "open": false
+    }
+  }
+}

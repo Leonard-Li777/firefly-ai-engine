@@ -1,0 +1,970 @@
+{
+  "version": "2.0.0",
+  "language": "zh",
+  "lastUpdated": "2026-05-23",
+  "models": [
+    {
+      "id": "unsloth/Qwen3.5-0.8B-GGUF:UD-Q4_K_XL",
+      "name": "Qwen 3.5 0.8B (Chinese is better)",
+      "company": "unsloth",
+      "parameterSize": "0.8B",
+      "totalSize": "558MB",
+      "recommended": true,
+      "description": "Extremely fast and lightweight text model, suitable for low-end and CPU environments, with balanced Chinese analysis performance.",
+      "source": "modelscope",
+      "quantization": "Q4_K_XL",
+      "isMultiModal": false,
+      "contextLength": 131072,
+      "capabilities": [
+        "TEXT"
+      ],
+      "performance": {
+        "speed": "extreme",
+        "quality": "medium"
+      },
+      "tags": [
+        "Lightweight",
+        "Support CPU operation",
+        "Ultra Fast",
+        "Text only"
+      ],
+      "recommendedConfig": {
+        "numCtx": 8192,
+        "numPredict": 2048
+      }
+    },
+    {
+      "id": "unsloth/Qwen3.5-0.8B-GGUF:UD-Q5_K_XL",
+      "name": "Qwen 3.5 0.8B (Chinese is better)",
+      "company": "unsloth",
+      "parameterSize": "0.8B",
+      "totalSize": "579MB",
+      "recommended": true,
+      "description": "Extremely fast and lightweight text model, suitable for low-end and CPU environments, with balanced Chinese analysis performance.",
+      "source": "huggingface",
+      "quantization": "UD-Q5_K_XL",
+      "isMultiModal": false,
+      "contextLength": 131072,
+      "capabilities": [
+        "TEXT"
+      ],
+      "performance": {
+        "speed": "extreme",
+        "quality": "medium"
+      },
+      "tags": [
+        "Lightweight",
+        "Support CPU operation",
+        "Ultra Fast",
+        "Text only"
+      ],
+      "recommendedConfig": {
+        "numCtx": 8192,
+        "numPredict": 2048
+      }
+    },
+    {
+      "id": "unsloth/Qwen3.5-0.8B-GGUF:UD-Q6_K_XL",
+      "name": "Qwen 3.5 0.8B (Lightweight image recognition)",
+      "company": "unsloth",
+      "parameterSize": "0.8B",
+      "totalSize": "976MB",
+      "description": "Extreme running speed, suitable for extremely low-configuration environments, and supports image analysis, which is less accurate.",
+      "source": "huggingface",
+      "recommended": true,
+      "isMultiModal": true,
+      "contextLength": 131072,
+      "performance": {
+        "speed": "extreme",
+        "quality": "medium"
+      },
+      "tags": [
+        "GPU extremely fast",
+        "Support CPU operation",
+        "Multimodal",
+        "Mini"
+      ],
+      "recommendedConfig": {
+        "numCtx": 4096,
+        "numPredict": 1048
+      },
+      "capabilities": [
+        "TEXT",
+        "IMAGE"
+      ]
+    },
+    {
+      "id": "LiquidAI/LFM2.5-1.2B-Instruct-GGUF:Q4_K_M",
+      "dspark": "LiquidAI/LFM2.5-1.2B-Instruct-DSpark-Q4_K_M",
+      "name": "LFM2.5 1.2B Instruct（English is better•High-speed）",
+      "company": "LiquidAI",
+      "parameterSize": "1.2B",
+      "totalSize": "873MB",
+      "description": "The latest LFM2.5 instruction model, efficient text analysis and fast CPU inference.",
+      "source": "modelscope",
+      "recommended": true,
+      "isBuiltin": true,
+      "quantization": "Q4_K_M",
+      "isMultiModal": false,
+      "contextLength": 32768,
+      "capabilities": [
+        "TEXT"
+      ],
+      "performance": {
+        "speed": "extreme",
+        "quality": "medium"
+      },
+      "tags": [
+        "Super fast",
+        "Support CPU operation",
+        "Text only",
+        "English is better"
+      ],
+      "recommendedConfig": {
+        "numCtx": 4096,
+        "numPredict": 1024
+      }
+    },
+    {
+      "id": "OpenBMB/MiniCPM5-2B-gguf:Q4_K_M",
+      "name": "MiniCPM5 2B（High quality•High-speed）",
+      "company": "OpenBMB",
+      "parameterSize": "2B",
+      "totalSize": "1.45GB",
+      "recommended": true,
+      "description": "There is insufficient video memory, and if you want to classify files correctly, you must choose me. The only drawback is that it only supports text.",
+      "source": "modelscope",
+      "quantization": "Q4_K_M",
+      "isMultiModal": false,
+      "contextLength": 32768,
+      "capabilities": [
+        "TEXT"
+      ],
+      "performance": {
+        "speed": "very_fast",
+        "quality": "high"
+      },
+      "tags": [
+        "Lightweight",
+        "Support CPU operation",
+        "Text only",
+        "Chinese is better",
+        "DSpark"
+      ],
+      "recommendedConfig": {
+        "numCtx": 8192,
+        "numPredict": 2048
+      }
+    },
+    {
+      "id": "Abiray/MiniCPM5-2B-heretic-abliterated-GGUF:Q4_K_M",
+      "name": "MiniCPM5 2B（High quality•High-speed•Prison Break）",
+      "company": "Abiray",
+      "parameterSize": "2B",
+      "totalSize": "1.45GB",
+      "recommended": true,
+      "description": "There is insufficient video memory, and if you want to classify files correctly, you must choose me to restrict the version (Abliterated).",
+      "source": "huggingface",
+      "quantization": "Q4_K_M",
+      "isMultiModal": false,
+      "contextLength": 32768,
+      "capabilities": [
+        "TEXT"
+      ],
+      "performance": {
+        "speed": "very_fast",
+        "quality": "high"
+      },
+      "tags": [
+        "To limit",
+        "No censorship",
+        "NSFW",
+        "Text only",
+        "Chinese is better"
+      ],
+      "recommendedConfig": {
+        "numCtx": 8192,
+        "numPredict": 2048
+      }
+    },
+    {
+      "id": "LiquidAI/LFM2.5-2.6B-GGUF:Q4_K_M",
+      "name": "LFM2.5 2.6B（Fast）",
+      "company": "LiquidAI",
+      "parameterSize": "2.6B",
+      "totalSize": "1.63GB",
+      "recommended": true,
+      "description": "The latest LFM2.5 2.6B official model balances efficient reasoning with high-quality analysis, and supports DSpark speculative sampling acceleration.",
+      "source": "modelscope",
+      "quantization": "Q4_K_M",
+      "isMultiModal": false,
+      "contextLength": 32768,
+      "capabilities": [
+        "TEXT"
+      ],
+      "performance": {
+        "speed": "very_fast",
+        "quality": "high"
+      },
+      "tags": [
+        "Lightweight",
+        "Support CPU operation",
+        "Text only",
+        "English is better"
+      ],
+      "recommendedConfig": {
+        "numCtx": 8192,
+        "numPredict": 2048
+      }
+    },
+    {
+      "id": "Abiray/LFM2.5-2.6B-Heretic-Abliterated-GGUF:Q4_K_M",
+      "name": "LFM2.5 2.6B（Prison Break）",
+      "company": "Abiray",
+      "parameterSize": "2.6B",
+      "totalSize": "1.56GB",
+      "recommended": true,
+      "description": "LFM2.5 2.6B is a delimited uncensored version, balancing speed and quality.",
+      "source": "huggingface",
+      "quantization": "Q4_K_M",
+      "isMultiModal": false,
+      "contextLength": 32768,
+      "capabilities": [
+        "TEXT"
+      ],
+      "performance": {
+        "speed": "very_fast",
+        "quality": "high"
+      },
+      "tags": [
+        "To limit",
+        "No censorship",
+        "NSFW",
+        "Text only"
+      ],
+      "recommendedConfig": {
+        "numCtx": 8192,
+        "numPredict": 2048
+      }
+    },
+    {
+      "id": "unsloth/gemma-4-E4B-it-GGUF:Q4_K_S",
+      "name": "Gemma 4 E4B-it（Support audio）",
+      "company": "Unsloth",
+      "parameterSize": "4B",
+      "totalSize": "5.83GB",
+      "recommended": true,
+      "description": "Google's original quantified version, supporting text, image and audio analysis.",
+      "source": "huggingface",
+      "quantization": "Q4_K_S",
+      "isMultiModal": true,
+      "contextLength": 131072,
+      "capabilities": [
+        "TEXT",
+        "IMAGE",
+        "AUDIO"
+      ],
+      "performance": {
+        "speed": "fast",
+        "quality": "high"
+      },
+      "tags": [
+        "Multimodal",
+        "Fast",
+        "Audio\r",
+        "English is better"
+      ],
+      "recommendedConfig": {
+        "numCtx": 8192,
+        "numPredict": 3072
+      }
+    },
+    {
+      "id": "mradermacher/Qwen3.5-4B_Abliterated-GGUF:Q4_K_M",
+      "name": "Qwen 3.5 4B（Balance）",
+      "company": "mradermacher",
+      "parameterSize": "4B",
+      "totalSize": "3.08GB",
+      "recommended": false,
+      "description": "Abliterated version balances speed and quality.",
+      "source": "huggingface",
+      "quantization": "Q4_K_M",
+      "isMultiModal": true,
+      "contextLength": 262144,
+      "capabilities": [
+        "TEXT",
+        "IMAGE"
+      ],
+      "performance": {
+        "speed": "fast",
+        "quality": "high"
+      },
+      "tags": [
+        "To limit",
+        "No censorship",
+        "NSFW",
+        "Prison Break",
+        "Multimodal"
+      ],
+      "recommendedConfig": {
+        "numCtx": 8192,
+        "numPredict": 3072
+      }
+    },
+    {
+      "id": "mradermacher/Huihui-Qwen3.5-2B-abliterated-GGUF:Q8_0",
+      "name": "Qwen 3.5 2B（Better）",
+      "company": "mradermacher",
+      "parameterSize": "2B",
+      "totalSize": "2.68GB",
+      "recommended": false,
+      "description": "4G video memory is the first choice.",
+      "source": "huggingface",
+      "quantization": "Q8_0",
+      "isMultiModal": true,
+      "contextLength": 262144,
+      "capabilities": [
+        "TEXT",
+        "IMAGE"
+      ],
+      "performance": {
+        "speed": "very_fast",
+        "quality": "very_high"
+      },
+      "tags": [
+        "To limit",
+        "No censorship",
+        "NSFW",
+        "Prison Break",
+        "Multimodal"
+      ],
+      "recommendedConfig": {
+        "numCtx": 8192,
+        "numPredict": 3072
+      }
+    },
+    {
+      "id": "tatsuyaaaaaaa/Qwen3.5-2B-gguf:Q4_0",
+      "name": "Qwen 3.5 2B（Japanese optimization）",
+      "company": "tatsuyaaaaaaa",
+      "parameterSize": "2B",
+      "totalSize": "1.2GB",
+      "recommended": false,
+      "description": "Text analysis model optimized for Japanese data sets, only supports text analysis.",
+      "source": "huggingface",
+      "quantization": "Q4_0",
+      "isMultiModal": false,
+      "contextLength": 131072,
+      "capabilities": [
+        "TEXT"
+      ],
+      "performance": {
+        "speed": "fast",
+        "quality": "medium"
+      },
+      "tags": [
+        "Japanese optimization",
+        "Text only",
+        "Low video memory"
+      ],
+      "recommendedConfig": {
+        "numCtx": 8192,
+        "numPredict": 2048
+      }
+    },
+    {
+      "id": "jordanwoodson/Qwen3.5-2B-heretic-GGUF:Q4_K_M",
+      "name": "Qwen 3.5 2B（Jailbreak text）",
+      "company": "jordanwoodson",
+      "parameterSize": "2B",
+      "totalSize": "1.27GB",
+      "recommended": false,
+      "description": "A jailbreak model that has a certain understanding of the content.",
+      "source": "huggingface",
+      "quantization": "Q4_K_M",
+      "isMultiModal": false,
+      "contextLength": 131072,
+      "performance": {
+        "speed": "fast",
+        "quality": "high"
+      },
+      "tags": [
+        "Prison Break",
+        "No censorship",
+        "NSFW",
+        "Text only"
+      ],
+      "recommendedConfig": {
+        "numCtx": 8192,
+        "numPredict": 2048
+      },
+      "capabilities": [
+        "TEXT"
+      ]
+    },
+    {
+      "id": "ggml-org/MiniCPM-V-4.6-GGUF:Q4_K_M",
+      "name": "MiniCPM-V 4.6 (Picture-reading small steel cannon)",
+      "company": "OpenBMB",
+      "parameterSize": "0.8B",
+      "totalSize": "1.17GB",
+      "recommended": true,
+      "description": "The top end-side multi-modal model performs extremely well in OCR, object recognition, and complex scene understanding.",
+      "source": "huggingface",
+      "quantization": "Q4_K_M",
+      "isMultiModal": true,
+      "contextLength": 32768,
+      "capabilities": [
+        "TEXT",
+        "IMAGE"
+      ],
+      "performance": {
+        "speed": "fast",
+        "quality": "very_high"
+      },
+      "tags": [
+        "Multimodal",
+        "Optical Character Recognition",
+        "Scene understanding",
+        "Top image recognition"
+      ],
+      "recommendedConfig": {
+        "numCtx": 8192,
+        "numPredict": 2048
+      }
+    },
+    {
+      "id": "OpenBMB/MiniCPM-V-4.6-gguf:Q4_K_M",
+      "name": "MiniCPM-V 4.6 (Picture-reading small steel cannon)",
+      "company": "OpenBMB",
+      "parameterSize": "0.8B",
+      "totalSize": "1.53GB",
+      "recommended": true,
+      "description": "The top end-side multi-modal model performs extremely well in OCR, object recognition, and complex scene understanding.",
+      "source": "modelscope",
+      "quantization": "Q4_K_M",
+      "isMultiModal": true,
+      "contextLength": 32768,
+      "capabilities": [
+        "TEXT",
+        "IMAGE"
+      ],
+      "performance": {
+        "speed": "fast",
+        "quality": "very_high"
+      },
+      "tags": [
+        "Multimodal",
+        "Optical Character Recognition",
+        "Scene understanding",
+        "Top image recognition"
+      ],
+      "recommendedConfig": {
+        "numCtx": 8192,
+        "numPredict": 2048
+      }
+    },
+    {
+      "id": "unsloth/gemma-4-E4B-it-GGUF:UD-Q4_K_XL",
+      "name": "Gemma 4 E4B-it（Support audio）",
+      "company": "Unsloth",
+      "parameterSize": "4B",
+      "totalSize": "5.70GB",
+      "recommended": false,
+      "description": "Google's original quantified version, supporting text, image and audio analysis.",
+      "source": "modelscope",
+      "quantization": "UD-Q4_K_XL",
+      "isMultiModal": true,
+      "contextLength": 131072,
+      "capabilities": [
+        "TEXT",
+        "IMAGE",
+        "AUDIO"
+      ],
+      "performance": {
+        "speed": "fast",
+        "quality": "high"
+      },
+      "tags": [
+        "Multimodal",
+        "Fast",
+        "Audio\r",
+        "English is better"
+      ],
+      "recommendedConfig": {
+        "numCtx": 8192,
+        "numPredict": 3072
+      }
+    },
+    {
+      "id": "MaimaiSuirai/Qwen3.5-9b-heretic-v2-GGUF:Q6_K",
+      "name": "Qwen 3.5 9B v2（Prison Break）",
+      "company": "MaimaiSuirai",
+      "parameterSize": "9B",
+      "totalSize": "8.27GB",
+      "description": "The second generation went to the censored version and has outstanding capabilities.",
+      "source": "modelscope",
+      "quantization": "Q6_K",
+      "isMultiModal": true,
+      "contextLength": 131072,
+      "capabilities": [
+        "TEXT",
+        "IMAGE"
+      ],
+      "performance": {
+        "speed": "medium",
+        "quality": "high"
+      },
+      "tags": [
+        "Prison Break",
+        "NSFW",
+        "No censorship",
+        "Multimodal"
+      ],
+      "recommendedConfig": {
+        "numCtx": 8192,
+        "numPredict": 3072
+      }
+    },
+    {
+      "id": "MaimaiSuirai/Qwen3.5-27B-heretic-v2-GGUF:Q4_K_S",
+      "name": "Qwen 3.5 27B v2（No censorship）",
+      "company": "MaimaiSuirai",
+      "parameterSize": "27B",
+      "totalSize": "15.57GB",
+      "description": "The top Qwen 3.5 27B review version, with strong reasoning and visual synthesis capabilities.",
+      "source": "modelscope",
+      "quantization": "Q4_K_S",
+      "isMultiModal": true,
+      "contextLength": 131072,
+      "capabilities": [
+        "TEXT"
+      ],
+      "performance": {
+        "speed": "medium",
+        "quality": "very_high"
+      },
+      "tags": [
+        "Prison Break",
+        "NSFW",
+        "No censorship",
+        "Multimodal",
+        "Large parameters"
+      ],
+      "recommendedConfig": {
+        "numCtx": 8192,
+        "numPredict": 4096
+      }
+    },
+    {
+      "id": "mudler/gemma-4-26B-A4B-it-heretic-APEX-GGUF",
+      "name": "Gemma 4 26B-it（Almighty）",
+      "company": "Mudler",
+      "parameterSize": "26B",
+      "totalSize": "12.98GB",
+      "recommended": true,
+      "description": "APEX specialized de-censored version, optimized I-Mini quantization.",
+      "source": "modelscope",
+      "quantization": "I-Mini",
+      "isMultiModal": true,
+      "contextLength": 131072,
+      "capabilities": [
+        "TEXT",
+        "IMAGE",
+        "AUDIO"
+      ],
+      "performance": {
+        "speed": "medium",
+        "quality": "very_high"
+      },
+      "tags": [
+        "Prison Break",
+        "NSFW",
+        "No censorship",
+        "English is better"
+      ],
+      "recommendedConfig": {
+        "numCtx": 8192,
+        "numPredict": 3072
+      }
+    },
+    {
+      "id": "Abiray/Qwen3.5-2B-heretic-GGUF:Q4_K_M",
+      "name": "Qwen 3.5 2B (Jailbreak image recognition)",
+      "company": "Abiray",
+      "parameterSize": "2B",
+      "totalSize": "1.81GB",
+      "recommended": false,
+      "description": "Jailbroken version, supports image analysis.",
+      "source": "modelscope",
+      "quantization": "Q4_K_M",
+      "isMultiModal": true,
+      "contextLength": 131072,
+      "capabilities": [
+        "TEXT",
+        "IMAGE"
+      ],
+      "performance": {
+        "speed": "fast",
+        "quality": "high"
+      },
+      "tags": [
+        "Prison Break",
+        "No censorship",
+        "NSFW",
+        "Multimodal"
+      ],
+      "recommendedConfig": {
+        "numCtx": 8192,
+        "numPredict": 2048
+      }
+    },
+    {
+      "id": "unsloth/gemma-4-E2B-it-qat-GGUF:UD-Q4_K_XL",
+      "name": "Gemma 4 E2B-it QAT（Almighty - main force）",
+      "company": "unsloth",
+      "parameterSize": "2B",
+      "totalSize": "3.61GB",
+      "recommended": false,
+      "description": "Unified multi-modal QAT quantified version, MoE architecture extremely saves video memory, supports text, image and audio analysis.",
+      "source": "modelscope",
+      "quantization": "UD-Q4_K_XL",
+      "isMultiModal": true,
+      "contextLength": 131072,
+      "capabilities": [
+        "TEXT",
+        "IMAGE",
+        "AUDIO"
+      ],
+      "performance": {
+        "speed": "extreme",
+        "quality": "medium"
+      },
+      "tags": [
+        "Multimodal",
+        "Audio\r",
+        "QAT quantification",
+        "MoE",
+        "Very small video memory",
+        "English is better"
+      ],
+      "recommendedConfig": {
+        "numCtx": 16384,
+        "numPredict": 3072
+      }
+    },
+    {
+      "id": "unsloth/gemma-4-E2B-it-qat-MTP-GGUF:UD-Q4_K_XL",
+      "draftId": "NicklausCairns/gemma-4-E2B-it-qat-assistant-MTP-Q8_0",
+      "downloadId": "unsloth/gemma-4-E2B-it-qat-GGUF:UD-Q4_K_XL",
+      "name": "Gemma 4 E2B-it QAT MTP（All-round - high speed）",
+      "company": "unsloth",
+      "parameterSize": "2B",
+      "totalSize": "3.71GB",
+      "recommended": false,
+      "description": "With full capabilities, plus MTP technology for speed, it is by far the best model to choose.",
+      "source": "huggingface",
+      "quantization": "UD-Q4_K_XL",
+      "isMultiModal": true,
+      "contextLength": 131072,
+      "capabilities": [
+        "TEXT",
+        "IMAGE",
+        "AUDIO"
+      ],
+      "performance": {
+        "speed": "extreme",
+        "quality": "medium"
+      },
+      "tags": [
+        "Multimodal",
+        "Audio\r",
+        "QAT quantification",
+        "MoE",
+        "Very small video memory",
+        "English is better"
+      ],
+      "recommendedConfig": {
+        "numCtx": 16384,
+        "numPredict": 3072
+      }
+    },
+    {
+      "id": "Abiray/Nanbeige4.2-3B-GGUF:Q4_K_S",
+      "name": "Nanbeige 4.2 3B (better)",
+      "company": "Abiray",
+      "parameterSize": "3B",
+      "totalSize": "2.33GB",
+      "recommended": false,
+      "description": "3B body hard steel 9B, highly recommended, but only supports text.",
+      "source": "modelscope",
+      "quantization": "Q4_K_S",
+      "isMultiModal": false,
+      "contextLength": 131072,
+      "capabilities": [
+        "TEXT"
+      ],
+      "performance": {
+        "speed": "fast",
+        "quality": "medium"
+      },
+      "tags": [
+        "Text only",
+        "Programming optimization",
+        "Chinese is better"
+      ],
+      "recommendedConfig": {
+        "numCtx": 8192,
+        "numPredict": 2048
+      }
+    },
+    {
+      "id": "mradermacher/Nanbeige4.2-3B-heretic-i1-GGUF:i1-Q5_K_M",
+      "name": "Nanbeige 4.2 3B（Jailbreak-Optimization）",
+      "company": "mradermacher",
+      "parameterSize": "3B",
+      "totalSize": "2.78GB",
+      "recommended": false,
+      "description": "3B body hard steel 9B, the jailbroken version of i1 has higher quantization accuracy, but only supports text.",
+      "source": "huggingface",
+      "quantization": "i1-Q5_K_M",
+      "isMultiModal": false,
+      "contextLength": 131072,
+      "capabilities": [
+        "TEXT"
+      ],
+      "performance": {
+        "speed": "fast",
+        "quality": "high"
+      },
+      "tags": [
+        "Prison Break",
+        "No censorship",
+        "NSFW",
+        "Text only",
+        "High precision"
+      ],
+      "recommendedConfig": {
+        "numCtx": 8192,
+        "numPredict": 2048
+      }
+    },
+    {
+      "id": "unsloth/gemma-3-1b-it-GGUF:UD-Q4_K_XL",
+      "name": "Gemma 3 1B Instruct（基础）",
+      "company": "Google",
+      "parameterSize": "1B",
+      "totalSize": "770MB",
+      "description": "English model leader",
+      "source": "huggingface",
+      "quantization": "UD-Q4_K_XL",
+      "isMultiModal": false,
+      "contextLength": 32768,
+      "capabilities": [
+        "TEXT"
+      ],
+      "performance": {
+        "speed": "extreme",
+        "quality": "medium"
+      },
+      "tags": [
+        "Lightweight",
+        "Support CPU operation",
+        "Text only",
+        "English is better"
+      ],
+      "recommendedConfig": {
+        "numCtx": 4096,
+        "numPredict": 1024
+      }
+    },
+    {
+      "id": "gaston-parravicini/LFM2.5-8B-A1B-Uncensored-Gaston-GGUF:Q4_K_M",
+      "name": "LFM2.5 8B A1B（Prison Break）",
+      "company": "gaston-parravicini",
+      "parameterSize": "8B-A1B",
+      "totalSize": "4.80GB",
+      "recommended": true,
+      "description": "LFM2.5 8B A1B MoE Uncensored version, only 1B activation parameters, balanced speed and quality.",
+      "source": "huggingface",
+      "quantization": "Q4_K_M",
+      "isMultiModal": false,
+      "contextLength": 32768,
+      "capabilities": [
+        "TEXT"
+      ],
+      "performance": {
+        "speed": "very_fast",
+        "quality": "high"
+      },
+      "tags": [
+        "MoE",
+        "No censorship",
+        "NSFW",
+        "Prison Break",
+        "Text only",
+        "English is better"
+      ],
+      "recommendedConfig": {
+        "numCtx": 8192,
+        "numPredict": 2048
+      }
+    },
+    {
+      "id": "dealignai/Bonsai-27b-1bit-CRACK-GGUF:Q1_0",
+      "name": "Bonsai 27B 1-bit（Super compression）",
+      "company": "dealignai",
+      "parameterSize": "27B",
+      "totalSize": "5.21GB",
+      "description": "Bonsai 27B one-bit quantization jailbreak version, de-aligned and uncensored, supports text and image analysis.",
+      "source": "huggingface",
+      "quantization": "Q1_0",
+      "isMultiModal": true,
+      "contextLength": 131072,
+      "capabilities": [
+        "TEXT",
+        "IMAGE"
+      ],
+      "performance": {
+        "speed": "fast",
+        "quality": "medium"
+      },
+      "tags": [
+        "1-bit",
+        "Prison Break",
+        "No censorship",
+        "NSFW",
+        "Multimodal",
+        "Low video memory"
+      ],
+      "recommendedConfig": {
+        "numCtx": 8192,
+        "numPredict": 4096
+      }
+    },
+    {
+      "id": "unsloth/Qwen3.8-27B-GGUF:UD-Q4_K_M",
+      "name": "Qwen 3.8 27B（Strongest）",
+      "company": "unsloth",
+      "parameterSize": "27B",
+      "totalSize": "16.2GB",
+      "recommended": true,
+      "description": "Unsloth's official UD dynamic quantization version, with extremely low quality loss, supports text and image analysis, and requires larger video memory.",
+      "source": "modelscope",
+      "quantization": "UD-Q4_K_M",
+      "isMultiModal": true,
+      "contextLength": 131072,
+      "capabilities": [
+        "TEXT",
+        "IMAGE"
+      ],
+      "performance": {
+        "speed": "slow",
+        "quality": "very_high"
+      },
+      "tags": [
+        "Multimodal",
+        "Large parameters",
+        "High precision",
+        "Strongest"
+      ],
+      "recommendedConfig": {
+        "numCtx": 8192,
+        "numPredict": 4096
+      }
+    },
+    {
+      "id": "HauhauCS/Qwen3.8-27B-Uncensored-HauhauCS-Aggressive-MTP-GGUF:Q4_K_P",
+      "name": "Qwen 3.8 27B（Prison Break）",
+      "company": "HauhauCS",
+      "parameterSize": "27B",
+      "totalSize": "17.56GB",
+      "recommended": true,
+      "description": "Qwen3.8-27B is a radical de-censorship version. The P-series quantization retains higher accuracy in key tensors, without censorship and supports image analysis.",
+      "source": "huggingface",
+      "quantization": "Q4_K_P",
+      "isMultiModal": true,
+      "contextLength": 131072,
+      "capabilities": [
+        "TEXT",
+        "IMAGE"
+      ],
+      "performance": {
+        "speed": "slow",
+        "quality": "very_high"
+      },
+      "tags": [
+        "Prison Break",
+        "No censorship",
+        "NSFW",
+        "Multimodal",
+        "Large parameters",
+        "MTP"
+      ],
+      "recommendedConfig": {
+        "numCtx": 8192,
+        "numPredict": 4096
+      }
+    },
+    {
+      "id": "ornith-ai/Ornith-1.5-9B-GGUF:Q4_K_M",
+      "name": "Ornith 1.5 9B（Top-tier）",
+      "company": "ornith-ai",
+      "parameterSize": "9B",
+      "totalSize": "6.24GB",
+      "recommended": true,
+      "description": "Ornith 1.5 Multimodal model, supports text and image analysis.",
+      "source": "huggingface",
+      "quantization": "Q4_K_M",
+      "isMultiModal": true,
+      "contextLength": 131072,
+      "capabilities": [
+        "TEXT",
+        "IMAGE"
+      ],
+      "performance": {
+        "speed": "medium",
+        "quality": "very_high"
+      },
+      "tags": [
+        "Multimodal",
+        "Image recognition",
+        "English is better"
+      ],
+      "recommendedConfig": {
+        "numCtx": 8192,
+        "numPredict": 4096
+      }
+    },
+    {
+      "id": "ornith-ai/Ornith-1.5-9B-GGUF:Q4_K_M",
+      "name": "Ornith 1.5 9B（Top-tier）",
+      "company": "ornith-ai",
+      "parameterSize": "9B",
+      "totalSize": "6.24GB",
+      "recommended": true,
+      "description": "Ornith 1.5 Multimodal model, supports text and image analysis.",
+      "source": "modelscope",
+      "quantization": "Q4_K_M",
+      "isMultiModal": true,
+      "contextLength": 131072,
+      "capabilities": [
+        "TEXT",
+        "IMAGE"
+      ],
+      "performance": {
+        "speed": "medium",
+        "quality": "very_high"
+      },
+      "tags": [
+        "Multimodal",
+        "Image recognition",
+        "English is better"
+      ],
+      "recommendedConfig": {
+        "numCtx": 8192,
+        "numPredict": 4096
+      }
+    }
+  ]
+}

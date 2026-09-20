@@ -1,0 +1,46 @@
+{
+  "name": "@firefly/ai-engine",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Standalone on-device AI inference engine & model management platform for Firefly AI Folder (Tauri 2 + React 19 + llama.cpp)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Leonard-Li777/firefly-ai-engine.git"
+  },
+  "homepage": "https://github.com/Leonard-Li777/firefly-ai-engine",
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/run.js vite",
+    "build": "tsc && node scripts/run.js vite build",
+    "preview": "node scripts/run.js vite preview",
+    "test": "node scripts/run.js vitest run",
+    "test:watch": "node scripts/run.js vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@firefly/shared": "workspace:*",
+    "@firefly/types": "workspace:*",
+    "@radix-ui/react-slot": "1.1.2",
+    "class-variance-authority": "0.7.1",
+    "clsx": "2.1.1",
+    "lucide-react": "0.471.2",
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
+    "tailwind-merge": "2.6.0",
+    "zustand": "5.0.10"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "4.1.18",
+    "@testing-library/jest-dom": "6.9.1",
+    "@testing-library/react": "16.3.1",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "4.3.4",
+    "jsdom": "^26.0.0",
+    "tailwindcss": "4.1.18",
+    "typescript": "5.9.3",
+    "vite": "6.4.1",
+    "vitest": "3.2.4"
+  }
+}
