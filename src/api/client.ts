@@ -92,6 +92,14 @@ export class EngineApiClient implements IEngineApiClient {
     }
   }
 
+  public setBaseUrl(baseUrl: string) {
+    this.baseUrl = baseUrl
+  }
+
+  public getBaseUrl(): string {
+    return this.baseUrl
+  }
+
   public setUseMock(useMock: boolean) {
     this.useMock = useMock
   }
@@ -119,6 +127,7 @@ export class EngineApiClient implements IEngineApiClient {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ backend })
       })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       return await res.json()
     } catch {
       return mockApiClient.switchEngine(backend)
@@ -129,7 +138,9 @@ export class EngineApiClient implements IEngineApiClient {
     if (this.useMock) return mockApiClient.getEngineList()
     try {
       const res = await fetch(`${this.baseUrl}/api/engine/list`)
-      return await res.json()
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data = await res.json()
+      return Array.isArray(data) ? data : mockApiClient.getEngineList()
     } catch {
       return mockApiClient.getEngineList()
     }
@@ -147,7 +158,9 @@ export class EngineApiClient implements IEngineApiClient {
     try {
       const url = source ? `${this.baseUrl}/api/models?source=${source}` : `${this.baseUrl}/api/models`
       const res = await fetch(url)
-      return await res.json()
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data = await res.json()
+      return Array.isArray(data) ? data : mockApiClient.listModels(source)
     } catch {
       return mockApiClient.listModels(source)
     }
@@ -181,6 +194,7 @@ export class EngineApiClient implements IEngineApiClient {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ path: newPath })
       })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       return await res.json()
     } catch {
       return mockApiClient.updateModelStoragePath(newPath)
@@ -191,7 +205,9 @@ export class EngineApiClient implements IEngineApiClient {
     if (this.useMock) return mockApiClient.rescanModels()
     try {
       const res = await fetch(`${this.baseUrl}/api/models/rescan`, { method: 'POST' })
-      return await res.json()
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data = await res.json()
+      return Array.isArray(data) ? data : mockApiClient.rescanModels()
     } catch {
       return mockApiClient.rescanModels()
     }
@@ -205,6 +221,7 @@ export class EngineApiClient implements IEngineApiClient {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(params)
       })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       return await res.json()
     } catch {
       return mockApiClient.updateRuntimeParams(params)

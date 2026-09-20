@@ -42,10 +42,28 @@ export const App: React.FC = () => {
     }
 
     // 初始化加载
-    fetchEngineStatus()
-    fetchEngineList()
-    fetchModels()
-    runRegionDetection()
+    const initApp = async () => {
+      if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
+        try {
+          const { invoke } = await import('@tauri-apps/api/core')
+          const actualPort = await invoke<number>('get_server_port')
+          if (actualPort) {
+            engineApiClient.setBaseUrl(`http://127.0.0.1:${actualPort}`)
+          }
+        } catch (e) {
+          console.warn('获取 Tauri 后端动态端口失败，使用默认配置:', e)
+        }
+      }
+
+      await Promise.allSettled([
+        fetchEngineStatus(),
+        fetchEngineList(),
+        fetchModels(),
+        runRegionDetection()
+      ])
+    }
+
+    initApp()
   }, [fetchEngineStatus, fetchEngineList, fetchModels, runRegionDetection])
 
   const toggleDarkMode = () => {

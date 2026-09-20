@@ -5,6 +5,7 @@ export default {
         if(globalThis.localStorage){
             return globalThis.localStorage.getItem(key)
         }
+        return null
     },
     set(key:string,value:any){
         if(globalThis.localStorage){

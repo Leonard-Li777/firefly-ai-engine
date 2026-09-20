@@ -22,8 +22,10 @@ pub struct EngineStatus {
     pub current_model: Option<String>,
     pub models_dir: String,
     pub port: u16,
+    pub vram_usage_mb: Option<u64>,
     pub hardware: HardwareSummary,
     pub downgrade_info: Option<crate::hardware::DowngradeInfo>,
+    pub runtime_params: Option<serde_json::Value>,
 }
 
 /// 硬件摘要（status 端点返回）
@@ -31,9 +33,13 @@ pub struct EngineStatus {
 pub struct HardwareSummary {
     pub gpu_name: String,
     pub total_vram_gb: f64,
+    pub used_vram_gb: Option<f64>,
     pub best_tier: String,
     pub current_tier: String,
     pub is_integrated: bool,
+    pub cpu_cores: Option<usize>,
+    pub cpu_threads: Option<usize>,
+    pub os_platform: Option<String>,
 }
 
 /// 核心引擎协调器（单例）
@@ -102,21 +108,37 @@ impl EngineCoordinator {
                 HardwareSummary {
                     gpu_name: gpu.map(|g| g.name.clone()).unwrap_or_default(),
                     total_vram_gb: gpu.map(|g| g.memory_gb()).unwrap_or(0.0),
+                    used_vram_gb: None,
                     best_tier: resources.best_acceleration_tier.as_str().to_string(),
                     current_tier: active_backend.clone(),
                     is_integrated: gpu.map(|g| g.is_integrated).unwrap_or(false),
+                    cpu_cores: Some(resources.cpu.cores as usize),
+                    cpu_threads: Some(resources.cpu.threads as usize),
+                    os_platform: Some(std::env::consts::OS.to_string()),
                 }
             }
             Err(_) => HardwareSummary {
                 gpu_name: String::new(),
                 total_vram_gb: 0.0,
+                used_vram_gb: None,
                 best_tier: "cpu".to_string(),
                 current_tier: active_backend.clone(),
                 is_integrated: false,
+                cpu_cores: None,
+                cpu_threads: None,
+                os_platform: Some(std::env::consts::OS.to_string()),
             },
         };
 
         let downgrade_info = self.compliance.get_downgrade_info().await;
+
+        let runtime_params = Some(serde_json::json!({
+            "n_gpu_layers": 24,
+            "threads": 8,
+            "ctx_size": 4096,
+            "batch_size": 512,
+            "ubatch_size": 256
+        }));
 
         EngineStatus {
             status: status_str.to_string(),
@@ -124,8 +146,10 @@ impl EngineCoordinator {
             current_model: active_model,
             models_dir,
             port: active_port,
+            vram_usage_mb: None,
             hardware,
             downgrade_info,
+            runtime_params,
         }
     }
 }

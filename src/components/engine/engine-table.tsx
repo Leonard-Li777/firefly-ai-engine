@@ -18,6 +18,7 @@ export const EngineTable: React.FC = () => {
   }, [fetchEngineList])
 
   const currentBackend = engineStatus?.active_backend || 'vulkan'
+  const safeEngineList = Array.isArray(engineList) ? engineList : []
 
   return (
     <Card className="p-6 border-border/70 rounded-3xl bg-card shadow-sm space-y-4">
@@ -48,7 +49,7 @@ export const EngineTable: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {engineList.length === 0 ? (
+            {safeEngineList.length === 0 ? (
               <tr>
                 <td colSpan={4} className="p-8 text-center text-xs text-muted-foreground">
                   <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2 text-primary" />
@@ -56,7 +57,7 @@ export const EngineTable: React.FC = () => {
                 </td>
               </tr>
             ) : (
-              engineList.map(item => {
+              safeEngineList.map(item => {
                 const isCurrent = item.backend === currentBackend
                 const isSwitching = switchingBackend === item.backend
                 const isDownloadingThis = downloadState.isDownloading && downloadState.currentBackend === item.backend

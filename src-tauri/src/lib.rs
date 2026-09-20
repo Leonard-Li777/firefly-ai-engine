@@ -17,6 +17,13 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use tracing::info;
 
+/// 获取当前 Axum HTTP 服务实际绑定的端口
+#[tauri::command]
+async fn get_server_port(coordinator: tauri::State<'_, Arc<EngineCoordinator>>) -> Result<u16, String> {
+    let port = *coordinator.active_port.lock().await;
+    port.ok_or_else(|| "服务启动中，暂未分配端口".to_string())
+}
+
 /// 构建并运行 Tauri 应用
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -87,6 +94,8 @@ pub fn run() {
                 }
             });
 
+            app.manage(coordinator.clone());
+
             // 检查是否 --silent 启动（不显示窗口）
             let args: Vec<String> = std::env::args().collect();
             let is_silent = args.contains(&"--silent".to_string()) || args.contains(&"--tray".to_string());
@@ -103,6 +112,7 @@ pub fn run() {
 
             Ok(())
         })
+        .invoke_handler(tauri::generate_handler![get_server_port])
         .on_window_event(|window, event| {
             // 关闭窗口时最小化到托盘而不是退出
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {

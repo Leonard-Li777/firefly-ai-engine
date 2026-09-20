@@ -182,7 +182,8 @@ export const ModelListPanel: React.FC = () => {
     fetchModels()
   }, [fetchModels])
 
-  const filteredModels = models.filter(m => m.source === activeSource)
+  const safeModels = Array.isArray(models) ? models : []
+  const filteredModels = safeModels.filter(m => m && m.source === activeSource)
 
   return (
     <Card className="p-6 border-border/70 rounded-3xl bg-card shadow-sm space-y-5">
