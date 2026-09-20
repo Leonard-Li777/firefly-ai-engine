@@ -10,7 +10,7 @@ import {
   Sun
 } from 'lucide-react'
 import { Badge } from './components/ui/badge'
-import { Button } from './components/ui/button'
+import { Switch } from './components/ui/switch'
 import { HardwareCard } from './components/hardware/hardware-card'
 import { EngineTable } from './components/engine/engine-table'
 import { ModelStorageConfig } from './components/storage/model-storage-config'
@@ -32,13 +32,22 @@ export const App: React.FC = () => {
     runRegionDetection
   } = useEngineStore()
 
-  const [isDarkMode, setIsDarkMode] = useState(false)
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('theme')
+      if (saved === 'dark') return true
+      if (saved === 'light') return false
+      return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+    }
+    return false
+  })
 
   useEffect(() => {
-    // 检查系统深色模式偏好
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      setIsDarkMode(true)
+    // 同步明暗模式样式到 DOM
+    if (isDarkMode) {
       document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
     }
 
     // 初始化加载
@@ -66,16 +75,15 @@ export const App: React.FC = () => {
     initApp()
   }, [fetchEngineStatus, fetchEngineList, fetchModels, runRegionDetection])
 
-  const toggleDarkMode = () => {
-    setIsDarkMode(prev => {
-      const next = !prev
-      if (next) {
-        document.documentElement.classList.add('dark')
-      } else {
-        document.documentElement.classList.remove('dark')
-      }
-      return next
-    })
+  const handleThemeChange = (checked: boolean) => {
+    setIsDarkMode(checked)
+    if (checked) {
+      document.documentElement.classList.add('dark')
+      localStorage.setItem('theme', 'dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+      localStorage.setItem('theme', 'light')
+    }
   }
 
   const isMock = engineApiClient.isMockMode()
@@ -131,16 +139,27 @@ export const App: React.FC = () => {
           {/* 语言切换下拉 */}
           <LanguageSelector />
 
-          {/* 深色模式切换 */}
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-8 w-8 rounded-xl"
-            onClick={toggleDarkMode}
-            title={isDarkMode ? '切换至浅色模式' : '切换至深色模式'}
+          {/* 明暗模式 Switch 开关 */}
+          <div
+            className="flex items-center gap-2 px-3 py-1 rounded-xl bg-muted/50 border border-border/50 text-xs font-semibold cursor-pointer select-none hover:bg-muted/80 transition-colors"
+            onClick={() => handleThemeChange(!isDarkMode)}
+            title={isDarkMode ? '切换至明亮模式' : '切换至暗色模式'}
           >
-            {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          </Button>
+            {isDarkMode ? (
+              <Moon className="h-3.5 w-3.5 text-primary" />
+            ) : (
+              <Sun className="h-3.5 w-3.5 text-amber-500" />
+            )}
+            <span className="text-[11px] text-muted-foreground font-bold min-w-[24px]">
+              {isDarkMode ? '暗色' : '明亮'}
+            </span>
+            <Switch
+              checked={isDarkMode}
+              onCheckedChange={handleThemeChange}
+              aria-label="切换明暗主题"
+              className="scale-90 pointer-events-none"
+            />
+          </div>
         </div>
       </header>
 
