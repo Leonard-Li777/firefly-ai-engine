@@ -20,41 +20,60 @@ export const EngineTable: React.FC = () => {
   }, [fetchEngineList])
 
   const currentBackend = engineStatus?.active_backend || 'vulkan'
-  const safeEngineList = Array.isArray(engineList) ? engineList : []
+  const hw = engineStatus?.hardware
+  const isDarwin = hw?.os_platform === 'darwin' || (typeof navigator !== 'undefined' && /mac/i.test(navigator.userAgent))
+
+  // 1:1 复刻 Desktop getGpuVendor 逻辑
+  const getGpuVendor = (): string => {
+    const rawGpu = (hw?.gpu_name || '').toLowerCase()
+    if (rawGpu.includes('nvidia') || rawGpu.includes('geforce')) return 'NVIDIA'
+    if (rawGpu.includes('amd') || rawGpu.includes('radeon')) return 'AMD'
+    if (rawGpu.includes('intel') || rawGpu.includes('arc')) return 'Intel'
+    if (rawGpu.includes('apple') || rawGpu.includes('m1') || rawGpu.includes('m2') || rawGpu.includes('m3') || rawGpu.includes('m4')) return 'Apple'
+    return 'CPU'
+  }
+
+  // 严格依据平台过滤：Windows / Linux 平台绝对不向用户展示 Apple Metal
+  const safeEngineList = (Array.isArray(engineList) ? engineList : []).filter(item => {
+    if (!isDarwin && item.backend === 'metal') {
+      return false
+    }
+    return true
+  })
 
   return (
-    <Card className="p-5 border-border/30 rounded-xl bg-card shadow-xs space-y-4">
+    <Card className="p-5 border border-border/80 rounded-2xl bg-card shadow-xs space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1.5">
         <div>
           <Label className="text-base font-bold tracking-tight text-foreground flex items-center gap-2">
             <Zap className="h-4 w-4 text-primary" />
-            <span>{t('engine.title')}</span>
+            <span>{t('切换本地AI引擎')}</span>
           </Label>
           <p className="text-xs text-muted-foreground/80 font-normal mt-1 leading-relaxed">
-            {t('engine.desc')}
+            {t('您的 {vendor} 显卡可切换以下引擎', { vendor: getGpuVendor() })}
           </p>
         </div>
-        <Badge variant="outline" className="text-[11px] font-semibold h-6 self-start sm:self-auto shrink-0 border-border/40">
+        <Badge variant="outline" className="text-[11px] font-semibold h-6 self-start sm:self-auto shrink-0 border-border/60">
           基准端口: {engineStatus?.port || 38400}
         </Badge>
       </div>
 
       {/* 引擎列表表格：平滑滚动容器，解决德文/俄文等长表头溢出问题 */}
-      <div className="border border-border/30 rounded-lg overflow-x-auto bg-background/40">
+      <div className="border border-border/70 rounded-xl overflow-x-auto bg-background/50 shadow-2xs">
         <table className="w-full text-left border-collapse min-w-[560px]">
           <thead>
-            <tr className="border-b border-border/30 bg-muted/30">
+            <tr className="border-b border-border/60 bg-muted/40">
               <th className="p-3 text-xs font-semibold text-muted-foreground uppercase text-left pl-4 w-[35%]">
-                {t('engine.name')}
+                {t('AI 引擎')}
               </th>
               <th className="p-3 text-xs font-semibold text-muted-foreground uppercase text-center w-[20%]">
-                {t('engine.type')}
+                {t('适配类型')}
               </th>
               <th className="p-3 text-xs font-semibold text-muted-foreground uppercase text-center w-[20%]">
-                性能评级
+                {t('性能说明')}
               </th>
               <th className="p-3 text-xs font-semibold text-muted-foreground uppercase text-right pr-4 w-[25%]">
-                {t('engine.action')}
+                {t('当前引擎')}
               </th>
             </tr>
           </thead>
@@ -63,7 +82,7 @@ export const EngineTable: React.FC = () => {
               <tr>
                 <td colSpan={4} className="p-8 text-center text-xs text-muted-foreground">
                   <Loader2 className="h-4.5 w-4.5 animate-spin mx-auto mb-2 text-primary" />
-                  正在扫描已安装计算引擎...
+                  {t('正在扫描已安装计算引擎...')}
                 </td>
               </tr>
             ) : (
@@ -126,7 +145,7 @@ export const EngineTable: React.FC = () => {
                       {isCurrent ? (
                         <Badge className="bg-primary/90 text-primary-foreground font-bold px-2.5 py-1 rounded-full shadow-xs text-xs whitespace-nowrap">
                           <Check className="h-3 w-3 mr-1 shrink-0" />
-                          {t('engine.btnActive')}
+                          {t('当前引擎')}
                         </Badge>
                       ) : isDownloadingThis ? (
                         <div className="inline-flex flex-col items-end gap-1 min-w-[130px]">
@@ -154,7 +173,7 @@ export const EngineTable: React.FC = () => {
                           onClick={() => startDownload(item.backend)}
                         >
                           <Download className="h-3 w-3 mr-1 shrink-0" />
-                          {t('engine.btnDownload')} {item.downloadSizeMb ? `(${item.downloadSizeMb}MB)` : ''}
+                          {t('下载安装')} {item.downloadSizeMb ? `(${item.downloadSizeMb}MB)` : ''}
                         </Button>
                       ) : (
                         <Button
@@ -167,10 +186,10 @@ export const EngineTable: React.FC = () => {
                           {isSwitching ? (
                             <>
                               <Loader2 className="h-3 w-3 animate-spin mr-1 shrink-0" />
-                              切换中...
+                              {t('切换中...')}
                             </>
                           ) : (
-                            t('engine.btnEnable')
+                            t('启用')
                           )}
                         </Button>
                       )}

@@ -15,8 +15,8 @@
       {
         "label": "main",
         "title": "Firefly AI Engine",
-        "width": 900,
-        "height": 660,
+        "width": 1280,
+        "height": 720,
         "resizable": true,
         "fullscreen": false,
         "visible": false,

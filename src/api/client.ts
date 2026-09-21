@@ -75,6 +75,16 @@ export interface IEngineApiClient {
    * 更新运行时调优参数（GPU 卸载层数、线程数、上下文等）
    */
   updateRuntimeParams(params: Partial<RuntimeParams>): Promise<{ success: boolean }>
+
+  /**
+   * 激活/热切换当前运行的模型
+   */
+  switchModel(modelId: string, source?: string): Promise<{ success: boolean; currentModel: string }>
+
+  /**
+   * 重置驱动降级状态（用户升级驱动后重新检测）
+   */
+  resetDowngrade(): Promise<{ status: string }>
 }
 
 /**
@@ -225,6 +235,35 @@ export class EngineApiClient implements IEngineApiClient {
       return await res.json()
     } catch {
       return mockApiClient.updateRuntimeParams(params)
+    }
+  }
+
+  async switchModel(modelId: string, source?: string): Promise<{ success: boolean; currentModel: string }> {
+    if (this.useMock) return mockApiClient.switchModel(modelId, source)
+    try {
+      const res = await fetch(`${this.baseUrl}/api/models/switch`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ modelId, source })
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      return await res.json()
+    } catch {
+      return mockApiClient.switchModel(modelId, source)
+    }
+  }
+
+  async resetDowngrade(): Promise<{ status: string }> {
+    if (this.useMock) return mockApiClient.resetDowngrade()
+    try {
+      const res = await fetch(`${this.baseUrl}/api/engine/reset-downgrade`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      return await res.json()
+    } catch {
+      return mockApiClient.resetDowngrade()
     }
   }
 }

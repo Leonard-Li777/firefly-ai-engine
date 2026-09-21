@@ -60,61 +60,187 @@ async fn engine_list(State(state): State<AppState>) -> impl IntoResponse {
     let status = state.coordinator.get_status().await;
     let active_backend = status.active_backend;
     let best_tier = status.hardware.best_tier;
+    let gpu_name = status.hardware.gpu_name.to_lowercase();
+    let is_darwin = cfg!(target_os = "macos") || status.hardware.os_platform.as_deref() == Some("darwin");
 
     let has_cuda = installed.iter().any(|e| e.tier == crate::hardware::gpu_info::AccelerationTier::Cuda);
     let has_vulkan = installed.iter().any(|e| e.tier == crate::hardware::gpu_info::AccelerationTier::Vulkan);
     let has_cpu = installed.iter().any(|e| e.tier == crate::hardware::gpu_info::AccelerationTier::Cpu);
     let has_metal = installed.iter().any(|e| e.tier == crate::hardware::gpu_info::AccelerationTier::Metal);
+    let has_hip = installed.iter().any(|e| e.tier == crate::hardware::gpu_info::AccelerationTier::Hip || e.tier == crate::hardware::gpu_info::AccelerationTier::Rocm);
+    let has_sycl = installed.iter().any(|e| e.tier == crate::hardware::gpu_info::AccelerationTier::Sycl);
 
-    let is_nvidia = best_tier == "cuda";
-    let is_apple = best_tier == "metal";
+    let is_nvidia = best_tier == "cuda" || gpu_name.contains("nvidia") || gpu_name.contains("geforce");
+    let is_amd = best_tier == "hip" || best_tier == "rocm" || gpu_name.contains("amd") || gpu_name.contains("radeon");
+    let is_intel = best_tier == "sycl" || gpu_name.contains("intel") || gpu_name.contains("arc");
 
-    let list = vec![
-        json!({
-            "id": "cuda",
-            "name": "CUDA 12.4",
-            "backend": "cuda",
-            "matchType": if is_nvidia { "best" } else { "incompatible" },
-            "matchText": if is_nvidia { "最佳匹配" } else { "需要 NVIDIA GPU" },
-            "performance": "100% 性能利用",
-            "isCurrent": active_backend == "cuda",
-            "isInstalled": has_cuda,
-            "downloadSizeMb": 450
-        }),
-        json!({
-            "id": "vulkan",
-            "name": "Vulkan (GPU通用)",
-            "backend": "vulkan",
-            "matchType": if !is_apple { "compatible" } else { "incompatible" },
-            "matchText": "兼容模式",
-            "performance": "70% 性能利用",
-            "isCurrent": active_backend == "vulkan",
-            "isInstalled": has_vulkan,
-            "downloadSizeMb": 280
-        }),
-        json!({
-            "id": "cpu",
-            "name": "CPU (AVX2)",
-            "backend": "cpu",
-            "matchType": "fallback",
-            "matchText": "保底模式",
-            "performance": "无显卡加速",
-            "isCurrent": active_backend == "cpu",
-            "isInstalled": has_cpu,
-            "downloadSizeMb": 120
-        }),
-        json!({
+    let mut list = Vec::new();
+
+    if is_darwin {
+        // macOS 平台：仅输出 Metal (Apple Silicon) 与 CPU
+        list.push(json!({
             "id": "metal",
             "name": "Apple Metal",
             "backend": "metal",
-            "matchType": if is_apple { "best" } else { "incompatible" },
-            "matchText": "macOS 专属",
+            "matchType": "best",
+            "matchText": "最佳匹配",
             "performance": "100% 统一内存利用",
             "isCurrent": active_backend == "metal",
             "isInstalled": has_metal,
             "downloadSizeMb": 180
-        }),
-    ];
+        }));
+        list.push(json!({
+            "id": "cpu",
+            "name": "CPU",
+            "backend": "cpu",
+            "matchType": "fallback",
+            "matchText": "保底",
+            "performance": "无显卡加速",
+            "isCurrent": active_backend == "cpu",
+            "isInstalled": has_cpu,
+            "downloadSizeMb": 120
+        }));
+    } else {
+        // Windows / Linux 平台：绝对不展示 Apple Metal
+        if is_nvidia {
+            list.push(json!({
+                "id": "cuda134",
+                "name": "CUDA 13.4",
+                "backend": "cuda134",
+                "matchType": "best",
+                "matchText": "最新最佳",
+                "performance": "100% 性能利用 (最新驱动)",
+                "isCurrent": active_backend == "cuda134",
+                "isInstalled": installed.iter().any(|e| e.dir_name.contains("cuda-13")),
+                "downloadSizeMb": 480
+            }));
+            list.push(json!({
+                "id": "cuda",
+                "name": "CUDA 12.4",
+                "backend": "cuda",
+                "matchType": "best",
+                "matchText": "最佳匹配",
+                "performance": "100% 性能利用",
+                "isCurrent": active_backend == "cuda",
+                "isInstalled": has_cuda,
+                "downloadSizeMb": 450
+            }));
+            list.push(json!({
+                "id": "vulkan",
+                "name": "Vulkan",
+                "backend": "vulkan",
+                "matchType": "compatible",
+                "matchText": "兼容模式",
+                "performance": "70% 性能利用",
+                "isCurrent": active_backend == "vulkan",
+                "isInstalled": has_vulkan,
+                "downloadSizeMb": 280
+            }));
+            list.push(json!({
+                "id": "cpu",
+                "name": "CPU (AVX2)",
+                "backend": "cpu",
+                "matchType": "fallback",
+                "matchText": "保底",
+                "performance": "无显卡加速",
+                "isCurrent": active_backend == "cpu",
+                "isInstalled": has_cpu,
+                "downloadSizeMb": 120
+            }));
+        } else if is_amd {
+            list.push(json!({
+                "id": "hip",
+                "name": "ROCm / HIP",
+                "backend": "hip",
+                "matchType": "best",
+                "matchText": "最佳匹配",
+                "performance": "100% 性能利用",
+                "isCurrent": active_backend == "hip" || active_backend == "rocm",
+                "isInstalled": has_hip,
+                "downloadSizeMb": 400
+            }));
+            list.push(json!({
+                "id": "vulkan",
+                "name": "Vulkan",
+                "backend": "vulkan",
+                "matchType": "compatible",
+                "matchText": "兼容模式",
+                "performance": "70% 性能利用",
+                "isCurrent": active_backend == "vulkan",
+                "isInstalled": has_vulkan,
+                "downloadSizeMb": 280
+            }));
+            list.push(json!({
+                "id": "cpu",
+                "name": "CPU (AVX2)",
+                "backend": "cpu",
+                "matchType": "fallback",
+                "matchText": "保底",
+                "performance": "无显卡加速",
+                "isCurrent": active_backend == "cpu",
+                "isInstalled": has_cpu,
+                "downloadSizeMb": 120
+            }));
+        } else if is_intel {
+            list.push(json!({
+                "id": "sycl",
+                "name": "Intel SYCL",
+                "backend": "sycl",
+                "matchType": "compatible",
+                "matchText": "兼容模式",
+                "performance": "80% 性能利用",
+                "isCurrent": active_backend == "sycl",
+                "isInstalled": has_sycl,
+                "downloadSizeMb": 350
+            }));
+            list.push(json!({
+                "id": "vulkan",
+                "name": "Vulkan",
+                "backend": "vulkan",
+                "matchType": "compatible",
+                "matchText": "兼容模式",
+                "performance": "70% 性能利用",
+                "isCurrent": active_backend == "vulkan",
+                "isInstalled": has_vulkan,
+                "downloadSizeMb": 280
+            }));
+            list.push(json!({
+                "id": "cpu",
+                "name": "CPU (AVX2)",
+                "backend": "cpu",
+                "matchType": "fallback",
+                "matchText": "保底",
+                "performance": "无显卡加速",
+                "isCurrent": active_backend == "cpu",
+                "isInstalled": has_cpu,
+                "downloadSizeMb": 120
+            }));
+        } else {
+            // 通用/纯 CPU 情况
+            list.push(json!({
+                "id": "vulkan",
+                "name": "Vulkan (GPU通用)",
+                "backend": "vulkan",
+                "matchType": "compatible",
+                "matchText": "兼容模式",
+                "performance": "70% 性能利用",
+                "isCurrent": active_backend == "vulkan",
+                "isInstalled": has_vulkan,
+                "downloadSizeMb": 280
+            }));
+            list.push(json!({
+                "id": "cpu",
+                "name": "CPU (AVX2)",
+                "backend": "cpu",
+                "matchType": "best",
+                "matchText": "最佳匹配",
+                "performance": "无显卡加速",
+                "isCurrent": active_backend == "cpu",
+                "isInstalled": has_cpu,
+                "downloadSizeMb": 120
+            }));
+        }
+    }
 
     Json(list)
 }

@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react'
 import { engineApiClient } from '../api/client'
 import { useEngineStore } from '../stores/engine-store'
 import { DownloadProgressEvent } from '../api/types'
+import { t } from '../lib/i18n'
 
 export interface EngineDownloadState {
   isDownloading: boolean
@@ -63,14 +64,14 @@ export function useEngineDownload() {
         // 刷新引擎列表，使未安装状态变为已安装就绪
         await fetchEngineList()
       } else {
-        throw new Error('下载未正常完成')
+        throw new Error(t('下载未正常完成'))
       }
     } catch (err: any) {
       setState(prev => ({
         ...prev,
         isDownloading: false,
         status: 'error',
-        error: err.message || '引擎下载失败'
+        error: err.message || t('引擎下载失败')
       }))
     }
   }, [fetchEngineList])

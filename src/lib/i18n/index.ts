@@ -75,17 +75,29 @@ export const useI18nStore = create<I18nState>((set, get) => {
     t: (path: string, params?: Record<string, string | number>) => {
       const { currentLanguage } = get()
       const dict = translations[currentLanguage] || translations['zh-CN']
-      let val = resolveValue(dict, path)
-
-      // 回退至 zh-CN
-      if (!val) {
-        val = resolveValue(translations['zh-CN'], path)
+      
+      // 1. 如果当前字典本身包含该直接 key (例如原生中文 key)
+      let val: string | undefined = (dict as any)?.[path]
+      
+      // 2. 如果不存在，尝试 dot 路径递归查找 (兼容 storage.title 等旧路径)
+      if (!val && path.includes('.')) {
+        val = resolveValue(dict, path)
       }
 
+      // 3. 如果非中文语言没有找到，回退至 zh-CN 字典
       if (!val) {
-        return path
+        val = (translations['zh-CN'] as any)?.[path]
+        if (!val && path.includes('.')) {
+          val = resolveValue(translations['zh-CN'], path)
+        }
       }
 
+      // 4. 如果仍未找到，直接返回原生传入的字符串 (如自然中文)
+      if (!val) {
+        val = path
+      }
+
+      // 5. 变量插值替换: {name}
       if (params) {
         for (const [k, v] of Object.entries(params)) {
           val = val.replace(new RegExp(`\\{${k}\\}`, 'g'), String(v))

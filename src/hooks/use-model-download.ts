@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { DownloadProgressEvent, ModelSource } from '../api/types'
 import { engineApiClient } from '../api/client'
+import { t } from '../lib/i18n'
 
 export interface ModelDownloadState {
   isDownloading: boolean
@@ -128,7 +129,7 @@ export function useModelDownload(
             if (progress.status === 'completed') {
               optionsRef.current.onDownloadComplete?.()
             } else if (progress.status === 'error') {
-              optionsRef.current.onDownloadError?.(progress.error || '下载失败')
+              optionsRef.current.onDownloadError?.(progress.error || t('下载失败'))
             }
           }
         )
@@ -140,7 +141,7 @@ export function useModelDownload(
           totalBytes: taskSummary.totalBytes
         }))
       } catch (err: any) {
-        const errMsg = err?.message || '发起模型下载失败'
+        const errMsg = err?.message || t('发起模型下载失败')
         setState(prev => ({
           ...prev,
           isDownloading: false,

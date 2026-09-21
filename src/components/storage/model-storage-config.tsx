@@ -29,7 +29,7 @@ export const ModelStorageConfig: React.FC = () => {
   const handleSave = async (pathOverride?: string) => {
     const targetPath = (pathOverride || inputPath).trim()
     if (!validatePath(targetPath)) {
-      setFeedback({ type: 'error', message: '路径格式不合法，请输入绝对路径（如 D:\\AI_Models 或 /data/models）' })
+      setFeedback({ type: 'error', message: t('路径格式不合法，请输入绝对路径（如 D:\\AI_Models 或 /data/models）') })
       return
     }
 
@@ -39,10 +39,10 @@ export const ModelStorageConfig: React.FC = () => {
     setIsSaving(false)
 
     if (success) {
-      setFeedback({ type: 'success', message: '模型存储目录已成功更改并已刷新扫描模型！' })
+      setFeedback({ type: 'success', message: t('模型存储目录已成功更改并已刷新扫描模型！') })
       setTimeout(() => setFeedback(null), 4000)
     } else {
-      setFeedback({ type: 'error', message: '更改存储目录失败，请检查目录权限。' })
+      setFeedback({ type: 'error', message: t('更改存储目录失败，请检查目录权限。') })
     }
   }
 
@@ -63,7 +63,7 @@ export const ModelStorageConfig: React.FC = () => {
     }
 
     // Web / 沙盒开发模式下提供预设快速路径选择
-    const promptPath = window.prompt('请输入自定义模型存储目录的绝对路径:', inputPath)
+    const promptPath = window.prompt(t('请输入自定义模型存储目录的绝对路径:'), inputPath)
     if (promptPath && promptPath !== inputPath) {
       setInputPath(promptPath)
       await handleSave(promptPath)
@@ -71,15 +71,15 @@ export const ModelStorageConfig: React.FC = () => {
   }
 
   return (
-    <Card className="p-5 border-border/30 rounded-xl bg-card shadow-xs space-y-4">
+    <Card className="p-5 border border-border/80 rounded-2xl bg-card shadow-xs space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1.5">
         <div>
           <Label className="text-base font-bold tracking-tight text-foreground flex items-center gap-2">
             <FolderOpen className="h-4 w-4 text-primary" />
-            <span>{t('storage.title')}</span>
+            <span>{t('模型存储目录自定义配置')}</span>
           </Label>
-          <p className="text-xs text-muted-foreground/80 font-normal mt-1 leading-relaxed">
-            {t('storage.desc')}
+          <p className="text-xs text-muted-foreground font-normal mt-1 leading-relaxed">
+            {t('自定义大容量磁盘存放目录，避免占用系统盘空间。更改后将即时扫描该目录下的 GGUF 模型。')}
           </p>
         </div>
       </div>
@@ -92,8 +92,8 @@ export const ModelStorageConfig: React.FC = () => {
             onKeyDown={e => {
               if (e.key === 'Enter') handleSave()
             }}
-            placeholder="例如: D:\AI_Models 或 /Volumes/Data/AI_Models"
-            className="h-9.5 font-mono text-xs pr-10 rounded-lg bg-background/60 border-border/40 focus:border-primary/50"
+            placeholder={t('例如: D:\\AI_Models 或 /Volumes/Data/AI_Models')}
+            className="h-9.5 font-mono text-xs pr-10 rounded-lg bg-background border-border/80 focus:border-primary"
           />
         </div>
 
@@ -101,10 +101,10 @@ export const ModelStorageConfig: React.FC = () => {
           <Button
             variant="outline"
             onClick={handleBrowse}
-            className="h-9.5 px-3.5 font-bold text-xs rounded-lg border-border/40 hover:bg-muted/50"
+            className="h-9.5 px-3.5 font-bold text-xs rounded-lg border-border/80 hover:bg-muted/50"
           >
             <FolderOpen className="h-3.5 w-3.5 mr-1.5" />
-            {t('storage.btnBrowse')}
+            {t('浏览')}
           </Button>
 
           <Button
@@ -113,7 +113,7 @@ export const ModelStorageConfig: React.FC = () => {
             onClick={() => handleSave()}
             className="h-9.5 px-4 font-bold text-xs rounded-lg shadow-xs"
           >
-            保存并生效
+            {t('保存并生效')}
           </Button>
 
           <Button
@@ -123,7 +123,7 @@ export const ModelStorageConfig: React.FC = () => {
             className="h-9.5 px-3.5 font-bold text-xs rounded-lg bg-muted/60 hover:bg-muted text-foreground border border-border/30"
           >
             <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${loading ? 'animate-spin' : ''}`} />
-            {t('storage.btnRescan')}
+            {t('重新扫描')}
           </Button>
         </div>
       </div>

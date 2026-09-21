@@ -33,23 +33,23 @@ export const HardwareMonitorPanel: React.FC = () => {
   }
 
   return (
-    <Card className="p-5 border-border/30 rounded-xl bg-card shadow-xs space-y-5">
+    <Card className="p-5 border border-border/80 rounded-2xl bg-card shadow-xs space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1.5">
         <div>
           <Label className="text-base font-bold tracking-tight text-foreground flex items-center gap-2">
             <Sliders className="h-4 w-4 text-primary" />
-            <span>{t('runtime.title')}</span>
+            <span>{t('运行时监控与安全调度配置')}</span>
           </Label>
           <p className="text-xs text-muted-foreground/80 font-normal mt-1 leading-relaxed">
-            {t('runtime.desc')}
+            {t('实时调控推理参数。严格遵循 ubatch <= batch 防崩溃安全准则与 Max-Fill 显存卸载。')}
           </p>
         </div>
       </div>
 
       {/* 显存负载实时仪表：柔和弱边框与柔和底色 */}
-      <div className="p-3.5 rounded-lg bg-muted/20 border border-border/30 space-y-2">
+      <div className="p-3.5 rounded-xl bg-muted/30 border border-border/70 space-y-2 shadow-2xs">
         <div className="flex items-center justify-between text-xs font-semibold">
-          <span className="text-foreground">{t('runtime.vramAllocation')}</span>
+          <span className="text-foreground">{t('动态显存预测分配')}</span>
           <span className="font-mono text-[11px] text-muted-foreground">
             {usedVramMb} MB / {Math.round(totalVramMb)} MB ({vramPercent}%)
           </span>
@@ -60,11 +60,11 @@ export const HardwareMonitorPanel: React.FC = () => {
           indicatorClassName={vramPercent > 85 ? 'bg-amber-500' : 'bg-primary'}
         />
         <div className="flex flex-wrap items-center justify-between text-[10px] text-muted-foreground font-medium gap-1">
-          <span>安全余量: {Math.max(0, Math.round(totalVramMb - usedVramMb))} MB</span>
+          <span>{t('安全余量')}: {Math.max(0, Math.round(totalVramMb - usedVramMb))} MB</span>
           {vramPercent > 85 && (
             <span className="text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1">
               <ShieldAlert className="h-3 w-3" />
-              显存接近饱和，建议适当降低 GPU 卸载层数
+              {t('显存接近饱和，建议适当降低 GPU 卸载层数')}
             </span>
           )}
         </div>
@@ -75,9 +75,9 @@ export const HardwareMonitorPanel: React.FC = () => {
         {/* GPU 卸载层数 */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label className="text-xs font-bold">{t('runtime.gpuLayers')}</Label>
+            <Label className="text-xs font-bold">{t('GPU 卸载层数 (-ngl)')}</Label>
             <Badge variant="outline" className="font-mono text-xs font-semibold border-border/40">
-              {params.n_gpu_layers} 层
+              {t('{count} 层', { count: params.n_gpu_layers })}
             </Badge>
           </div>
           <Slider
@@ -88,16 +88,16 @@ export const HardwareMonitorPanel: React.FC = () => {
             onChange={val => setParams(p => ({ ...p, n_gpu_layers: val }))}
           />
           <span className="text-[10px] text-muted-foreground/70 block leading-tight">
-            0 为纯 CPU 运算，值越大显存占用越多、推理速度越快
+            {t('0 为纯 CPU 运算，值越大显存占用越多、推理速度越快')}
           </span>
         </div>
 
         {/* CPU 物理线程数 */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label className="text-xs font-bold">{t('runtime.threads')}</Label>
+            <Label className="text-xs font-bold">{t('CPU 计算线程 (-t)')}</Label>
             <Badge variant="outline" className="font-mono text-xs font-semibold border-border/40">
-              {params.threads} 线程
+              {t('{count} 线程', { count: params.threads })}
             </Badge>
           </div>
           <Slider
@@ -108,14 +108,14 @@ export const HardwareMonitorPanel: React.FC = () => {
             onChange={val => setParams(p => ({ ...p, threads: val }))}
           />
           <span className="text-[10px] text-muted-foreground/70 block leading-tight">
-            建议配置为物理核心数（通常 4 ~ 16），避免线程争抢
+            {t('建议配置为物理核心数（通常 4 ~ 16），避免线程争抢')}
           </span>
         </div>
 
         {/* 上下文窗口大小 */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label className="text-xs font-bold">{t('runtime.ctxSize')}</Label>
+            <Label className="text-xs font-bold">{t('上下文长度 (--ctx-size)')}</Label>
             <Badge variant="outline" className="font-mono text-xs font-semibold border-border/40">
               {params.ctx_size}
             </Badge>
@@ -128,7 +128,7 @@ export const HardwareMonitorPanel: React.FC = () => {
             onChange={val => setParams(p => ({ ...p, ctx_size: val }))}
           />
           <span className="text-[10px] text-muted-foreground/70 block leading-tight">
-            长文本分析窗口，越大 KV Cache 显存消耗越多
+            {t('长文本分析窗口，越大 KV Cache 显存消耗越多')}
           </span>
         </div>
       </div>
@@ -138,7 +138,7 @@ export const HardwareMonitorPanel: React.FC = () => {
         <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground/80 font-mono">
           <span>batch={params.batch_size}, ubatch={params.ubatch_size}</span>
           <Badge variant="secondary" className="text-[9px] font-bold">
-            ubatch &le; batch 防崩溃保证
+            {t('ubatch ≤ batch 防崩溃保证')}
           </Badge>
         </div>
 
@@ -146,7 +146,7 @@ export const HardwareMonitorPanel: React.FC = () => {
           {savedFeedback && (
             <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-bold">
               <CheckCircle2 className="h-4 w-4" />
-              <span>参数已同步生效</span>
+              <span>{t('参数已同步生效')}</span>
             </div>
           )}
           <Button
@@ -154,7 +154,7 @@ export const HardwareMonitorPanel: React.FC = () => {
             onClick={handleSave}
             className="font-bold text-xs h-8.5 px-4 rounded-lg shadow-xs"
           >
-            保存调优参数
+            {t('保存调优参数')}
           </Button>
         </div>
       </div>

@@ -20,6 +20,8 @@ export interface HardwareSpec {
   cpu_cores?: number
   cpu_threads?: number
   os_platform?: 'win32' | 'darwin' | 'linux'
+  total_ram_gb?: number
+  used_ram_gb?: number
 }
 
 /**
@@ -105,6 +107,8 @@ export interface ModelItem {
   recommended?: boolean
   vramNeededGB?: number
   capabilities?: string[]
+  intelligenceLevel?: 1 | 2 | 3 | 4 | number
+  customParams?: Partial<RuntimeParams>
 }
 
 /**

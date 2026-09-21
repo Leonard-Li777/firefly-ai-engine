@@ -81,7 +81,9 @@ function normalizeRawModel(raw: any): ModelItem {
     vramNeededGB: estimateRequiredVRAM(raw.totalSize),
     downloadId: raw.downloadId,
     isDownloaded: false,
-    recommended: Boolean(raw.recommended)
+    recommended: Boolean(raw.recommended),
+    intelligenceLevel: raw.intelligenceLevel,
+    capabilities: raw.capabilities
   }
 }
 

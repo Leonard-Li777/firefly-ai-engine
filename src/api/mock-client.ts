@@ -41,7 +41,7 @@ export class MockApiClient implements IEngineApiClient {
     },
     {
       id: 'vulkan',
-      name: 'Vulkan (GPU通用)',
+      name: 'Vulkan',
       backend: 'vulkan',
       matchType: 'compatible',
       matchText: '兼容模式',
@@ -54,21 +54,10 @@ export class MockApiClient implements IEngineApiClient {
       name: 'CPU (AVX2)',
       backend: 'cpu',
       matchType: 'fallback',
-      matchText: '保底模式',
+      matchText: '保底',
       performance: '无显卡加速',
       isCurrent: false,
       isInstalled: true
-    },
-    {
-      id: 'metal',
-      name: 'Apple Metal',
-      backend: 'metal',
-      matchType: 'best',
-      matchText: 'macOS 专属',
-      performance: '100% 统一内存利用',
-      isCurrent: false,
-      isInstalled: false,
-      downloadSizeMb: 120
     }
   ]
 
@@ -143,7 +132,9 @@ export class MockApiClient implements IEngineApiClient {
         is_integrated: false,
         cpu_cores: 8,
         cpu_threads: 16,
-        os_platform: 'win32'
+        os_platform: 'win32',
+        total_ram_gb: 32.0,
+        used_ram_gb: 9.4
       },
       downgrade_info: this.currentBackend === 'vulkan' ? this.downgradeInfo : undefined,
       runtime_params: this.runtimeParams
@@ -345,6 +336,27 @@ export class MockApiClient implements IEngineApiClient {
   async updateRuntimeParams(params: Partial<RuntimeParams>): Promise<{ success: boolean }> {
     this.runtimeParams = { ...this.runtimeParams, ...params }
     return { success: true }
+  }
+
+  async switchModel(modelId: string, source?: string): Promise<{ success: boolean; currentModel: string }> {
+    const currentLang = useI18nStore.getState().currentLanguage || 'zh-CN'
+    const meta = modelMetadataService.getModelById(modelId, currentLang, source)
+    const targetName = meta ? meta.name : modelId
+    this.currentModel = targetName
+    return {
+      success: true,
+      currentModel: this.currentModel
+    }
+  }
+
+  async resetDowngrade(): Promise<{ status: string }> {
+    this.downgradeInfo = {
+      downgraded: false,
+      reason: '',
+      message: '',
+      driver_update_url: ''
+    }
+    return { status: 'ok' }
   }
 }
 

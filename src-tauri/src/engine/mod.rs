@@ -40,6 +40,8 @@ pub struct HardwareSummary {
     pub cpu_cores: Option<usize>,
     pub cpu_threads: Option<usize>,
     pub os_platform: Option<String>,
+    pub total_ram_gb: Option<f64>,
+    pub used_ram_gb: Option<f64>,
 }
 
 /// 核心引擎协调器（单例）
@@ -115,6 +117,8 @@ impl EngineCoordinator {
                     cpu_cores: Some(resources.cpu.cores as usize),
                     cpu_threads: Some(resources.cpu.threads as usize),
                     os_platform: Some(std::env::consts::OS.to_string()),
+                    total_ram_gb: Some(resources.memory.total_gb()),
+                    used_ram_gb: Some(((resources.memory.total_mb.saturating_sub(resources.memory.available_mb)) as f64) / 1024.0),
                 }
             }
             Err(_) => HardwareSummary {
@@ -127,6 +131,8 @@ impl EngineCoordinator {
                 cpu_cores: None,
                 cpu_threads: None,
                 os_platform: Some(std::env::consts::OS.to_string()),
+                total_ram_gb: None,
+                used_ram_gb: None,
             },
         };
 

@@ -20,14 +20,14 @@
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.90 0.01 240);
-  --input: oklch(0.90 0.01 240);
+  --border: oklch(0.84 0.02 240);
+  --input: oklch(0.84 0.02 240);
   --ring: oklch(0.55 0.18 240);
   --radius: 0.75rem;
 }
 
 .dark {
-  /* Desktop 海洋蓝 (Ocean Blue) - 暗色模式：沉稳深邃海洋夜蓝，低反差极轻微光切线 */
+  /* Desktop 海洋蓝 (Ocean Blue) - 暗色模式：沉稳深邃海洋夜蓝，提升边框反差与轮廓清晰度 */
   --background: oklch(0.14 0.035 250);
   --foreground: oklch(0.96 0.02 250);
   --card: oklch(0.17 0.04 250);
@@ -44,8 +44,8 @@
   --accent-foreground: oklch(0.96 0.02 250);
   --destructive: oklch(0.396 0.141 25.723);
   --destructive-foreground: oklch(0.98 0.01 240);
-  --border: oklch(0.22 0.035 250);
-  --input: oklch(0.22 0.035 250);
+  --border: oklch(0.30 0.045 250);
+  --input: oklch(0.30 0.045 250);
   --ring: oklch(0.62 0.16 230);
 }
 
