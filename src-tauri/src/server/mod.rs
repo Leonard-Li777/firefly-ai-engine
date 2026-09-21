@@ -10,9 +10,11 @@ use axum::{
     Router,
     routing::any,
 };
+use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::net::TcpListener;
+use tokio::sync::Mutex;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
 use tracing::info;
@@ -20,7 +22,7 @@ use tracing::info;
 use crate::config::find_available_port;
 use crate::engine::EngineCoordinator;
 
-use self::api::{management_routes, AppState};
+use self::api::{management_routes, resolve_model_downloader, AppState};
 use self::proxy::{ProxyState, proxy_handler};
 
 /// 启动 Axum HTTP 服务
@@ -32,8 +34,17 @@ pub async fn start_server(
 ) -> Result<u16> {
     let port = find_available_port(base_port).await;
 
+    // 初始化下载任务管理器
+    let download_tasks = Arc::new(Mutex::new(HashMap::new()));
+
+    // 查找 llama-model-download 可执行文件路径
+    let model_downloader_path = Arc::new(resolve_model_downloader());
+    info!("llama-model-download 路径: {:?}", model_downloader_path);
+
     let app_state = AppState {
         coordinator: coordinator.clone(),
+        download_tasks,
+        model_downloader_path,
     };
 
     // CORS 配置（允许主程序前端跨域调用）

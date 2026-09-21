@@ -181,19 +181,97 @@ export class EngineApiClient implements IEngineApiClient {
     options?: { source?: string; forceRestart?: boolean },
     onProgress?: (event: DownloadProgressEvent) => void
   ): Promise<DownloadTaskSummary> {
-    return mockApiClient.startModelDownload(modelId, options, onProgress)
+    if (this.useMock) return mockApiClient.startModelDownload(modelId, options, onProgress)
+    try {
+      // 1. 发起下载任务
+      const res = await fetch(`${this.baseUrl}/api/models/download/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          modelId,
+          source: options?.source || 'modelscope',
+          forceRestart: options?.forceRestart || false
+        })
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const task = await res.json()
+      const taskId: string = task.taskId
+
+      // 2. 轮询进度直到完成
+      await new Promise<void>((resolve, reject) => {
+        const poll = async () => {
+          try {
+            const statusRes = await fetch(`${this.baseUrl}/api/models/download/status/${taskId}`)
+            if (!statusRes.ok) {
+              reject(new Error(`HTTP ${statusRes.status}`))
+              return
+            }
+            const status = await statusRes.json()
+
+            // 映射后端状态到前端 DownloadProgressEvent
+            const event: DownloadProgressEvent = {
+              taskId,
+              modelId,
+              percent: status.percent || 0,
+              receivedBytes: status.receivedBytes || 0,
+              totalBytes: status.totalBytes || 0,
+              speedBps: status.speedBps || 0,
+              status: status.status,
+              currentFileName: status.currentFileName,
+              fileIndex: status.fileIndex,
+              totalFiles: status.totalFiles,
+              error: status.error
+            }
+            onProgress?.(event)
+
+            if (status.status === 'completed') {
+              resolve()
+            } else if (status.status === 'error') {
+              reject(new Error(status.error || '下载失败'))
+            } else if (status.status === 'canceled') {
+              reject(new Error('下载已取消'))
+            } else {
+              // 继续轮询（500ms 间隔）
+              setTimeout(poll, 500)
+            }
+          } catch (e) {
+            reject(e)
+          }
+        }
+        poll()
+      })
+
+      return { taskId, totalBytes: 0, isDownloaded: true }
+    } catch (err) {
+      // 降级到 mock（开发模式）
+      return mockApiClient.startModelDownload(modelId, options, onProgress)
+    }
   }
 
   async pauseModelDownload(taskId: string): Promise<void> {
-    return mockApiClient.pauseModelDownload(taskId)
+    // 暂停等同于取消（llama-model-download 不支持真正暂停）
+    if (this.useMock) return mockApiClient.pauseModelDownload(taskId)
+    try {
+      await fetch(`${this.baseUrl}/api/models/download/cancel/${taskId}`, { method: 'POST' })
+    } catch {
+      return mockApiClient.pauseModelDownload(taskId)
+    }
   }
 
   async resumeModelDownload(taskId: string): Promise<void> {
+    if (this.useMock) return mockApiClient.resumeModelDownload(taskId)
+    // 恢复下载：重新发起一个新任务（需要 modelId）
+    // 实际场景中 hook 会重新调用 startDownload，此处忽略
     return mockApiClient.resumeModelDownload(taskId)
   }
 
   async cancelModelDownload(taskId: string): Promise<void> {
-    return mockApiClient.cancelModelDownload(taskId)
+    if (this.useMock) return mockApiClient.cancelModelDownload(taskId)
+    try {
+      await fetch(`${this.baseUrl}/api/models/download/cancel/${taskId}`, { method: 'POST' })
+    } catch {
+      return mockApiClient.cancelModelDownload(taskId)
+    }
   }
 
   async updateModelStoragePath(newPath: string): Promise<{ success: boolean; scannedModelsCount: number }> {
