@@ -85,15 +85,41 @@ impl HardwareDetector {
 
         let executable = if cfg!(windows) { "fastfetch.exe" } else { "fastfetch" };
 
-        // 1. {app_dir}/bin/fastfetch
-        let candidates = vec![
-            self.app_dir.join("bin").join(executable),
-            self.app_dir.join("bin").join(format!("fastfetch-{}", executable)),
-            // 向上一级（安装到 extraResources/bin/firefly-ai-engine 时）
-            self.app_dir.parent().map(|p| p.join("bin").join(executable)).unwrap_or_default(),
-            // 开发环境：项目根 bin 目录
-            PathBuf::from("bin").join(executable),
-        ];
+        let mut candidates = Vec::new();
+
+        // 辅助收集指定 bin 目录下的候选路径 (支持直接存放及 fastfetch-* 子目录)
+        let mut collect_from_bin = |bin_dir: PathBuf| {
+            if bin_dir.exists() {
+                candidates.push(bin_dir.join(executable));
+                candidates.push(bin_dir.join(format!("fastfetch-{}", executable)));
+                if let Ok(entries) = std::fs::read_dir(&bin_dir) {
+                    for entry in entries.flatten() {
+                        let path = entry.path();
+                        if path.is_dir() {
+                            let name = path.file_name().unwrap_or_default().to_string_lossy();
+                            if name.starts_with("fastfetch-") {
+                                candidates.push(path.join(executable));
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        // 1. 标准拓扑 build/extraResources/bin/ 与 extraResources/bin/
+        collect_from_bin(self.app_dir.join("build").join("extraResources").join("bin"));
+        collect_from_bin(self.app_dir.join("extraResources").join("bin"));
+        collect_from_bin(self.app_dir.join("bin"));
+
+        // 2. 向上一级（集成到 desktop build/extraResources/bin/firefly-ai-engine 时）
+        if let Some(parent) = self.app_dir.parent() {
+            collect_from_bin(parent.join("build").join("extraResources").join("bin"));
+            collect_from_bin(parent.join("bin"));
+        }
+
+        // 3. 开发环境根目录
+        collect_from_bin(PathBuf::from("build").join("extraResources").join("bin"));
+        collect_from_bin(PathBuf::from("bin"));
 
         for candidate in &candidates {
             if candidate.exists() {
@@ -115,7 +141,7 @@ impl HardwareDetector {
             }
         }
 
-        // 2. PATH 中查找
+        // 4. PATH 中查找
         if let Ok(output) = std::process::Command::new(if cfg!(windows) { "where" } else { "which" })
             .arg(executable)
             .output()

@@ -27,7 +27,11 @@ Thumbs.db
 *.suo
 *.ntvs*
 *.njsproj
-*.sln
+# Resource build artifacts
+build/presetResources/
+build/extraResources/bin/
+build/extraResources/models/
+!build/extraResources/configs/
 *.sw?
 languages/api.json
 languages/translates/*/*.bak.*.json

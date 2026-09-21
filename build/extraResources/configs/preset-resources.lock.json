@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "updatedAt": "2026-09-21",
+  "resourcePackage": {
+    "repo": "Leonard-Li777/firefly-resources",
+    "containerTag": "resources",
+    "branch": "main"
+  },
+  "resources": {
+    "fastfetch": {
+      "version": "2.62.0"
+    },
+    "llama-model-download": {
+      "version": "1.0.0"
+    }
+  }
+}

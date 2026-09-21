@@ -14,6 +14,7 @@
     "dev": "node scripts/run.js vite",
     "dev:ui": "node scripts/run.js vite",
     "dev:tauri": "cargo tauri dev",
+    "setup-resources": "node scripts/setup-extra-resources.cjs",
     "build": "tsc && node scripts/run.js vite build",
     "preview": "node scripts/run.js vite preview",
     "test": "node scripts/run.js vitest run",

@@ -284,37 +284,70 @@ fn collect_ggufs_recursive(
 }
 
 /// 获取 llama-model-download 可执行文件路径
-/// 查找顺序：当前 exe 目录/models/bin/ → 相对 models/bin/ → PATH
+/// 查找顺序（严格遵循 1:1 目录拓扑）：
+/// 1. 当前 exe 同级或父级 build/extraResources/bin/llama-model-download-*/llama-model-download[.exe]
+/// 2. 开发态相对路径 build/extraResources/bin/llama-model-download-*/...
+/// 3. 回退 PATH
 pub fn resolve_model_downloader() -> PathBuf {
-    // 1. 当前可执行文件旁的 models/bin/
+    let exe_name = if cfg!(windows) { "llama-model-download.exe" } else { "llama-model-download" };
+
+    // 辅助闭包：在指定 bin 目录下检索以 llama-model-download- 开头的子目录
+    let find_in_bin_dir = |bin_dir: PathBuf| -> Option<PathBuf> {
+        if !bin_dir.exists() {
+            return None;
+        }
+        if let Ok(entries) = std::fs::read_dir(&bin_dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.is_dir() {
+                    let dir_name = path.file_name().unwrap_or_default().to_string_lossy();
+                    if dir_name.starts_with("llama-model-download-") {
+                        let target = path.join(exe_name);
+                        if target.exists() {
+                            return Some(target);
+                        }
+                    }
+                }
+            }
+        }
+        // 兜底直接存放在 bin 根目录
+        let direct = bin_dir.join(exe_name);
+        if direct.exists() {
+            return Some(direct);
+        }
+        None
+    };
+
+    // 1. 基于当前可执行文件目录向上探测
     if let Ok(exe) = std::env::current_exe() {
-        let candidate = exe.parent().unwrap_or(std::path::Path::new("."))
-            .join("models").join("bin").join(if cfg!(windows) {
-                "llama-model-download.exe"
+        let mut cur = exe.parent();
+        for _ in 0..4 {
+            if let Some(dir) = cur {
+                // 打包环境资源目录 (resource_dir 或 extraResources)
+                if let Some(found) = find_in_bin_dir(dir.join("build").join("extraResources").join("bin")) {
+                    return found;
+                }
+                if let Some(found) = find_in_bin_dir(dir.join("extraResources").join("bin")) {
+                    return found;
+                }
+                if let Some(found) = find_in_bin_dir(dir.join("bin")) {
+                    return found;
+                }
+                cur = dir.parent();
             } else {
-                "llama-model-download"
-            });
-        if candidate.exists() {
-            return candidate;
+                break;
+            }
         }
     }
 
-    // 2. 相对路径（开发模式）
-    let dev_candidate = PathBuf::from("models").join("bin").join(if cfg!(windows) {
-        "llama-model-download.exe"
-    } else {
-        "llama-model-download"
-    });
-    if dev_candidate.exists() {
-        return dev_candidate;
+    // 2. 开发模式相对路径：build/extraResources/bin/
+    let dev_bin = PathBuf::from("build").join("extraResources").join("bin");
+    if let Some(found) = find_in_bin_dir(dev_bin) {
+        return found;
     }
 
     // 3. 回退到 PATH 中查找
-    PathBuf::from(if cfg!(windows) {
-        "llama-model-download.exe"
-    } else {
-        "llama-model-download"
-    })
+    PathBuf::from(exe_name)
 }
 
 // ─────────────────────── 路由 Handler ───────────────────────
