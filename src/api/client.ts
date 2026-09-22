@@ -77,9 +77,19 @@ export interface IEngineApiClient {
   updateRuntimeParams(params: Partial<RuntimeParams>): Promise<{ success: boolean }>
 
   /**
+   * 持久化保存模型专属启动参数到后端 config.json
+   */
+  saveModelParams(modelId: string, params: RuntimeParams): Promise<{ success: boolean }>
+
+  /**
+   * 从后端 config.json 读取模型专属启动参数
+   */
+  getModelParams(modelId: string): Promise<RuntimeParams | undefined>
+
+  /**
    * 激活/热切换当前运行的模型
    */
-  switchModel(modelId: string, source?: string): Promise<{ success: boolean; currentModel: string }>
+  switchModel(modelId: string, source?: string, localPath?: string, modelName?: string): Promise<{ success: boolean; currentModel: string }>
 
   /**
    * 重置驱动降级状态（用户升级驱动后重新检测）
@@ -433,19 +443,53 @@ export class EngineApiClient implements IEngineApiClient {
     }
   }
 
-  async switchModel(modelId: string, source?: string): Promise<{ success: boolean; currentModel: string }> {
-    if (this.useMock) return mockApiClient.switchModel(modelId, source)
+  async saveModelParams(modelId: string, params: RuntimeParams): Promise<{ success: boolean }> {
+    if (this.useMock) return mockApiClient.saveModelParams(modelId, params)
+    await this.ensureReady()
+    try {
+      const res = await fetch(`${this.baseUrl}/api/models/params`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ modelId, params })
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      return await res.json()
+    } catch {
+      return mockApiClient.saveModelParams(modelId, params)
+    }
+  }
+
+  async getModelParams(modelId: string): Promise<RuntimeParams | undefined> {
+    if (this.useMock) return mockApiClient.getModelParams(modelId)
+    await this.ensureReady()
+    try {
+      const res = await fetch(`${this.baseUrl}/api/models/params?modelId=${encodeURIComponent(modelId)}`)
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data = await res.json()
+      return data.params
+    } catch {
+      return mockApiClient.getModelParams(modelId)
+    }
+  }
+
+  async switchModel(
+    modelId: string,
+    source?: string,
+    localPath?: string,
+    modelName?: string
+  ): Promise<{ success: boolean; currentModel: string }> {
+    if (this.useMock) return mockApiClient.switchModel(modelId, source, localPath, modelName)
     await this.ensureReady()
     try {
       const res = await fetch(`${this.baseUrl}/api/models/switch`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ modelId, source })
+        body: JSON.stringify({ modelId, source, localPath, modelName })
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       return await res.json()
     } catch {
-      return mockApiClient.switchModel(modelId, source)
+      return mockApiClient.switchModel(modelId, source, localPath, modelName)
     }
   }
 

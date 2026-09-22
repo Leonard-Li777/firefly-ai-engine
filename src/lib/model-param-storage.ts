@@ -3,14 +3,21 @@ import { RuntimeParams } from '../api/types'
 const STORAGE_KEY_PREFIX = 'firefly_model_params_'
 
 /**
- * 默认基础运行时参数
+ * 默认基础运行时参数（覆盖全部 11 项可调超参）
  */
 export const DEFAULT_MODEL_PARAMS: RuntimeParams = {
   n_gpu_layers: 24,
   threads: 8,
   ctx_size: 4096,
   batch_size: 512,
-  ubatch_size: 256
+  ubatch_size: 256,
+  cache_type_k: 'f16',
+  cache_type_v: 'f16',
+  parallel: 1,
+  temp: 0.7,
+  top_p: 0.95,
+  top_k: 40,
+  repeat_penalty: 1.1
 }
 
 /**

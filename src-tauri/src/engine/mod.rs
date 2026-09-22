@@ -61,6 +61,8 @@ pub struct EngineCoordinator {
     pub active_engine: Arc<Mutex<Option<InstalledEngine>>>,
     /// 当前加载的模型路径
     pub active_model: Arc<Mutex<Option<String>>>,
+    /// 当前加载的模型配置名（用于 --alias 等）
+    pub active_model_name: Arc<Mutex<Option<String>>>,
 }
 
 impl EngineCoordinator {
@@ -84,6 +86,7 @@ impl EngineCoordinator {
             proxy_state,
             active_engine: Arc::new(Mutex::new(None)),
             active_model: Arc::new(Mutex::new(None)),
+            active_model_name: Arc::new(Mutex::new(None)),
         })
     }
 
@@ -200,68 +203,126 @@ impl EngineCoordinator {
         // 2. 确定模型文件
         let config = self.config.lock().await;
         let models_dir = config.models_dir.clone();
-        let custom_layers = config.custom_gpu_layers;
-        let custom_ctx = config.custom_context_window;
         drop(config);
 
         let active_model_lock = self.active_model.lock().await.clone();
+        let all_ggufs = crate::server::api::collect_all_ggufs(&models_dir);
+
         let model_path = if let Some(m) = active_model_lock {
             let p = std::path::PathBuf::from(&m);
             if p.is_absolute() && p.exists() {
                 p
-            } else {
+            } else if models_dir.join(&m).exists() {
                 models_dir.join(&m)
+            } else {
+                // 若 active_model 存储的是模型 ID 或相对名，在深度扫描列表中匹配
+                let m_lower = m.to_lowercase();
+                let m_tail = m_lower.split('/').last().unwrap_or(&m_lower);
+                let m_clean = m_tail.split(':').next().unwrap_or(m_tail).replace("-gguf", "");
+
+                all_ggufs.iter().find(|(_, name)| {
+                    let name_lower = name.to_lowercase();
+                    !name_lower.starts_with("mmproj") && (name_lower.contains(&m_clean) || m_clean.contains(&name_lower.replace(".gguf", "")))
+                }).map(|(p, _)| p.clone())
+                .or_else(|| {
+                    // 降级为已下载的第一个非 mmproj gguf
+                    all_ggufs.iter().find(|(_, name)| !name.to_lowercase().starts_with("mmproj")).map(|(p, _)| p.clone())
+                })
+                .ok_or_else(|| anyhow::anyhow!("未找到模型文件: {}，且当前存储目录中没有可用 GGUF 模型", m))?
             }
         } else {
-            // 扫描 models_dir 下第一个 gguf 模型
-            let mut found = None;
-            if let Ok(entries) = std::fs::read_dir(&models_dir) {
-                for entry in entries.flatten() {
-                    let path = entry.path();
-                    if path.extension().and_then(|s| s.to_str()) == Some("gguf") {
-                        found = Some(path);
-                        break;
-                    }
-                }
-            }
-            found.unwrap_or_else(|| models_dir.join("default.gguf"))
+            // 没有指定激活模型时，从模型目录中挑选第一个已下载就绪的非 mmproj 模型
+            all_ggufs.iter().find(|(_, name)| !name.to_lowercase().starts_with("mmproj"))
+                .map(|(p, _)| p.clone())
+                .ok_or_else(|| anyhow::anyhow!("当前模型存储目录下未检测到任何 GGUF 模型文件，请先在模型管理中下载模型"))?
         };
+
+        if !model_path.exists() {
+            return Err(anyhow::anyhow!("模型文件不存在: {}，请在模型管理中重新下载", model_path.display()));
+        }
 
         let model_str = model_path.to_string_lossy().to_string();
         *self.active_model.lock().await = Some(model_str.clone());
+
+        // 自动探测同级或 models_dir 目录下的多模态投影器 mmproj
+        let detected_mmproj = {
+            let parent_dir = model_path.parent();
+            all_ggufs.iter().find(|(p, name)| {
+                let n_lower = name.to_lowercase();
+                n_lower.starts_with("mmproj") && (p.parent() == parent_dir || p.parent() == Some(&models_dir))
+            }).map(|(p, _)| p.to_string_lossy().to_string())
+        };
 
         let model_size_gb = std::fs::metadata(&model_path).map(|m| m.len() as f64 / (1024.0 * 1024.0 * 1024.0)).unwrap_or(1.0);
         let model_lower = model_str.to_lowercase();
         let is_minicpm5 = model_lower.contains("minicpm5");
         let is_nanbeige4 = model_lower.contains("nanbeige4");
 
+        // 提取模型专属参数（若用户在前端配置并保存）
+        let active_name_lock = self.active_model_name.lock().await.clone();
+        let fallback_stem = model_path
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or("default")
+            .to_string();
+        let model_alias = active_name_lock.clone().unwrap_or_else(|| fallback_stem.clone());
+
+        let (user_model_params, custom_layers, custom_ctx) = {
+            let config = self.config.lock().await;
+            // 尝试通过活跃模型名、别名、文件名 stem 或原始 key 查找配置
+            let found = config.model_custom_params.get(&model_str)
+                .or_else(|| active_name_lock.as_ref().and_then(|n| config.model_custom_params.get(n)))
+                .or_else(|| config.model_custom_params.get(&fallback_stem))
+                .cloned();
+            (found, config.custom_gpu_layers, config.custom_context_window)
+        };
+
+        let force_gpu_layers = user_model_params.as_ref().map(|p| p.n_gpu_layers).or(custom_layers);
+        let context_window = user_model_params.as_ref().map(|p| p.ctx_size).or(custom_ctx);
+        let force_batch_size = user_model_params.as_ref().map(|p| p.batch_size);
+        let force_ubatch_size = user_model_params.as_ref().map(|p| p.ubatch_size);
+
         let model_info = ModelInfo {
-            param_b: 1.5,
+            param_b: if model_size_gb < 1.0 { 0.8 } else if model_size_gb < 2.0 { 1.5 } else { 2.5 },
             size_gb: model_size_gb,
             quantization: "Q4_K_M".to_string(),
-            is_multimodal: false,
-            context_window: custom_ctx,
-            force_gpu_layers: custom_layers,
-            force_batch_size: None,
-            force_ubatch_size: None,
+            is_multimodal: detected_mmproj.is_some(),
+            context_window,
+            force_gpu_layers,
+            force_batch_size,
+            force_ubatch_size,
             force_cpu: selected_engine.tier == crate::hardware::gpu_info::AccelerationTier::Cpu,
             enable_thinking: false,
             is_minicpm5,
             is_nanbeige4,
-            mmproj_path: None,
+            mmproj_path: detected_mmproj,
             dspark_path: None,
             draft_path: None,
+            cache_type_k: user_model_params.as_ref().map(|p| p.cache_type_k.clone()),
+            cache_type_v: user_model_params.as_ref().map(|p| p.cache_type_v.clone()),
+            parallel: user_model_params.as_ref().map(|p| p.parallel),
+            temp: user_model_params.as_ref().map(|p| p.temp),
+            top_p: user_model_params.as_ref().map(|p| p.top_p),
+            top_k: user_model_params.as_ref().map(|p| p.top_k),
+            repeat_penalty: user_model_params.as_ref().map(|p| p.repeat_penalty),
             is_production: !cfg!(debug_assertions),
         };
 
         let backend_str = selected_engine.tier.as_str();
-        let params = ParamBuilder::compute(&resources, &model_info, backend_str);
+        let mut params = ParamBuilder::compute(&resources, &model_info, backend_str);
+
+        // 如果用户配置了线程数，覆盖 ParamBuilder 计算的 threads
+        if let Some(ref ump) = user_model_params {
+            if ump.threads > 0 {
+                params.threads = ump.threads;
+            }
+        }
 
         // 端口隔离：llama-server 使用独立内部端口，避免与 Axum HTTP 网关冲突
         let gateway_port = self.active_port.lock().await.unwrap_or(38400);
         let llama_internal_port = find_available_port(gateway_port + 1).await;
 
-        let args = ParamBuilder::to_args(&params, llama_internal_port, &model_str, "default", Some(&model_info));
+        let args = ParamBuilder::to_args(&params, llama_internal_port, &model_str, &model_alias, Some(&model_info));
 
         // 记录活跃引擎
         *self.active_engine.lock().await = Some(selected_engine.clone());

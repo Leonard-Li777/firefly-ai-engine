@@ -18,9 +18,6 @@ import {
   Music,
   GraduationCap,
   Settings2,
-  ChevronDown,
-  ChevronUp,
-  RotateCcw,
   AlertCircle
 } from 'lucide-react'
 import { Card } from '../ui/card'
@@ -29,20 +26,15 @@ import { Button } from '../ui/button'
 import { Progress } from '../ui/progress'
 import { Label } from '../ui/label'
 import { Switch } from '../ui/switch'
-import { Slider } from '../ui/slider'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../ui/tabs'
 import { useEngineStore } from '../../stores/engine-store'
 import { useModelDownload } from '../../hooks/use-model-download'
-import { ModelItem, ModelSource, RuntimeParams } from '../../api/types'
+import { ModelItem, ModelSource } from '../../api/types'
 import { formatFileSize, formatSpeed, calculateRemainingTime } from '../../lib/utils'
 import { useI18nStore, t } from '../../lib/i18n'
 import { sortModels } from '../../lib/model-sorting'
-import {
-  getModelCustomParams,
-  saveModelCustomParams,
-  clearModelCustomParams,
-  DEFAULT_MODEL_PARAMS
-} from '../../lib/model-param-storage'
+import { getDisplayRelativeModelPath } from '../../lib/path-utils'
+import { ModelParamDrawer } from './model-param-drawer'
 
 export interface IntelligenceLevelItem {
   label: string
@@ -89,12 +81,22 @@ interface ModelCardProps {
   model: ModelItem
   isCurrent: boolean
   isEx?: boolean
-  onActivate: (modelId: string, source?: string) => Promise<boolean | void>
+  onActivate: (modelId: string, source?: string, localPath?: string, modelName?: string) => Promise<boolean | void>
+  onOpenConfig: (model: ModelItem) => void
 }
 
-const ModelCardItem: React.FC<ModelCardProps> = ({ model, isCurrent, isEx = false, onActivate }) => {
+const ModelCardItem: React.FC<ModelCardProps> = ({ model, isCurrent, isEx = false, onActivate, onOpenConfig }) => {
   const { t } = useI18nStore()
-  const { fetchModels, runtimeParams, updateRuntimeParams } = useEngineStore()
+  const { fetchModels, modelsDir } = useEngineStore()
+  const handleDownloadComplete = React.useCallback(() => {
+    fetchModels()
+  }, [fetchModels])
+
+  const dlOptions = React.useMemo(() => ({
+    source: model.source,
+    onDownloadComplete: handleDownloadComplete
+  }), [model.source, handleDownloadComplete])
+
   const {
     state: dl,
     startDownload,
@@ -102,36 +104,21 @@ const ModelCardItem: React.FC<ModelCardProps> = ({ model, isCurrent, isEx = fals
     resumeDownload,
     cancelDownload,
     retryDownload
-  } = useModelDownload(model.id, {
-    source: model.source,
-    onDownloadComplete: () => {
-      fetchModels()
-    }
-  })
+  } = useModelDownload(model.id, dlOptions)
 
   // 如果有投机采样加速模型 (dspark)，为其初始化下载控制
   const dsparkId = model.dspark as string | undefined
   const {
     state: dsparkDl,
     startDownload: startDsparkDownload
-  } = useModelDownload(dsparkId || '', {
-    source: model.source,
-    onDownloadComplete: () => {
-      fetchModels()
-    }
-  })
+  } = useModelDownload(dsparkId || '', dlOptions)
 
-  // 展开专属参数配置状态
-  const [showConfig, setShowConfig] = useState(false)
   const [isActivating, setIsActivating] = useState(false)
-  const [customParams, setCustomParams] = useState<RuntimeParams>(() => {
-    const saved = getModelCustomParams(model.id)
-    return { ...DEFAULT_MODEL_PARAMS, ...runtimeParams, ...saved }
-  })
-  const [hasSavedConfig, setHasSavedConfig] = useState<boolean>(() => {
-    return !!getModelCustomParams(model.id)
-  })
-  const [configSavedTip, setConfigSavedTip] = useState(false)
+
+  // 格式化展示相对路径（不显示 base 存储路径）
+  const displayRelativePath = React.useMemo(() => {
+    return getDisplayRelativeModelPath(model.localPath, modelsDir)
+  }, [model.localPath, modelsDir])
 
   // 剩余时间文字
   const remainingTime = calculateRemainingTime(dl.receivedBytes, dl.totalBytes, dl.speedBps)
@@ -157,33 +144,11 @@ const ModelCardItem: React.FC<ModelCardProps> = ({ model, isCurrent, isEx = fals
     return list
   }, [model.capabilities, model.isMultiModal])
 
-  // 保存专属参数
-  const handleSaveParams = async () => {
-    saveModelCustomParams(model.id, customParams)
-    setHasSavedConfig(true)
-    setConfigSavedTip(true)
-    setTimeout(() => setConfigSavedTip(false), 2500)
-
-    // 如果当前就是运行中的模型，即时应用到运行时
-    if (isCurrent) {
-      await updateRuntimeParams(customParams)
-    }
-  }
-
-  // 重置专属参数
-  const handleResetParams = () => {
-    clearModelCustomParams(model.id)
-    setCustomParams({ ...DEFAULT_MODEL_PARAMS, ...runtimeParams })
-    setHasSavedConfig(false)
-    setConfigSavedTip(true)
-    setTimeout(() => setConfigSavedTip(false), 2000)
-  }
-
   // 处理激活/设为生效
   const handleActivate = async () => {
     try {
       setIsActivating(true)
-      await onActivate(model.id, model.source)
+      await onActivate(model.id, model.source, model.localPath, model.name)
     } finally {
       setIsActivating(false)
     }
@@ -306,108 +271,6 @@ const ModelCardItem: React.FC<ModelCardProps> = ({ model, isCurrent, isEx = fals
         )}
       </div>
 
-      {/* 展开的自定义模型参数配置表单 */}
-      {showConfig && (
-        <div className="mt-4 pt-4 border-t border-border/60 space-y-3.5 bg-muted/20 -mx-5 -mb-2 p-5 rounded-b-2xl">
-          <div className="flex items-center justify-between">
-            <Label className="text-xs font-bold text-foreground flex items-center gap-1.5">
-              <Settings2 className="h-3.5 w-3.5 text-primary" />
-              <span>{t('模型专属启动参数')}</span>
-            </Label>
-            {configSavedTip && (
-              <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 animate-in fade-in">
-                <Check className="h-3 w-3" />
-                {t('参数已即时生效并保存')}
-              </span>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-            {/* GPU 卸载层数 */}
-            <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">{t('GPU 卸载层数 (ngl)')}</span>
-                <span className="font-mono font-bold">{customParams.n_gpu_layers}</span>
-              </div>
-              <Slider
-                value={customParams.n_gpu_layers}
-                min={0}
-                max={99}
-                step={1}
-                onChange={val => setCustomParams(p => ({ ...p, n_gpu_layers: val }))}
-              />
-            </div>
-
-            {/* 上下文长度 */}
-            <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">{t('上下文长度 (ctx_size)')}</span>
-                <span className="font-mono font-bold">{customParams.ctx_size}</span>
-              </div>
-              <Slider
-                value={customParams.ctx_size}
-                min={1024}
-                max={32768}
-                step={1024}
-                onChange={val => setCustomParams(p => ({ ...p, ctx_size: val }))}
-              />
-            </div>
-
-            {/* 物理线程数 */}
-            <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">{t('CPU 线程数 (threads)')}</span>
-                <span className="font-mono font-bold">{customParams.threads}</span>
-              </div>
-              <Slider
-                value={customParams.threads}
-                min={1}
-                max={32}
-                step={1}
-                onChange={val => setCustomParams(p => ({ ...p, threads: val }))}
-              />
-            </div>
-
-            {/* 批处理 Batch Size */}
-            <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">{t('批处理 Batch Size')}</span>
-                <span className="font-mono font-bold">{customParams.batch_size}</span>
-              </div>
-              <Slider
-                value={customParams.batch_size}
-                min={64}
-                max={2048}
-                step={64}
-                onChange={val => setCustomParams(p => ({ ...p, batch_size: val }))}
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/40">
-            {hasSavedConfig && (
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 text-xs px-2.5 text-muted-foreground hover:text-foreground"
-                onClick={handleResetParams}
-              >
-                <RotateCcw className="h-3 w-3 mr-1" />
-                {t('恢复默认')}
-              </Button>
-            )}
-            <Button
-              size="sm"
-              variant="default"
-              className="h-7 text-xs px-3 font-bold"
-              onClick={handleSaveParams}
-            >
-              {t('保存参数')}
-            </Button>
-          </div>
-        </div>
-      )}
-
       {/* 底部操作与下载状态 */}
       <div className="mt-4 pt-3 border-t border-border/60">
         {dl.isDownloading || dl.isPaused ? (
@@ -462,13 +325,13 @@ const ModelCardItem: React.FC<ModelCardProps> = ({ model, isCurrent, isEx = fals
           </div>
         ) : isDownloaded ? (
           <div className="space-y-2.5">
-            {/* 已就绪模型的物理绝对路径展示 */}
-            {model.localPath && (
+            {/* 已就绪模型的模型相对路径展示（不显示 base 存储路径） */}
+            {displayRelativePath && (
               <div className="flex items-center justify-between gap-1.5 text-[11px] font-mono text-muted-foreground bg-muted/40 px-2 py-1 rounded-md border border-border/50">
                 <div className="flex items-center gap-1 min-w-0 flex-1">
                   <HardDrive className="h-3 w-3 shrink-0 text-muted-foreground/80" />
-                  <span className="truncate select-all" title={model.localPath}>
-                    {model.localPath}
+                  <span className="truncate select-all" title={displayRelativePath}>
+                    {displayRelativePath}
                   </span>
                 </div>
               </div>
@@ -481,7 +344,7 @@ const ModelCardItem: React.FC<ModelCardProps> = ({ model, isCurrent, isEx = fals
               </div>
 
               <div className="flex items-center gap-2">
-              {/* 配置了 DSpark 加速模型且未下载时，【下载加速模型】按钮始终显示 */}
+              {/* 配置了 DSpark 加速模型且未下载时，【下载加速模型】按钮显示 */}
               {dsparkId && !isDsparkDownloaded && (
                 <Button
                   size="sm"
@@ -496,27 +359,21 @@ const ModelCardItem: React.FC<ModelCardProps> = ({ model, isCurrent, isEx = fals
                 </Button>
               )}
 
-              {/* 参数配置按钮：hover 时才显示（如果展开状态则始终保持显示） */}
-              <Button
-                size="sm"
-                variant="outline"
-                className={`h-7.5 text-xs px-2.5 rounded-lg border-border hover:border-primary/60 font-bold flex items-center gap-1 transition-all ${
-                  showConfig ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                }`}
-                onClick={() => setShowConfig(!showConfig)}
-              >
-                <Settings2 className="h-3.5 w-3.5 text-primary" />
-                <span>{t('参数配置')}</span>
-                {showConfig ? <ChevronUp className="h-3 w-3 ml-0.5" /> : <ChevronDown className="h-3 w-3 ml-0.5" />}
-              </Button>
+              {/* 参数配置按钮：仅已下载且显存未超标 (!isEx) 时才显示（hover 时展示） */}
+              {!isEx && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7.5 text-xs px-2.5 rounded-lg border-border hover:border-primary/60 font-bold flex items-center gap-1 transition-all opacity-0 group-hover:opacity-100"
+                  onClick={() => onOpenConfig(model)}
+                >
+                  <Settings2 className="h-3.5 w-3.5 text-primary" />
+                  <span>{t('参数配置')}</span>
+                </Button>
+              )}
 
-              {/* 激活/运行中状态：总是显示 */}
-              {isCurrent ? (
-                <Badge className="bg-primary text-primary-foreground font-bold px-3 py-1 rounded-full text-xs shadow-xs border border-primary/40 shrink-0">
-                  <Check className="h-3 w-3 mr-1 shrink-0" />
-                  {t('运行中')}
-                </Badge>
-              ) : isEx ? (
+              {/* 当前运行模型不显示额外徽标，已由右上角「已激活」角标标识；非当前模型展示【激活】按钮 */}
+              {isCurrent ? null : isEx ? (
                 <Button
                   size="sm"
                   variant="outline"
@@ -553,21 +410,7 @@ const ModelCardItem: React.FC<ModelCardProps> = ({ model, isCurrent, isEx = fals
               )}
             </span>
             <div className="flex items-center gap-2">
-              {/* 预设参数按钮：hover 时才显示（如果展开状态则始终保持显示） */}
-              <Button
-                size="sm"
-                variant="outline"
-                className={`h-7.5 text-xs px-2.5 rounded-lg border-border hover:border-primary/60 font-bold flex items-center gap-1 transition-all ${
-                  showConfig ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                }`}
-                onClick={() => setShowConfig(!showConfig)}
-              >
-                <Settings2 className="h-3.5 w-3.5" />
-                <span>{t('预设参数')}</span>
-                {showConfig ? <ChevronUp className="h-3 w-3 ml-0.5" /> : <ChevronDown className="h-3 w-3 ml-0.5" />}
-              </Button>
-
-              {/* 下载模型按钮：未超标时 hover 显示，超标时禁用显示 */}
+              {/* 未下载模型只显示下载按钮，若显存不足则显示禁用显存不足按钮，绝不显示任何参数配置按钮 */}
               {isEx ? (
                 <Button
                   size="sm"
@@ -602,6 +445,7 @@ export const ModelListPanel: React.FC = () => {
   const { models, fetchModels, activeModelKey, switchModel, regionInfo, engineStatus } = useEngineStore()
   const [activeSource, setActiveSource] = useState<ModelSource>('modelscope')
   const [showRecommendedOnly, setShowRecommendedOnly] = useState<boolean>(true)
+  const [drawerModel, setDrawerModel] = useState<ModelItem | null>(null)
 
   useEffect(() => {
     fetchModels()
@@ -717,9 +561,10 @@ export const ModelListPanel: React.FC = () => {
                     model={model}
                     isCurrent={isCurrent}
                     isEx={model.isEx}
-                    onActivate={async (id, source) => {
-                      await switchModel(id, source)
+                    onActivate={async (id, source, localPath, modelName) => {
+                      await switchModel(id, source, localPath, modelName || model.name)
                     }}
+                    onOpenConfig={targetModel => setDrawerModel(targetModel)}
                   />
                 )
               })}
@@ -727,6 +572,19 @@ export const ModelListPanel: React.FC = () => {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* 模型专属启动参数滑出侧边栏抽屉 */}
+      <ModelParamDrawer
+        isOpen={!!drawerModel}
+        model={drawerModel}
+        isCurrentRunning={
+          drawerModel
+            ? activeModelKey === `${drawerModel.id}@${drawerModel.source}` &&
+              engineStatus?.status === 'ready'
+            : false
+        }
+        onClose={() => setDrawerModel(null)}
+      />
     </Card>
   )
 }

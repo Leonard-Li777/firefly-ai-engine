@@ -139,11 +139,44 @@ function formatLaunchCommandMultiLine(rawCmd: string): string {
   return lines.join('\n')
 }
 
-/** 解析日志行，着色 [cmd] / [stdout] / [stderr] 与关键词 */
-function colorize(line: string): { prefix: string; prefixClass: string; rest: string; restClass: string } {
+/** 日志级别分类结果 */
+interface LogLineInfo {
+  level: 'error' | 'warn' | 'success' | 'info' | 'cmd' | 'default'
+  prefix: string
+  prefixClass: string
+  rest: string
+  restClass: string
+}
+
+/** 错误关键词（含 llama.cpp 常见致命错误信号） */
+const ERROR_PATTERNS = [
+  'error', 'failed', 'fatal', 'abort', 'panic',
+  'ggml_assert', 'assertion failed', "couldn't bind", 'failed to bind',
+  'unable to', 'load failed', 'out of memory', 'cuda error', 'vulkan allocation failed',
+  'missing', 'invalid', 'cannot find', 'exit code'
+]
+/** 警告关键词 */
+const WARN_PATTERNS = ['warning', 'warn', 'deprecated']
+/** 成功关键词 */
+const SUCCESS_PATTERNS = ['listening', 'ready', 'server is listening', 'loaded', 'success']
+
+/** 匹配任意关键词（不区分大小写） */
+function matchAny(text: string, patterns: string[]): boolean {
+  const lower = text.toLowerCase()
+  return patterns.some(p => lower.includes(p))
+}
+
+/**
+ * 解析日志行：分级（error/warn/success/info）并返回着色样式
+ * - [cmd] 行：琥珀色命令卡片（视图层单独渲染卡片，此处仅兜底）
+ * - [stderr] 行：默认按 stderr 语义偏红，若含错误关键词则整行标红
+ * - [stdout] 行：按关键词分级（listening/ready = 成功，error = 错误，warning = 警告）
+ */
+function colorize(line: string): LogLineInfo {
   if (line.startsWith('[cmd]')) {
     const rest = line.slice(5)
     return {
+      level: 'cmd',
       prefix: '[cmd]',
       prefixClass: 'text-amber-300 font-black tracking-wide',
       rest,
@@ -152,26 +185,30 @@ function colorize(line: string): { prefix: string; prefixClass: string; rest: st
   }
   if (line.startsWith('[stdout]')) {
     const rest = line.slice(8)
-    // 高亮关键信号词
-    const restClass = rest.includes('listening') || rest.includes('ready')
-      ? 'text-emerald-400'
-      : rest.includes('error') || rest.includes('Error')
-        ? 'text-red-400'
-        : rest.includes('warning') || rest.includes('Warning')
-          ? 'text-amber-400'
-          : 'text-slate-300'
-    return { prefix: '[stdout]', prefixClass: 'text-sky-400 font-bold', rest, restClass }
+    if (matchAny(rest, ERROR_PATTERNS)) {
+      return { level: 'error', prefix: '[stdout]', prefixClass: 'text-red-400 font-bold', rest, restClass: 'text-red-300 font-semibold' }
+    }
+    if (matchAny(rest, WARN_PATTERNS)) {
+      return { level: 'warn', prefix: '[stdout]', prefixClass: 'text-amber-400 font-bold', rest, restClass: 'text-amber-300' }
+    }
+    if (matchAny(rest, SUCCESS_PATTERNS)) {
+      return { level: 'success', prefix: '[stdout]', prefixClass: 'text-emerald-400 font-bold', rest, restClass: 'text-emerald-300 font-semibold' }
+    }
+    return { level: 'info', prefix: '[stdout]', prefixClass: 'text-sky-400 font-bold', rest, restClass: 'text-slate-300' }
   }
   if (line.startsWith('[stderr]')) {
     const rest = line.slice(8)
-    const restClass = rest.includes('error') || rest.includes('Error') || rest.includes('GGML')
-      ? 'text-red-400'
-      : rest.includes('warning')
-        ? 'text-amber-400'
-        : 'text-slate-400'
-    return { prefix: '[stderr]', prefixClass: 'text-rose-400 font-bold', rest, restClass }
+    // stderr 中的错误信号（GGML_ASSERT / error / failed 等）整行标红加粗
+    if (matchAny(rest, ERROR_PATTERNS)) {
+      return { level: 'error', prefix: '[stderr]', prefixClass: 'text-red-400 font-black', rest, restClass: 'text-red-300 font-semibold' }
+    }
+    if (matchAny(rest, WARN_PATTERNS)) {
+      return { level: 'warn', prefix: '[stderr]', prefixClass: 'text-amber-400 font-bold', rest, restClass: 'text-amber-300' }
+    }
+    // 无关键词的 stderr 输出保持默认灰（非所有 stderr 都是错误）
+    return { level: 'default', prefix: '[stderr]', prefixClass: 'text-rose-400/70 font-bold', rest, restClass: 'text-slate-400' }
   }
-  return { prefix: '', prefixClass: '', rest: line, restClass: 'text-slate-400' }
+  return { level: 'default', prefix: '', prefixClass: '', rest: line, restClass: 'text-slate-400' }
 }
 
 export const EngineLogsView: React.FC = () => {
@@ -183,6 +220,8 @@ export const EngineLogsView: React.FC = () => {
   const [copiedCmdIdx, setCopiedCmdIdx] = useState<number | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [showSearch, setShowSearch] = useState(false)
+  /** 级别过滤：all = 全部，error = 仅错误，warn = 仅警告 */
+  const [levelFilter, setLevelFilter] = useState<'all' | 'error' | 'warn'>('all')
   /** 启动命令换行展开模式：默认 false (单行紧凑 + 超长省略截断)；true = 展开完整排版多行 */
   const [cmdMultiLine, setCmdMultiLine] = useState<boolean>(false)
   /** 记录单条卡片用户显式点击展开/折叠状态 */
@@ -232,17 +271,27 @@ export const EngineLogsView: React.FC = () => {
     setAutoScroll(true)
   }
 
-  // 过滤日志
-  const filteredLogs = searchQuery.trim()
-    ? logs.filter(line => line.toLowerCase().includes(searchQuery.toLowerCase()))
-    : logs
+  // 过滤日志：搜索关键词 + 级别过滤（错误/警告）
+  const filteredLogs = logs.filter(line => {
+    if (searchQuery.trim() && !line.toLowerCase().includes(searchQuery.toLowerCase())) return false
+    if (levelFilter !== 'all') {
+      const { level } = colorize(line)
+      if (levelFilter === 'error' && level !== 'error') return false
+      if (levelFilter === 'warn' && level !== 'warn' && level !== 'error') return false
+    }
+    return true
+  })
+
+  // 统计错误与警告条数（供过滤徽章展示）
+  const errorCount = logs.reduce((acc, l) => acc + (colorize(l).level === 'error' ? 1 : 0), 0)
+  const warnCount = logs.reduce((acc, l) => acc + (colorize(l).level === 'warn' ? 1 : 0), 0)
 
   return (
     <div className="flex flex-col flex-1 min-h-0 w-full h-full gap-3">
       {/* 顶部工具栏 */}
       <div className="flex items-center justify-between gap-3 flex-wrap shrink-0">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-800/80 border border-slate-700/60 text-sky-400">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 border border-primary/20 text-primary">
             <Terminal className="h-4.5 w-4.5" />
           </div>
           <div>
@@ -253,29 +302,73 @@ export const EngineLogsView: React.FC = () => {
               llama-server · stdout / stderr
             </p>
           </div>
-          <Badge variant="outline" className="text-[10px] font-bold font-mono border-slate-600/60 text-slate-400 bg-slate-800/40">
+          <Badge variant="outline" className="text-[10px] font-bold font-mono border-border/80 text-muted-foreground bg-muted/40">
             {filteredLogs.length} {t('条')}
           </Badge>
           {logsLoading && (
-            <RefreshCw className="h-3.5 w-3.5 text-sky-400 animate-spin" />
+            <RefreshCw className="h-3.5 w-3.5 text-primary animate-spin" />
           )}
         </div>
 
         <div className="flex items-center gap-2">
+          {/* 级别过滤：全部 / 错误 / 警告 */}
+          <div className="flex items-center rounded-xl border border-border/80 bg-muted/40 p-0.5 gap-0.5">
+            <button
+              className={`h-8 px-2.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                levelFilter === 'all'
+                  ? 'bg-card text-foreground shadow-xs border border-border/60'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+              onClick={() => setLevelFilter('all')}
+            >
+              {t('全部')}
+            </button>
+            <button
+              className={`h-8 px-2.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                levelFilter === 'error'
+                  ? 'bg-red-500/15 text-red-600 dark:text-red-300 border border-red-500/40 shadow-xs'
+                  : 'text-muted-foreground hover:text-red-500 dark:hover:text-red-300'
+              }`}
+              onClick={() => setLevelFilter(levelFilter === 'error' ? 'all' : 'error')}
+            >
+              {t('错误')}
+              {errorCount > 0 && (
+                <span className="px-1 min-w-4 h-4 rounded bg-red-500 text-white text-[9px] font-black flex items-center justify-center">
+                  {errorCount}
+                </span>
+              )}
+            </button>
+            <button
+              className={`h-8 px-2.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                levelFilter === 'warn'
+                  ? 'bg-amber-500/15 text-amber-600 dark:text-amber-300 border border-amber-500/40 shadow-xs'
+                  : 'text-muted-foreground hover:text-amber-500 dark:hover:text-amber-300'
+              }`}
+              onClick={() => setLevelFilter(levelFilter === 'warn' ? 'all' : 'warn')}
+            >
+              {t('警告')}
+              {warnCount > 0 && (
+                <span className="px-1 min-w-4 h-4 rounded bg-amber-500 text-white text-[9px] font-black flex items-center justify-center">
+                  {warnCount}
+                </span>
+              )}
+            </button>
+          </div>
+
           {/* 搜索 */}
           {showSearch ? (
-            <div className="flex items-center gap-1.5 bg-slate-800/80 border border-slate-600/60 rounded-xl px-3 h-9">
-              <Search className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+            <div className="flex items-center gap-1.5 bg-card border border-border/80 rounded-xl px-3 h-9 shadow-xs">
+              <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
               <input
                 type="text"
-                className="bg-transparent text-xs text-foreground outline-none w-36 sm:w-48 placeholder:text-slate-500"
+                className="bg-transparent text-xs text-foreground outline-none w-36 sm:w-48 placeholder:text-muted-foreground/60"
                 placeholder={t('搜索日志...')}
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 autoFocus
               />
               <button
-                className="text-slate-400 hover:text-foreground"
+                className="text-muted-foreground hover:text-foreground cursor-pointer"
                 onClick={() => { setShowSearch(false); setSearchQuery('') }}
               >
                 <X className="h-3.5 w-3.5" />
@@ -285,7 +378,7 @@ export const EngineLogsView: React.FC = () => {
             <Button
               size="sm"
               variant="outline"
-              className="h-9 px-3 text-xs font-bold border-slate-700/60 bg-slate-800/60 hover:bg-slate-700/60 text-slate-300 gap-1.5"
+              className="h-9 px-3 text-xs font-bold gap-1.5"
               onClick={() => setShowSearch(true)}
             >
               <Search className="h-3.5 w-3.5" />
@@ -297,10 +390,10 @@ export const EngineLogsView: React.FC = () => {
           <Button
             size="sm"
             variant="outline"
-            className={`h-9 px-3 text-xs font-bold border-slate-700/60 gap-1.5 transition-colors ${
+            className={`h-9 px-3 text-xs font-bold gap-1.5 transition-colors ${
               cmdMultiLine
-                ? 'bg-amber-500/15 border-amber-500/40 text-amber-300 hover:bg-amber-500/25'
-                : 'bg-slate-800/60 hover:bg-slate-700/60 text-slate-300'
+                ? 'bg-amber-500/10 border-amber-500/40 text-amber-600 dark:text-amber-300 hover:bg-amber-500/20'
+                : ''
             }`}
             onClick={() => {
               setCmdMultiLine(prev => !prev)
@@ -310,9 +403,9 @@ export const EngineLogsView: React.FC = () => {
             title={cmdMultiLine ? t('当前：默认展开多行排版') : t('当前：默认单行省略')}
           >
             {cmdMultiLine ? (
-              <WrapText className="h-3.5 w-3.5 text-amber-300" />
+              <WrapText className="h-3.5 w-3.5 text-amber-600 dark:text-amber-300" />
             ) : (
-              <AlignLeft className="h-3.5 w-3.5 text-slate-400" />
+              <AlignLeft className="h-3.5 w-3.5 text-muted-foreground" />
             )}
             <span className="hidden sm:block">
               {cmdMultiLine ? t('多行展开') : t('单行折叠')}
@@ -323,14 +416,14 @@ export const EngineLogsView: React.FC = () => {
           <Button
             size="sm"
             variant="outline"
-            className="h-9 px-3 text-xs font-bold border-slate-700/60 bg-slate-800/60 hover:bg-slate-700/60 text-slate-300 gap-1.5"
+            className="h-9 px-3 text-xs font-bold gap-1.5"
             onClick={handleCopyAll}
             disabled={logs.length === 0}
           >
             {copied ? (
               <>
-                <Check className="h-3.5 w-3.5 text-emerald-400" />
-                <span className="hidden sm:block">{t('已复制')}</span>
+                <Check className="h-3.5 w-3.5 text-emerald-500" />
+                <span className="hidden sm:block text-emerald-600 dark:text-emerald-400">{t('已复制')}</span>
               </>
             ) : (
               <>
@@ -344,7 +437,7 @@ export const EngineLogsView: React.FC = () => {
           <Button
             size="sm"
             variant="outline"
-            className="h-9 px-3 text-xs font-bold border-rose-700/50 bg-rose-900/20 hover:bg-rose-800/30 text-rose-400 gap-1.5"
+            className="h-9 px-3 text-xs font-bold border-destructive/40 bg-destructive/10 hover:bg-destructive/20 text-destructive gap-1.5"
             onClick={handleClear}
             disabled={logs.length === 0}
           >
@@ -496,11 +589,22 @@ export const EngineLogsView: React.FC = () => {
                 )
               }
 
-              const { prefix, prefixClass, rest, restClass } = colorize(line)
+              const { level, prefix, prefixClass, rest, restClass } = colorize(line)
               return (
-                <div key={idx} className="flex items-start gap-2 group hover:bg-slate-800/30 px-1 py-0.5 rounded transition-colors whitespace-pre">
-                  {/* 行号 */}
-                  <span className="text-slate-600 select-none shrink-0 w-8 text-right text-[10px] leading-[1.6]">
+                <div
+                  key={idx}
+                  className={`flex items-start gap-2 group px-1 py-0.5 rounded transition-colors whitespace-pre ${
+                    level === 'error'
+                      ? 'bg-red-950/40 border-l-2 border-red-500/80 hover:bg-red-950/60'
+                      : 'hover:bg-slate-800/30'
+                  }`}
+                >
+                  {/* 行号：错误行红色以呼应整行强调 */}
+                  <span
+                    className={`select-none shrink-0 w-8 text-right text-[10px] leading-[1.6] ${
+                      level === 'error' ? 'text-red-500/80' : 'text-slate-600'
+                    }`}
+                  >
                     {idx + 1}
                   </span>
                   {/* 日志内容 */}

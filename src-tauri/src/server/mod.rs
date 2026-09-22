@@ -65,6 +65,9 @@ pub async fn start_server(
         .route("/v1/{*path}", any(proxy_handler).with_state(proxy_state.clone()))
         // 根路径健康探测
         .route("/health", axum::routing::get(|| async { "ok" }))
+        // 兜底：其余所有路径（/、/index.html 等 llama-server WebUI 资源）
+        // 全部转发给内部 llama-server，使网关端口即可直接访问聊天 WebUI
+        .fallback(any(proxy_handler).with_state(proxy_state.clone()))
         .layer(cors)
         .layer(TraceLayer::new_for_http());
 

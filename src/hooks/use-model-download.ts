@@ -58,28 +58,34 @@ export function useModelDownload(
   const taskIdRef = useRef<string | undefined>(undefined)
   const optionsRef = useRef(options)
   const modelIdRef = useRef(initialModelId)
+  const sourceRef = useRef(options.source)
 
   useEffect(() => {
     optionsRef.current = options
+    sourceRef.current = options.source
   })
 
   useEffect(() => {
-    if (initialModelId && modelIdRef.current !== initialModelId) {
+    if (initialModelId && (modelIdRef.current !== initialModelId || sourceRef.current !== options.source)) {
       modelIdRef.current = initialModelId
-      setState(prev => ({
-        ...prev,
-        modelId: initialModelId,
-        source: options.source,
-        status: 'pending',
-        progress: 0,
-        receivedBytes: 0,
-        totalBytes: 0,
-        speedBps: 0,
-        error: undefined,
-        taskId: undefined,
-        isDownloading: false,
-        isPaused: false
-      }))
+      sourceRef.current = options.source
+      setState(prev => {
+        if (prev.modelId === initialModelId && prev.source === options.source) return prev
+        return {
+          ...prev,
+          modelId: initialModelId,
+          source: options.source,
+          status: 'pending',
+          progress: 0,
+          receivedBytes: 0,
+          totalBytes: 0,
+          speedBps: 0,
+          error: undefined,
+          taskId: undefined,
+          isDownloading: false,
+          isPaused: false
+        }
+      })
     }
   }, [initialModelId, options.source])
 

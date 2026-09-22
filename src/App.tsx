@@ -6,10 +6,9 @@ import {
   Boxes,
   Sliders,
   LayoutDashboard,
-  Server,
-  Activity,
   Terminal,
-  Bot
+  Bot,
+  ExternalLink
 } from 'lucide-react'
 import { Badge } from './components/ui/badge'
 import { Switch } from './components/ui/switch'
@@ -20,9 +19,11 @@ import { EngineTable } from './components/engine/engine-table'
 import { ThinkingModeCard } from './components/engine/thinking-mode-card'
 import { ModelStorageConfig } from './components/storage/model-storage-config'
 import { ModelListPanel } from './components/model/model-list-panel'
+import { ThirdPartyApiView } from './components/api/third-party-api-view'
 import { EngineLogsView } from './components/logs/engine-logs-view'
 import { LocalChatView } from './components/chat/local-chat-view'
 import { LanguageSelector } from './components/common/language-selector'
+import { Footer } from './components/common/Footer'
 import { ToastContainer } from './components/common/Toast'
 import { useEngineStore } from './stores/engine-store'
 import { useI18nStore } from './lib/i18n'
@@ -43,8 +44,9 @@ export const App: React.FC = () => {
   // 1: 'dashboard' (概览仪表板)
   // 2: 'models' (模型库与存储管理)
   // 3: 'engine' (计算引擎与硬件环境)
-  // 4: 'logs' (运行日志)
-  // 5: 'chat' (与本地AI私密聊天)
+  // 4: 'chat' (与本地AI私密聊天)
+  // 5: 'logs' (运行日志)
+  // 6: 'api' (第三方应用对接与 API 地址，置于最后)
   const [activeMainTab, setActiveMainTab] = useState<string>('dashboard')
 
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
@@ -122,14 +124,52 @@ export const App: React.FC = () => {
 
         {/* 顶部右侧快捷状态与设置 */}
         <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap justify-end shrink-0">
-          {/* 服务状态指示 */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 text-xs font-bold shrink-0">
-            <span className="relative flex h-2 w-2 shrink-0">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-            <span>{engineStatus?.status === 'ready' ? `${t('就绪')} (${engineStatus.port || 38400})` : t('启动中...')}</span>
-          </div>
+          {/* 服务状态指示：根据真实状态区分展示（就绪/启动中/启动失败/未启动） */}
+          {(() => {
+            const st = engineStatus?.status
+            const isReady = st === 'ready'
+            const isError = st === 'error'
+            const isStopped = st === 'stopped' || !st
+            const chipCls = isReady
+              ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
+              : isError
+                ? 'bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/30'
+                : isStopped
+                  ? 'bg-muted/40 text-muted-foreground border-border/70'
+                  : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30'
+            const dotCls = isReady
+              ? 'bg-emerald-400 opacity-75'
+              : isError
+                ? 'bg-red-400 opacity-75'
+                : isStopped
+                  ? 'bg-muted-foreground/50'
+                  : 'bg-amber-400 opacity-75'
+            const statusText = isReady
+              ? `${t('就绪')} (${engineStatus?.port || 38400})`
+              : isError
+                ? t('启动失败')
+                : isStopped
+                  ? t('未启动')
+                  : t('启动中...')
+            return (
+              <div
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-bold shrink-0 ${chipCls}`}
+                title={engineStatus?.last_error || undefined}
+              >
+                <span className={`relative flex h-2 w-2 shrink-0 ${isReady || isError || !isStopped ? '' : 'opacity-100'}`}>
+                  {isReady || isError || !isStopped ? (
+                    <>
+                      <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${dotCls}`}></span>
+                      <span className={`relative inline-flex rounded-full h-2 w-2 ${dotCls.replace(' opacity-75', '')}`}></span>
+                    </>
+                  ) : (
+                    <span className={`relative inline-flex rounded-full h-2 w-2 ${dotCls}`}></span>
+                  )}
+                </span>
+                <span>{statusText}</span>
+              </div>
+            )
+          })()}
 
           {/* 语言切换下拉 */}
           <LanguageSelector />
@@ -211,6 +251,15 @@ export const App: React.FC = () => {
                 <Terminal className="h-4 w-4 text-inherit" />
                 <span>{t('运行日志')}</span>
               </TabsTrigger>
+
+              {/* Tab 6: 第三方应用对接与 API 地址（最后） */}
+              <TabsTrigger
+                value="api"
+                className="px-4 h-full rounded-none font-bold text-sm data-[state=active]:border-b-[3px] data-[state=active]:border-primary data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=inactive]:text-muted-foreground transition-all border-b-[3px] border-transparent hover:text-foreground hover:bg-muted/30 relative flex items-center gap-2 shadow-none shrink-0"
+              >
+                <ExternalLink className="h-4 w-4 text-inherit" />
+                <span>{t('第三方对接')}</span>
+              </TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
@@ -236,14 +285,14 @@ export const App: React.FC = () => {
         {/* Tab 2: 模型管理与存储 */}
         {activeMainTab === 'models' && (
           <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in duration-200">
-            {/* 1. 模型存储路径自定义配置与扫描 */}
-            <section>
-              <ModelStorageConfig />
-            </section>
-
-            {/* 2. 双轨模型生态与高速下载、独立启动参数配置 */}
+            {/* 1. 双轨模型生态与高速下载、独立启动参数配置 */}
             <section>
               <ModelListPanel />
+            </section>
+
+            {/* 2. 模型存储路径自定义配置与扫描（置于最后） */}
+            <section>
+              <ModelStorageConfig />
             </section>
           </div>
         )}
@@ -281,24 +330,17 @@ export const App: React.FC = () => {
             <EngineLogsView />
           </div>
         )}
+
+        {/* Tab 6: 第三方应用对接与 API 地址（置于最后） */}
+        {activeMainTab === 'api' && (
+          <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in duration-200">
+            <ThirdPartyApiView />
+          </div>
+        )}
       </main>
 
-      {/* 底部信息栏：在非 chat 模式下展示，chat 模式下隐藏以最大化聊天视口 */}
-      {activeMainTab !== 'chat' && (
-        <footer className="shrink-0 border-t border-border/70 py-2.5 px-6 text-center text-xs text-muted-foreground/70 font-medium bg-muted/20">
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            <span className="flex items-center gap-1">
-              <Server className="h-3.5 w-3.5" />
-              {t('基准服务监听')}: 127.0.0.1:{engineStatus?.port || 38400}
-            </span>
-            <span>•</span>
-            <span className="flex items-center gap-1">
-              <Activity className="h-3.5 w-3.5" />
-              {t('协议契约: 标准 OpenAI 兼容')} (/v1/chat/completions)
-            </span>
-          </div>
-        </footer>
-      )}
+      {/* 底部信息栏：全局常驻展示模型状态、引擎警告与思考模式开关 */}
+      <Footer onNavigateTab={setActiveMainTab} />
       {/* 全局 Toast 通知容器 */}
       <ToastContainer />
     </div>

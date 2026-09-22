@@ -257,3 +257,54 @@ export function resolveToAbsolutePath(p: string, baseDir?: string): string {
   const full = `${normBase}${sep}${normRel}`
   return isWin ? full.replace(/\//g, '\\') : full.replace(/\\/g, '/')
 }
+
+/**
+ * 获取用于在模型卡片等 UI 界面展示的相对路径（不显示 base 存储路径）
+ *
+ * 示例：
+ * baseDir: C:\Users\lilun\AppData\Roaming\com.firefly.ai-engine\models
+ * localPath: C:\Users\lilun\AppData\Roaming\com.firefly.ai-engine\models\hub\models\OpenBMB\MiniCPM5-2B-gguf\MiniCPM5-2B-Q4_K_M.gguf
+ * 输出: hub\models\OpenBMB\MiniCPM5-2B-gguf\MiniCPM5-2B-Q4_K_M.gguf
+ *
+ * 规则：
+ * 1. 若 localPath 以 baseDir 开头（大小写不敏感且统一斜杠比对），剥离 baseDir 前缀及前导斜杠；
+ * 2. 若 localPath 未匹配 baseDir，但包含 hub/models 或 models-- 目录标志，从标志处截取后续相对路径；
+ * 3. 若均无法提取，则回退为单纯文件名；
+ * 4. Windows 下统一格式化为反斜杠 `\`，POSIX 下保持正斜杠 `/`。
+ */
+export function getDisplayRelativeModelPath(localPath?: string, baseDir?: string): string {
+  if (!localPath || typeof localPath !== 'string') return ''
+
+  const isWin = isWindowsPlatform()
+
+  // 标准化统一转为正斜杠方便处理
+  const normLocal = localPath.replace(/\\/g, '/').trim()
+
+  // 1. 如果传入了 baseDir，尝试精准前缀剥离
+  if (baseDir && typeof baseDir === 'string') {
+    const normBase = baseDir.replace(/\\/g, '/').replace(/\/+$/, '').trim()
+    if (normBase && normLocal.toLowerCase().startsWith(normBase.toLowerCase())) {
+      const rel = normLocal.slice(normBase.length).replace(/^\/+/, '')
+      if (rel) {
+        return isWin ? rel.replace(/\//g, '\\') : rel
+      }
+    }
+  }
+
+  // 2. 启发式探测特征目录 hub/models/ 或 models--
+  const msIndex = normLocal.toLowerCase().indexOf('hub/models/')
+  if (msIndex !== -1) {
+    const rel = normLocal.slice(msIndex)
+    return isWin ? rel.replace(/\//g, '\\') : rel
+  }
+
+  const hfIndex = normLocal.toLowerCase().indexOf('models--')
+  if (hfIndex !== -1) {
+    const rel = normLocal.slice(hfIndex)
+    return isWin ? rel.replace(/\//g, '\\') : rel
+  }
+
+  // 3. 回退为仅文件名
+  const fileName = normLocal.split('/').pop() || normLocal
+  return fileName
+}

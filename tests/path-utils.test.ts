@@ -3,7 +3,8 @@ import {
   isWindowsPlatform,
   hasNonAsciiOrSpaces,
   toShortPathOnWindows,
-  resolveModelArgForCmd
+  resolveModelArgForCmd,
+  getDisplayRelativeModelPath
 } from '../src/lib/path-utils'
 
 describe('PathUtils & Windows 8.3 Short Path Conversion', () => {
@@ -55,5 +56,44 @@ describe('PathUtils & Windows 8.3 Short Path Conversion', () => {
     const hfPathWithSpace = 'D:\\AI_Models\\My Models Folder\\model.gguf'
     const result = resolveModelArgForCmd(hfPathWithSpace, baseDir, 'huggingface')
     expect(result).toBeDefined()
+  })
+
+  describe('getDisplayRelativeModelPath', () => {
+    it('应成功剥离 base 路径并输出标准相对路径', () => {
+      const baseDir = 'C:\\Users\\lilun\\AppData\\Roaming\\com.firefly.ai-engine\\models'
+      const localPath = 'C:\\Users\\lilun\\AppData\\Roaming\\com.firefly.ai-engine\\models\\hub\\models\\OpenBMB\\MiniCPM5-2B-gguf\\MiniCPM5-2B-Q4_K_M.gguf'
+      const res = getDisplayRelativeModelPath(localPath, baseDir)
+      if (isWindowsPlatform()) {
+        expect(res).toBe('hub\\models\\OpenBMB\\MiniCPM5-2B-gguf\\MiniCPM5-2B-Q4_K_M.gguf')
+      } else {
+        expect(res).toBe('hub/models/OpenBMB/MiniCPM5-2B-gguf/MiniCPM5-2B-Q4_K_M.gguf')
+      }
+    })
+
+    it('当未传入 baseDir 时能够根据 hub/models 特征自动剥离并返回相对路径', () => {
+      const localPath = 'E:/some_path/models/hub/models/unsloth/Qwen3.5-0.8B-GGUF/Qwen3.5-0.8B-UD-Q4_K_XL.gguf'
+      const res = getDisplayRelativeModelPath(localPath)
+      if (isWindowsPlatform()) {
+        expect(res).toBe('hub\\models\\unsloth\\Qwen3.5-0.8B-GGUF\\Qwen3.5-0.8B-UD-Q4_K_XL.gguf')
+      } else {
+        expect(res).toBe('hub/models/unsloth/Qwen3.5-0.8B-GGUF/Qwen3.5-0.8B-UD-Q4_K_XL.gguf')
+      }
+    })
+
+    it('当未传入 baseDir 时能够根据 models-- 特征自动剥离并返回相对路径', () => {
+      const localPath = 'C:\\custom\\dir\\models--unsloth--Qwen3.5-0.8B-GGUF\\snapshots\\hash\\model.gguf'
+      const res = getDisplayRelativeModelPath(localPath)
+      if (isWindowsPlatform()) {
+        expect(res).toBe('models--unsloth--Qwen3.5-0.8B-GGUF\\snapshots\\hash\\model.gguf')
+      } else {
+        expect(res).toBe('models--unsloth--Qwen3.5-0.8B-GGUF/snapshots/hash/model.gguf')
+      }
+    })
+
+    it('普通无特征平铺文件回退为单纯文件名', () => {
+      const localPath = 'C:\\temp\\isolated_model.gguf'
+      const res = getDisplayRelativeModelPath(localPath)
+      expect(res).toBe('isolated_model.gguf')
+    })
   })
 })

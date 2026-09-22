@@ -105,9 +105,23 @@ pub struct StartModelDownloadReq {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct SaveModelParamsReq {
+    pub model_id: String,
+    pub params: crate::config::store::ModelCustomParams,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GetModelParamsQuery {
+    pub model_id: String,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct SwitchModelReq {
     pub model_id: String,
+    pub model_name: Option<String>,
     pub source: Option<String>,
+    pub local_path: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -125,6 +139,23 @@ fn new_task_id() -> String {
         .unwrap_or_default()
         .as_millis();
     format!("task_{}", ts)
+}
+
+/// 从文件名中提取标准化量化标识（如 q4_k_m, q4_k_xl, q5_k_xl 等，去除 ud- 前缀，纯小写）
+fn extract_quant_tag_from_name(name: &str) -> Option<String> {
+    let lower = name.to_lowercase();
+    // 优先匹配包含下划线的标准量化（如 q4_k_m, ud-q4_k_xl, iq3_xxs）
+    let patterns = [
+        "q4_k_xl", "q5_k_xl", "q6_k_xl", "q4_k_m", "q4_k_s", "q5_k_m", "q5_k_s", "q6_k",
+        "q8_0", "q4_0", "q4_1", "q5_0", "q5_1", "q2_k", "q3_k_l", "q3_k_m", "q3_k_s",
+        "bf16", "f16", "f32"
+    ];
+    for p in patterns {
+        if lower.contains(p) {
+            return Some(p.to_string());
+        }
+    }
+    None
 }
 
 /// 扫描本地模型目录（支持 HuggingFace 和 ModelScope 两种目录结构）
@@ -202,13 +233,33 @@ fn scan_and_merge_models(models_dir: &std::path::Path, source_filter: Option<&st
             // 尝试与预设模型列表匹配
             for model in default_models.iter_mut() {
                 if let Some(id) = model.get("id").and_then(|v| v.as_str()) {
-                    let id_lower = id.to_lowercase();
+                    // 解析 repo:tag 结构（对齐 desktop ModelResolver）：
+                    // tag 存在时文件名必须同时包含 repo 尾段与量化 tag，防止同 repo 不同量化误判
+                    let (repo_part, tag_part) = match id.split_once(':') {
+                        Some((r, t)) => (r, Some(t)),
+                        None => {
+                            let quant = model.get("quant").and_then(|v| v.as_str());
+                            (id, quant)
+                        },
+                    };
+                    let id_lower = repo_part.to_lowercase();
                     let name_lower = file_name.to_lowercase();
+                    // tag 标准化：去除 UD- 前缀后小写比较
+                    let tag_clean = tag_part.map(|t| t.to_lowercase().trim_start_matches("ud-").to_string());
+                    
+                    // 从物理文件名中提取量化标记
+                    let file_quant = extract_quant_tag_from_name(&name_lower);
+                    let tag_ok = match (&tag_clean, &file_quant) {
+                        (Some(expected), Some(actual)) => expected == actual,
+                        (Some(expected), None) => name_lower.contains(expected.as_str()),
+                        (None, _) => true,
+                    };
+
                     // 多种匹配策略：文件名包含模型 id 的最后一段，或 id 包含文件名前缀
                     let id_tail = id_lower.split('/').last().unwrap_or(&id_lower);
-                    if name_lower.contains(id_tail)
-                        || id_lower.contains(&name_lower.replace(".gguf", ""))
-                        || name_lower.replace(".gguf", "").contains(&id_tail.replace("-gguf", ""))
+                    if tag_ok
+                        && (name_lower.contains(id_tail)
+                            || name_lower.replace(".gguf", "").contains(&id_tail.replace("-gguf", "")))
                     {
                         let is_multimodal = model.get("isMultiModal").and_then(|v| v.as_bool()).unwrap_or(false);
                         let is_complete = if is_multimodal {
@@ -266,7 +317,7 @@ fn scan_and_merge_models(models_dir: &std::path::Path, source_filter: Option<&st
 
 /// 深度递归收集目录下所有 .gguf 文件（含 HuggingFace/ModelScope 子目录结构）
 /// 返回 (文件绝对路径, 文件名) 列表
-fn collect_all_ggufs(root: &std::path::Path) -> Vec<(PathBuf, String)> {
+pub(crate) fn collect_all_ggufs(root: &std::path::Path) -> Vec<(PathBuf, String)> {
     let mut result = Vec::new();
     collect_ggufs_recursive(root, root, 0, &mut result);
     result
@@ -1603,31 +1654,48 @@ async fn switch_model(
 ) -> impl IntoResponse {
     info!("切换模型: {} 来源: {:?}", payload.model_id, payload.source);
 
-    // 在模型目录中查找对应的 .gguf 文件
     let models_dir = {
         let config = state.coordinator.config.lock().await;
         config.models_dir.clone()
     };
 
-    let found_ggufs = collect_all_ggufs(&models_dir);
-    let model_id_lower = payload.model_id.to_lowercase();
+    // 1. 若前端显式传递了已就绪的 localPath 且文件真实存在，直接采用
+    let model_path = if let Some(ref lp) = payload.local_path {
+        let p = PathBuf::from(lp);
+        if p.exists() {
+            Some(p.to_string_lossy().to_string())
+        } else {
+            None
+        }
+    } else {
+        None
+    };
 
-    // 查找最匹配的 gguf 文件路径
-    let model_path = found_ggufs.iter().find(|(_, name)| {
-        let name_lower = name.to_lowercase();
+    // 2. 否则在模型目录中深度查找最匹配的 .gguf 文件
+    let model_path = model_path.or_else(|| {
+        let found_ggufs = collect_all_ggufs(&models_dir);
+        let model_id_lower = payload.model_id.to_lowercase();
         let id_tail = model_id_lower.split('/').last().unwrap_or(&model_id_lower);
-        name_lower.contains(id_tail) || id_tail.contains(&name_lower.replace(".gguf", ""))
-    }).map(|(p, _)| p.to_string_lossy().to_string());
+        let id_clean = id_tail.split(':').next().unwrap_or(id_tail).replace("-gguf", "");
+
+        found_ggufs.iter().find(|(_, name)| {
+            let name_lower = name.to_lowercase();
+            name_lower.contains(&id_clean) || id_clean.contains(&name_lower.replace(".gguf", ""))
+        }).map(|(p, _)| p.to_string_lossy().to_string())
+    });
 
     let current_model = model_path.clone().unwrap_or_else(|| payload.model_id.clone());
 
     // 更新活跃模型
     {
         let mut active_model = state.coordinator.active_model.lock().await;
-        *active_model = model_path;
+        *active_model = model_path.clone();
+
+        let mut active_model_name = state.coordinator.active_model_name.lock().await;
+        *active_model_name = payload.model_name.clone();
     }
 
-    info!("模型已切换至: {}", current_model);
+    info!("模型已切换至: {} (名称: {:?})", current_model, payload.model_name);
     Json(json!({
         "success": true,
         "currentModel": current_model
@@ -1860,6 +1928,35 @@ async fn update_params(
     Json(json!({ "success": true }))
 }
 
+/// POST /api/models/params
+/// 保存特定模型的专属启动配置至 config.json
+async fn save_model_params(
+    State(state): State<AppState>,
+    Json(payload): Json<SaveModelParamsReq>,
+) -> impl IntoResponse {
+    let mut config = state.coordinator.config.lock().await;
+    let data_dir = config.data_dir.clone();
+    config.model_custom_params.insert(payload.model_id.clone(), payload.params);
+    let store = crate::config::ConfigStore::new(data_dir);
+    if let Err(e) = store.save(&config) {
+        error!("持久化模型专属参数失败 [{}]: {}", payload.model_id, e);
+        return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "success": false, "error": e.to_string() })));
+    }
+    info!("已成功持久化保存模型专属参数 [{}] 至 config.json", payload.model_id);
+    (StatusCode::OK, Json(json!({ "success": true })))
+}
+
+/// GET /api/models/params
+/// 查询特定模型的专属启动配置
+async fn get_model_params(
+    State(state): State<AppState>,
+    Query(query): Query<GetModelParamsQuery>,
+) -> impl IntoResponse {
+    let config = state.coordinator.config.lock().await;
+    let found = config.model_custom_params.get(&query.model_id).cloned();
+    Json(json!({ "success": true, "params": found }))
+}
+
 /// POST /api/engine/open-ui
 /// 唤醒 Tauri 主窗口（双击托盘图标或主程序调用）
 async fn open_ui() -> impl IntoResponse {
@@ -1961,6 +2058,7 @@ pub fn management_routes() -> Router<AppState> {
         .route("/api/models/switch", post(switch_model))
         .route("/api/engine/models-dir", post(update_models_dir))
         .route("/api/models/rescan", post(rescan_models))
+        .route("/api/models/params", post(save_model_params).get(get_model_params))
         .route("/api/models/download/start", post(start_model_download))
         .route("/api/models/download/status/{task_id}", get(get_download_status))
         .route("/api/models/download/cancel/{task_id}", post(cancel_model_download))

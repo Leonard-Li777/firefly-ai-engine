@@ -116,6 +116,20 @@ export class ModelResolver {
   }
 
   /**
+   * 从文件名中提取标准化的量化标签（如 q4_k_m, q4_k_xl, q5_k_xl, f16 等）
+   */
+  public static extractQuantTag(name: string): string | null {
+    if (!name) return null
+    const match = name.match(/[-_.](?:ud-)?([a-z0-9]+_[a-z0-9_]+|q[0-9]_[0-9a-z_]+|iq[0-9]_[0-9a-z_]+|f16|f32|bf16)(?:\.gguf|$)/i)
+    if (match) {
+      return match[1].toLowerCase()
+    }
+    // 兼容其他形式量化标记如 Q4_K_M
+    const fallbackMatch = name.match(/(q[0-9]_[a-z0-9_]+|iq[0-9]_[a-z0-9_]+|f16|f32|bf16)/i)
+    return fallbackMatch ? fallbackMatch[1].toLowerCase() : null
+  }
+
+  /**
    * 从候选文件路径列表中寻找符合条件的主模型与多模态投影器
    */
   private static findGgufInList(
@@ -125,14 +139,24 @@ export class ModelResolver {
   ): Omit<ModelResolution, 'dirType'> | null {
     if (!filePaths || filePaths.length === 0) return null
 
-    // 寻找主模型文件 (.gguf, 非 mmproj, 包含 cleanTag)
+    const targetTag = cleanTag ? cleanTag.replace(/^ud-/, '').toLowerCase() : ''
+
+    // 寻找主模型文件 (.gguf, 非 mmproj, 严格匹配量化 tag)
     const mainModelPath = filePaths.find(p => {
       const fileName = p.substring(p.lastIndexOf('/') + 1).toLowerCase()
-      return (
-        fileName.endsWith('.gguf') &&
-        !fileName.includes('mmproj') &&
-        (cleanTag ? fileName.includes(cleanTag) : true)
-      )
+      if (!fileName.endsWith('.gguf') || fileName.includes('mmproj')) {
+        return false
+      }
+      if (!targetTag) {
+        return true
+      }
+      // 提取文件中的量化 tag 严格比对
+      const fileQuant = this.extractQuantTag(fileName)
+      if (fileQuant) {
+        return fileQuant === targetTag
+      }
+      // 若未能正则匹配出 quant，则要求完整包含 targetTag 且不与其他常见量化冲突
+      return fileName.includes(targetTag)
     })
 
     if (!mainModelPath) return null

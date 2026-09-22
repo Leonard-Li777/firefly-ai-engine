@@ -1,6 +1,5 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
-  Activity,
   Cpu,
   HardDrive,
   Copy,
@@ -9,13 +8,13 @@ import {
   Server,
   Boxes,
   Sliders,
-  ExternalLink,
-  ShieldCheck,
   CheckCircle2,
   Play,
   Square,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  ChevronDown,
+  Terminal
 } from 'lucide-react'
 import { Card } from '../ui/card'
 import { Badge } from '../ui/badge'
@@ -37,11 +36,38 @@ export const DashboardView: React.FC = () => {
     activeModelKey,
     startEngine,
     stopEngine,
+    logs,
     error: storeError,
     loading: storeLoading
   } = useEngineStore()
-  const [copiedUrl, setCopiedUrl] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState(false)
+  // 启动参数折叠面板：默认收起
+  const [paramsExpanded, setParamsExpanded] = useState(false)
+  const [cmdCopied, setCmdCopied] = useState(false)
+
+  // 从日志缓冲区提取最近一次 [cmd] 完整启动命令行
+  const launchCmd = React.useMemo(() => {
+    const cmdLines = logs.filter((l: string) => l.startsWith('[cmd]'))
+    return cmdLines.length > 0 ? cmdLines[cmdLines.length - 1].replace(/^\[cmd\]\s*/, '') : null
+  }, [logs])
+
+  const handleCopyCmd = () => {
+    if (!launchCmd) return
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(launchCmd)
+      setCmdCopied(true)
+      setTimeout(() => setCmdCopied(false), 2500)
+    }
+  }
+
+  // 展开 / 收起时按需拉取日志（[cmd] 行来自日志缓冲区）
+  const handleToggleParams = () => {
+    const next = !paramsExpanded
+    setParamsExpanded(next)
+    if (next) {
+      useEngineStore.getState().fetchLogs()
+    }
+  }
 
   const hw = engineStatus?.hardware
   const safeModels = Array.isArray(models) ? models : []
@@ -58,7 +84,6 @@ export const DashboardView: React.FC = () => {
 
   // 根据 activeModelKey 精确获取当前模型对象，并融合专属启动参数
   const currentModelItem = safeModels.find(m => `${m.id}@${m.source}` === activeModelKey)
-  const currentModelName = currentModelItem?.name || engineStatus?.current_model || 'Qwen 3.5 0.8B (内置快速)'
   const customParams = currentModelItem ? getModelCustomParams(currentModelItem.id) : undefined
   const effectiveParams = { ...runtimeParams, ...customParams }
 
@@ -72,20 +97,32 @@ export const DashboardView: React.FC = () => {
   const usedRamGb = hw?.used_ram_gb || 6.2
   const ramPercent = Math.min(100, Math.round((usedRamGb / totalRamGb) * 100))
 
-  // 复制对外服务 URL
+  // 服务监听端口
   const port = engineStatus?.port || 38400
-  const apiBaseUrl = `http://127.0.0.1:${port}/v1`
-  const chatCompletionsUrl = `http://127.0.0.1:${port}/v1/chat/completions`
-
-  const handleCopy = (text: string, type: string) => {
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      navigator.clipboard.writeText(text)
-      setCopiedUrl(type)
-      setTimeout(() => setCopiedUrl(null), 2500)
-    }
-  }
 
   const [startFailedError, setStartFailedError] = useState<string | null>(null)
+
+  // 轮询服务运行状态，确保进程异常退出或就绪时能第一时间在 UI 上感知
+  useEffect(() => {
+    let isMounted = true
+    const interval = setInterval(() => {
+      if (isMounted) {
+        useEngineStore.getState().fetchEngineStatus()
+      }
+    }, 2500)
+    return () => {
+      isMounted = false
+      clearInterval(interval)
+    }
+  }, [])
+
+  // 当外部检测到 status 变成 error 时，同步记录并 toast 报错
+  useEffect(() => {
+    if (rawStatus === 'error' && (engineStatus?.last_error || storeError)) {
+      const err = engineStatus?.last_error || storeError || t('启动失败')
+      setStartFailedError(err)
+    }
+  }, [rawStatus, engineStatus?.last_error, storeError, t])
 
   const handleStart = async () => {
     try {
@@ -223,72 +260,116 @@ export const DashboardView: React.FC = () => {
             </Alert>
           </div>
         )}
-      </Card>
 
-      {/* 底部：当前模型实时启动参数快照 */}
-      <Card className="p-5 bg-card border border-border/80 rounded-2xl shadow-xs space-y-3">
-        <div className="flex items-center justify-between border-b border-border/40 pb-2.5">
-          <div className="flex items-center gap-2">
-            <Sliders className="h-4 w-4 text-primary" />
-            <span className="font-bold text-sm text-foreground">{t('当前模型引擎启动参数')}</span>
-            <Badge variant="outline" className="text-[10px] border-border/60 font-mono">
-              llama-server CLI flags
-            </Badge>
-          </div>
-          <span className="text-xs font-mono text-muted-foreground">
-            --host 127.0.0.1 --port {port}
-          </span>
-        </div>
+        {/* 当前模型启动参数：默认隐藏，可展开 / 收起 */}
+        <div className="mt-4 pt-3 border-t border-border/40">
+          <button
+            type="button"
+            onClick={handleToggleParams}
+            className="w-full flex items-center justify-end gap-1.5 group select-none text-muted-foreground/70 hover:text-muted-foreground transition-colors"
+            aria-expanded={paramsExpanded}
+          >
+            <Sliders className="h-3.5 w-3.5" />
+            <span className="text-xs font-medium">{t('当前模型启动参数')}</span>
+            <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${paramsExpanded ? 'rotate-180' : ''}`} />
+          </button>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 pt-1">
-          <div className="p-2.5 rounded-lg bg-muted/30 border border-border/60">
-            <span className="text-[10px] text-muted-foreground font-semibold uppercase block">
-              {t('-ngl (GPU 层数)')}
-            </span>
-            <span className="text-sm font-mono font-black text-foreground mt-0.5 block">
-              {effectiveParams.n_gpu_layers}
-            </span>
-          </div>
+          {paramsExpanded && (
+            <div className="mt-3 space-y-3 animate-in fade-in slide-in-from-top-1 duration-200">
+              {/* 核心参数网格 */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                <div className="p-2.5 rounded-lg bg-muted/30 border border-border/60">
+                  <span className="text-[10px] text-muted-foreground font-semibold uppercase block">
+                    {t('-ngl (GPU 层数)')}
+                  </span>
+                  <span className="text-sm font-mono font-black text-foreground mt-0.5 block">
+                    {effectiveParams.n_gpu_layers}
+                  </span>
+                </div>
 
-          <div className="p-2.5 rounded-lg bg-muted/30 border border-border/60">
-            <span className="text-[10px] text-muted-foreground font-semibold uppercase block">
-              {t('-c (上下文窗口)')}
-            </span>
-            <span className="text-sm font-mono font-black text-foreground mt-0.5 block">
-              {effectiveParams.ctx_size}
-            </span>
-          </div>
+                <div className="p-2.5 rounded-lg bg-muted/30 border border-border/60">
+                  <span className="text-[10px] text-muted-foreground font-semibold uppercase block">
+                    {t('-c (上下文窗口)')}
+                  </span>
+                  <span className="text-sm font-mono font-black text-foreground mt-0.5 block">
+                    {effectiveParams.ctx_size}
+                  </span>
+                </div>
 
-          <div className="p-2.5 rounded-lg bg-muted/30 border border-border/60">
-            <span className="text-[10px] text-muted-foreground font-semibold uppercase block">
-              {t('-t (线程数)')}
-            </span>
-            <span className="text-sm font-mono font-black text-foreground mt-0.5 block">
-              {effectiveParams.threads}
-            </span>
-          </div>
+                <div className="p-2.5 rounded-lg bg-muted/30 border border-border/60">
+                  <span className="text-[10px] text-muted-foreground font-semibold uppercase block">
+                    {t('-t (线程数)')}
+                  </span>
+                  <span className="text-sm font-mono font-black text-foreground mt-0.5 block">
+                    {effectiveParams.threads}
+                  </span>
+                </div>
 
-          <div className="p-2.5 rounded-lg bg-muted/30 border border-border/60">
-            <span className="text-[10px] text-muted-foreground font-semibold uppercase block">
-              {t('-b (Batch Size)')}
-            </span>
-            <span className="text-sm font-mono font-black text-foreground mt-0.5 block">
-              {effectiveParams.batch_size}
-            </span>
-          </div>
+                <div className="p-2.5 rounded-lg bg-muted/30 border border-border/60">
+                  <span className="text-[10px] text-muted-foreground font-semibold uppercase block">
+                    {t('-b (Batch Size)')}
+                  </span>
+                  <span className="text-sm font-mono font-black text-foreground mt-0.5 block">
+                    {effectiveParams.batch_size}
+                  </span>
+                </div>
 
-          <div className="p-2.5 rounded-lg bg-muted/30 border border-border/60">
-            <span className="text-[10px] text-muted-foreground font-semibold uppercase block">
-              {t('-ub (uBatch Size)')}
-            </span>
-            <span className="text-sm font-mono font-black text-foreground mt-0.5 block">
-              {effectiveParams.ubatch_size}
-            </span>
-          </div>
+                <div className="p-2.5 rounded-lg bg-muted/30 border border-border/60">
+                  <span className="text-[10px] text-muted-foreground font-semibold uppercase block">
+                    {t('-ub (uBatch Size)')}
+                  </span>
+                  <span className="text-sm font-mono font-black text-foreground mt-0.5 block">
+                    {effectiveParams.ubatch_size}
+                  </span>
+                </div>
+              </div>
+
+              {/* 完整启动命令行（来自引擎日志 [cmd] 行） */}
+              <div className="p-3 rounded-lg bg-muted/40 border border-border/60">
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-1.5">
+                    <Terminal className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-[10px] text-muted-foreground font-semibold uppercase">
+                      {t('完整启动命令')}
+                    </span>
+                  </div>
+                  {launchCmd && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-6 px-2 text-[10px] font-bold gap-1 rounded-md"
+                      onClick={handleCopyCmd}
+                    >
+                      {cmdCopied ? (
+                        <>
+                          <Check className="h-3 w-3" />
+                          <span>{t('已复制')}</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-3 w-3" />
+                          <span>{t('复制')}</span>
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </div>
+                {launchCmd ? (
+                  <pre className="text-[11px] font-mono text-foreground/90 whitespace-pre-wrap break-all leading-relaxed max-h-40 overflow-y-auto">
+                    {launchCmd}
+                  </pre>
+                ) : (
+                  <span className="text-[11px] text-muted-foreground font-mono">
+                    {t('暂无启动记录，服务启动后将展示完整命令行')}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </Card>
       {/* 核心指标 KPI 仪表卡片栅格 */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* 卡片 1: 已安装模型计数 */}
         <Card className="p-4 bg-card/90 border border-border/80 rounded-2xl shadow-xs hover:border-primary/50 transition-colors flex items-center gap-3.5">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/20">
@@ -336,26 +417,7 @@ export const DashboardView: React.FC = () => {
           </div>
         </Card>
 
-        {/* 卡片 3: 当前加载模型 */}
-        <Card className="p-4 bg-card/90 border border-border/80 rounded-2xl shadow-xs hover:border-primary/50 transition-colors flex items-center gap-3.5">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
-            <Activity className="h-5.5 w-5.5" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-tight block">
-              {t('活动推理模型')}
-            </span>
-            <span className="text-sm font-black text-foreground truncate block mt-0.5" title={currentModelName}>
-              {currentModelName}
-            </span>
-            <div className="flex items-center gap-1.5 mt-1 text-[10px] text-muted-foreground">
-              <ShieldCheck className="h-3 w-3 text-purple-500" />
-              <span>{t('GGUF Q4 量化')}</span>
-            </div>
-          </div>
-        </Card>
-
-        {/* 卡片 4: 服务监听端口与状态 */}
+        {/* 卡片 3: 服务监听端口与状态 */}
         <Card className="p-4 bg-card/90 border border-border/80 rounded-2xl shadow-xs hover:border-primary/50 transition-colors flex items-center gap-3.5">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
             <Server className="h-5.5 w-5.5" />
@@ -462,111 +524,7 @@ export const DashboardView: React.FC = () => {
         </Card>
       </div>
 
-      {/* 第三方应用集成配置与 URL 复制 */}
-      <Card className="p-5 bg-card border border-border/80 rounded-2xl shadow-xs space-y-5">
-          <div>
-            <Label className="text-base font-bold tracking-tight text-foreground flex items-center gap-2">
-              <ExternalLink className="h-4 w-4 text-primary" />
-              <span>{t('第三方应用对接与 API 地址')}</span>
-            </Label>
-            <p className="text-xs text-muted-foreground font-normal mt-1 leading-relaxed">
-              {t('完全兼容 OpenAI 标准协议，可无缝配置至 萤核智能文件夹、龙虾、Cherry Studio、ChatBox、NextChat 等客户端。')}
-            </p>
-          </div>
-
-          <div className="space-y-3">
-            {/* API Base URL */}
-            <div className="p-3 rounded-xl bg-muted/30 border border-border/70 flex items-center justify-between gap-2">
-              <div className="min-w-0 flex-1">
-                <span className="text-[10px] font-bold uppercase text-muted-foreground block">
-                  API Base URL ({t('基础端点')})
-                </span>
-                <span className="text-xs font-mono font-bold text-foreground truncate block mt-0.5">
-                  {apiBaseUrl}
-                </span>
-              </div>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-8 px-3 font-bold text-xs border-border/80 hover:border-border shrink-0"
-                onClick={() => handleCopy(apiBaseUrl, 'base')}
-              >
-                {copiedUrl === 'base' ? (
-                  <>
-                    <Check className="h-3.5 w-3.5 mr-1 text-emerald-500" />
-                    <span>{t('已复制')}</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-3.5 w-3.5 mr-1" />
-                    <span>{t('复制')}</span>
-                  </>
-                )}
-              </Button>
-            </div>
-
-            {/* Chat Completions URL */}
-            <div className="p-3 rounded-xl bg-muted/30 border border-border/70 flex items-center justify-between gap-2">
-              <div className="min-w-0 flex-1">
-                <span className="text-[10px] font-bold uppercase text-muted-foreground block">
-                  Chat Completions URL ({t('聊天接口')})
-                </span>
-                <span className="text-xs font-mono font-bold text-foreground truncate block mt-0.5">
-                  {chatCompletionsUrl}
-                </span>
-              </div>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-8 px-3 font-bold text-xs border-border/80 hover:border-border shrink-0"
-                onClick={() => handleCopy(chatCompletionsUrl, 'chat')}
-              >
-                {copiedUrl === 'chat' ? (
-                  <>
-                    <Check className="h-3.5 w-3.5 mr-1 text-emerald-500" />
-                    <span>{t('已复制')}</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-3.5 w-3.5 mr-1" />
-                    <span>{t('复制')}</span>
-                  </>
-                )}
-              </Button>
-            </div>
-
-            {/* API Key 提示 */}
-            <div className="p-3 rounded-xl bg-muted/30 border border-border/70 flex items-center justify-between gap-2">
-              <div className="min-w-0 flex-1">
-                <span className="text-[10px] font-bold uppercase text-muted-foreground block">
-                  API Key ({t('授权秘钥')})
-                </span>
-                <span className="text-xs font-mono font-semibold text-muted-foreground truncate block mt-0.5">
-                  {t('无需秘钥 (可任意填写，如 sk-firefly)')}
-                </span>
-              </div>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-8 px-3 font-bold text-xs border-border/80 hover:border-border shrink-0"
-                onClick={() => handleCopy('sk-firefly', 'key')}
-              >
-                {copiedUrl === 'key' ? (
-                  <>
-                    <Check className="h-3.5 w-3.5 mr-1 text-emerald-500" />
-                    <span>{t('已复制')}</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-3.5 w-3.5 mr-1" />
-                    <span>{t('复制')}</span>
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
-      </Card>
-
+      {/* 第三方应用对接与 API 地址已迁移至顶级 Tab「第三方对接」，见 components/api/third-party-api-view.tsx */}
 
     </div>
   )

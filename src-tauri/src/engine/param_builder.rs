@@ -62,6 +62,20 @@ pub struct ModelInfo {
     pub dspark_path: Option<String>,
     /// MTP 或普通草稿模型路径（--model-draft + --spec-type draft-mtp）
     pub draft_path: Option<String>,
+    /// KV 缓存 Key 量化类型 ("f16", "q8_0", "q4_0")
+    pub cache_type_k: Option<String>,
+    /// KV 缓存 Value 量化类型 ("f16", "q8_0", "q4_0")
+    pub cache_type_v: Option<String>,
+    /// 并发请求槽位 (parallel)
+    pub parallel: Option<u32>,
+    /// 用户自定义温度 (temp)
+    pub temp: Option<f64>,
+    /// 用户自定义 Top-P
+    pub top_p: Option<f64>,
+    /// 用户自定义 Top-K
+    pub top_k: Option<u32>,
+    /// 用户自定义重复惩罚
+    pub repeat_penalty: Option<f64>,
     /// 是否为生产环境（注入 --verbose）
     pub is_production: bool,
 }
@@ -411,16 +425,41 @@ impl ParamBuilder {
             "--no-context-shift".to_string(),
             "--load-mode".to_string(),
             "auto".to_string(),
-            "--repeat-penalty".to_string(),
-            "1.1".to_string(),
+        ]);
+
+        // KV 缓存量化 (--cache-type-k, --cache-type-v)
+        let cache_k = model_info.and_then(|i| i.cache_type_k.clone()).unwrap_or_else(|| "f16".to_string());
+        let cache_v = model_info.and_then(|i| i.cache_type_v.clone()).unwrap_or_else(|| "f16".to_string());
+        args.extend([
+            "--cache-type-k".to_string(),
+            cache_k,
+            "--cache-type-v".to_string(),
+            cache_v,
+        ]);
+
+        // 并发槽位 (--parallel)
+        let parallel_slots = model_info.and_then(|i| i.parallel).unwrap_or(1);
+        args.extend([
             "--parallel".to_string(),
-            "1".to_string(),
+            parallel_slots.to_string(),
+        ]);
+
+        // 重复惩罚 (--repeat-penalty)
+        let rep_penalty = model_info.and_then(|i| i.repeat_penalty).unwrap_or(1.1);
+        args.extend([
+            "--repeat-penalty".to_string(),
+            format!("{:.2}", rep_penalty),
         ]);
 
         // 思考模式与聊天模板
         let enable_thinking = model_info.map(|i| i.enable_thinking).unwrap_or(false);
         let is_minicpm5 = model_info.map(|i| i.is_minicpm5).unwrap_or(false);
         let is_nanbeige4 = model_info.map(|i| i.is_nanbeige4).unwrap_or(false);
+
+        // 采样超参：优先使用用户配置，未配置时依模型架构回退
+        let user_temp = model_info.and_then(|i| i.temp);
+        let user_top_p = model_info.and_then(|i| i.top_p);
+        let user_top_k = model_info.and_then(|i| i.top_k);
 
         if !enable_thinking {
             args.extend([
@@ -432,12 +471,21 @@ impl ParamBuilder {
                 "0".to_string(),
             ]);
 
+            let final_temp = user_temp.unwrap_or(0.7);
+            let final_top_p = user_top_p.unwrap_or(0.95);
+            args.extend([
+                "--temp".to_string(),
+                format!("{:.2}", final_temp),
+                "--top-p".to_string(),
+                format!("{:.2}", final_top_p),
+            ]);
+
+            if let Some(tk) = user_top_k {
+                args.extend(["--top-k".to_string(), tk.to_string()]);
+            }
+
             if is_minicpm5 {
                 args.extend([
-                    "--temp".to_string(),
-                    "0.7".to_string(),
-                    "--top-p".to_string(),
-                    "0.95".to_string(),
                     "--chat-template".to_string(),
                     "chatml".to_string(),
                 ]);
@@ -453,14 +501,20 @@ impl ParamBuilder {
                 ]);
             }
         } else {
+            let final_temp = user_temp.unwrap_or(0.9);
+            let final_top_p = user_top_p.unwrap_or(0.95);
             args.extend([
                 "--reasoning-budget".to_string(),
                 "1024".to_string(),
                 "--temp".to_string(),
-                "0.9".to_string(),
+                format!("{:.2}", final_temp),
                 "--top-p".to_string(),
-                "0.95".to_string(),
+                format!("{:.2}", final_top_p),
             ]);
+
+            if let Some(tk) = user_top_k {
+                args.extend(["--top-k".to_string(), tk.to_string()]);
+            }
         }
 
         // Flash Attention
@@ -551,6 +605,13 @@ mod tests {
             mmproj_path: None,
             dspark_path: None,
             draft_path: None,
+            cache_type_k: None,
+            cache_type_v: None,
+            parallel: None,
+            temp: None,
+            top_p: None,
+            top_k: None,
+            repeat_penalty: None,
             is_production: false,
         }
     }

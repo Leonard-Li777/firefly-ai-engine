@@ -35,7 +35,7 @@ export interface DowngradeInfo {
 }
 
 /**
- * 引擎运行时微调参数
+ * 引擎运行时微调参数及模型专属参数
  */
 export interface RuntimeParams {
   n_gpu_layers: number
@@ -43,7 +43,16 @@ export interface RuntimeParams {
   ctx_size: number
   batch_size: number
   ubatch_size: number
+  cache_type_k?: 'f16' | 'q8_0' | 'q4_0' | string
+  cache_type_v?: 'f16' | 'q8_0' | 'q4_0' | string
+  parallel?: number
+  temp?: number
+  top_p?: number
+  top_k?: number
+  repeat_penalty?: number
 }
+
+export type ModelCustomParams = RuntimeParams
 
 /**
  * 后端 /api/engine/status 响应结构

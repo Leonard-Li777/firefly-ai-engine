@@ -5,6 +5,7 @@ import { EngineTable } from '../src/components/engine/engine-table'
 import { ModelStorageConfig } from '../src/components/storage/model-storage-config'
 import { ThinkingModeCard } from '../src/components/engine/thinking-mode-card'
 import { LocalChatView } from '../src/components/chat/local-chat-view'
+import { ModelListPanel } from '../src/components/model/model-list-panel'
 import { useEngineStore } from '../src/stores/engine-store'
 import { isAbsolutePath } from '../src/lib/path-utils'
 
@@ -142,6 +143,39 @@ describe('Tier 2 管理视窗核心组件交互测试', () => {
     render(<LocalChatView />)
     expect(screen.getByText('本地推理服务未就绪')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /立即启动服务/ })).toBeInTheDocument()
+  })
+
+  it('ModelListPanel 能正确渲染模型卡片的相对路径（不显示 base 路径）且仅已下载未超标模型展示【参数配置】按钮', async () => {
+    await useEngineStore.getState().fetchModels()
+    render(<ModelListPanel />)
+
+    // 1. 已就绪模型展示相对路径
+    const readyBadges = screen.getAllByText('已就绪')
+    expect(readyBadges.length).toBeGreaterThan(0)
+
+    // 校验卡片路径不含盘符前缀 D:\AI_Models，而是展示相对路径
+    const relativePathRegex = /hub[\\/]models[\\/].+\.gguf/i
+    const matches = screen.getAllByText(relativePathRegex)
+    expect(matches.length).toBeGreaterThan(0)
+
+    // 2. 存在【参数配置】按钮，绝不存在过时的【预设参数】按钮
+    const configButtons = screen.getAllByRole('button', { name: /参数配置/ })
+    expect(configButtons.length).toBeGreaterThan(0)
+    expect(screen.queryByRole('button', { name: /预设参数/ })).not.toBeInTheDocument()
+
+    // 3. 校验已下载模型的激活控制：当前运行模型展示【运行中】状态，非当前运行的已下载模型展示【激活】按钮
+    const activeModelBadges = screen.getAllByText('运行中')
+    expect(activeModelBadges.length).toBeGreaterThanOrEqual(1)
+
+    // 验证列表中其他已下载就绪的模型展示有【激活】按钮
+    const activateButtons = screen.getAllByRole('button', { name: '激活' })
+    expect(activateButtons.length).toBeGreaterThanOrEqual(1)
+
+    // 点击【激活】按钮可以成功触发切换模型并更新当前运行模型
+    fireEvent.click(activateButtons[0])
+    await waitFor(() => {
+      expect(useEngineStore.getState().activeModelKey).toBeDefined()
+    })
   })
 })
 

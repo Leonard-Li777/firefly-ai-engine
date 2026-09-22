@@ -46,9 +46,85 @@ pub struct EngineConfig {
     #[serde(default)]
     pub preferred_backend: Option<String>,
 
+    /// 模型专属自定义启动参数映射表（key 为模型唯一标识，如 model ID 或模型名）
+    #[serde(default)]
+    pub model_custom_params: std::collections::HashMap<String, ModelCustomParams>,
+
     /// 数据目录（由系统设置，不可用户修改）
     #[serde(skip)]
     pub data_dir: PathBuf,
+}
+
+/// 每个模型的专属运行时参数（支持保存至 config.json）
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ModelCustomParams {
+    /// GPU 卸载层数（-1 为全量，0 为纯 CPU）
+    #[serde(default = "default_gpu_layers")]
+    pub n_gpu_layers: i32,
+    /// CPU 推理物理线程数
+    #[serde(default = "default_threads")]
+    pub threads: u32,
+    /// 上下文长度 (tokens)
+    #[serde(default = "default_ctx_size")]
+    pub ctx_size: u32,
+    /// 批处理 Batch Size
+    #[serde(default = "default_batch_size")]
+    pub batch_size: u32,
+    /// 微批处理 Ubatch Size (严格 <= batch_size)
+    #[serde(default = "default_ubatch_size")]
+    pub ubatch_size: u32,
+    /// KV 缓存 Key 量化类型 ("f16" | "q8_0" | "q4_0")
+    #[serde(default = "default_cache_type")]
+    pub cache_type_k: String,
+    /// KV 缓存 Value 量化类型 ("f16" | "q8_0" | "q4_0")
+    #[serde(default = "default_cache_type")]
+    pub cache_type_v: String,
+    /// 并发槽位数
+    #[serde(default = "default_parallel")]
+    pub parallel: u32,
+    /// 温度超参 (0.0 ~ 2.0)
+    #[serde(default = "default_temp")]
+    pub temp: f64,
+    /// Top-P 采样 (0.0 ~ 1.0)
+    #[serde(default = "default_top_p")]
+    pub top_p: f64,
+    /// Top-K 采样 (1 ~ 100)
+    #[serde(default = "default_top_k")]
+    pub top_k: u32,
+    /// 重复惩罚 (1.0 ~ 2.0)
+    #[serde(default = "default_repeat_penalty")]
+    pub repeat_penalty: f64,
+}
+
+fn default_gpu_layers() -> i32 { 24 }
+fn default_threads() -> u32 { 8 }
+fn default_ctx_size() -> u32 { 4096 }
+fn default_batch_size() -> u32 { 512 }
+fn default_ubatch_size() -> u32 { 256 }
+fn default_cache_type() -> String { "f16".to_string() }
+fn default_parallel() -> u32 { 1 }
+fn default_temp() -> f64 { 0.7 }
+fn default_top_p() -> f64 { 0.95 }
+fn default_top_k() -> u32 { 40 }
+fn default_repeat_penalty() -> f64 { 1.1 }
+
+impl Default for ModelCustomParams {
+    fn default() -> Self {
+        Self {
+            n_gpu_layers: default_gpu_layers(),
+            threads: default_threads(),
+            ctx_size: default_ctx_size(),
+            batch_size: default_batch_size(),
+            ubatch_size: default_ubatch_size(),
+            cache_type_k: default_cache_type(),
+            cache_type_v: default_cache_type(),
+            parallel: default_parallel(),
+            temp: default_temp(),
+            top_p: default_top_p(),
+            top_k: default_top_k(),
+            repeat_penalty: default_repeat_penalty(),
+        }
+    }
 }
 
 fn default_models_dir() -> PathBuf {
@@ -75,6 +151,7 @@ impl Default for EngineConfig {
             custom_context_window: None,
             selected_model_path: None,
             preferred_backend: None,
+            model_custom_params: std::collections::HashMap::new(),
             data_dir: PathBuf::new(),
         }
     }

@@ -20,6 +20,7 @@ export const ThinkingModeCard: React.FC = () => {
     setEnabled(checked)
     if (typeof window !== 'undefined' && window.localStorage) {
       localStorage.setItem(THINKING_MODE_STORAGE_KEY, String(checked))
+      window.dispatchEvent(new Event('thinking-mode-changed'))
     }
   }
 

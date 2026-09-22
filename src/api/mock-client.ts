@@ -371,7 +371,23 @@ export class MockApiClient implements IEngineApiClient {
     return { success: true }
   }
 
-  async switchModel(modelId: string, source?: string): Promise<{ success: boolean; currentModel: string }> {
+  private mockModelCustomParams = new Map<string, RuntimeParams>()
+
+  async saveModelParams(modelId: string, params: RuntimeParams): Promise<{ success: boolean }> {
+    this.mockModelCustomParams.set(modelId, { ...params })
+    return { success: true }
+  }
+
+  async getModelParams(modelId: string): Promise<RuntimeParams | undefined> {
+    return this.mockModelCustomParams.get(modelId)
+  }
+
+  async switchModel(
+    modelId: string,
+    source?: string,
+    _localPath?: string,
+    _modelName?: string
+  ): Promise<{ success: boolean; currentModel: string }> {
     const currentLang = useI18nStore.getState().currentLanguage || 'zh-CN'
     const meta = modelMetadataService.getModelById(modelId, currentLang, source)
     const targetName = meta ? meta.name : modelId

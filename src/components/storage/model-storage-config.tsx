@@ -87,9 +87,8 @@ export const ModelStorageConfig: React.FC = () => {
           <Input
             value={inputPath}
             readOnly
-            onClick={handleBrowse}
             placeholder={t('点击右侧“浏览”选择模型存储目录')}
-            className="h-9.5 font-mono text-xs pr-10 rounded-lg bg-muted/30 border-border/80 cursor-pointer focus:border-primary"
+            className="h-9.5 font-mono text-xs pr-10 rounded-lg bg-muted/30 border-border/80 cursor-default focus:border-primary"
           />
         </div>
 
