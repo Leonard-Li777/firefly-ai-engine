@@ -45,15 +45,19 @@ pub enum ProcessEvent {
 pub struct ProcessGuard {
     compliance: Arc<DriverComplianceService>,
     /// 当前子进程（Mutex 保证安全访问）
-    child: Mutex<Option<Child>>,
+    child: Arc<Mutex<Option<Child>>>,
     /// 进程状态
-    status: Mutex<ProcessStatus>,
+    status: Arc<Mutex<ProcessStatus>>,
+    /// 最近一次错误信息（供 UI 详细展示失败原因）
+    last_error: Arc<Mutex<Option<String>>>,
     /// 是否正在关闭
     shutting_down: Arc<AtomicBool>,
     /// 事件广播（通知调用方进程状态变化）
     event_tx: broadcast::Sender<ProcessEvent>,
     /// 当前引擎（用于错误回调时标记不合规）
     current_engine: Mutex<Option<InstalledEngine>>,
+    /// 环形内存日志缓冲区（最多保留 2000 行，供 UI 实时查看与清空）
+    log_buffer: Arc<Mutex<std::collections::VecDeque<String>>>,
 }
 
 impl ProcessGuard {
@@ -61,17 +65,41 @@ impl ProcessGuard {
         let (event_tx, _) = broadcast::channel(64);
         Arc::new(ProcessGuard {
             compliance,
-            child: Mutex::new(None),
-            status: Mutex::new(ProcessStatus::Stopped),
+            child: Arc::new(Mutex::new(None)),
+            status: Arc::new(Mutex::new(ProcessStatus::Stopped)),
+            last_error: Arc::new(Mutex::new(None)),
             shutting_down: Arc::new(AtomicBool::new(false)),
             event_tx,
             current_engine: Mutex::new(None),
+            log_buffer: Arc::new(Mutex::new(std::collections::VecDeque::with_capacity(2000))),
         })
     }
 
     /// 订阅进程事件
     pub fn subscribe(&self) -> broadcast::Receiver<ProcessEvent> {
         self.event_tx.subscribe()
+    }
+
+    /// 获取历史日志列表
+    pub async fn get_logs(&self) -> Vec<String> {
+        let guard = self.log_buffer.lock().await;
+        guard.iter().cloned().collect()
+    }
+
+    /// 清空日志
+    pub async fn clear_logs(&self) {
+        let mut guard = self.log_buffer.lock().await;
+        guard.clear();
+        info!("llama.cpp 运行时日志已清空");
+    }
+
+    /// 向缓冲区写入一条日志
+    async fn append_log(buffer: &Arc<Mutex<std::collections::VecDeque<String>>>, line: String) {
+        let mut guard = buffer.lock().await;
+        if guard.len() >= 2000 {
+            guard.pop_front();
+        }
+        guard.push_back(line);
     }
 
     /// 启动 llama-server 子进程
@@ -105,6 +133,15 @@ impl ProcessGuard {
         let mut cmd = Command::new(&engine.binary_path);
         cmd.args(args);
 
+        // 记录完整的启动指令行到日志缓冲区，供前端日志查看器实时查看
+        let full_launch_cmd = format!(
+            "[cmd] {:?} {}",
+            engine.binary_path,
+            args.join(" ")
+        );
+        Self::append_log(&self.log_buffer, full_launch_cmd.clone()).await;
+        let _ = self.event_tx.send(ProcessEvent::Log(full_launch_cmd));
+
         // 注入 PATH（Windows DLL 加载关键）
         let path_key = if cfg!(windows) { "Path" } else { "PATH" };
         let sep = if cfg!(windows) { ";" } else { ":" };
@@ -137,6 +174,8 @@ impl ProcessGuard {
         // 异步监控 stdout
         if let Some(stdout) = child.stdout.take() {
             let tx = self.event_tx.clone();
+            let log_buf = self.log_buffer.clone();
+            let status = self.status.clone();
             tokio::spawn(async move {
                 let reader = BufReader::new(stdout);
                 let mut lines = reader.lines();
@@ -146,10 +185,18 @@ impl ProcessGuard {
                     // 检测 server ready 信号
                     if line.contains("server listening") || line.contains("llama server listening") {
                         info!("llama-server 已就绪");
+                        {
+                            let mut s = status.lock().await;
+                            if *s == ProcessStatus::Starting {
+                                *s = ProcessStatus::Running;
+                            }
+                        }
                         let _ = tx.send(ProcessEvent::Ready);
                     }
 
-                    let _ = tx.send(ProcessEvent::Log(format!("[stdout] {}", line)));
+                    let formatted = format!("[stdout] {}", line);
+                    Self::append_log(&log_buf, formatted.clone()).await;
+                    let _ = tx.send(ProcessEvent::Log(formatted));
                 }
             });
         }
@@ -160,6 +207,9 @@ impl ProcessGuard {
             let compliance = self.compliance.clone();
             let engine_clone = engine.clone();
             let shutting_down = self.shutting_down.clone();
+            let log_buf = self.log_buffer.clone();
+            let status = self.status.clone();
+            let last_error = self.last_error.clone();
 
             tokio::spawn(async move {
                 let reader = BufReader::new(stderr);
@@ -168,7 +218,9 @@ impl ProcessGuard {
 
                 while let Ok(Some(line)) = lines.next_line().await {
                     debug!("[llama-stderr] {}", line);
-                    let _ = tx.send(ProcessEvent::Log(format!("[stderr] {}", line)));
+                    let formatted = format!("[stderr] {}", line);
+                    Self::append_log(&log_buf, formatted.clone()).await;
+                    let _ = tx.send(ProcessEvent::Log(formatted));
 
                     error_buffer.push_str(&line);
                     error_buffer.push('\n');
@@ -182,28 +234,107 @@ impl ProcessGuard {
                                 .mark_non_compliant(&binary_str, reason.clone(), None)
                                 .await;
 
+                            let friendly_msg = Self::friendly_error_message(&line);
+                            {
+                                let mut err = last_error.lock().await;
+                                *err = Some(friendly_msg.clone());
+                            }
+                            {
+                                let mut s = status.lock().await;
+                                *s = ProcessStatus::Failed;
+                            }
+
                             let proc_err = ProcessError {
                                 kind: reason,
-                                message: Self::friendly_error_message(&line),
+                                message: friendly_msg,
                                 raw: line.clone(),
                             };
                             let _ = tx.send(ProcessEvent::FatalError(proc_err));
+                        }
+                    } else if (line.contains("error:") || line.contains("couldn't bind HTTP server socket") || line.contains("failed to bind"))
+                        && !shutting_down.load(Ordering::SeqCst)
+                    {
+                        warn!("检测到进程启动错误: {}", line);
+                        let friendly_msg = Self::friendly_error_message(&line);
+                        {
+                            let mut err = last_error.lock().await;
+                            *err = Some(friendly_msg);
+                        }
+                        {
+                            let mut s = status.lock().await;
+                            *s = ProcessStatus::Failed;
                         }
                     }
                 }
             });
         }
 
+        // 启动后台 wait 任务监听子进程生命周期（异常退出时将状态置为 Failed）
+        let status_clone = self.status.clone();
+        let shutting_down_clone = self.shutting_down.clone();
+        let last_error_clone = self.last_error.clone();
+
         let mut guard = self.child.lock().await;
         *guard = Some(child);
 
-        {
-            let mut status = self.status.lock().await;
-            *status = ProcessStatus::Running;
-        }
+        // 仅在 Starting 状态保持中，后台监听退出
+        let child_ref = self.child.clone();
+        tokio::spawn(async move {
+            loop {
+                tokio::time::sleep(Duration::from_millis(300)).await;
+                let mut guard = child_ref.lock().await;
+                let child_opt: &mut Option<Child> = &mut *guard;
+                if let Some(ref mut c) = child_opt {
+                    match c.try_wait() {
+                        Ok(Some(exit_status)) => {
+                            if !shutting_down_clone.load(Ordering::SeqCst) {
+                                warn!("llama-server 异常退出: {:?}", exit_status);
+                                let mut s = status_clone.lock().await;
+                                *s = ProcessStatus::Failed;
+                                let mut err = last_error_clone.lock().await;
+                                if err.is_none() {
+                                    *err = Some(format!("进程异常退出: {:?}", exit_status));
+                                }
+                            }
+                            break;
+                        }
+                        Ok(None) => {}
+                        Err(e) => {
+                            if !shutting_down_clone.load(Ordering::SeqCst) {
+                                warn!("等待 llama-server 出错: {}", e);
+                                let mut s = status_clone.lock().await;
+                                *s = ProcessStatus::Failed;
+                            }
+                            break;
+                        }
+                    }
+                } else {
+                    break;
+                }
+            }
+        });
 
         info!("llama-server 子进程已启动");
         Ok(())
+    }
+
+    /// 获取最近一次错误详情
+    pub async fn last_error(&self) -> Option<String> {
+        self.last_error.lock().await.clone()
+    }
+
+    /// 清除最近一次错误
+    pub async fn clear_last_error(&self) {
+        let mut err = self.last_error.lock().await;
+        *err = None;
+    }
+
+    /// 标记运行成功状态
+    pub async fn mark_running(&self) {
+        let mut status = self.status.lock().await;
+        *status = ProcessStatus::Running;
+        let mut err = self.last_error.lock().await;
+        *err = None;
     }
 
     /// 生成用户友好的错误提示

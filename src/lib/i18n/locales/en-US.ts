@@ -37,9 +37,11 @@ export const enUS: TranslationKeys = {
     statusActive: 'Active',
     statusNotInstalled: 'Not Installed',
     statusDownloading: 'Downloading...',
-    btnEnable: 'Enable',
+    btnEnable: 'Switch Engine',
+    btnSwitch: 'Switch Engine',
     btnActive: 'Current Engine',
-    btnDownload: 'Download',
+    btnDownload: 'Download Engine',
+    btnUpdateDriver: 'Update Driver',
     switchSuccess: 'Engine switched successfully',
     downloadFailed: 'Failed to download engine'
   },
@@ -76,7 +78,11 @@ export const enUS: TranslationKeys = {
     paramSize: 'Params',
     fileSize: 'File Size',
     vramNeeded: 'VRAM Needed',
-    quantization: 'Quant'
+    quantization: 'Quant',
+    intelLevel1: 'Elementary',
+    intelLevel2: 'Middle School',
+    intelLevel3: 'High School',
+    intelLevel4: 'University'
   },
   runtime: {
     title: 'Runtime Monitoring & Safe Scheduling',
@@ -97,5 +103,19 @@ export const enUS: TranslationKeys = {
     loading: 'Loading...',
     confirm: 'Confirm',
     cancel: 'Cancel'
+  },
+  chat: {
+    tabTitle: 'Chat privately with local AI',
+    notReadyTitle: 'Local Inference Service Not Ready',
+    notReadyDesc: 'Please start the local AI engine service in Dashboard first, or wait for the model to finish loading.',
+    btnStart: 'Start Service Now',
+    openExternal: 'Open in Browser',
+    reload: 'Reload Page'
+  },
+  thinking: {
+    title: 'Model thinking mode',
+    badgeTime: 'Will increase time consumption',
+    desc: 'After turning it on, local and cloud models are allowed to start thinking mode, which may improve AI analysis quality, but will greatly increase response time. Recommended to enable only when chatting with AI.',
+    unsupportedTip: 'Models tagged Instruct are not supported.'
   }
 }

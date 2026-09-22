@@ -156,4 +156,28 @@ export class ModelResolver {
       dirPath
     }
   }
+
+  /**
+   * 检查模型是否完全下载且可用（主模型存在，多模态时 mmproj 投影器也必须存在）
+   * 严格对齐 Desktop ModelDownloadManager 的 checkModelDownloadStatus 逻辑
+   */
+  public static checkModelFullyDownloaded(
+    modelId: string,
+    baseDir: string,
+    isMultiModal: boolean = false,
+    existingFiles?: string[] | string,
+    source?: string
+  ): { isDownloaded: boolean; resolution: ModelResolution | null } {
+    const resolution = this.resolve(modelId, baseDir, existingFiles, source)
+    if (!resolution || !resolution.modelPath) {
+      return { isDownloaded: false, resolution: null }
+    }
+
+    // 多模态模型必须同时具备 mmproj 投影器文件
+    if (isMultiModal && !resolution.mmprojPath) {
+      return { isDownloaded: false, resolution }
+    }
+
+    return { isDownloaded: true, resolution }
+  }
 }

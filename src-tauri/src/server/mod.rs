@@ -33,9 +33,12 @@ pub async fn start_server(
     proxy_state: ProxyState,
 ) -> Result<u16> {
     let port = find_available_port(base_port).await;
+    // 立即记录实际绑定的端口，确保 IPC 在 serve 阻塞前就能返回该端口
+    *coordinator.active_port.lock().await = Some(port);
 
-    // 初始化下载任务管理器
+    // 初始化下载任务管理器与活跃进程 PID 表
     let download_tasks = Arc::new(Mutex::new(HashMap::new()));
+    let active_child_pids = Arc::new(Mutex::new(HashMap::new()));
 
     // 查找 llama-model-download 可执行文件路径
     let model_downloader_path = Arc::new(resolve_model_downloader());
@@ -44,6 +47,7 @@ pub async fn start_server(
     let app_state = AppState {
         coordinator: coordinator.clone(),
         download_tasks,
+        active_child_pids,
         model_downloader_path,
     };
 
@@ -58,7 +62,7 @@ pub async fn start_server(
         // 管理端点
         .merge(management_routes().with_state(app_state))
         // 透明反代 /v1/*
-        .route("/v1/*path", any(proxy_handler).with_state(proxy_state.clone()))
+        .route("/v1/{*path}", any(proxy_handler).with_state(proxy_state.clone()))
         // 根路径健康探测
         .route("/health", axum::routing::get(|| async { "ok" }))
         .layer(cors)

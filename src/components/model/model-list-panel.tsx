@@ -20,7 +20,8 @@ import {
   Settings2,
   ChevronDown,
   ChevronUp,
-  RotateCcw
+  RotateCcw,
+  AlertCircle
 } from 'lucide-react'
 import { Card } from '../ui/card'
 import { Badge } from '../ui/badge'
@@ -34,7 +35,8 @@ import { useEngineStore } from '../../stores/engine-store'
 import { useModelDownload } from '../../hooks/use-model-download'
 import { ModelItem, ModelSource, RuntimeParams } from '../../api/types'
 import { formatFileSize, formatSpeed, calculateRemainingTime } from '../../lib/utils'
-import { useI18nStore } from '../../lib/i18n'
+import { useI18nStore, t } from '../../lib/i18n'
+import { sortModels } from '../../lib/model-sorting'
 import {
   getModelCustomParams,
   saveModelCustomParams,
@@ -42,42 +44,55 @@ import {
   DEFAULT_MODEL_PARAMS
 } from '../../lib/model-param-storage'
 
-/**
- * 智能级别映射表
- * 1: 小学生
- * 2: 初中生
- * 3: 高中生
- * 4: 大学生
- */
-export const INTELLIGENCE_CONFIG: Record<
-  number,
-  { label: string; badgeClass: string }
-> = {
-  1: {
-    label: '小学生',
-    badgeClass: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
-  },
-  2: {
-    label: '初中生',
-    badgeClass: 'bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-500/30'
-  },
-  3: {
-    label: '高中生',
-    badgeClass: 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30'
-  },
-  4: {
-    label: '大学生',
-    badgeClass: 'bg-purple-500/15 text-purple-700 dark:text-purple-400 border-purple-500/30 font-extrabold'
-  }
+export interface IntelligenceLevelItem {
+  label: string
+  badgeClass: string
 }
+
+/**
+ * 智能级别映射函数
+ * 1: 小学生 (Elementary)
+ * 2: 初中生 (Middle School)
+ * 3: 高中生 (High School)
+ * 4: 大学生 (University)
+ * 接收 level id，返回对应的多语言文本与视觉 Badge 样式
+ */
+export function getIntelligenceConfig(id?: number | null): IntelligenceLevelItem | undefined {
+  if (!id) return undefined
+
+  const configMap: Record<number, IntelligenceLevelItem> = {
+    1: {
+      label: t('models.intelLevel1') || t('小学生'),
+      badgeClass: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
+    },
+    2: {
+      label: t('models.intelLevel2') || t('初中生'),
+      badgeClass: 'bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-500/30'
+    },
+    3: {
+      label: t('models.intelLevel3') || t('高中生'),
+      badgeClass: 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30'
+    },
+    4: {
+      label: t('models.intelLevel4') || t('大学生'),
+      badgeClass: 'bg-purple-500/15 text-purple-700 dark:text-purple-400 border-purple-500/30 font-extrabold'
+    }
+  }
+
+  return configMap[id]
+}
+
+// 别名保留，函数本身接收 id 返回对应配置
+export const INTELLIGENCE_CONFIG = getIntelligenceConfig
 
 interface ModelCardProps {
   model: ModelItem
   isCurrent: boolean
+  isEx?: boolean
   onActivate: (modelId: string, source?: string) => Promise<boolean | void>
 }
 
-const ModelCardItem: React.FC<ModelCardProps> = ({ model, isCurrent, onActivate }) => {
+const ModelCardItem: React.FC<ModelCardProps> = ({ model, isCurrent, isEx = false, onActivate }) => {
   const { t } = useI18nStore()
   const { fetchModels, runtimeParams, updateRuntimeParams } = useEngineStore()
   const {
@@ -130,9 +145,7 @@ const ModelCardItem: React.FC<ModelCardProps> = ({ model, isCurrent, onActivate 
 
   const isDownloaded = model.isDownloaded || dl.status === 'completed'
   const isDsparkDownloaded = dsparkDl.status === 'completed'
-  const intelligence = model.intelligenceLevel
-    ? INTELLIGENCE_CONFIG[model.intelligenceLevel]
-    : undefined
+  const intelligence = INTELLIGENCE_CONFIG(model.intelligenceLevel)
 
   // 整理能力列表
   const capabilities = useMemo(() => {
@@ -179,9 +192,11 @@ const ModelCardItem: React.FC<ModelCardProps> = ({ model, isCurrent, onActivate 
   return (
     <div
       className={`group relative flex flex-col justify-between p-5 rounded-2xl border transition-all ${
-        isCurrent
-          ? 'bg-primary/5 border-primary shadow-md ring-2 ring-primary/15'
-          : 'bg-card/90 border-border hover:border-primary/60 hover:shadow-xs'
+        isEx
+          ? 'opacity-40 grayscale-[0.6] border-border bg-muted/10'
+          : isCurrent
+            ? 'bg-primary/5 border-primary shadow-md ring-2 ring-primary/15'
+            : 'bg-card/90 border-border hover:border-primary/60 hover:shadow-xs'
       }`}
     >
       {/* 激活角标 */}
@@ -189,6 +204,13 @@ const ModelCardItem: React.FC<ModelCardProps> = ({ model, isCurrent, onActivate 
         <Badge className="absolute -top-2.5 -right-2.5 h-5.5 px-2.5 bg-primary text-primary-foreground shadow-xs rounded-full text-[11px] font-bold pointer-events-none z-10 flex items-center gap-1 border border-primary-foreground/20">
           <Check className="h-3 w-3" />
           <span>{t('已激活')}</span>
+        </Badge>
+      )}
+      {/* 显存不足角标 */}
+      {isEx && (
+        <Badge className="absolute -top-2.5 -right-2.5 h-5.5 px-2.5 bg-destructive text-destructive-foreground shadow-xs rounded-full text-[11px] font-bold pointer-events-none z-10 flex items-center gap-1">
+          <AlertCircle className="w-3 h-3" />
+          <span>{t('显存不足')}</span>
         </Badge>
       )}
 
@@ -204,7 +226,7 @@ const ModelCardItem: React.FC<ModelCardProps> = ({ model, isCurrent, onActivate 
               {model.recommended && (
                 <Badge className="text-[10px] font-bold h-5 px-2 bg-gradient-to-r from-amber-500 to-orange-600 text-white border-none shadow-xs flex items-center gap-1 shrink-0">
                   <Star className="h-3 w-3 fill-current text-white" />
-                  <span>{t('官方推荐')}</span>
+                  <span>{t('推荐')}</span>
                 </Badge>
               )}
               {/* 智能级别 Badge */}
@@ -214,7 +236,7 @@ const ModelCardItem: React.FC<ModelCardProps> = ({ model, isCurrent, onActivate 
                   className={`text-[10px] font-bold h-5 px-2 flex items-center gap-1 shrink-0 ${intelligence.badgeClass}`}
                 >
                   <GraduationCap className="h-3 w-3" />
-                  <span>{t(intelligence.label)}</span>
+                  <span>{t('智能程度')}：{intelligence.label}</span>
                 </Badge>
               )}
             </div>
@@ -232,7 +254,11 @@ const ModelCardItem: React.FC<ModelCardProps> = ({ model, isCurrent, onActivate 
                 {model.size || formatFileSize(model.fileSize)}
               </span>
               {model.vramNeededGB && (
-                <span className="text-[11px] font-mono text-blue-600 dark:text-blue-400 font-bold">
+                <span
+                  className={`text-[11px] font-bold ${
+                    isEx ? 'text-destructive' : 'text-blue-600 dark:text-blue-400'
+                  }`}
+                >
                   {t('预估显存')} ~{model.vramNeededGB} GB
                 </span>
               )}
@@ -435,13 +461,26 @@ const ModelCardItem: React.FC<ModelCardProps> = ({ model, isCurrent, onActivate 
             </Button>
           </div>
         ) : isDownloaded ? (
-          <div className="flex items-center justify-between gap-2 flex-wrap">
-            <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 text-xs font-bold">
-              <FileCheck2 className="h-3.5 w-3.5 shrink-0" />
-              <span>{t('已就绪')}</span>
-            </div>
+          <div className="space-y-2.5">
+            {/* 已就绪模型的物理绝对路径展示 */}
+            {model.localPath && (
+              <div className="flex items-center justify-between gap-1.5 text-[11px] font-mono text-muted-foreground bg-muted/40 px-2 py-1 rounded-md border border-border/50">
+                <div className="flex items-center gap-1 min-w-0 flex-1">
+                  <HardDrive className="h-3 w-3 shrink-0 text-muted-foreground/80" />
+                  <span className="truncate select-all" title={model.localPath}>
+                    {model.localPath}
+                  </span>
+                </div>
+              </div>
+            )}
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 text-xs font-bold">
+                <FileCheck2 className="h-3.5 w-3.5 shrink-0" />
+                <span>{t('已就绪')}</span>
+              </div>
+
+              <div className="flex items-center gap-2">
               {/* 配置了 DSpark 加速模型且未下载时，【下载加速模型】按钮始终显示 */}
               {dsparkId && !isDsparkDownloaded && (
                 <Button
@@ -477,6 +516,16 @@ const ModelCardItem: React.FC<ModelCardProps> = ({ model, isCurrent, onActivate 
                   <Check className="h-3 w-3 mr-1 shrink-0" />
                   {t('运行中')}
                 </Badge>
+              ) : isEx ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7.5 text-xs px-3 rounded-lg font-bold border-destructive/30 text-destructive/80 bg-destructive/5 shrink-0 cursor-not-allowed opacity-80"
+                  disabled={true}
+                >
+                  <AlertCircle className="h-3.5 w-3.5 mr-1 text-destructive" />
+                  {t('显存不足')}
+                </Button>
               ) : (
                 <Button
                   size="sm"
@@ -490,9 +539,19 @@ const ModelCardItem: React.FC<ModelCardProps> = ({ model, isCurrent, onActivate 
               )}
             </div>
           </div>
+        </div>
         ) : (
           <div className="flex items-center justify-between gap-2">
-            <span className="text-xs text-muted-foreground/80 font-medium">{t('尚未下载到本地')}</span>
+            <span className="text-xs text-muted-foreground/80 font-medium">
+              {isEx ? (
+                <span className="text-destructive font-semibold flex items-center gap-1">
+                  <AlertCircle className="h-3.5 w-3.5" />
+                  {t('超出显存限制')}
+                </span>
+              ) : (
+                t('尚未下载到本地')
+              )}
+            </span>
             <div className="flex items-center gap-2">
               {/* 预设参数按钮：hover 时才显示（如果展开状态则始终保持显示） */}
               <Button
@@ -508,16 +567,28 @@ const ModelCardItem: React.FC<ModelCardProps> = ({ model, isCurrent, onActivate 
                 {showConfig ? <ChevronUp className="h-3 w-3 ml-0.5" /> : <ChevronDown className="h-3 w-3 ml-0.5" />}
               </Button>
 
-              {/* 下载模型按钮：hover 时才显示 */}
-              <Button
-                size="sm"
-                variant="default"
-                className="h-7.5 text-xs px-3.5 rounded-lg font-bold shadow-xs shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={() => startDownload()}
-              >
-                <Download className="h-3 w-3 mr-1.5 shrink-0" />
-                {t('下载模型')}
-              </Button>
+              {/* 下载模型按钮：未超标时 hover 显示，超标时禁用显示 */}
+              {isEx ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7.5 text-xs px-3 rounded-lg font-bold border-destructive/30 text-destructive/80 bg-destructive/5 shrink-0 cursor-not-allowed opacity-80"
+                  disabled={true}
+                >
+                  <AlertCircle className="h-3.5 w-3.5 mr-1 text-destructive" />
+                  {t('显存不足')}
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="default"
+                  className="h-7.5 text-xs px-3.5 rounded-lg font-bold shadow-xs shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={() => startDownload()}
+                >
+                  <Download className="h-3 w-3 mr-1.5 shrink-0" />
+                  {t('下载模型')}
+                </Button>
+              )}
             </div>
           </div>
         )}
@@ -528,25 +599,28 @@ const ModelCardItem: React.FC<ModelCardProps> = ({ model, isCurrent, onActivate 
 
 export const ModelListPanel: React.FC = () => {
   const { t } = useI18nStore()
-  const { models, fetchModels, activeModelKey, switchModel, regionInfo } = useEngineStore()
+  const { models, fetchModels, activeModelKey, switchModel, regionInfo, engineStatus } = useEngineStore()
   const [activeSource, setActiveSource] = useState<ModelSource>('modelscope')
   const [showRecommendedOnly, setShowRecommendedOnly] = useState<boolean>(true)
 
   useEffect(() => {
     fetchModels()
-  }, [fetchModels])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const safeModels = Array.isArray(models) ? models : []
+  const userVramGB = engineStatus?.hardware?.total_vram_gb
 
-  // 按渠道和推荐过滤
+  // 按渠道和推荐过滤，并执行超标计算与加权排序
   const filteredModels = useMemo(() => {
-    return safeModels.filter(m => {
+    const matched = safeModels.filter(m => {
       if (!m) return false
       if (m.source !== activeSource) return false
       if (showRecommendedOnly && !m.recommended) return false
       return true
     })
-  }, [safeModels, activeSource, showRecommendedOnly])
+    return sortModels(matched, userVramGB)
+  }, [safeModels, activeSource, showRecommendedOnly, userVramGB])
 
   // 统计各来源数量
   const counts = useMemo(() => {
@@ -562,7 +636,7 @@ export const ModelListPanel: React.FC = () => {
         <div>
           <Label className="text-base font-bold tracking-tight text-foreground flex items-center gap-2">
             <Boxes className="h-4 w-4 text-primary" />
-            <span>{t('端侧模型库与高速调度')}</span>
+            <span>{t('模型下载与管理')}</span>
           </Label>
           <p className="text-xs text-muted-foreground font-normal mt-1 leading-relaxed">
             {t('模型决定了文本与多模态分析的准确率与速度。支持为每个模型单独配置引擎启动参数。')}
@@ -586,25 +660,25 @@ export const ModelListPanel: React.FC = () => {
       {/* Tabs 栏：复刻 Desktop 风格 + 右侧 Switch 仅显示推荐 */}
       <Tabs value={activeSource} onValueChange={val => setActiveSource(val as ModelSource)} className="w-full">
         <div className="flex items-center justify-between border-b border-border/40 bg-muted/30 px-4">
-          <TabsList className="flex justify-start h-12 bg-transparent p-0 border-b-0 rounded-none overflow-x-auto no-scrollbar gap-1">
+          <TabsList className="flex justify-start h-12 bg-transparent p-0 border-b-0 rounded-none overflow-x-auto no-scrollbar gap-2">
             <TabsTrigger
               value="modelscope"
-              className="flex-shrink-0 px-4 h-full rounded-none font-semibold text-xs data-[state=active]:border-b-[3px] data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=inactive]:text-foreground/55 transition-all border-b-[3px] border-transparent hover:text-foreground hover:bg-muted/40 relative flex items-center gap-1.5"
+              className="flex-shrink-0 px-4 h-full rounded-none font-bold text-xs data-[state=active]:border-b-[3px] data-[state=active]:border-primary data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=inactive]:text-muted-foreground transition-all border-b-[3px] border-transparent hover:text-foreground hover:bg-muted/40 relative flex items-center gap-1.5"
             >
-              <Sparkles className="w-3.5 h-3.5 text-primary" />
+              <Sparkles className="w-3.5 h-3.5 text-inherit" />
               <span>ModelScope ({t('国内高速')})</span>
-              <span className="ml-1.5 text-[10px] bg-muted/80 px-2 py-0.5 rounded-full text-muted-foreground font-mono border border-border/40">
+              <span className="ml-1.5 text-[10px] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground bg-muted/80 px-2 py-0.5 rounded-full text-muted-foreground font-mono border border-border/40 transition-colors">
                 {counts.modelscope}
               </span>
             </TabsTrigger>
 
             <TabsTrigger
               value="huggingface"
-              className="flex-shrink-0 px-4 h-full rounded-none font-semibold text-xs data-[state=active]:border-b-[3px] data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=inactive]:text-foreground/55 transition-all border-b-[3px] border-transparent hover:text-foreground hover:bg-muted/40 relative flex items-center gap-1.5"
+              className="flex-shrink-0 px-4 h-full rounded-none font-bold text-xs data-[state=active]:border-b-[3px] data-[state=active]:border-primary data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=inactive]:text-muted-foreground transition-all border-b-[3px] border-transparent hover:text-foreground hover:bg-muted/40 relative flex items-center gap-1.5"
             >
-              <Globe2 className="w-3.5 h-3.5" />
+              <Globe2 className="w-3.5 h-3.5 text-inherit" />
               <span>HuggingFace ({t('国际官方')})</span>
-              <span className="ml-1.5 text-[10px] bg-muted/80 px-2 py-0.5 rounded-full text-muted-foreground font-mono border border-border/40">
+              <span className="ml-1.5 text-[10px] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground bg-muted/80 px-2 py-0.5 rounded-full text-muted-foreground font-mono border border-border/40 transition-colors">
                 {counts.huggingface}
               </span>
             </TabsTrigger>
@@ -642,6 +716,7 @@ export const ModelListPanel: React.FC = () => {
                     key={modelKey}
                     model={model}
                     isCurrent={isCurrent}
+                    isEx={model.isEx}
                     onActivate={async (id, source) => {
                       await switchModel(id, source)
                     }}

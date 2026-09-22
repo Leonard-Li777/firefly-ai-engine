@@ -61,6 +61,9 @@ export function useModelDownload(
 
   useEffect(() => {
     optionsRef.current = options
+  })
+
+  useEffect(() => {
     if (initialModelId && modelIdRef.current !== initialModelId) {
       modelIdRef.current = initialModelId
       setState(prev => ({
@@ -78,7 +81,7 @@ export function useModelDownload(
         isPaused: false
       }))
     }
-  }, [options, initialModelId])
+  }, [initialModelId, options.source])
 
   // 开始下载
   const startDownload = useCallback(
@@ -207,6 +210,29 @@ export function useModelDownload(
     }
   }, [])
 
+  // 检查下载状态 (对齐桌面端成熟体系)
+  const checkDownloadStatus = useCallback(async () => {
+    try {
+      const models = await engineApiClient.listModels(optionsRef.current.source)
+      const current = models.find(m => m.id === modelIdRef.current)
+      return {
+        isDownloaded: !!current?.isDownloaded,
+        hasPartialFiles: false,
+        downloadProgress: current?.isDownloaded ? 100 : 0,
+        missingFiles: current?.isDownloaded ? [] : [modelIdRef.current],
+        existingFiles: current?.isDownloaded && current.localPath ? [{ name: current.localPath, size: current.fileSize, expectedSize: current.fileSize }] : []
+      }
+    } catch {
+      return {
+        isDownloaded: false,
+        hasPartialFiles: false,
+        downloadProgress: 0,
+        missingFiles: [modelIdRef.current],
+        existingFiles: []
+      }
+    }
+  }, [])
+
   // 重试下载
   const retryDownload = useCallback(async () => {
     setState(prev => ({
@@ -223,6 +249,7 @@ export function useModelDownload(
     pauseDownload,
     resumeDownload,
     cancelDownload,
+    checkDownloadStatus,
     retryDownload
   }
 }

@@ -196,6 +196,68 @@ impl DriverComplianceService {
     }
 }
 
+/// 检测 Windows/Linux 环境下 NVIDIA 显卡驱动主版本与 CUDA 最大版本号
+/// 例如通过 nvidia-smi 提取 Driver Version: 591.86, CUDA Version: 13.1
+pub async fn detect_nvidia_driver_info() -> (Option<f64>, Option<f64>) {
+    if !cfg!(windows) && !cfg!(target_os = "linux") {
+        return (None, None);
+    }
+
+    let output = match tokio::process::Command::new("nvidia-smi").output().await {
+        Ok(out) => String::from_utf8_lossy(&out.stdout).to_string(),
+        Err(_) => return (None, None),
+    };
+
+    // 正则提取 Driver Version: (\d+\.\d+)
+    let driver_re = regex::Regex::new(r"Driver Version:\s*(\d+\.?\d*)").ok();
+    let cuda_re = regex::Regex::new(r"CUDA Version:\s*(\d+\.?\d*)").ok();
+
+    let driver_ver = driver_re
+        .and_then(|re| re.captures(&output))
+        .and_then(|cap| cap.get(1))
+        .and_then(|m| m.as_str().parse::<f64>().ok());
+
+    let cuda_ver = cuda_re
+        .and_then(|re| re.captures(&output))
+        .and_then(|cap| cap.get(1))
+        .and_then(|m| m.as_str().parse::<f64>().ok());
+
+    (driver_ver, cuda_ver)
+}
+
+/// 获取显卡驱动官方下载页面 URL（支持 CN / 国际区分）
+pub fn get_vendor_driver_update_url(vendor: &str, is_cn: bool) -> &'static str {
+    match vendor.to_lowercase().as_str() {
+        "nvidia" => {
+            if is_cn {
+                "https://www.nvidia.cn/Download/index.aspx"
+            } else {
+                "https://www.nvidia.com/Download/index.aspx"
+            }
+        }
+        "amd" => {
+            if is_cn {
+                "https://www.amd.com/zh-cn/support"
+            } else {
+                "https://www.amd.com/en/support"
+            }
+        }
+        "intel" => {
+            if is_cn {
+                "https://www.intel.cn/content/www/cn/zh/download-center/home.html"
+            } else {
+                "https://www.intel.com/content/www/us/en/download-center/home.html"
+            }
+        }
+        _ => {
+            if is_cn {
+                "https://www.nvidia.cn/Download/index.aspx"
+            } else {
+                "https://www.nvidia.com/Download/index.aspx"
+            }
+        }
+    }
+}
 /// 规范化路径作为缓存键
 fn normalize_path(path: &str) -> String {
     path.to_lowercase()
@@ -217,3 +279,4 @@ pub fn get_fallback_tier(current: &AccelerationTier) -> Option<AccelerationTier>
         AccelerationTier::Cpu => None, // 已到底，无法再降级
     }
 }
+

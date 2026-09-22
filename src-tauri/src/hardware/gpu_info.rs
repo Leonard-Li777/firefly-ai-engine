@@ -89,7 +89,7 @@ impl GpuInfo {
 
     /// 显存大小（GB，保留一位小数）
     pub fn memory_gb(&self) -> f64 {
-        (self.memory_mb as f64) / 1024.0
+        ((self.memory_mb as f64 / 1024.0) * 10.0).round() / 10.0
     }
 }
 

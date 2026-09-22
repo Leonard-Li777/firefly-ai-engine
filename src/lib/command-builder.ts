@@ -27,6 +27,14 @@ export interface BuildCommandOptions {
   forceCpuMode?: boolean
   backend?: 'cuda' | 'vulkan' | 'cpu' | 'metal'
   hardware?: HardwareInfo
+  /** 是否启用思考模式，默认 false (关闭时注入 --reasoning off --reasoning-format none --reasoning-budget 0 等) */
+  enableThinking?: boolean
+  /** 外部额外参数，自动支持去重与覆盖保护 */
+  extraArgs?: string[]
+  /** 是否为生产环境 (生产环境自动注入 --verbose) */
+  isProduction?: boolean
+  /** Linux 环境是否启用 NUMA 隔离优化 */
+  enableNUMA?: boolean
 }
 
 export interface BuiltCommandContext {
@@ -39,6 +47,7 @@ export interface BuiltCommandContext {
   calculatedThreads: number
   isCpuMode: boolean
   isFlashAttentionEnabled: boolean
+  fullCommandLine: string
 }
 
 /**
@@ -255,8 +264,61 @@ export class LlamaCommandBuilder {
     }
     const finalThreads = options.threads !== undefined ? options.threads : safeThreads
 
-    // 8. 组装标准参数序列
-    const args: string[] = [
+    // 8. 思考模式 (enableThinking) 与推理抑制参数
+    const enableThinking = !!options.enableThinking
+    const isLlamafile = (options.binaryPath || '').toLowerCase().includes('llamafile')
+    const lowerModelId = options.modelId.toLowerCase()
+    const lowerModelPath = (options.modelPath || '').toLowerCase()
+    const isMiniCPM5 = lowerModelId.includes('minicpm5') || lowerModelPath.includes('minicpm5')
+    const isNanbeige4 = lowerModelId.includes('nanbeige4') || lowerModelPath.includes('nanbeige4')
+
+    const reasoningArgs: string[] = []
+    let templateArg: string[] = []
+
+    if (!enableThinking) {
+      // 思考模式关闭：强制添加推理抑制参数
+      reasoningArgs.push(
+        '--reasoning', 'off',
+        '--reasoning-format', 'none',
+        '--reasoning-budget', '0'
+      )
+
+      if (isLlamafile) {
+        reasoningArgs.push('--nothink')
+      }
+
+      // --chat-template 模板选择与参数设置
+      if (isMiniCPM5) {
+        // MiniCPM5-1B 在关闭思考模式时采用 chatml 且降低 temp
+        reasoningArgs.push('--temp', '0.7', '--top-p', '0.95')
+        templateArg = ['--chat-template', 'chatml']
+      } else if (isNanbeige4) {
+        // Nanbeige4 专用 Chat Template: 末尾不硬编码 assistant 前缀，由 llama-server 动态生成
+        // 彻底解决 GBNF Sampler 与 json_schema 严格输出约束时的 Unexpected empty grammar stack 冲突
+        templateArg = [
+          '--chat-template',
+          "{% for message in messages %}{{'<|im_start|>' + message['role'] + '\\n' + message['content'] + '<|im_end|>\\n'}}{% endfor %}"
+        ]
+      } else {
+        // 默认通用 Jinja 模板（关闭思考时）
+        templateArg = [
+          '--chat-template',
+          "{% for message in messages %}{{'<|im_start|>' + message['role'] + '\\n' + message['content'] + '<|im_end|>\\n'}}{% endfor %}{% if add_generation_prompt %}{{ '<|im_start|>assistant\\n' }}{% endif %}"
+        ]
+      }
+    } else {
+      // 思考模式启用：注入推荐的高发散思考参数
+      reasoningArgs.push(
+        '--reasoning-budget', '1024',
+        '--temp', '0.9',
+        '--top-p', '0.95'
+      )
+    }
+
+    // 9. 组装标准基础参数序列
+    const baseArgs: string[] = [
+      '--host',
+      '127.0.0.1',
       ...modelArg,
       ...projectorArg,
       ...draftArg,
@@ -273,44 +335,110 @@ export class LlamaCommandBuilder {
       '--repeat-penalty',
       '1.1',
       '--parallel',
-      '1'
+      '1',
+      ...reasoningArgs,
+      ...templateArg
     ]
 
     // Flash Attention 参数注入
     if (isFlashAttentionEnabled) {
-      args.push('-fa', 'auto')
+      baseArgs.push('-fa', 'auto')
     } else {
-      args.push('-fa', 'off')
+      baseArgs.push('-fa', 'off')
+    }
+
+    // 生产环境开启详细日志，便于排查用户侧的崩溃问题
+    const isProduction =
+      options.isProduction ??
+      (typeof process !== 'undefined' &&
+        (process.env?.NODE_ENV === 'production' || !!(process as any).env?.APP_PACKAGED))
+    if (isProduction) {
+      baseArgs.push('--verbose')
+    }
+
+    // Linux 平台特定 NUMA 优化
+    if (process.platform === 'linux' && options.enableNUMA) {
+      baseArgs.push('--numa', 'isolate')
     }
 
     // GPU 卸载参数注入
     if (isCpuMode || finalGpuLayers === 0) {
-      args.push('--device', 'none')
-      args.push('--n-gpu-layers', '0')
+      baseArgs.push('--device', 'none')
+      baseArgs.push('--n-gpu-layers', '0')
     } else {
-      args.push('--n-gpu-layers', String(finalGpuLayers))
+      baseArgs.push('--n-gpu-layers', String(finalGpuLayers))
     }
 
     // 批大小与线程数
-    args.push('--batch-size', String(finalBatchSize))
-    args.push('--ubatch-size', String(finalUbatchSize))
-    args.push('-t', String(finalThreads))
+    baseArgs.push('--batch-size', String(finalBatchSize))
+    baseArgs.push('--ubatch-size', String(finalUbatchSize))
+    baseArgs.push('-t', String(finalThreads))
 
-    // 9. 环境变量准备 (注入短路径 LLAMA_CACHE)
-    const env: Record<string, string> = {
-      LLAMA_CACHE: toShortPathOnWindows(modelBaseDir)
+    // 10. 额外参数 (extraArgs) 去重与合并逻辑 (支持 --flag 及 --flag value 形式)
+    const extraArgs = options.extraArgs || []
+    const finalArgs: string[] = []
+
+    // 辅助检查 extraArgs 中是否含有某 flag
+    const hasInExtra = (flag: string) =>
+      extraArgs.some(arg => arg === flag || arg.startsWith(`${flag}=`))
+
+    // 遍历 baseArgs，如果 extraArgs 中显式覆盖了该 flag，则跳过 baseArgs 中的这一项
+    for (let i = 0; i < baseArgs.length; i++) {
+      const current = baseArgs[i]
+      if (current.startsWith('-')) {
+        const flagName = current.split('=')[0]
+        if (hasInExtra(flagName)) {
+          // 如果下一个参数不是以 '-' 开头，说明是当前 flag 的值，一并跳过
+          if (i + 1 < baseArgs.length && !baseArgs[i + 1].startsWith('-')) {
+            i++
+          }
+          continue
+        }
+      }
+      finalArgs.push(current)
     }
+    // 将 extraArgs 追加到最后
+    finalArgs.push(...extraArgs)
+
+    // 11. 跨平台标准化环境变量构建
+    const engineDir = options.binaryPath ? toShortPathOnWindows(options.binaryPath.replace(/[^\\/]+$/, '')) : ''
+    const env: Record<string, string> = {
+      LLAMA_CACHE: toShortPathOnWindows(modelBaseDir),
+      CUDA_VISIBLE_DEVICES: '0',
+      OMP_NUM_THREADS: String(finalThreads),
+      PYTHONIOENCODING: 'utf-8',
+      LANG: 'en_US.UTF-8',
+      PYTHONUNBUFFERED: '1'
+    }
+
+    if (process.platform === 'win32') {
+      env.WER_DONT_SHOW_UI = '1' // 抑制 Windows 错误报告挂起与弹窗
+      if (engineDir) {
+        env.Path = `${engineDir};${process.env?.Path || process.env?.PATH || ''}`
+      }
+    } else if (process.platform === 'linux') {
+      if (engineDir) {
+        env.LD_LIBRARY_PATH = `${engineDir}:${process.env?.LD_LIBRARY_PATH || ''}`
+      }
+      env.MKL_NUM_THREADS = String(finalThreads)
+    } else if (process.platform === 'darwin') {
+      env.VECLIB_MAXIMUM_THREADS = String(finalThreads)
+    }
+
+    const filteredArgs = finalArgs.filter(Boolean)
+    const fullCommandLine = `"${binaryPath}" ${filteredArgs.join(' ')}`
 
     return {
       command: binaryPath,
-      args: args.filter(Boolean),
+      args: filteredArgs,
       env,
       calculatedGpuLayers: finalGpuLayers,
       calculatedBatchSize: finalBatchSize,
       calculatedUbatchSize: finalUbatchSize,
       calculatedThreads: finalThreads,
       isCpuMode,
-      isFlashAttentionEnabled
+      isFlashAttentionEnabled,
+      fullCommandLine
     }
   }
 }

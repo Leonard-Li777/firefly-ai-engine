@@ -37,9 +37,11 @@ export const deDE: TranslationKeys = {
     statusActive: 'Wird ausgeführt',
     statusNotInstalled: 'Nicht installiert',
     statusDownloading: 'Wird heruntergeladen...',
-    btnEnable: 'Aktivieren',
+    btnEnable: 'Engine wechseln',
+    btnSwitch: 'Engine wechseln',
     btnActive: 'Aktuelle Engine',
-    btnDownload: 'Herunterladen',
+    btnDownload: 'Engine herunterladen',
+    btnUpdateDriver: 'Grafikkartentreiber aktualisieren',
     switchSuccess: 'Engine erfolgreich umgeschaltet',
     downloadFailed: 'Download der Engine fehlgeschlagen'
   },
@@ -76,7 +78,11 @@ export const deDE: TranslationKeys = {
     paramSize: 'Parameter',
     fileSize: 'Dateigröße',
     vramNeeded: 'VRAM-Bedarf',
-    quantization: 'Quantisierung'
+    quantization: 'Quantisierung',
+    intelLevel1: 'Grundschule',
+    intelLevel2: 'Sekundarstufe I',
+    intelLevel3: 'Gymnasium',
+    intelLevel4: 'Universität'
   },
   runtime: {
     title: 'Laufzeitüberwachung & sichere Planung',
@@ -97,5 +103,19 @@ export const deDE: TranslationKeys = {
     loading: 'Wird geladen...',
     confirm: 'Bestätigen',
     cancel: 'Abbrechen'
+  },
+  chat: {
+    tabTitle: 'Chatten Sie privat mit lokaler KI',
+    notReadyTitle: 'Lokaler Inferenzdienst nicht bereit',
+    notReadyDesc: 'Bitte starten Sie zuerst den lokalen KI-Engine-Dienst im Dashboard oder warten Sie, bis das Modell geladen ist.',
+    btnStart: 'Dienst jetzt starten',
+    openExternal: 'Im Browser öffnen',
+    reload: 'Seite neu laden'
+  },
+  thinking: {
+    title: 'Modelldenkenmodus',
+    badgeTime: 'Wird den Zeitverbrauch erhöhen',
+    desc: 'Nach dem Einschalten können lokale und Cloud-Modelle in den Denkmodus wechseln. Es wird empfohlen, diesen Modus nur bei Bedarf für Chats mit der KI zu aktivieren.',
+    unsupportedTip: 'Modelle mit dem Tag „Instruct“ werden nicht unterstützt.'
   }
 }

@@ -71,7 +71,7 @@ describe('i18n Store & Localization', () => {
   it('should switch language to en-US and reflect in translations', () => {
     useI18nStore.getState().setLanguage('en-US')
     expect(t('hardware.gpuModel')).toBe('GPU Model')
-    expect(t('engine.title')).toBe('AI Inference Engines')
+    expect(t('engine.title')).toBe('Switch Local AI Engine')
     expect(t('storage.scanSuccess', { count: 5 })).toBe('Scan completed, found 5 models')
   })
 

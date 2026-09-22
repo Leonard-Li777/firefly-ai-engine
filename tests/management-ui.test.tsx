@@ -3,7 +3,10 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { HardwareCard } from '../src/components/hardware/hardware-card'
 import { EngineTable } from '../src/components/engine/engine-table'
 import { ModelStorageConfig } from '../src/components/storage/model-storage-config'
+import { ThinkingModeCard } from '../src/components/engine/thinking-mode-card'
+import { LocalChatView } from '../src/components/chat/local-chat-view'
 import { useEngineStore } from '../src/stores/engine-store'
+import { isAbsolutePath } from '../src/lib/path-utils'
 
 describe('Tier 2 管理视窗核心组件交互测试', () => {
   beforeEach(async () => {
@@ -20,54 +23,125 @@ describe('Tier 2 管理视窗核心组件交互测试', () => {
     expect(screen.getByText('12 GB')).toBeInTheDocument()
 
     // 校验降级告警与驱动升级按钮
-    expect(screen.getByText(/驱动升级建议与降级诊断告警/)).toBeInTheDocument()
-    expect(screen.getByText(/NVIDIA 显卡驱动版本过低/)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /前往官网更新驱动/ })).toBeInTheDocument()
+    expect(screen.getByText(/目前使用兼容模式，能发挥您显卡70% AI算力/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /升级显卡驱动/ })).toBeInTheDocument()
   })
 
-  it('EngineTable 表格能展示已安装与未安装引擎，未安装项显示【下载】', async () => {
-    render(<EngineTable />)
+  it('EngineTable 表格能展示已安装与未安装引擎，驱动不适配显示【更新显卡驱动】，已安装未激活项显示【切换引擎】', async () => {
+    // 监听 window.open
+    const originalOpen = window.open
+    let openedUrl = ''
+    window.open = (url?: string | URL) => {
+      openedUrl = String(url)
+      return null
+    }
 
-    // 校验引擎行
-    expect(screen.getByText('Vulkan (GPU通用)')).toBeInTheDocument()
-    expect(screen.getByText('CPU (AVX2)')).toBeInTheDocument()
-    expect(screen.getByText('CUDA 12.4')).toBeInTheDocument()
+    try {
+      render(<EngineTable />)
 
-    // Vulkan 为当前运行引擎
-    expect(screen.getByText('当前运行中')).toBeInTheDocument()
+      // 校验引擎行
+      expect(screen.getByText('Vulkan')).toBeInTheDocument()
+      expect(screen.getByText('CPU (AVX2)')).toBeInTheDocument()
+      expect(screen.getByText('CUDA 12.4')).toBeInTheDocument()
+      expect(screen.getByText('CUDA 13.4')).toBeInTheDocument()
 
-    // CUDA 12.4 初始为未安装，应呈现下载按钮
-    const downloadBtn = screen.getByText(/下载 \(450MB\)/)
-    expect(downloadBtn).toBeInTheDocument()
+      // Vulkan 为当前运行引擎徽标（表头与行内徽标各一处）
+      expect(screen.getAllByText('当前引擎').length).toBeGreaterThanOrEqual(2)
 
-    // 点击下载按钮触发下载状态
-    fireEvent.click(downloadBtn)
+      // CPU (AVX2) 已安装但非当前运行引擎，应呈现【切换引擎】高亮按钮
+      const switchBtn = screen.getByRole('button', { name: /切换引擎/ })
+      expect(switchBtn).toBeInTheDocument()
 
-    // 等待进入下载状态
-    await waitFor(() => {
-      expect(screen.getByText(/下载中/)).toBeInTheDocument()
-    })
+      // CUDA 13.4 初始模拟驱动不满足，应呈现【更新显卡驱动】按钮
+      const updateDriverBtn = screen.getByRole('button', { name: /更新显卡驱动/ })
+      expect(updateDriverBtn).toBeInTheDocument()
+
+      // 点击【更新显卡驱动】自动跳转至官网下载链接
+      fireEvent.click(updateDriverBtn)
+      expect(openedUrl).toContain('nvidia.cn')
+
+      // CUDA 12.4 初始为未安装且驱动适配，应呈现【下载引擎】按钮
+      const downloadBtn = screen.getByText(/下载引擎.*450MB/)
+      expect(downloadBtn).toBeInTheDocument()
+
+      // 点击下载引擎按钮触发下载状态
+      fireEvent.click(downloadBtn)
+
+      // 等待进入下载状态
+      await waitFor(() => {
+        const downloadTexts = screen.getAllByText(/下载中/)
+        expect(downloadTexts.length).toBeGreaterThanOrEqual(1)
+      })
+    } finally {
+      window.open = originalOpen
+    }
   })
 
-  it('ModelStorageConfig 允许用户自定义更改模型目录并生效', async () => {
-    render(<ModelStorageConfig />)
+  it('ModelStorageConfig 允许用户通过【浏览】选择新目录后直接迁移生效，且始终显示绝对路径', async () => {
+    // 模拟 window.prompt 返回新绝对路径
+    const originalPrompt = window.prompt
+    window.prompt = () => 'E:\\New_AI_Models'
 
-    const input = screen.getByPlaceholderText(/例如: D:\\AI_Models/) as HTMLInputElement
-    expect(input.value).toBe('D:\\AI_Models')
+    try {
+      render(<ModelStorageConfig />)
 
-    // 模拟用户修改路径
-    fireEvent.change(input, { target: { value: 'E:\\New_AI_Models' } })
-    expect(input.value).toBe('E:\\New_AI_Models')
+      const input = screen.getByRole('textbox') as HTMLInputElement
+      // 确保默认展示为标准绝对路径
+      expect(isAbsolutePath(input.value)).toBe(true)
 
-    // 点击保存并生效按钮
-    const saveBtn = screen.getByText('保存并生效')
-    fireEvent.click(saveBtn)
+      // 验证已无“保存并生效”按钮
+      expect(screen.queryByText('保存并生效')).toBeNull()
 
-    await waitFor(() => {
-      expect(screen.getByText(/模型存储目录已成功更改/)).toBeInTheDocument()
-    })
+      // 点击“浏览”按钮触发目录选择与自动迁移
+      const browseBtn = screen.getByRole('button', { name: /浏览/ })
+      fireEvent.click(browseBtn)
 
-    // Store 中的模型目录应已更新
-    expect(useEngineStore.getState().modelsDir).toBe('E:\\New_AI_Models')
+      await waitFor(() => {
+        expect(screen.getByText(/模型存储目录已成功更改/)).toBeInTheDocument()
+      })
+
+      // Store 中的模型目录应已直接更新为新绝对路径
+      expect(useEngineStore.getState().modelsDir).toBe('E:\\New_AI_Models')
+      expect(input.value).toBe('E:\\New_AI_Models')
+    } finally {
+      window.prompt = originalPrompt
+    }
+  })
+
+  it('ThinkingModeCard 能够正确渲染思考模式配置项、文案与开关切换', () => {
+    render(<ThinkingModeCard />)
+
+    expect(screen.getByText('模型思考模式')).toBeInTheDocument()
+    expect(screen.getByText('会增加耗时')).toBeInTheDocument()
+    expect(screen.getByText(/建议在需要与 AI 进行聊天时才开启/)).toBeInTheDocument()
+
+    const switchEl = screen.getByRole('switch', { name: '模型思考模式' })
+    expect(switchEl).toBeInTheDocument()
+    expect(switchEl).toHaveAttribute('aria-checked', 'false')
+
+    fireEvent.click(switchEl)
+    expect(switchEl).toHaveAttribute('aria-checked', 'true')
+  })
+
+  it('LocalChatView 在服务就绪时渲染 iframe，未就绪时呈现友好的启动引导', async () => {
+    const { unmount } = render(<LocalChatView />)
+
+    // 就绪状态（mock 默认就绪）：显示 iframe
+    const iframe = screen.getByTitle('llama.cpp local chat') as HTMLIFrameElement
+    expect(iframe).toBeInTheDocument()
+    expect(iframe.src).toContain('38400')
+    expect(screen.getByText('与本地AI私密聊天')).toBeInTheDocument()
+
+    unmount()
+
+    // 切换到停止状态
+    useEngineStore.setState(state => ({
+      engineStatus: state.engineStatus ? { ...state.engineStatus, status: 'stopped' } : null
+    }))
+
+    render(<LocalChatView />)
+    expect(screen.getByText('本地推理服务未就绪')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /立即启动服务/ })).toBeInTheDocument()
   })
 })
+

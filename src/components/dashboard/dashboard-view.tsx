@@ -11,26 +11,47 @@ import {
   Sliders,
   ExternalLink,
   ShieldCheck,
-  CheckCircle2
+  CheckCircle2,
+  Play,
+  Square,
+  Loader2,
+  AlertCircle
 } from 'lucide-react'
 import { Card } from '../ui/card'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
 import { Progress } from '../ui/progress'
 import { Label } from '../ui/label'
+import { Alert, AlertTitle, AlertDescription } from '../ui/alert'
+import { toast } from '../common/Toast'
 import { useEngineStore } from '../../stores/engine-store'
 import { useI18nStore } from '../../lib/i18n'
 import { getModelCustomParams } from '../../lib/model-param-storage'
 
 export const DashboardView: React.FC = () => {
   const { t } = useI18nStore()
-  const { engineStatus, models, runtimeParams, activeModelKey } = useEngineStore()
+  const {
+    engineStatus,
+    models,
+    runtimeParams,
+    activeModelKey,
+    startEngine,
+    stopEngine,
+    error: storeError,
+    loading: storeLoading
+  } = useEngineStore()
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null)
+  const [actionLoading, setActionLoading] = useState(false)
 
   const hw = engineStatus?.hardware
   const safeModels = Array.isArray(models) ? models : []
   const installedModelsCount = safeModels.filter(m => m && m.isDownloaded).length
   const totalModelsCount = safeModels.length
+
+  // 服务运行状态
+  const rawStatus = engineStatus?.status || 'stopped'
+  const isRunning = rawStatus === 'ready'
+  const isStarting = rawStatus === 'starting'
 
   // 当前引擎
   const activeBackend = engineStatus?.active_backend || 'vulkan'
@@ -64,9 +85,209 @@ export const DashboardView: React.FC = () => {
     }
   }
 
+  const [startFailedError, setStartFailedError] = useState<string | null>(null)
+
+  const handleStart = async () => {
+    try {
+      setActionLoading(true)
+      setStartFailedError(null)
+      const ok = await startEngine()
+      if (ok) {
+        toast.success(t('AI 推理服务已成功启动！'))
+      } else {
+        const errMsg = useEngineStore.getState().error || engineStatus?.last_error || t('启动失败，请检查模型文件或端口占用')
+        setStartFailedError(errMsg)
+        toast.error(`${t('启动服务失败')}: ${errMsg}`)
+      }
+    } catch (err: any) {
+      const errMsg = err?.message || t('启动异常')
+      setStartFailedError(errMsg)
+      toast.error(`${t('启动异常')}: ${errMsg}`)
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleStop = async () => {
+    try {
+      setActionLoading(true)
+      const ok = await stopEngine()
+      if (ok) {
+        toast.info(t('AI 推理服务已停止'))
+      }
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
-      {/* 顶部核心指标 KPI 仪表卡片栅格 */}
+      {/* 顶部服务启停与运行状态控制区块 */}
+      <Card className="p-5 bg-card/95 border border-border/80 rounded-2xl shadow-xs">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border transition-all ${
+              isRunning
+                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
+                : isStarting
+                  ? 'bg-amber-500/10 border-amber-500/30 text-amber-500 animate-pulse'
+                  : 'bg-muted/40 border-border/60 text-muted-foreground'
+            }`}>
+              <Zap className="h-6 w-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2.5">
+                <h2 className="text-lg font-black tracking-tight text-foreground">
+                  {t('推理引擎后台服务')}
+                </h2>
+                <Badge
+                  variant="outline"
+                  className={`text-xs font-bold px-2 py-0.5 uppercase flex items-center gap-1.5 ${
+                    isRunning
+                      ? 'border-emerald-500/40 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10'
+                      : isStarting
+                        ? 'border-amber-500/40 text-amber-500 bg-amber-500/10'
+                        : 'border-border text-muted-foreground bg-muted/40'
+                  }`}
+                >
+                  <span className={`h-2 w-2 rounded-full ${
+                    isRunning
+                      ? 'bg-emerald-500 animate-pulse'
+                      : isStarting
+                        ? 'bg-amber-500 animate-ping'
+                        : 'bg-muted-foreground'
+                  }`} />
+                  <span>
+                    {isRunning
+                      ? t('运行中 (就绪)')
+                      : isStarting
+                        ? t('正在启动...')
+                        : rawStatus === 'error'
+                          ? t('异常')
+                          : t('已停止')}
+                  </span>
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {t('核心 llama.cpp 推理进程，提供 OpenAI 兼容的 HTTP 接口响应')}
+                <span className="font-mono ml-2 text-foreground/80">127.0.0.1:{port}</span>
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            {isRunning ? (
+              <Button
+                variant="destructive"
+                className="h-10 px-5 font-bold text-xs gap-2 rounded-xl shadow-xs flex-1 sm:flex-initial"
+                onClick={handleStop}
+                disabled={actionLoading || storeLoading}
+              >
+                {actionLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Square className="h-4 w-4 fill-current" />
+                )}
+                <span>{t('停止服务')}</span>
+              </Button>
+            ) : (
+              <Button
+                className="h-10 px-5 font-bold text-xs gap-2 rounded-xl shadow-xs bg-primary text-primary-foreground hover:bg-primary/90 flex-1 sm:flex-initial"
+                onClick={handleStart}
+                disabled={actionLoading || storeLoading || isStarting}
+              >
+                {actionLoading || isStarting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Play className="h-4 w-4 fill-current" />
+                )}
+                <span>{isStarting ? t('启动中...') : t('启动服务')}</span>
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* 启动失败原因详细提示卡片 */}
+        {(startFailedError || engineStatus?.last_error || (rawStatus === 'error' && storeError)) && !isRunning && !isStarting && (
+          <div className="mt-4 pt-4 border-t border-destructive/20 animate-in fade-in duration-200">
+            <Alert variant="destructive" className="bg-destructive/10 border-destructive/30">
+              <AlertCircle className="h-4 w-4 text-destructive" />
+              <div className="ml-2">
+                <AlertTitle className="text-xs font-bold text-destructive">
+                  {t('服务启动失败')}
+                </AlertTitle>
+                <AlertDescription className="text-xs font-mono text-destructive/90 mt-1 break-words">
+                  {startFailedError || engineStatus?.last_error || storeError}
+                </AlertDescription>
+              </div>
+            </Alert>
+          </div>
+        )}
+      </Card>
+
+      {/* 底部：当前模型实时启动参数快照 */}
+      <Card className="p-5 bg-card border border-border/80 rounded-2xl shadow-xs space-y-3">
+        <div className="flex items-center justify-between border-b border-border/40 pb-2.5">
+          <div className="flex items-center gap-2">
+            <Sliders className="h-4 w-4 text-primary" />
+            <span className="font-bold text-sm text-foreground">{t('当前模型引擎启动参数')}</span>
+            <Badge variant="outline" className="text-[10px] border-border/60 font-mono">
+              llama-server CLI flags
+            </Badge>
+          </div>
+          <span className="text-xs font-mono text-muted-foreground">
+            --host 127.0.0.1 --port {port}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 pt-1">
+          <div className="p-2.5 rounded-lg bg-muted/30 border border-border/60">
+            <span className="text-[10px] text-muted-foreground font-semibold uppercase block">
+              {t('-ngl (GPU 层数)')}
+            </span>
+            <span className="text-sm font-mono font-black text-foreground mt-0.5 block">
+              {effectiveParams.n_gpu_layers}
+            </span>
+          </div>
+
+          <div className="p-2.5 rounded-lg bg-muted/30 border border-border/60">
+            <span className="text-[10px] text-muted-foreground font-semibold uppercase block">
+              {t('-c (上下文窗口)')}
+            </span>
+            <span className="text-sm font-mono font-black text-foreground mt-0.5 block">
+              {effectiveParams.ctx_size}
+            </span>
+          </div>
+
+          <div className="p-2.5 rounded-lg bg-muted/30 border border-border/60">
+            <span className="text-[10px] text-muted-foreground font-semibold uppercase block">
+              {t('-t (线程数)')}
+            </span>
+            <span className="text-sm font-mono font-black text-foreground mt-0.5 block">
+              {effectiveParams.threads}
+            </span>
+          </div>
+
+          <div className="p-2.5 rounded-lg bg-muted/30 border border-border/60">
+            <span className="text-[10px] text-muted-foreground font-semibold uppercase block">
+              {t('-b (Batch Size)')}
+            </span>
+            <span className="text-sm font-mono font-black text-foreground mt-0.5 block">
+              {effectiveParams.batch_size}
+            </span>
+          </div>
+
+          <div className="p-2.5 rounded-lg bg-muted/30 border border-border/60">
+            <span className="text-[10px] text-muted-foreground font-semibold uppercase block">
+              {t('-ub (uBatch Size)')}
+            </span>
+            <span className="text-sm font-mono font-black text-foreground mt-0.5 block">
+              {effectiveParams.ubatch_size}
+            </span>
+          </div>
+        </div>
+      </Card>
+      {/* 核心指标 KPI 仪表卡片栅格 */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* 卡片 1: 已安装模型计数 */}
         <Card className="p-4 bg-card/90 border border-border/80 rounded-2xl shadow-xs hover:border-primary/50 transition-colors flex items-center gap-3.5">
@@ -154,29 +375,34 @@ export const DashboardView: React.FC = () => {
         </Card>
       </div>
 
-      {/* 核心双栏：左侧【显存与内存负载监控】+ 右侧【第三方应用集成配置与 URL 复制】 */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* 左侧：显存与物理内存双仪表 (占 6 列) */}
-        <Card className="lg:col-span-6 p-5 bg-card border border-border/80 rounded-2xl shadow-xs space-y-5">
-          <div>
-            <Label className="text-base font-bold tracking-tight text-foreground flex items-center gap-2">
-              <Cpu className="h-4 w-4 text-primary" />
-              <span>{t('硬件负载与运行时资源占用')}</span>
-            </Label>
-            <p className="text-xs text-muted-foreground font-normal mt-1 leading-relaxed">
-              {t('实时检测独立显卡显存 (VRAM) 与系统物理内存 (RAM) 动态分配水位。')}
-            </p>
+      {/* 硬件负载与运行时资源占用：左右独立双列卡片 */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* 左列：GPU 独立显存 (VRAM) */}
+        <Card className="p-5 bg-card border border-border/80 rounded-2xl shadow-xs space-y-4">
+          <div className="flex items-center justify-between border-b border-border/40 pb-3">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                <HardDrive className="h-4 w-4" />
+              </div>
+              <div>
+                <Label className="text-sm font-bold tracking-tight text-foreground block">
+                  {t('GPU 独立显存 (VRAM)')}
+                </Label>
+                <span className="text-[10px] text-muted-foreground block" title={hw?.gpu_name}>
+                  {hw?.gpu_name || t('默认图形加速卡')}
+                </span>
+              </div>
+            </div>
+            <Badge variant="outline" className="text-[10px] font-bold font-mono">
+              {vramPercent}%
+            </Badge>
           </div>
 
-          {/* 显存负载条 */}
-          <div className="p-4 rounded-xl bg-muted/30 border border-border/70 space-y-2.5">
-            <div className="flex items-center justify-between text-xs font-bold">
-              <div className="flex items-center gap-2">
-                <HardDrive className="h-3.5 w-3.5 text-amber-500" />
-                <span className="text-foreground">{t('GPU 独立显存 (VRAM)')}</span>
-              </div>
-              <span className="font-mono text-xs text-muted-foreground">
-                {usedVramMb} MB / {Math.round(totalVramMb)} MB ({vramPercent}%)
+          <div className="space-y-3">
+            <div className="flex items-center justify-between text-xs font-mono">
+              <span className="text-muted-foreground">{t('已分配水位')}</span>
+              <span className="font-bold text-foreground">
+                {usedVramMb} MB / {Math.round(totalVramMb)} MB
               </span>
             </div>
             <Progress
@@ -184,23 +410,41 @@ export const DashboardView: React.FC = () => {
               className="h-2.5 bg-muted/60"
               indicatorClassName={vramPercent > 85 ? 'bg-amber-500' : 'bg-primary'}
             />
-            <div className="flex items-center justify-between text-[11px] text-muted-foreground font-mono">
-              <span>{t('可用余量')}: {Math.max(0, Math.round(totalVramMb - usedVramMb))} MB</span>
-              <span className="font-sans font-semibold text-foreground/80">
+            <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+              <span>{t('可用余量')}: <strong className="text-foreground font-mono">{Math.max(0, Math.round(totalVramMb - usedVramMb))} MB</strong></span>
+              <span className="font-semibold text-foreground/80">
                 {hw?.is_integrated ? t('共享系统显存') : t('独立显存')}
               </span>
             </div>
           </div>
+        </Card>
 
-          {/* 物理内存负载条 */}
-          <div className="p-4 rounded-xl bg-muted/30 border border-border/70 space-y-2.5">
-            <div className="flex items-center justify-between text-xs font-bold">
-              <div className="flex items-center gap-2">
-                <Cpu className="h-3.5 w-3.5 text-blue-500" />
-                <span className="text-foreground">{t('系统物理内存 (RAM)')}</span>
+        {/* 右列：系统物理内存 (RAM) */}
+        <Card className="p-5 bg-card border border-border/80 rounded-2xl shadow-xs space-y-4">
+          <div className="flex items-center justify-between border-b border-border/40 pb-3">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10 text-blue-500 border border-blue-500/20">
+                <Cpu className="h-4 w-4" />
               </div>
-              <span className="font-mono text-xs text-muted-foreground">
-                {usedRamGb.toFixed(1)} GB / {totalRamGb.toFixed(1)} GB ({ramPercent}%)
+              <div>
+                <Label className="text-sm font-bold tracking-tight text-foreground block">
+                  {t('系统物理内存 (RAM)')}
+                </Label>
+                <span className="text-[10px] text-muted-foreground block">
+                  {hw?.cpu_cores ? `${hw.cpu_cores} ${t('核心')} / ${hw.cpu_threads || hw.cpu_cores * 2} ${t('线程')}` : t('中央处理器')}
+                </span>
+              </div>
+            </div>
+            <Badge variant="outline" className="text-[10px] font-bold font-mono">
+              {ramPercent}%
+            </Badge>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between text-xs font-mono">
+              <span className="text-muted-foreground">{t('已使用容量')}</span>
+              <span className="font-bold text-foreground">
+                {usedRamGb.toFixed(1)} GB / {totalRamGb.toFixed(1)} GB
               </span>
             </div>
             <Progress
@@ -208,24 +452,25 @@ export const DashboardView: React.FC = () => {
               className="h-2.5 bg-muted/60"
               indicatorClassName="bg-blue-500"
             />
-            <div className="flex items-center justify-between text-[11px] text-muted-foreground font-mono">
-              <span>{t('可用余量')}: {Math.max(0, totalRamGb - usedRamGb).toFixed(1)} GB</span>
-              <span className="font-sans font-semibold text-foreground/80">
-                {hw?.cpu_cores ? `${hw.cpu_cores} ${t('核心')} / ${hw.cpu_threads || hw.cpu_cores * 2} ${t('线程')}` : t('CPU 自适应')}
+            <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+              <span>{t('可用余量')}: <strong className="text-foreground font-mono">{Math.max(0, totalRamGb - usedRamGb).toFixed(1)} GB</strong></span>
+              <span className="font-semibold text-foreground/80">
+                {t('系统统一调度')}
               </span>
             </div>
           </div>
         </Card>
+      </div>
 
-        {/* 右侧：第三方集成接口与启动参数 (占 6 列) */}
-        <Card className="lg:col-span-6 p-5 bg-card border border-border/80 rounded-2xl shadow-xs space-y-5">
+      {/* 第三方应用集成配置与 URL 复制 */}
+      <Card className="p-5 bg-card border border-border/80 rounded-2xl shadow-xs space-y-5">
           <div>
             <Label className="text-base font-bold tracking-tight text-foreground flex items-center gap-2">
               <ExternalLink className="h-4 w-4 text-primary" />
               <span>{t('第三方应用对接与 API 地址')}</span>
             </Label>
             <p className="text-xs text-muted-foreground font-normal mt-1 leading-relaxed">
-              {t('完全兼容 OpenAI 标准协议，可无缝配置至 Cherry Studio、ChatBox、NextChat 等客户端。')}
+              {t('完全兼容 OpenAI 标准协议，可无缝配置至 萤核智能文件夹、龙虾、Cherry Studio、ChatBox、NextChat 等客户端。')}
             </p>
           </div>
 
@@ -320,71 +565,9 @@ export const DashboardView: React.FC = () => {
               </Button>
             </div>
           </div>
-        </Card>
-      </div>
-
-      {/* 底部：当前模型实时启动参数快照 */}
-      <Card className="p-5 bg-card border border-border/80 rounded-2xl shadow-xs space-y-3">
-        <div className="flex items-center justify-between border-b border-border/40 pb-2.5">
-          <div className="flex items-center gap-2">
-            <Sliders className="h-4 w-4 text-primary" />
-            <span className="font-bold text-sm text-foreground">{t('当前模型引擎启动参数')}</span>
-            <Badge variant="outline" className="text-[10px] border-border/60 font-mono">
-              llama-server CLI flags
-            </Badge>
-          </div>
-          <span className="text-xs font-mono text-muted-foreground">
-            --host 127.0.0.1 --port {port}
-          </span>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 pt-1">
-          <div className="p-2.5 rounded-lg bg-muted/30 border border-border/60">
-            <span className="text-[10px] text-muted-foreground font-semibold uppercase block">
-              {t('-ngl (GPU 层数)')}
-            </span>
-            <span className="text-sm font-mono font-black text-foreground mt-0.5 block">
-              {effectiveParams.n_gpu_layers}
-            </span>
-          </div>
-
-          <div className="p-2.5 rounded-lg bg-muted/30 border border-border/60">
-            <span className="text-[10px] text-muted-foreground font-semibold uppercase block">
-              {t('-c (上下文窗口)')}
-            </span>
-            <span className="text-sm font-mono font-black text-foreground mt-0.5 block">
-              {effectiveParams.ctx_size}
-            </span>
-          </div>
-
-          <div className="p-2.5 rounded-lg bg-muted/30 border border-border/60">
-            <span className="text-[10px] text-muted-foreground font-semibold uppercase block">
-              {t('-t (线程数)')}
-            </span>
-            <span className="text-sm font-mono font-black text-foreground mt-0.5 block">
-              {effectiveParams.threads}
-            </span>
-          </div>
-
-          <div className="p-2.5 rounded-lg bg-muted/30 border border-border/60">
-            <span className="text-[10px] text-muted-foreground font-semibold uppercase block">
-              {t('-b (Batch Size)')}
-            </span>
-            <span className="text-sm font-mono font-black text-foreground mt-0.5 block">
-              {effectiveParams.batch_size}
-            </span>
-          </div>
-
-          <div className="p-2.5 rounded-lg bg-muted/30 border border-border/60">
-            <span className="text-[10px] text-muted-foreground font-semibold uppercase block">
-              {t('-ub (uBatch Size)')}
-            </span>
-            <span className="text-sm font-mono font-black text-foreground mt-0.5 block">
-              {effectiveParams.ubatch_size}
-            </span>
-          </div>
-        </div>
       </Card>
+
+
     </div>
   )
 }

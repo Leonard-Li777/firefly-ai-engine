@@ -67,6 +67,11 @@ bytes = "1"
 
 # HTTP 消息体
 http-body-util = "0.1"
+rfd = "0.17.2"
+
+# 校验与解压
+sha2 = "0.10"
+zip = { version = "2", default-features = false, features = ["deflate"] }
 
 [dev-dependencies]
 tokio-test = "0.4"

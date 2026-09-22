@@ -24,7 +24,7 @@ export interface SpeculativeDraftPair {
  */
 export class UnifiedModelManager {
   private static instance: UnifiedModelManager
-  private modelsDir: string = 'D:\\AI_Models'
+  private modelsDir: string = 'build/extraResources/models'
   private currentLanguage: SupportedLanguage = 'zh-CN'
 
   private constructor() {}

@@ -85,6 +85,26 @@ export interface IEngineApiClient {
    * 重置驱动降级状态（用户升级驱动后重新检测）
    */
   resetDowngrade(): Promise<{ status: string }>
+
+  /**
+   * 启动 AI 引擎后台服务
+   */
+  startEngine(): Promise<{ success: boolean; message?: string; error?: string }>
+
+  /**
+   * 停止 AI 引擎后台服务
+   */
+  stopEngine(): Promise<{ success: boolean; message?: string; error?: string }>
+
+  /**
+   * 获取最近的 llama.cpp 运行时日志
+   */
+  getEngineLogs(): Promise<{ logs: string[] }>
+
+  /**
+   * 清空运行时日志
+   */
+  clearEngineLogs(): Promise<{ success: boolean }>
 }
 
 /**
@@ -118,8 +138,32 @@ export class EngineApiClient implements IEngineApiClient {
     return this.useMock
   }
 
+  /**
+   * 确保已绑定 Tauri 后端分配的真实动态端口
+   * 如果 38400 被占用滑动到了 38401+，自动通过 IPC 获取真实端口更新 baseUrl
+   */
+  public async ensureReady(): Promise<void> {
+    if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
+      const { invoke } = await import('@tauri-apps/api/core')
+      for (let i = 0; i < 20; i++) {
+        try {
+          const actualPort = await invoke<number>('get_server_port')
+          if (actualPort && actualPort > 0) {
+            this.baseUrl = `http://127.0.0.1:${actualPort}`
+            this.useMock = false
+            return
+          }
+        } catch {
+          // 端口可能仍在启动探测中，稍作等待后重试
+        }
+        await new Promise(res => setTimeout(res, 100))
+      }
+    }
+  }
+
   async getEngineStatus(): Promise<EngineStatusResponse> {
     if (this.useMock) return mockApiClient.getEngineStatus()
+    await this.ensureReady()
     try {
       const res = await fetch(`${this.baseUrl}/api/engine/status`)
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
@@ -131,6 +175,7 @@ export class EngineApiClient implements IEngineApiClient {
 
   async switchEngine(backend: string): Promise<{ success: boolean; message?: string }> {
     if (this.useMock) return mockApiClient.switchEngine(backend)
+    await this.ensureReady()
     try {
       const res = await fetch(`${this.baseUrl}/api/engine/switch`, {
         method: 'POST',
@@ -146,6 +191,7 @@ export class EngineApiClient implements IEngineApiClient {
 
   async getEngineList(): Promise<EngineItem[]> {
     if (this.useMock) return mockApiClient.getEngineList()
+    await this.ensureReady()
     try {
       const res = await fetch(`${this.baseUrl}/api/engine/list`)
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
@@ -160,11 +206,74 @@ export class EngineApiClient implements IEngineApiClient {
     backend: string,
     onProgress?: (progress: DownloadProgressEvent) => void
   ): Promise<{ success: boolean }> {
-    return mockApiClient.downloadEngine(backend, onProgress)
+    if (this.useMock) return mockApiClient.downloadEngine(backend, onProgress)
+    await this.ensureReady()
+    try {
+      // 1. 发起引擎下载任务
+      const res = await fetch(`${this.baseUrl}/api/engine/download/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ backend })
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const task = await res.json()
+      const taskId: string = task.taskId
+
+      // 2. 轮询下载进度直到完成
+      await new Promise<void>((resolve, reject) => {
+        const poll = async () => {
+          try {
+            const statusRes = await fetch(`${this.baseUrl}/api/engine/download/status/${taskId}`)
+            if (!statusRes.ok) {
+              reject(new Error(`HTTP ${statusRes.status}`))
+              return
+            }
+            const status = await statusRes.json()
+
+            const event: DownloadProgressEvent = {
+              taskId,
+              modelId: `engine-${backend}`,
+              sourceName: status.source,
+              percent: status.percent || 0,
+              receivedBytes: status.receivedBytes || 0,
+              totalBytes: status.totalBytes || 0,
+              speedBps: status.speedBps || 0,
+              status: status.status,
+              currentFileName: status.currentFileName,
+              fileIndex: status.fileIndex,
+              totalFiles: status.totalFiles,
+              error: status.error
+            }
+            onProgress?.(event)
+
+            if (status.status === 'completed') {
+              resolve()
+            } else if (status.status === 'error') {
+              reject(new Error(status.error || '引擎下载失败'))
+            } else if (status.status === 'canceled') {
+              reject(new Error('引擎下载已取消'))
+            } else {
+              setTimeout(poll, 500)
+            }
+          } catch (e) {
+            reject(e)
+          }
+        }
+        poll()
+      })
+
+      return { success: true }
+    } catch (err) {
+      if (this.useMock || (typeof window !== 'undefined' && !(window as any).__TAURI_INTERNALS__)) {
+        return mockApiClient.downloadEngine(backend, onProgress)
+      }
+      throw err
+    }
   }
 
   async listModels(source?: string): Promise<ModelItem[]> {
     if (this.useMock) return mockApiClient.listModels(source)
+    await this.ensureReady()
     try {
       const url = source ? `${this.baseUrl}/api/models?source=${source}` : `${this.baseUrl}/api/models`
       const res = await fetch(url)
@@ -182,6 +291,7 @@ export class EngineApiClient implements IEngineApiClient {
     onProgress?: (event: DownloadProgressEvent) => void
   ): Promise<DownloadTaskSummary> {
     if (this.useMock) return mockApiClient.startModelDownload(modelId, options, onProgress)
+    await this.ensureReady()
     try {
       // 1. 发起下载任务
       const res = await fetch(`${this.baseUrl}/api/models/download/start`, {
@@ -243,8 +353,12 @@ export class EngineApiClient implements IEngineApiClient {
 
       return { taskId, totalBytes: 0, isDownloaded: true }
     } catch (err) {
-      // 降级到 mock（开发模式）
-      return mockApiClient.startModelDownload(modelId, options, onProgress)
+      // 仅在明确启用 useMock 或在非 Tauri 纯前端单测沙盒环境中回退到 mockApiClient
+      if (this.useMock || (typeof window !== 'undefined' && !(window as any).__TAURI_INTERNALS__)) {
+        return mockApiClient.startModelDownload(modelId, options, onProgress)
+      }
+      // 在 Tauri 真实运行环境中直接向上抛出异常，不再被动伪装成 Mock 成功
+      throw err
     }
   }
 
@@ -276,6 +390,7 @@ export class EngineApiClient implements IEngineApiClient {
 
   async updateModelStoragePath(newPath: string): Promise<{ success: boolean; scannedModelsCount: number }> {
     if (this.useMock) return mockApiClient.updateModelStoragePath(newPath)
+    await this.ensureReady()
     try {
       const res = await fetch(`${this.baseUrl}/api/engine/models-dir`, {
         method: 'POST',
@@ -291,6 +406,7 @@ export class EngineApiClient implements IEngineApiClient {
 
   async rescanModels(): Promise<ModelItem[]> {
     if (this.useMock) return mockApiClient.rescanModels()
+    await this.ensureReady()
     try {
       const res = await fetch(`${this.baseUrl}/api/models/rescan`, { method: 'POST' })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
@@ -303,6 +419,7 @@ export class EngineApiClient implements IEngineApiClient {
 
   async updateRuntimeParams(params: Partial<RuntimeParams>): Promise<{ success: boolean }> {
     if (this.useMock) return mockApiClient.updateRuntimeParams(params)
+    await this.ensureReady()
     try {
       const res = await fetch(`${this.baseUrl}/api/engine/params`, {
         method: 'POST',
@@ -318,6 +435,7 @@ export class EngineApiClient implements IEngineApiClient {
 
   async switchModel(modelId: string, source?: string): Promise<{ success: boolean; currentModel: string }> {
     if (this.useMock) return mockApiClient.switchModel(modelId, source)
+    await this.ensureReady()
     try {
       const res = await fetch(`${this.baseUrl}/api/models/switch`, {
         method: 'POST',
@@ -333,6 +451,7 @@ export class EngineApiClient implements IEngineApiClient {
 
   async resetDowngrade(): Promise<{ status: string }> {
     if (this.useMock) return mockApiClient.resetDowngrade()
+    await this.ensureReady()
     try {
       const res = await fetch(`${this.baseUrl}/api/engine/reset-downgrade`, {
         method: 'POST',
@@ -342,6 +461,60 @@ export class EngineApiClient implements IEngineApiClient {
       return await res.json()
     } catch {
       return mockApiClient.resetDowngrade()
+    }
+  }
+
+  async startEngine(): Promise<{ success: boolean; message?: string; error?: string }> {
+    if (this.useMock) return mockApiClient.startEngine()
+    await this.ensureReady()
+    try {
+      const res = await fetch(`${this.baseUrl}/api/engine/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+      return await res.json()
+    } catch {
+      return mockApiClient.startEngine()
+    }
+  }
+
+  async stopEngine(): Promise<{ success: boolean; message?: string; error?: string }> {
+    if (this.useMock) return mockApiClient.stopEngine()
+    await this.ensureReady()
+    try {
+      const res = await fetch(`${this.baseUrl}/api/engine/stop`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+      return await res.json()
+    } catch {
+      return mockApiClient.stopEngine()
+    }
+  }
+
+  async getEngineLogs(): Promise<{ logs: string[] }> {
+    if (this.useMock) return mockApiClient.getEngineLogs()
+    await this.ensureReady()
+    try {
+      const res = await fetch(`${this.baseUrl}/api/engine/logs`)
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      return await res.json()
+    } catch {
+      return mockApiClient.getEngineLogs()
+    }
+  }
+
+  async clearEngineLogs(): Promise<{ success: boolean }> {
+    if (this.useMock) return mockApiClient.clearEngineLogs()
+    await this.ensureReady()
+    try {
+      const res = await fetch(`${this.baseUrl}/api/engine/logs/clear`, {
+        method: 'POST'
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      return await res.json()
+    } catch {
+      return mockApiClient.clearEngineLogs()
     }
   }
 }

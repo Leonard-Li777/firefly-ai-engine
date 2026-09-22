@@ -58,6 +58,7 @@ export interface EngineStatusResponse {
   hardware: HardwareSpec
   downgrade_info?: DowngradeInfo
   runtime_params?: RuntimeParams
+  last_error?: string
 }
 
 /**
@@ -73,6 +74,8 @@ export interface EngineItem {
   isCurrent: boolean
   isInstalled: boolean
   downloadSizeMb?: number
+  driverCompliant?: boolean
+  driverUpdateUrl?: string
   downloadState?: {
     status: 'idle' | 'downloading' | 'extracting' | 'completed' | 'error'
     progress: number
@@ -118,6 +121,7 @@ export interface DownloadProgressEvent {
   taskId: string
   modelId: string
   source?: ModelSource
+  sourceName?: string
   percent: number
   receivedBytes: number
   totalBytes: number

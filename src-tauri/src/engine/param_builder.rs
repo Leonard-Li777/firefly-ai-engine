@@ -50,6 +50,20 @@ pub struct ModelInfo {
     pub force_ubatch_size: Option<u32>,
     /// 是否强制 CPU 模式
     pub force_cpu: bool,
+    /// 是否启用思考模式（默认 false，关闭时注入推理抑制参数）
+    pub enable_thinking: bool,
+    /// 是否为 MiniCPM5 架构
+    pub is_minicpm5: bool,
+    /// 是否为 Nanbeige4 架构
+    pub is_nanbeige4: bool,
+    /// 多模态投影器路径（--mmproj）
+    pub mmproj_path: Option<String>,
+    /// DSpark 草稿模型路径（--model-draft + --spec-type draft-dspark）
+    pub dspark_path: Option<String>,
+    /// MTP 或普通草稿模型路径（--model-draft + --spec-type draft-mtp）
+    pub draft_path: Option<String>,
+    /// 是否为生产环境（注入 --verbose）
+    pub is_production: bool,
 }
 
 impl ModelInfo {
@@ -334,13 +348,61 @@ impl ParamBuilder {
         physical_cores.saturating_sub(2).max(2).min(8)
     }
 
-    /// 将参数转换为 llama-server 命令行参数列表
-    pub fn to_args(params: &EngineParams, port: u16, model_path: &str, model_alias: &str) -> Vec<String> {
+    /// 将参数转换为 llama-server 命令行参数列表（1:1 对等桌面端完整参数生成）
+    pub fn to_args(
+        params: &EngineParams,
+        port: u16,
+        model_path: &str,
+        model_alias: &str,
+        model_info: Option<&ModelInfo>,
+    ) -> Vec<String> {
         let mut args = vec![
-            "--model".to_string(),
-            model_path.to_string(),
+            "--host".to_string(),
+            "127.0.0.1".to_string(),
             "--port".to_string(),
             port.to_string(),
+            "--model".to_string(),
+            model_path.to_string(),
+        ];
+
+        // 多模态投影器 --mmproj
+        if let Some(info) = model_info {
+            if let Some(ref mmproj) = info.mmproj_path {
+                args.extend(["--mmproj".to_string(), mmproj.clone()]);
+            }
+
+            // DSpark 投机采样
+            if let Some(ref dspark) = info.dspark_path {
+                args.extend([
+                    "--model-draft".to_string(),
+                    dspark.clone(),
+                    "--spec-type".to_string(),
+                    "draft-dspark".to_string(),
+                    "--spec-draft-n-max".to_string(),
+                    "5".to_string(),
+                    "--spec-draft-n-min".to_string(),
+                    "0".to_string(),
+                ]);
+                if !params.is_cpu_mode && params.gpu_layers > 0 {
+                    args.extend([
+                        "--gpu-layers-draft".to_string(),
+                        params.gpu_layers.to_string(),
+                    ]);
+                }
+            } else if let Some(ref draft) = info.draft_path {
+                // MTP / 常规 Draft
+                args.extend([
+                    "--model-draft".to_string(),
+                    draft.clone(),
+                    "--spec-type".to_string(),
+                    "draft-mtp".to_string(),
+                    "--spec-draft-n-max".to_string(),
+                    "3".to_string(),
+                ]);
+            }
+        }
+
+        args.extend([
             "--ctx-size".to_string(),
             params.ctx_size.to_string(),
             "--alias".to_string(),
@@ -353,13 +415,65 @@ impl ParamBuilder {
             "1.1".to_string(),
             "--parallel".to_string(),
             "1".to_string(),
-        ];
+        ]);
+
+        // 思考模式与聊天模板
+        let enable_thinking = model_info.map(|i| i.enable_thinking).unwrap_or(false);
+        let is_minicpm5 = model_info.map(|i| i.is_minicpm5).unwrap_or(false);
+        let is_nanbeige4 = model_info.map(|i| i.is_nanbeige4).unwrap_or(false);
+
+        if !enable_thinking {
+            args.extend([
+                "--reasoning".to_string(),
+                "off".to_string(),
+                "--reasoning-format".to_string(),
+                "none".to_string(),
+                "--reasoning-budget".to_string(),
+                "0".to_string(),
+            ]);
+
+            if is_minicpm5 {
+                args.extend([
+                    "--temp".to_string(),
+                    "0.7".to_string(),
+                    "--top-p".to_string(),
+                    "0.95".to_string(),
+                    "--chat-template".to_string(),
+                    "chatml".to_string(),
+                ]);
+            } else if is_nanbeige4 {
+                args.extend([
+                    "--chat-template".to_string(),
+                    "{% for message in messages %}{{'<|im_start|>' + message['role'] + '\\n' + message['content'] + '<|im_end|>\\n'}}{% endfor %}".to_string(),
+                ]);
+            } else {
+                args.extend([
+                    "--chat-template".to_string(),
+                    "{% for message in messages %}{{'<|im_start|>' + message['role'] + '\\n' + message['content'] + '<|im_end|>\\n'}}{% endfor %}{% if add_generation_prompt %}{{ '<|im_start|>assistant\\n' }}{% endif %}".to_string(),
+                ]);
+            }
+        } else {
+            args.extend([
+                "--reasoning-budget".to_string(),
+                "1024".to_string(),
+                "--temp".to_string(),
+                "0.9".to_string(),
+                "--top-p".to_string(),
+                "0.95".to_string(),
+            ]);
+        }
 
         // Flash Attention
         if params.flash_attention {
-            args.extend(["--flash-attn".to_string()]);
+            args.extend(["-fa".to_string(), "auto".to_string()]);
         } else {
-            // Vulkan/CPU/Pascal 显卡强制关闭 FA
+            args.extend(["-fa".to_string(), "off".to_string()]);
+        }
+
+        // 生产环境详细日志
+        let is_prod = model_info.map(|i| i.is_production).unwrap_or(false);
+        if is_prod {
+            args.extend(["--verbose".to_string()]);
         }
 
         // GPU 层数
@@ -431,6 +545,13 @@ mod tests {
             force_batch_size: None,
             force_ubatch_size: None,
             force_cpu: false,
+            enable_thinking: false,
+            is_minicpm5: false,
+            is_nanbeige4: false,
+            mmproj_path: None,
+            dspark_path: None,
+            draft_path: None,
+            is_production: false,
         }
     }
 
@@ -567,5 +688,41 @@ mod tests {
         // offload = 1.8 / 4.3 ≈ 41.8% < 85% → 动态卸载
         assert!(params.gpu_layers >= 8 && params.gpu_layers <= 16, "核显层数应在 8~16 层");
         assert!(!params.flash_attention, "Vulkan 不支持 Flash Attention");
+    }
+
+    #[test]
+    fn test_to_args_with_thinking_suppression_and_dspark() {
+        let resources = make_resources_with_dgpu(12 * 1024);
+        let mut model = make_model(7.0, 4.3);
+        model.enable_thinking = false;
+        model.dspark_path = Some("D:\\models\\dspark.gguf".to_string());
+        model.is_production = true;
+
+        let params = ParamBuilder::compute(&resources, &model, "cuda");
+        let args = ParamBuilder::to_args(&params, 38400, "D:\\models\\main.gguf", "test-model", Some(&model));
+
+        // 验证推理抑制
+        assert!(args.contains(&"--reasoning".to_string()));
+        let r_idx = args.iter().position(|r| r == "--reasoning").unwrap();
+        assert_eq!(args[r_idx + 1], "off");
+
+        assert!(args.contains(&"--reasoning-format".to_string()));
+        let rf_idx = args.iter().position(|r| r == "--reasoning-format").unwrap();
+        assert_eq!(args[rf_idx + 1], "none");
+
+        assert!(args.contains(&"--reasoning-budget".to_string()));
+        let rb_idx = args.iter().position(|r| r == "--reasoning-budget").unwrap();
+        assert_eq!(args[rb_idx + 1], "0");
+
+        // 验证 DSpark
+        assert!(args.contains(&"--spec-type".to_string()));
+        let st_idx = args.iter().position(|r| r == "--spec-type").unwrap();
+        assert_eq!(args[st_idx + 1], "draft-dspark");
+
+        assert!(args.contains(&"--model-draft".to_string()));
+        let md_idx = args.iter().position(|r| r == "--model-draft").unwrap();
+        assert_eq!(args[md_idx + 1], "D:\\models\\dspark.gguf");
+
+        assert!(args.contains(&"--verbose".to_string()));
     }
 }

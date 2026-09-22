@@ -128,4 +128,85 @@ describe('LlamaCommandBuilder & Execution Security Matrix', () => {
     expect(ctx.env['LLAMA_CACHE']).toBeDefined()
     expect(typeof ctx.env['LLAMA_CACHE']).toBe('string')
   })
+
+  it('should inject thinking suppression and chat-template when enableThinking is false', () => {
+    const ctx = LlamaCommandBuilder.buildCommandContext({
+      modelId: 'unsloth/Qwen3.5-0.8B-GGUF:UD-Q4_K_XL',
+      enableThinking: false
+    })
+
+    expect(ctx.args).toContain('--reasoning')
+    expect(ctx.args[ctx.args.indexOf('--reasoning') + 1]).toBe('off')
+    expect(ctx.args).toContain('--reasoning-format')
+    expect(ctx.args[ctx.args.indexOf('--reasoning-format') + 1]).toBe('none')
+    expect(ctx.args).toContain('--reasoning-budget')
+    expect(ctx.args[ctx.args.indexOf('--reasoning-budget') + 1]).toBe('0')
+    expect(ctx.args).toContain('--chat-template')
+    expect(ctx.fullCommandLine).toContain('--reasoning off')
+  })
+
+  it('should inject thinking parameters when enableThinking is true', () => {
+    const ctx = LlamaCommandBuilder.buildCommandContext({
+      modelId: 'unsloth/Qwen3.5-0.8B-GGUF:UD-Q4_K_XL',
+      enableThinking: true
+    })
+
+    expect(ctx.args).not.toContain('--reasoning')
+    expect(ctx.args).toContain('--reasoning-budget')
+    expect(ctx.args[ctx.args.indexOf('--reasoning-budget') + 1]).toBe('1024')
+    expect(ctx.args).toContain('--temp')
+    expect(ctx.args[ctx.args.indexOf('--temp') + 1]).toBe('0.9')
+    expect(ctx.args).toContain('--top-p')
+    expect(ctx.args[ctx.args.indexOf('--top-p') + 1]).toBe('0.95')
+  })
+
+  it('should handle MiniCPM5 specific no-think mode and chatml template', () => {
+    const ctx = LlamaCommandBuilder.buildCommandContext({
+      modelId: 'openbmb/MiniCPM5-1B-GGUF',
+      enableThinking: false
+    })
+
+    expect(ctx.args).toContain('--chat-template')
+    expect(ctx.args[ctx.args.indexOf('--chat-template') + 1]).toBe('chatml')
+    expect(ctx.args).toContain('--temp')
+    expect(ctx.args[ctx.args.indexOf('--temp') + 1]).toBe('0.7')
+    expect(ctx.args).toContain('--top-p')
+    expect(ctx.args[ctx.args.indexOf('--top-p') + 1]).toBe('0.95')
+  })
+
+  it('should handle Nanbeige4 specific custom template for GBNF sampler compatibility', () => {
+    const ctx = LlamaCommandBuilder.buildCommandContext({
+      modelId: 'Nanbeige4-3B-GGUF',
+      enableThinking: false
+    })
+
+    expect(ctx.args).toContain('--chat-template')
+    const template = ctx.args[ctx.args.indexOf('--chat-template') + 1]
+    expect(template).not.toContain('add_generation_prompt')
+    expect(template).toContain('<|im_start|>')
+  })
+
+  it('should inject --verbose in production mode', () => {
+    const ctx = LlamaCommandBuilder.buildCommandContext({
+      modelId: 'unsloth/Qwen3.5-0.8B-GGUF:UD-Q4_K_XL',
+      isProduction: true
+    })
+
+    expect(ctx.args).toContain('--verbose')
+  })
+
+  it('should deduplicate and override base args with extraArgs', () => {
+    const ctx = LlamaCommandBuilder.buildCommandContext({
+      modelId: 'unsloth/Qwen3.5-0.8B-GGUF:UD-Q4_K_XL',
+      extraArgs: ['--port', '40000', '--parallel', '4']
+    })
+
+    const portIndices = ctx.args.reduce<number[]>((acc, cur, idx) => cur === '--port' ? [...acc, idx] : acc, [])
+    expect(portIndices.length).toBe(1)
+    expect(ctx.args[portIndices[0] + 1]).toBe('40000')
+
+    const parallelIndices = ctx.args.reduce<number[]>((acc, cur, idx) => cur === '--parallel' ? [...acc, idx] : acc, [])
+    expect(parallelIndices.length).toBe(1)
+    expect(ctx.args[parallelIndices[0] + 1]).toBe('4')
+  })
 })

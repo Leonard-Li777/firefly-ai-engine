@@ -24,6 +24,20 @@ async fn get_server_port(coordinator: tauri::State<'_, Arc<EngineCoordinator>>) 
     port.ok_or_else(|| "服务启动中，暂未分配端口".to_string())
 }
 
+/// 弹出系统原生目录选择对话框
+#[tauri::command]
+async fn select_directory(default_path: Option<String>) -> Result<Option<String>, String> {
+    let mut dialog = rfd::AsyncFileDialog::new();
+    if let Some(ref dp) = default_path {
+        let p = std::path::Path::new(dp);
+        if p.exists() {
+            dialog = dialog.set_directory(p);
+        }
+    }
+    let folder = dialog.set_title("选择模型存储目录").pick_folder().await;
+    Ok(folder.map(|f| f.path().to_string_lossy().to_string()))
+}
+
 /// 构建并运行 Tauri 应用
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -68,6 +82,8 @@ pub fn run() {
             // 初始化驱动合规服务
             let compliance = DriverComplianceService::new();
 
+            let proxy_state = ProxyState::new();
+
             // 初始化引擎协调器
             let bin_dir = app_install_dir.join("bin");
             let coordinator = EngineCoordinator::new(
@@ -75,10 +91,10 @@ pub fn run() {
                 compliance,
                 bin_dir,
                 config.clone(),
+                proxy_state.clone(),
             );
 
             let coordinator_clone = coordinator.clone();
-            let proxy_state = ProxyState::new();
             let proxy_state_clone = proxy_state.clone();
 
             // 在后台启动 Axum HTTP 服务器
@@ -112,7 +128,7 @@ pub fn run() {
 
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![get_server_port])
+        .invoke_handler(tauri::generate_handler![get_server_port, select_directory])
         .on_window_event(|window, event| {
             // 关闭窗口时最小化到托盘而不是退出
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {

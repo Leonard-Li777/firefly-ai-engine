@@ -6,6 +6,9 @@ import { Button } from '../ui/button'
 import { Label } from '../ui/label'
 import { useEngineStore } from '../../stores/engine-store'
 import { useI18nStore } from '../../lib/i18n'
+import { invoke } from '@tauri-apps/api/core'
+
+import { validateModelPath } from '../../lib/path-utils'
 
 export const ModelStorageConfig: React.FC = () => {
   const { t } = useI18nStore()
@@ -18,18 +21,11 @@ export const ModelStorageConfig: React.FC = () => {
     setInputPath(modelsDir)
   }, [modelsDir])
 
-  const validatePath = (pathStr: string): boolean => {
-    if (!pathStr || pathStr.trim().length === 0) return false
-    // 简单的 Windows / POSIX 路径格式校验
-    const isWindows = /^[a-zA-Z]:[\\/]/.test(pathStr)
-    const isPosix = pathStr.startsWith('/')
-    return isWindows || isPosix
-  }
-
   const handleSave = async (pathOverride?: string) => {
     const targetPath = (pathOverride || inputPath).trim()
-    if (!validatePath(targetPath)) {
-      setFeedback({ type: 'error', message: t('路径格式不合法，请输入绝对路径（如 D:\\AI_Models 或 /data/models）') })
+    const validation = validateModelPath(targetPath)
+    if (!validation.isValid) {
+      setFeedback({ type: 'error', message: validation.error || t('路径格式不合法') })
       return
     }
 
@@ -46,19 +42,21 @@ export const ModelStorageConfig: React.FC = () => {
     }
   }
 
-  // 模拟调用系统目录选择器（在 Tauri 2 环境下调用 dialog.open）
+  // 调用 Tauri 原生目录选择对话框（通过自定义 select_directory 命令实现）
   const handleBrowse = async () => {
     if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
       try {
-        const dialogModule = await (new Function('return import("@tauri-apps/plugin-dialog")'))()
-        const selected = await dialogModule.open({ directory: true, multiple: false })
-        if (selected && typeof selected === 'string') {
+        // 调用 Rust 侧 rfd 弹出系统原生目录选择器
+        const selected = await invoke<string | null>('select_directory', {
+          defaultPath: modelsDir
+        })
+        if (selected) {
           setInputPath(selected)
           await handleSave(selected)
         }
         return
       } catch (e) {
-        console.warn('Tauri 目录选择器不可用，进入沙盒选择模式:', e)
+        console.warn('Tauri 目录选择器不可用:', e)
       }
     }
 
@@ -88,37 +86,27 @@ export const ModelStorageConfig: React.FC = () => {
         <div className="relative flex-1">
           <Input
             value={inputPath}
-            onChange={e => setInputPath(e.target.value)}
-            onKeyDown={e => {
-              if (e.key === 'Enter') handleSave()
-            }}
-            placeholder={t('例如: D:\\AI_Models 或 /Volumes/Data/AI_Models')}
-            className="h-9.5 font-mono text-xs pr-10 rounded-lg bg-background border-border/80 focus:border-primary"
+            readOnly
+            onClick={handleBrowse}
+            placeholder={t('点击右侧“浏览”选择模型存储目录')}
+            className="h-9.5 font-mono text-xs pr-10 rounded-lg bg-muted/30 border-border/80 cursor-pointer focus:border-primary"
           />
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="outline"
+            disabled={isSaving}
             onClick={handleBrowse}
             className="h-9.5 px-3.5 font-bold text-xs rounded-lg border-border/80 hover:bg-muted/50"
           >
-            <FolderOpen className="h-3.5 w-3.5 mr-1.5" />
-            {t('浏览')}
-          </Button>
-
-          <Button
-            variant="default"
-            disabled={isSaving || inputPath === modelsDir}
-            onClick={() => handleSave()}
-            className="h-9.5 px-4 font-bold text-xs rounded-lg shadow-xs"
-          >
-            {t('保存并生效')}
+            <FolderOpen className={`h-3.5 w-3.5 mr-1.5 ${isSaving ? 'animate-pulse' : ''}`} />
+            {isSaving ? t('迁移中...') : t('浏览')}
           </Button>
 
           <Button
             variant="secondary"
-            disabled={loading}
+            disabled={loading || isSaving}
             onClick={() => rescanModels()}
             className="h-9.5 px-3.5 font-bold text-xs rounded-lg bg-muted/60 hover:bg-muted text-foreground border border-border/30"
           >

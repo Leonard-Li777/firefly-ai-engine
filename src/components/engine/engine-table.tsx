@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react'
-import { Cpu, Download, Check, Loader2, Zap } from 'lucide-react'
+import { Cpu, Download, Check, Loader2, Zap, ExternalLink } from 'lucide-react'
 import { Card } from '../ui/card'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
@@ -17,7 +17,8 @@ export const EngineTable: React.FC = () => {
 
   useEffect(() => {
     fetchEngineList()
-  }, [fetchEngineList])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const currentBackend = engineStatus?.active_backend || 'vulkan'
   const hw = engineStatus?.hardware
@@ -143,12 +144,12 @@ export const EngineTable: React.FC = () => {
                     {/* 操作按钮 / 状态 */}
                     <td className="p-3 pr-4 text-right align-middle">
                       {isCurrent ? (
-                        <Badge className="bg-primary/90 text-primary-foreground font-bold px-2.5 py-1 rounded-full shadow-xs text-xs whitespace-nowrap">
+                        <Badge className="h-7.5 font-bold text-xs px-3 rounded-full bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 shrink-0">
                           <Check className="h-3 w-3 mr-1 shrink-0" />
                           {t('当前引擎')}
                         </Badge>
                       ) : isDownloadingThis ? (
-                        <div className="inline-flex flex-col items-end gap-1 min-w-[130px]">
+                        <div className="inline-flex flex-col items-end gap-1 min-w-[140px]">
                           <div className="flex items-center gap-1.5 text-xs font-semibold text-primary">
                             <Loader2 className="h-3 w-3 animate-spin shrink-0" />
                             <span>
@@ -158,28 +159,46 @@ export const EngineTable: React.FC = () => {
                             </span>
                           </div>
                           <Progress value={downloadState.progress} className="h-1.5 w-28" />
-                          {downloadState.speedBps > 0 && (
-                            <span className="text-[10px] font-mono text-muted-foreground">
-                              {formatSpeed(downloadState.speedBps)}
-                            </span>
-                          )}
+                          <div className="flex items-center justify-between w-full text-[10px] text-muted-foreground font-mono">
+                            {downloadState.sourceName && (
+                              <span className="text-primary/80 font-sans">{downloadState.sourceName}</span>
+                            )}
+                            {downloadState.speedBps > 0 && (
+                              <span>{formatSpeed(downloadState.speedBps)}</span>
+                            )}
+                          </div>
                         </div>
                       ) : !item.isInstalled ? (
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          className="h-7.5 font-bold text-xs px-3 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 shrink-0"
-                          disabled={downloadState.isDownloading}
-                          onClick={() => startDownload(item.backend)}
-                        >
-                          <Download className="h-3 w-3 mr-1 shrink-0" />
-                          {t('下载安装')} {item.downloadSizeMb ? `(${item.downloadSizeMb}MB)` : ''}
-                        </Button>
+                        item.driverCompliant === false ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7.5 font-bold text-xs px-3 rounded-lg border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 hover:border-amber-500/60 transition-all shrink-0"
+                            onClick={() => {
+                              const targetUrl = item.driverUpdateUrl || 'https://www.nvidia.cn/Download/index.aspx'
+                              window.open(targetUrl, '_blank')
+                            }}
+                          >
+                            <ExternalLink className="h-3 w-3 mr-1 shrink-0" />
+                            {t('更新显卡驱动')}
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            className="h-7.5 font-bold text-xs px-3 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 shrink-0"
+                            disabled={downloadState.isDownloading}
+                            onClick={() => startDownload(item.backend)}
+                          >
+                            <Download className="h-3 w-3 mr-1 shrink-0" />
+                            {t('下载引擎')} {item.downloadSizeMb ? `(${item.downloadSizeMb}MB)` : ''}
+                          </Button>
+                        )
                       ) : (
                         <Button
                           size="sm"
-                          variant="outline"
-                          className="h-7.5 font-bold text-xs px-3.5 rounded-lg border-border/40 hover:border-primary/40 hover:bg-primary/10 hover:text-primary transition-all shrink-0"
+                          variant="default"
+                          className="h-7.5 font-bold text-xs px-3.5 rounded-lg shadow-xs shrink-0"
                           disabled={isSwitching || downloadState.isDownloading}
                           onClick={() => switchEngine(item.backend)}
                         >
@@ -189,7 +208,7 @@ export const EngineTable: React.FC = () => {
                               {t('切换中...')}
                             </>
                           ) : (
-                            t('启用')
+                            t('切换引擎')
                           )}
                         </Button>
                       )}
@@ -204,4 +223,3 @@ export const EngineTable: React.FC = () => {
     </Card>
   )
 }
-

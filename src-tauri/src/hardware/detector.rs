@@ -106,18 +106,54 @@ impl HardwareDetector {
             }
         };
 
-        // 1. 标准拓扑 build/extraResources/bin/ 与 extraResources/bin/
+        // 1. 基于当前工作目录 CWD 向上逐级探测（适配 cargo tauri dev / pnpm dev 开发态）
+        if let Ok(cwd) = std::env::current_dir() {
+            let mut cur = Some(cwd.as_path());
+            for _ in 0..5 {
+                if let Some(dir) = cur {
+                    collect_from_bin(dir.join("build").join("extraResources").join("bin"));
+                    collect_from_bin(dir.join("apps").join("firefly-ai-engine").join("build").join("extraResources").join("bin"));
+                    collect_from_bin(dir.join("apps").join("desktop").join("build").join("extraResources").join("bin"));
+                    collect_from_bin(dir.join("extraResources").join("bin"));
+                    collect_from_bin(dir.join("bin"));
+                    cur = dir.parent();
+                } else {
+                    break;
+                }
+            }
+        }
+
+        // 2. 基于当前可执行文件目录向上探测（适配打包交付态）
+        if let Ok(exe) = std::env::current_exe() {
+            let mut cur = exe.parent();
+            for _ in 0..5 {
+                if let Some(dir) = cur {
+                    collect_from_bin(dir.join("build").join("extraResources").join("bin"));
+                    collect_from_bin(dir.join("apps").join("firefly-ai-engine").join("build").join("extraResources").join("bin"));
+                    collect_from_bin(dir.join("extraResources").join("bin"));
+                    collect_from_bin(dir.join("bin"));
+                    cur = dir.parent();
+                } else {
+                    break;
+                }
+            }
+        }
+
+        // 3. 基于标准拓扑 self.app_dir (resource_dir) 与其 parent
         collect_from_bin(self.app_dir.join("build").join("extraResources").join("bin"));
         collect_from_bin(self.app_dir.join("extraResources").join("bin"));
         collect_from_bin(self.app_dir.join("bin"));
-
-        // 2. 向上一级（集成到 desktop build/extraResources/bin/firefly-ai-engine 时）
         if let Some(parent) = self.app_dir.parent() {
             collect_from_bin(parent.join("build").join("extraResources").join("bin"));
             collect_from_bin(parent.join("bin"));
         }
 
-        // 3. 开发环境根目录
+        // 4. 基于 AppData 用户数据目录与开发目录相对路径
+        if let Some(app_data) = dirs::data_dir() {
+            collect_from_bin(app_data.join("com.firefly.ai-engine").join("bin"));
+            collect_from_bin(app_data.join("com.firefly.ai-engine").join("extraResources").join("bin"));
+            collect_from_bin(app_data.join("firefly-ai-folder").join("bin"));
+        }
         collect_from_bin(PathBuf::from("build").join("extraResources").join("bin"));
         collect_from_bin(PathBuf::from("bin"));
 
@@ -141,7 +177,7 @@ impl HardwareDetector {
             }
         }
 
-        // 4. PATH 中查找
+        // 5. PATH 中查找
         if let Ok(output) = std::process::Command::new(if cfg!(windows) { "where" } else { "which" })
             .arg(executable)
             .output()

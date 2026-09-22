@@ -35,6 +35,19 @@ export const HardwareCard: React.FC = () => {
     await useEngineStore.getState().resetDowngrade()
   }
 
+  // 格式化当前活动后端展示：
+  // 如果当前已在运行/已选定具体后端（如 vulkan/cuda/metal 等），直接展示；
+  // 如果当前尚未启动或回退为 cpu，但检测到了显卡最佳加速层级（如 cuda / vulkan），则展示推荐层级
+  const formatActiveBackend = (active?: string, best?: string) => {
+    if (active && active.toLowerCase() !== 'cpu') {
+      return active.toUpperCase()
+    }
+    if (best && best.toLowerCase() !== 'cpu') {
+      return `${best.toUpperCase()} (待命)`
+    }
+    return active ? active.toUpperCase() : 'CPU'
+  }
+
   return (
     <div className="space-y-4">
       {/* 驱动升级告警与自动降级诊断 - 1:1 完美复刻 Desktop 样式与交互 */}
@@ -111,16 +124,16 @@ export const HardwareCard: React.FC = () => {
             </span>
             <div className="flex items-baseline gap-1.5 mt-0.5">
               <span className="text-base font-bold text-foreground">
-                {hw?.total_vram_gb ? `${hw.total_vram_gb} GB` : '--'}
+                {hw?.total_vram_gb !== undefined ? `${Number(hw.total_vram_gb.toFixed(1))} GB` : '--'}
               </span>
-              {engineStatus?.vram_usage_mb !== undefined && (
+              {engineStatus?.vram_usage_mb != null && typeof engineStatus.vram_usage_mb === 'number' && (
                 <span className="text-xs font-semibold text-muted-foreground">
-                  {t('(已用 {used} MB)', { used: engineStatus.vram_usage_mb })}
+                  {t('(已用 {used} MB)', { used: Math.round(engineStatus.vram_usage_mb) })}
                 </span>
               )}
             </div>
             <span className="text-[10px] text-muted-foreground font-medium mt-1 truncate">
-              {t('当前活动后端')}: <strong className="text-primary uppercase">{engineStatus?.active_backend || t('未知')}</strong>
+              {t('当前活动后端')}: <strong className="text-primary uppercase">{formatActiveBackend(engineStatus?.active_backend, hw?.best_tier)}</strong>
             </span>
           </div>
         </Card>

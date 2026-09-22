@@ -10,15 +10,19 @@ import { IEngineApiClient } from './client'
 import { modelMetadataService } from '../lib/model-metadata-service'
 import { useI18nStore } from '../lib/i18n'
 
+import { resolveToAbsolutePath } from '../lib/path-utils'
+import { LlamaCommandBuilder } from '../lib/command-builder'
+
 /**
  * 独立的 Mock API 仿真客户端
  * 用于纯前端脱离后端独立运行、沙盒交互验证与自动化测试
  */
 export class MockApiClient implements IEngineApiClient {
   private currentBackend: 'vulkan' | 'cuda' | 'cpu' | 'metal' = 'vulkan'
-  private currentModel = 'Qwen2.5-1.5B-Instruct-Q4_K_M.gguf'
-  private modelsDir = 'D:\\AI_Models'
+  private currentModel = 'Qwen 3.5 0.8B (中文更佳)'
+  private modelsDir = resolveToAbsolutePath('build/extraResources/models')
   private vramUsageMb = 1420
+  private status: 'ready' | 'starting' | 'stopped' | 'error' = 'ready'
 
   private downgradeInfo = {
     downgraded: true,
@@ -29,6 +33,19 @@ export class MockApiClient implements IEngineApiClient {
 
   private engines: EngineItem[] = [
     {
+      id: 'cuda134',
+      name: 'CUDA 13.4',
+      backend: 'cuda', // 后端标识
+      matchType: 'best',
+      matchText: '最新最佳',
+      performance: '100% 性能利用 (最新驱动)',
+      isCurrent: false,
+      isInstalled: false,
+      downloadSizeMb: 480,
+      driverCompliant: false, // 模拟 CUDA 13 驱动版本不足，需升级显卡驱动
+      driverUpdateUrl: 'https://www.nvidia.cn/Download/index.aspx'
+    },
+    {
       id: 'cuda',
       name: 'CUDA 12.4',
       backend: 'cuda',
@@ -36,8 +53,9 @@ export class MockApiClient implements IEngineApiClient {
       matchText: '最佳匹配',
       performance: '100% 性能利用',
       isCurrent: false,
-      isInstalled: false, // 初始未安装，触发【下载】
-      downloadSizeMb: 450
+      isInstalled: false, // 初始未安装，触发【下载引擎】
+      downloadSizeMb: 450,
+      driverCompliant: true
     },
     {
       id: 'vulkan',
@@ -47,7 +65,8 @@ export class MockApiClient implements IEngineApiClient {
       matchText: '兼容模式',
       performance: '70% 性能利用',
       isCurrent: true,
-      isInstalled: true
+      isInstalled: true,
+      driverCompliant: true
     },
     {
       id: 'cpu',
@@ -57,50 +76,54 @@ export class MockApiClient implements IEngineApiClient {
       matchText: '保底',
       performance: '无显卡加速',
       isCurrent: false,
-      isInstalled: true
+      isInstalled: true,
+      driverCompliant: true
     }
   ]
 
   private models: ModelItem[] = [
     {
-      id: 'Qwen/Qwen2.5-1.5B-Instruct-GGUF',
-      name: 'Qwen 2.5 1.5B Instruct',
-      author: 'Qwen',
+      id: 'unsloth/Qwen3.5-0.8B-GGUF:UD-Q4_K_XL',
+      name: 'Qwen 3.5 0.8B (中文更佳)',
+      author: 'unsloth',
       source: 'modelscope',
-      quant: 'Q4_K_M',
-      fileSize: 986000000,
-      params: '1.5B',
-      description: '通义千问官方小参数指令模型，极佳的中文理解与润色命名能力',
+      quant: 'Q4_K_XL',
+      fileSize: 558000000,
+      params: '0.8B',
+      description: '极速轻量文本模型，适合低配及 CPU 环境，中文分析表现均衡。',
       isMultiModal: false,
       isDownloaded: true,
-      localPath: 'D:\\AI_Models\\hub\\models\\Qwen\\Qwen2.5-1.5B-Instruct-GGUF\\qwen2.5-1.5b-instruct-q4_k_m.gguf',
+      recommended: true,
+      localPath: 'D:\\AI_Models\\hub\\models\\unsloth\\Qwen3.5-0.8B-GGUF\\qwen3.5-0.8b-instruct-ud-q4_k_xl.gguf',
       sha256: '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08'
     },
     {
-      id: 'Qwen/Qwen2-VL-2B-Instruct-GGUF',
-      name: 'Qwen2-VL 2B Instruct (多模态)',
-      author: 'Qwen',
+      id: 'LiquidAI/LFM2.5-1.2B-Instruct-GGUF:Q4_K_M',
+      name: 'LFM2.5 1.2B Instruct（英文更佳•高速）',
+      author: 'LiquidAI',
       source: 'modelscope',
       quant: 'Q4_K_M',
-      fileSize: 1650000000,
-      params: '2B',
-      description: '视觉多模态模型，支持图片理解与视觉文档结构化（含 mmproj 投影器）',
-      isMultiModal: true,
-      mmprojFileName: 'mmproj-qwen2-vl-2b-instruct-f16.gguf',
-      isDownloaded: false,
+      fileSize: 873000000,
+      params: '1.2B',
+      description: '最新 LFM2.5 指令模型，文本分析高效，CPU 推理快速。',
+      isMultiModal: false,
+      isDownloaded: true,
+      recommended: true,
+      localPath: 'D:\\AI_Models\\hub\\models\\LiquidAI\\LFM2.5-1.2B-Instruct-GGUF\\lfm2.5-1.2b-instruct-q4_k_m.gguf',
       sha256: '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8'
     },
     {
-      id: 'unsloth/DeepSeek-R1-Distill-Qwen-1.5B-GGUF',
-      name: 'DeepSeek R1 Distill Qwen 1.5B',
-      author: 'DeepSeek',
+      id: 'unsloth/Qwen3.5-0.8B-GGUF:UD-Q5_K_XL',
+      name: 'Qwen 3.5 0.8B (中文更佳)',
+      author: 'unsloth',
       source: 'huggingface',
-      quant: 'Q4_K_M',
-      fileSize: 1120000000,
-      params: '1.5B',
-      description: '开源推理强化模型，具备思维链深度推理能力',
+      quant: 'UD-Q5_K_XL',
+      fileSize: 579000000,
+      params: '0.8B',
+      description: '极速轻量文本模型，适合低配及 CPU 环境，中文分析表现均衡。',
       isMultiModal: false,
       isDownloaded: false,
+      recommended: true,
       sha256: '4b227777d4dd1fc61c6f884f48641d02b4d121d3fd328cb08b5531fcacdabf8a'
     }
   ]
@@ -117,7 +140,7 @@ export class MockApiClient implements IEngineApiClient {
 
   async getEngineStatus(): Promise<EngineStatusResponse> {
     return {
-      status: 'ready',
+      status: this.status,
       active_backend: this.currentBackend,
       current_model: this.currentModel,
       models_dir: this.modelsDir,
@@ -235,7 +258,17 @@ export class MockApiClient implements IEngineApiClient {
     options?: { source?: string; forceRestart?: boolean },
     onProgress?: (event: DownloadProgressEvent) => void
   ): Promise<DownloadTaskSummary> {
-    const model = this.models.find(m => m.id === modelId)
+    // 优先在本地已知列表中查找，找不到则从元数据推荐列表中动态补充
+    let model = this.models.find(m => m.id === modelId)
+    if (!model) {
+      const currentLang = useI18nStore.getState().currentLanguage || 'zh-CN'
+      const fromMeta = modelMetadataService.getModelById(modelId, currentLang)
+      if (fromMeta) {
+        // 将推荐模型加入本地缓存，便于后续状态更新（如 isDownloaded）
+        this.models.push({ ...fromMeta, isDownloaded: false })
+        model = this.models[this.models.length - 1]
+      }
+    }
     if (!model) throw new Error(`未找到模型: ${modelId}`)
 
     const taskId = `dl-${modelId}-${Date.now()}`
@@ -322,7 +355,7 @@ export class MockApiClient implements IEngineApiClient {
   }
 
   async updateModelStoragePath(newPath: string): Promise<{ success: boolean; scannedModelsCount: number }> {
-    this.modelsDir = newPath
+    this.modelsDir = resolveToAbsolutePath(newPath)
     return {
       success: true,
       scannedModelsCount: this.models.filter(m => m.isDownloaded).length
@@ -330,7 +363,7 @@ export class MockApiClient implements IEngineApiClient {
   }
 
   async rescanModels(): Promise<ModelItem[]> {
-    return [...this.models]
+    return this.listModels()
   }
 
   async updateRuntimeParams(params: Partial<RuntimeParams>): Promise<{ success: boolean }> {
@@ -357,6 +390,61 @@ export class MockApiClient implements IEngineApiClient {
       driver_update_url: ''
     }
     return { status: 'ok' }
+  }
+
+  private mockLogs: string[] = [
+    `[cmd] "llama-server.exe" --host 127.0.0.1 --model "D:\\AI_Models\\hub\\models\\unsloth\\Qwen3.5-0.8B-GGUF\\qwen3.5-0.8b-instruct-ud-q4_k_xl.gguf" --port 38400 --ctx-size 4096 --alias unsloth/Qwen3.5-0.8B-GGUF:UD-Q4_K_XL --jinja --no-context-shift --load-mode auto --repeat-penalty 1.1 --parallel 1 --reasoning off --reasoning-format none --reasoning-budget 0 --chat-template "{% for message in messages %}{{'<|im_start|>' + message['role'] + '\\n' + message['content'] + '<|im_end|>\\n'}}{% endfor %}{% if add_generation_prompt %}{{ '<|im_start|>assistant\\n' }}{% endif %}" -fa off --n-gpu-layers 24 --batch-size 512 --ubatch-size 256 -t 6`,
+    '[stdout] system_info: n_threads = 6 / 16 | AVX = 1 | AVX_VNNI = 0 | AVX2 = 1 | FMA = 1 | NEON = 0 | ARM_FMA = 0 | F16C = 1 | FP16_VA = 0 | WASM_SIMD = 0 | BLAS = 1 | SSE3 = 1 | SSSE3 = 1 | VSX = 0 | MATMUL_INT8 = 0 | LLAMAFILE = 1 |',
+    '[stdout] main: model = qwen3.5-0.8b-instruct-ud-q4_k_xl.gguf',
+    '[stdout] main: load time = 486.25 ms',
+    '[stdout] llama server listening at http://127.0.0.1:38400',
+    '[stdout] all slots are idle and ready to accept inference requests'
+  ]
+
+  async startEngine(): Promise<{ success: boolean; message?: string }> {
+    this.status = 'ready'
+
+    // 通过 LlamaCommandBuilder 计算完整的启动命令上下文
+    const targetModel = this.models.find(m => m.name === this.currentModel) || this.models[0]
+    const cmdCtx = LlamaCommandBuilder.buildCommandContext({
+      modelId: targetModel?.id || 'unsloth/Qwen3.5-0.8B-GGUF:UD-Q4_K_XL',
+      modelPath: targetModel?.localPath,
+      source: targetModel?.source,
+      port: 38400,
+      contextWindow: this.runtimeParams.ctx_size,
+      batchSize: this.runtimeParams.batch_size,
+      ubatchSize: this.runtimeParams.ubatch_size,
+      gpuLayers: this.runtimeParams.n_gpu_layers,
+      threads: this.runtimeParams.threads,
+      backend: this.currentBackend,
+      hardware: {
+        vramGB: 12.0,
+        gpuVendor: 'nvidia',
+        isIntegrated: false,
+        cpuCores: 8
+      }
+    })
+
+    this.mockLogs.push(`[cmd] ${cmdCtx.fullCommandLine}`)
+    this.mockLogs.push(`[stdout] service started at ${new Date().toLocaleTimeString()}`)
+    this.mockLogs.push('[stdout] llama server listening at http://127.0.0.1:38400')
+    this.mockLogs.push('[stdout] all slots are idle and ready to accept inference requests')
+    return { success: true, message: '服务启动成功' }
+  }
+
+  async stopEngine(): Promise<{ success: boolean; message?: string }> {
+    this.status = 'stopped'
+    this.mockLogs.push(`[stdout] service stopped at ${new Date().toLocaleTimeString()}`)
+    return { success: true, message: '服务已停止' }
+  }
+
+  async getEngineLogs(): Promise<{ logs: string[] }> {
+    return { logs: [...this.mockLogs] }
+  }
+
+  async clearEngineLogs(): Promise<{ success: boolean }> {
+    this.mockLogs = []
+    return { success: true }
   }
 }
 

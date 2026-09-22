@@ -50,70 +50,108 @@ impl EngineScheduler {
         }
     }
 
-    /// 扫描 bin/ 目录下所有已安装的引擎
+    /// 扫描所有可能目录中已安装的引擎（内置目录 + 用户数据热更新目录）
     /// 目录命名规范：llama-b{build}-bin-{platform}-{backend}-{arch}/
     pub async fn scan_installed_engines(&self) -> Vec<InstalledEngine> {
-        let bin_dir = &self.bin_dir;
-        if !bin_dir.exists() {
-            warn!("引擎 bin 目录不存在: {:?}", bin_dir);
-            return vec![];
-        }
-
         let server_name = if cfg!(windows) {
             "llama-server.exe"
         } else {
             "llama-server"
         };
 
+        let mut search_dirs = Vec::new();
+
+        // 1. 主协调器传入的 bin_dir
+        if self.bin_dir.exists() {
+            search_dirs.push(self.bin_dir.clone());
+        }
+
+        // 2. 用户数据目录：%APPDATA%/com.firefly.ai-engine/engines 以及 bin
+        if let Some(app_data) = dirs::data_dir() {
+            let engine_data = app_data.join("com.firefly.ai-engine");
+            let user_engines = engine_data.join("engines");
+            if user_engines.exists() {
+                search_dirs.push(user_engines);
+            }
+            let user_bin = engine_data.join("bin");
+            if user_bin.exists() {
+                search_dirs.push(user_bin);
+            }
+        }
+
+        // 3. 开发环境与 Monorepo 根目录
+        if let Ok(cwd) = std::env::current_dir() {
+            let mut cur = Some(cwd.as_path());
+            for _ in 0..5 {
+                if let Some(dir) = cur {
+                    let d1 = dir.join("build").join("extraResources").join("bin");
+                    if d1.exists() { search_dirs.push(d1); }
+                    let d2 = dir.join("apps").join("desktop").join("build").join("extraResources").join("bin");
+                    if d2.exists() { search_dirs.push(d2); }
+                    let d3 = dir.join("extraResources").join("bin");
+                    if d3.exists() { search_dirs.push(d3); }
+                    cur = dir.parent();
+                } else {
+                    break;
+                }
+            }
+        }
+
         let mut engines = vec![];
+        let mut seen_dirs = std::collections::HashSet::new();
 
-        let entries = match std::fs::read_dir(bin_dir) {
-            Ok(e) => e,
-            Err(e) => {
-                error!("读取 bin 目录失败: {}", e);
-                return vec![];
+        for dir in search_dirs {
+            let entries = match std::fs::read_dir(&dir) {
+                Ok(e) => e,
+                Err(_) => continue,
+            };
+
+            for entry in entries.filter_map(|e| e.ok()) {
+                let path = entry.path();
+                if !path.is_dir() {
+                    continue;
+                }
+
+                let dir_name = path
+                    .file_name()
+                    .and_then(|n| n.to_str())
+                    .unwrap_or("")
+                    .to_string();
+
+                // 只匹配 llama-* 前缀目录
+                if !dir_name.to_lowercase().starts_with("llama-") {
+                    continue;
+                }
+
+                if seen_dirs.contains(&dir_name) {
+                    continue;
+                }
+
+                let binary_path = path.join(server_name);
+                if !binary_path.exists() {
+                    continue;
+                }
+
+                seen_dirs.insert(dir_name.clone());
+
+                // 从目录名提取加速层级
+                let tier = Self::parse_tier_from_dir(&dir_name);
+
+                // 提取构建号（如 llama-b4321-... → "4321"）
+                let build_num = dir_name
+                    .split('-')
+                    .find(|seg| seg.starts_with('b') && seg.len() > 1 && seg[1..].parse::<u64>().is_ok())
+                    .map(|s| s[1..].to_string());
+
+                info!("发现已安装引擎: {} (层级: {:?}, 路径: {:?})", dir_name, tier, binary_path);
+
+                engines.push(InstalledEngine {
+                    dir_name,
+                    binary_path,
+                    tier,
+                    build_num,
+                });
             }
-        };
-
-        for entry in entries.filter_map(|e| e.ok()) {
-            let path = entry.path();
-            if !path.is_dir() {
-                continue;
-            }
-
-            let dir_name = path
-                .file_name()
-                .and_then(|n| n.to_str())
-                .unwrap_or("")
-                .to_string();
-
-            // 只匹配 llama-* 前缀目录
-            if !dir_name.to_lowercase().starts_with("llama-") {
-                continue;
-            }
-
-            let binary_path = path.join(server_name);
-            if !binary_path.exists() {
-                continue;
-            }
-
-            // 从目录名提取加速层级
-            let tier = Self::parse_tier_from_dir(&dir_name);
-
-            // 提取构建号（如 llama-b4321-... → "4321"）
-            let build_num = dir_name
-                .split('-')
-                .find(|seg| seg.starts_with('b') && seg.len() > 1 && seg[1..].parse::<u64>().is_ok())
-                .map(|s| s[1..].to_string());
-
-            info!("发现已安装引擎: {} (层级: {:?})", dir_name, tier);
-
-            engines.push(InstalledEngine {
-                dir_name,
-                binary_path,
-                tier,
-                build_num,
-            });
         }
 
         // 按优先级排序（CUDA > Vulkan > CPU）
@@ -292,15 +330,17 @@ mod tests {
         create_fake_engine(&bin_dir, "llama-b4321-bin-win-cpu-x64");
 
         let compliance = DriverComplianceService::new();
-        let scheduler = EngineScheduler::new(bin_dir, compliance);
+        let scheduler = EngineScheduler::new(bin_dir.clone(), compliance);
 
         let engines = scheduler.scan_installed_engines().await;
-        assert_eq!(engines.len(), 3, "应发现 3 个引擎");
+        // 过滤出该临时测试目录下的引擎（避免被工作区本地环境其他构建目录的引擎污染）
+        let test_engines: Vec<_> = engines.into_iter().filter(|e| e.binary_path.starts_with(&bin_dir)).collect();
+        assert_eq!(test_engines.len(), 3, "应发现 3 个引擎");
 
         // 验证排序：CUDA 优先
-        assert_eq!(engines[0].tier, AccelerationTier::Cuda);
-        assert_eq!(engines[1].tier, AccelerationTier::Vulkan);
-        assert_eq!(engines[2].tier, AccelerationTier::Cpu);
+        assert_eq!(test_engines[0].tier, AccelerationTier::Cuda);
+        assert_eq!(test_engines[1].tier, AccelerationTier::Vulkan);
+        assert_eq!(test_engines[2].tier, AccelerationTier::Cpu);
     }
 
     #[test]

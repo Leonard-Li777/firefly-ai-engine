@@ -61,11 +61,12 @@ function TabsTrigger({ value, className, ...props }: TabsTriggerProps) {
       type="button"
       role="tab"
       aria-selected={isSelected}
+      data-state={isSelected ? 'active' : 'inactive'}
       onClick={() => context?.onValueChange(value)}
       className={cn(
         'inline-flex items-center justify-center whitespace-nowrap rounded-xl px-3.5 py-1.5 text-xs font-black ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 cursor-pointer border border-transparent',
         isSelected
-          ? 'bg-background text-foreground shadow-xs border-border/80'
+          ? 'bg-primary text-primary-foreground shadow-xs border-primary'
           : 'text-muted-foreground hover:text-foreground hover:bg-background/40 hover:border-border/40',
         className
       )}

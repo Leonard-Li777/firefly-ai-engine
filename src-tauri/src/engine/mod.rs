@@ -12,7 +12,8 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 
 use crate::hardware::{DriverComplianceService, HardwareDetector};
-use crate::config::EngineConfig;
+use crate::config::{EngineConfig, find_available_port};
+use crate::server::proxy::ProxyState;
 
 /// 引擎服务状态（对外暴露）
 #[derive(Debug, Clone, serde::Serialize)]
@@ -26,6 +27,7 @@ pub struct EngineStatus {
     pub hardware: HardwareSummary,
     pub downgrade_info: Option<crate::hardware::DowngradeInfo>,
     pub runtime_params: Option<serde_json::Value>,
+    pub last_error: Option<String>,
 }
 
 /// 硬件摘要（status 端点返回）
@@ -51,8 +53,10 @@ pub struct EngineCoordinator {
     pub compliance: Arc<DriverComplianceService>,
     pub guard: Arc<ProcessGuard>,
     pub config: Arc<Mutex<EngineConfig>>,
-    /// 当前正在使用的端口
+    /// 当前 Axum 网关正在使用的对外公开端口
     pub active_port: Arc<Mutex<Option<u16>>>,
+    /// 反向代理状态管理
+    pub proxy_state: ProxyState,
     /// 当前活跃引擎
     pub active_engine: Arc<Mutex<Option<InstalledEngine>>>,
     /// 当前加载的模型路径
@@ -65,6 +69,7 @@ impl EngineCoordinator {
         compliance: Arc<DriverComplianceService>,
         bin_dir: PathBuf,
         config: Arc<Mutex<EngineConfig>>,
+        proxy_state: ProxyState,
     ) -> Arc<Self> {
         let scheduler = Arc::new(EngineScheduler::new(bin_dir, compliance.clone()));
         let guard = ProcessGuard::new(compliance.clone());
@@ -76,6 +81,7 @@ impl EngineCoordinator {
             guard,
             config,
             active_port: Arc::new(Mutex::new(None)),
+            proxy_state,
             active_engine: Arc::new(Mutex::new(None)),
             active_model: Arc::new(Mutex::new(None)),
         })
@@ -91,50 +97,63 @@ impl EngineCoordinator {
             ProcessStatus::Stopped => "stopped",
         };
 
+        let config = self.config.lock().await;
+        let models_dir = config.models_dir.to_string_lossy().to_string();
+        let preferred_backend = config.preferred_backend.clone();
+        drop(config);
+
+        // 获取硬件信息
+        let (hardware, auto_recommended_tier) = match self.hardware.detect(false).await {
+            Ok(resources) => {
+                let gpu = resources.primary_gpu();
+                let best = resources.best_acceleration_tier.as_str().to_string();
+                (
+                    HardwareSummary {
+                        gpu_name: gpu.map(|g| g.name.clone()).unwrap_or_default(),
+                        total_vram_gb: gpu.map(|g| g.memory_gb()).unwrap_or(0.0),
+                        used_vram_gb: None,
+                        best_tier: best.clone(),
+                        current_tier: String::new(), // 下方统一填入
+                        is_integrated: gpu.map(|g| g.is_integrated).unwrap_or(false),
+                        cpu_cores: Some(resources.cpu.cores as usize),
+                        cpu_threads: Some(resources.cpu.threads as usize),
+                        os_platform: Some(std::env::consts::OS.to_string()),
+                        total_ram_gb: Some(resources.memory.total_gb()),
+                        used_ram_gb: Some(((resources.memory.total_mb.saturating_sub(resources.memory.available_mb)) as f64) / 1024.0),
+                    },
+                    best,
+                )
+            }
+            Err(_) => (
+                HardwareSummary {
+                    gpu_name: String::new(),
+                    total_vram_gb: 0.0,
+                    used_vram_gb: None,
+                    best_tier: "cpu".to_string(),
+                    current_tier: "cpu".to_string(),
+                    is_integrated: false,
+                    cpu_cores: None,
+                    cpu_threads: None,
+                    os_platform: Some(std::env::consts::OS.to_string()),
+                    total_ram_gb: None,
+                    used_ram_gb: None,
+                },
+                "cpu".to_string(),
+            ),
+        };
+
         let active_engine = self.active_engine.lock().await.clone();
         let active_backend = active_engine
             .as_ref()
             .map(|e| e.tier.as_str().to_string())
-            .unwrap_or_else(|| "cpu".to_string());
+            .or(preferred_backend)
+            .unwrap_or(auto_recommended_tier);
 
+        let active_port = self.active_port.lock().await.unwrap_or(38400);
         let active_model = self.active_model.lock().await.clone();
-        let active_port = self.active_port.lock().await.clone().unwrap_or(38400);
 
-        let config = self.config.lock().await;
-        let models_dir = config.models_dir.to_string_lossy().to_string();
-
-        // 获取硬件信息
-        let hardware = match self.hardware.detect(false).await {
-            Ok(resources) => {
-                let gpu = resources.primary_gpu();
-                HardwareSummary {
-                    gpu_name: gpu.map(|g| g.name.clone()).unwrap_or_default(),
-                    total_vram_gb: gpu.map(|g| g.memory_gb()).unwrap_or(0.0),
-                    used_vram_gb: None,
-                    best_tier: resources.best_acceleration_tier.as_str().to_string(),
-                    current_tier: active_backend.clone(),
-                    is_integrated: gpu.map(|g| g.is_integrated).unwrap_or(false),
-                    cpu_cores: Some(resources.cpu.cores as usize),
-                    cpu_threads: Some(resources.cpu.threads as usize),
-                    os_platform: Some(std::env::consts::OS.to_string()),
-                    total_ram_gb: Some(resources.memory.total_gb()),
-                    used_ram_gb: Some(((resources.memory.total_mb.saturating_sub(resources.memory.available_mb)) as f64) / 1024.0),
-                }
-            }
-            Err(_) => HardwareSummary {
-                gpu_name: String::new(),
-                total_vram_gb: 0.0,
-                used_vram_gb: None,
-                best_tier: "cpu".to_string(),
-                current_tier: active_backend.clone(),
-                is_integrated: false,
-                cpu_cores: None,
-                cpu_threads: None,
-                os_platform: Some(std::env::consts::OS.to_string()),
-                total_ram_gb: None,
-                used_ram_gb: None,
-            },
-        };
+        let mut hardware = hardware;
+        hardware.current_tier = active_backend.clone();
 
         let downgrade_info = self.compliance.get_downgrade_info().await;
 
@@ -146,6 +165,8 @@ impl EngineCoordinator {
             "ubatch_size": 256
         }));
 
+        let last_error = self.guard.last_error().await;
+
         EngineStatus {
             status: status_str.to_string(),
             active_backend,
@@ -156,6 +177,124 @@ impl EngineCoordinator {
             hardware,
             downgrade_info,
             runtime_params,
+            last_error,
         }
+    }
+
+    /// 启动引擎子进程服务
+    pub async fn start_service(&self) -> anyhow::Result<()> {
+        let current_status = self.guard.status().await;
+        if current_status == ProcessStatus::Running || current_status == ProcessStatus::Starting {
+            tracing::info!("引擎服务已经在运行或启动中，无需重复启动");
+            return Ok(());
+        }
+
+        // 清除上一次的失败错误记录
+        self.guard.clear_last_error().await;
+
+        // 1. 扫描与探测引擎
+        let resources = self.hardware.detect(false).await
+            .map_err(|e| anyhow::anyhow!("硬件探测失败: {}", e))?;
+        let selected_engine = self.scheduler.select_engine(&resources).await?;
+
+        // 2. 确定模型文件
+        let config = self.config.lock().await;
+        let models_dir = config.models_dir.clone();
+        let custom_layers = config.custom_gpu_layers;
+        let custom_ctx = config.custom_context_window;
+        drop(config);
+
+        let active_model_lock = self.active_model.lock().await.clone();
+        let model_path = if let Some(m) = active_model_lock {
+            let p = std::path::PathBuf::from(&m);
+            if p.is_absolute() && p.exists() {
+                p
+            } else {
+                models_dir.join(&m)
+            }
+        } else {
+            // 扫描 models_dir 下第一个 gguf 模型
+            let mut found = None;
+            if let Ok(entries) = std::fs::read_dir(&models_dir) {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if path.extension().and_then(|s| s.to_str()) == Some("gguf") {
+                        found = Some(path);
+                        break;
+                    }
+                }
+            }
+            found.unwrap_or_else(|| models_dir.join("default.gguf"))
+        };
+
+        let model_str = model_path.to_string_lossy().to_string();
+        *self.active_model.lock().await = Some(model_str.clone());
+
+        let model_size_gb = std::fs::metadata(&model_path).map(|m| m.len() as f64 / (1024.0 * 1024.0 * 1024.0)).unwrap_or(1.0);
+        let model_lower = model_str.to_lowercase();
+        let is_minicpm5 = model_lower.contains("minicpm5");
+        let is_nanbeige4 = model_lower.contains("nanbeige4");
+
+        let model_info = ModelInfo {
+            param_b: 1.5,
+            size_gb: model_size_gb,
+            quantization: "Q4_K_M".to_string(),
+            is_multimodal: false,
+            context_window: custom_ctx,
+            force_gpu_layers: custom_layers,
+            force_batch_size: None,
+            force_ubatch_size: None,
+            force_cpu: selected_engine.tier == crate::hardware::gpu_info::AccelerationTier::Cpu,
+            enable_thinking: false,
+            is_minicpm5,
+            is_nanbeige4,
+            mmproj_path: None,
+            dspark_path: None,
+            draft_path: None,
+            is_production: !cfg!(debug_assertions),
+        };
+
+        let backend_str = selected_engine.tier.as_str();
+        let params = ParamBuilder::compute(&resources, &model_info, backend_str);
+
+        // 端口隔离：llama-server 使用独立内部端口，避免与 Axum HTTP 网关冲突
+        let gateway_port = self.active_port.lock().await.unwrap_or(38400);
+        let llama_internal_port = find_available_port(gateway_port + 1).await;
+
+        let args = ParamBuilder::to_args(&params, llama_internal_port, &model_str, "default", Some(&model_info));
+
+        // 记录活跃引擎
+        *self.active_engine.lock().await = Some(selected_engine.clone());
+
+        // 启动子进程
+        if let Err(e) = self.guard.start(&selected_engine, &args, &[]).await {
+            tracing::error!("启动子进程失败: {}", e);
+            return Err(e);
+        }
+
+        // 等待服务内部端口可达（超时 15 秒）
+        match self.guard.wait_ready(llama_internal_port, 15).await {
+            Ok(_) => {
+                // 成功就绪：向反向代理注册内部目标端口，并标记进程状态为 Running
+                self.proxy_state.set_target_port(llama_internal_port).await;
+                self.guard.mark_running().await;
+                tracing::info!("引擎服务启动并反代就绪: backend={}, internal_port={}, gateway_port={}", backend_str, llama_internal_port, gateway_port);
+                Ok(())
+            }
+            Err(e) => {
+                let err_msg = self.guard.last_error().await.unwrap_or_else(|| e.to_string());
+                tracing::error!("引擎就绪探测失败: {}", err_msg);
+                // 发生错误停止子进程
+                let _ = self.guard.stop().await;
+                Err(anyhow::anyhow!("{}", err_msg))
+            }
+        }
+    }
+
+    /// 停止引擎子进程服务
+    pub async fn stop_service(&self) -> anyhow::Result<()> {
+        self.guard.stop().await?;
+        tracing::info!("引擎服务已停止");
+        Ok(())
     }
 }

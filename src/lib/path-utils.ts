@@ -159,3 +159,101 @@ export function resolveModelArgForCmd(
 
   return absolutePath
 }
+
+/**
+ * 校验模型存储路径合法性 (1:1 移植自 Desktop validateModelPath)
+ * 检查项：非空、纯 ASCII 字符、Windows/POSIX 格式、路径长度、非法字符
+ */
+export function validateModelPath(p: string): { isValid: boolean; error?: string } {
+  if (!p || !p.trim()) {
+    return { isValid: false, error: '路径不能为空' }
+  }
+
+  const trimmed = p.trim()
+
+  // 0. 仅允许英文字符 (ASCII)，防止 C++ llama.cpp 核心库非英文字符崩溃
+  if (/[^\x00-\x7F]/.test(trimmed)) {
+    return {
+      isValid: false,
+      error: '路径只能包含英文字符、数字和常用符号，暂不支持中文等非英文字符'
+    }
+  }
+
+  const isWin = isWindowsPlatform()
+
+  // 1. 长度校验
+  const maxLen = isWin ? 200 : 1024
+  if (trimmed.length > maxLen) {
+    return {
+      isValid: false,
+      error: `路径过长（当前 ${trimmed.length} 字符），建议不超过 ${maxLen} 字符`
+    }
+  }
+
+  // 2. Windows 盘符或 POSIX 路径校验
+  if (isWin) {
+    if (!/^[a-zA-Z]:[\\/]/.test(trimmed) && !/^\\[\\/][^\\/]+[\\/][^\\/]+/.test(trimmed)) {
+      return { isValid: false, error: '请输入合法的 Windows 绝对路径（如 D:\\AI_Models）' }
+    }
+    const pathContent = trimmed.includes(':') ? trimmed.split(':')[1] : trimmed
+    if (/[*?"<>|]/.test(pathContent)) {
+      return { isValid: false, error: '路径包含非法字符（* ? " < > |）' }
+    }
+  } else {
+    if (!trimmed.startsWith('/')) {
+      return { isValid: false, error: '请输入合法的 POSIX 绝对路径（如 /data/models）' }
+    }
+  }
+
+  return { isValid: true }
+}
+
+/**
+ * 判断是否为绝对路径 (兼容 Windows 盘符 C:\, UNC \\server\share 及 POSIX /path)
+ */
+export function isAbsolutePath(p: string): boolean {
+  if (!p || typeof p !== 'string') return false
+  const trimmed = p.trim()
+  if (isWindowsPlatform()) {
+    return /^[a-zA-Z]:[\\/]/.test(trimmed) || /^\\[\\/][^\\/]+[\\/][^\\/]+/.test(trimmed)
+  }
+  return trimmed.startsWith('/')
+}
+
+/**
+ * 将任意相对路径或未决路径转换为标准绝对路径
+ * 1. 若已是绝对路径则直接返回规范化斜杠路径
+ * 2. 若为相对路径，在 Node/Tauri 环境下基于 process.cwd() 计算，在浏览器沙盒下基于虚拟工作根目录推导绝对路径
+ */
+export function resolveToAbsolutePath(p: string, baseDir?: string): string {
+  if (!p) return ''
+  const trimmed = p.trim()
+  if (isAbsolutePath(trimmed)) {
+    return trimmed
+  }
+
+  // 计算基础绝对目录
+  let effectiveBase = ''
+  if (baseDir && isAbsolutePath(baseDir)) {
+    effectiveBase = baseDir
+  } else if (typeof process !== 'undefined' && typeof process.cwd === 'function') {
+    try {
+      effectiveBase = process.cwd()
+    } catch {
+      effectiveBase = ''
+    }
+  }
+
+  if (!effectiveBase) {
+    // 浏览器沙盒环境下回退到标准根目录
+    effectiveBase = isWindowsPlatform() ? 'C:\\firefly-ai-engine' : '/firefly-ai-engine'
+  }
+
+  const isWin = isWindowsPlatform()
+  const sep = isWin ? '\\' : '/'
+  const normBase = effectiveBase.replace(/[\\/]+$/, '')
+  const normRel = trimmed.replace(/^[\\/]+/, '')
+
+  const full = `${normBase}${sep}${normRel}`
+  return isWin ? full.replace(/\//g, '\\') : full.replace(/\\/g, '/')
+}

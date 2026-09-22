@@ -35,9 +35,11 @@ export const zhCN = {
     statusActive: '运行中',
     statusNotInstalled: '未安装',
     statusDownloading: '下载中...',
-    btnEnable: '启用',
+    btnEnable: '切换引擎',
+    btnSwitch: '切换引擎',
     btnActive: '当前引擎',
-    btnDownload: '下载安装',
+    btnDownload: '下载引擎',
+    btnUpdateDriver: '更新显卡驱动',
     switchSuccess: '引擎切换成功',
     downloadFailed: '引擎下载失败'
   },
@@ -74,7 +76,11 @@ export const zhCN = {
     paramSize: '参数量',
     fileSize: '模型大小',
     vramNeeded: '显存需求',
-    quantization: '量化精度'
+    quantization: '量化精度',
+    intelLevel1: '小学生',
+    intelLevel2: '初中生',
+    intelLevel3: '高中生',
+    intelLevel4: '大学生'
   },
   runtime: {
     title: '运行时监控与安全调度配置',
@@ -95,6 +101,20 @@ export const zhCN = {
     loading: '加载中...',
     confirm: '确认',
     cancel: '取消'
+  },
+  chat: {
+    tabTitle: '与本地AI私密聊天',
+    notReadyTitle: '本地推理服务未就绪',
+    notReadyDesc: '请先在仪表盘启动本地 AI 引擎服务，或等待模型加载完成。',
+    btnStart: '立即启动服务',
+    openExternal: '外部浏览器打开',
+    reload: '刷新页面'
+  },
+  thinking: {
+    title: '模型思考模式',
+    badgeTime: '会增加耗时',
+    desc: '开启后允许本地和云端模型开启思考模式，可能提升AI分析质量，但会大大增加响应时间。建议仅在需要与 AI 进行聊天时开启。',
+    unsupportedTip: '不支持标记 Instruct 的模型。'
   }
 }
 
