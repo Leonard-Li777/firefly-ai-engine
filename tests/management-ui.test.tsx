@@ -163,8 +163,8 @@ describe('Tier 2 管理视窗核心组件交互测试', () => {
     expect(configButtons.length).toBeGreaterThan(0)
     expect(screen.queryByRole('button', { name: /预设参数/ })).not.toBeInTheDocument()
 
-    // 3. 校验已下载模型的激活控制：当前运行模型展示【运行中】状态，非当前运行的已下载模型展示【激活】按钮
-    const activeModelBadges = screen.getAllByText('运行中')
+    // 3. 校验已下载模型的激活控制：当前运行模型展示【已激活】角标，非当前运行的已下载模型展示【激活】按钮
+    const activeModelBadges = screen.getAllByText('已激活')
     expect(activeModelBadges.length).toBeGreaterThanOrEqual(1)
 
     // 验证列表中其他已下载就绪的模型展示有【激活】按钮

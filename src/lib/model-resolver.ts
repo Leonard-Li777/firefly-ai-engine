@@ -1,4 +1,4 @@
-import { ModelResolution } from '../api/types'
+import { ModelItem, ModelResolution } from '../api/types'
 
 /**
  * 虚拟文件系统条目（供前端纯逻辑探测或测试使用）
@@ -204,4 +204,84 @@ export class ModelResolver {
 
     return { isDownloaded: true, resolution }
   }
+}
+
+/**
+ * 将扫描到的物理模型（或已下载标记）合并至推荐模型底表，确保列表永不丢失。
+ * 多策略模糊匹配：量化 tag 归一化（UD- 前缀剥离）、ID 完全相同 / 清除量化后缀的
+ * repo ID 相同 / 物理文件名包含核心仓库名，且双方量化 tag 齐备时严格一致（禁止跨量化串绑）。
+ * 纯函数：推荐底表（语言相关）与扫描结果均由调用方注入，不读取任何全局状态。
+ *
+ * @param recommendedList 当前语言的官方推荐模型底表
+ * @param scanned 扫描到的本地物理模型列表
+ */
+export function mergeScannedWithRecommended(recommendedList: ModelItem[], scanned: ModelItem[]): ModelItem[] {
+  const map = new Map<string, ModelItem>()
+
+  // 1. 填入所有官方推荐模型，并通过多级特征精准匹配扫描到的下载状态
+  for (const rec of recommendedList) {
+    const recIdClean = rec.id.split(':')[0].toLowerCase()
+    const recTail = recIdClean.split('/').pop()?.replace(/-gguf$/i, '') || recIdClean
+    // 推荐模型的量化 tag（标准化去除 UD- 前缀，大小写不敏感，转小写）
+    const recTag = (rec.id.includes(':')
+      ? rec.id.split(':')[1]
+      : rec.quant || ''
+    ).replace(/^ud-/i, '').toLowerCase()
+
+    const existing = scanned.find(m => {
+      // 必须是已经确认下载就绪的扫描模型条目
+      if (!m.isDownloaded && !m.localPath) return false
+
+      // 提取被扫描模型的量化 tag：优先从本地文件名提取，次之从 m.id/m.quant 提取
+      const localFileName = m.localPath ? (m.localPath.split(/[\\/]/).pop() || '') : ''
+      const fileQuant = localFileName ? ModelResolver.extractQuantTag(localFileName) : null
+      const mTag = fileQuant || (m.id.includes(':') ? m.id.split(':')[1] : m.quant || '').replace(/^ud-/i, '').toLowerCase()
+
+      // 若双方均指定了量化 tag，则量化 tag 必须严格一致，禁止跨量化串绑！
+      if (recTag && mTag && recTag !== mTag) {
+        return false
+      }
+
+      // 策略 A: ID 完全相同
+      if (m.id === rec.id) return true
+
+      // 策略 B: 清除量化后缀后 repo ID 相同且量化 tag 吻合
+      const mIdClean = m.id.split(':')[0].toLowerCase()
+      if (mIdClean === recIdClean) {
+        return recTag ? recTag === mTag : true
+      }
+
+      // 策略 C: 物理文件路径包含模型核心仓库名且量化 tag 吻合
+      if (localFileName) {
+        const localLower = localFileName.toLowerCase()
+        if (localLower.includes(recTail) || localLower.replace(/\.gguf$/, '').includes(recTail.replace(/-gguf$/, ''))) {
+          return recTag ? recTag === mTag : true
+        }
+      }
+
+      return false
+    })
+
+    const isDownloaded = existing ? Boolean(existing.isDownloaded) : false
+    map.set(rec.id, {
+      ...rec,
+      isDownloaded,
+      localPath: existing?.localPath,
+      sha256: existing?.sha256 || rec.sha256
+    })
+  }
+
+  // 2. 填入扫描到的本地自定义/独有模型（保证本地模型不被丢弃）
+  for (const item of scanned) {
+    const isAlreadyMapped = Array.from(map.values()).some(m => {
+      if (m.id === item.id) return true
+      if (item.localPath && m.localPath === item.localPath) return true
+      return false
+    })
+    if (!isAlreadyMapped) {
+      map.set(item.id, item)
+    }
+  }
+
+  return Array.from(map.values())
 }

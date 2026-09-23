@@ -17,7 +17,10 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use tracing::{error, info, warn};
 
+use crate::config::CustomModelEntry;
 use crate::engine::EngineCoordinator;
+
+use super::custom_model;
 
 // ─────────────────────── 下载任务状态 ───────────────────────
 
@@ -129,6 +132,13 @@ pub struct DownloadEngineReq {
     pub backend: String,
 }
 
+/// 自由添加任意模型请求（url 为托管站点文件页/直链地址）
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AddCustomModelReq {
+    pub url: String,
+}
+
 // ─────────────────────── 辅助函数 ───────────────────────
 
 /// 生成唯一任务 ID
@@ -142,7 +152,7 @@ fn new_task_id() -> String {
 }
 
 /// 从文件名中提取标准化量化标识（如 q4_k_m, q4_k_xl, q5_k_xl 等，去除 ud- 前缀，纯小写）
-fn extract_quant_tag_from_name(name: &str) -> Option<String> {
+pub(crate) fn extract_quant_tag_from_name(name: &str) -> Option<String> {
     let lower = name.to_lowercase();
     // 优先匹配包含下划线的标准量化（如 q4_k_m, ud-q4_k_xl, iq3_xxs）
     let patterns = [
@@ -162,7 +172,12 @@ fn extract_quant_tag_from_name(name: &str) -> Option<String> {
 /// - HuggingFace: {models_dir}/models--{org}--{repo}/snapshots/{hash}/*.gguf
 /// - ModelScope:  {models_dir}/hub/models/{org}/{repo}/*.gguf
 /// - 直接 GGUF:  {models_dir}/*.gguf
-fn scan_and_merge_models(models_dir: &std::path::Path, source_filter: Option<&str>) -> Vec<serde_json::Value> {
+/// - custom_models：用户自由添加的模型条目，同样按磁盘文件判定 isDownloaded
+fn scan_and_merge_models(
+    models_dir: &std::path::Path,
+    source_filter: Option<&str>,
+    custom_models: &[CustomModelEntry],
+) -> Vec<serde_json::Value> {
     let mut default_models = vec![
         json!({
             "id": "qwen/Qwen2.5-0.5B-Instruct-GGUF",
@@ -219,10 +234,55 @@ fn scan_and_merge_models(models_dir: &std::path::Path, source_filter: Option<&st
         }),
     ];
 
-    if models_dir.exists() {
-        // 收集所有发现的 .gguf 文件（包括子目录深度扫描）
-        let found_ggufs = collect_all_ggufs(models_dir);
+    // 收集所有发现的 .gguf 文件（包括子目录深度扫描），目录不存在时为空
+    let found_ggufs: Vec<(PathBuf, String)> = if models_dir.exists() {
+        collect_all_ggufs(models_dir)
+    } else {
+        Vec::new()
+    };
 
+    // 自由添加的自定义模型条目：先做磁盘存在性认领（精确文件名匹配优先，仓库尾段+量化 tag 宽松匹配次之）
+    let mut claimed_files: Vec<PathBuf> = Vec::new();
+    let mut custom_jsons: Vec<serde_json::Value> = Vec::new();
+    for entry in custom_models {
+        let exact = found_ggufs
+            .iter()
+            .find(|(_, n)| n.to_lowercase() == entry.file_name.to_lowercase());
+        let loose = || {
+            let repo_tail = entry
+                .id
+                .rsplit('/')
+                .next()
+                .unwrap_or("")
+                .split(':')
+                .next()
+                .unwrap_or("")
+                .to_lowercase();
+            let repo_tail_nogguf = repo_tail.replace("-gguf", "");
+            found_ggufs.iter().find(|(_, n)| {
+                let nl = n.to_lowercase();
+                !repo_tail_nogguf.is_empty()
+                    && nl.contains(&repo_tail_nogguf)
+                    && match &entry.quant {
+                        Some(q) => extract_quant_tag_from_name(&nl)
+                            .map(|fq| fq == q.to_lowercase())
+                            .unwrap_or(false),
+                        None => false,
+                    }
+            })
+        };
+        let hit = exact.or_else(loose);
+        if let Some((p, _)) = hit {
+            claimed_files.push(p.clone());
+        }
+        custom_jsons.push(custom_model::entry_to_model_json(
+            entry,
+            hit.is_some(),
+            hit.map(|(p, _)| p.to_string_lossy().to_string()).as_deref(),
+        ));
+    }
+
+    if models_dir.exists() {
         for (file_path, file_name) in &found_ggufs {
             if file_name.to_lowercase().starts_with("mmproj") {
                 continue;
@@ -286,8 +346,8 @@ fn scan_and_merge_models(models_dir: &std::path::Path, source_filter: Option<&st
                 }
             }
 
-            // 未匹配到预设模型则作为本地自定义模型添加
-            if !matched {
+            // 未匹配到预设模型则作为本地自定义模型添加（已被自由添加条目认领的文件除外，避免出现重复行）
+            if !matched && !claimed_files.iter().any(|c| c == file_path) {
                 default_models.push(json!({
                     "id": file_name.trim_end_matches(".gguf"),
                     "name": file_name.trim_end_matches(".gguf"),
@@ -304,6 +364,9 @@ fn scan_and_merge_models(models_dir: &std::path::Path, source_filter: Option<&st
             }
         }
     }
+
+    // 合并用户自由添加的模型条目
+    default_models.extend(custom_jsons);
 
     if let Some(src) = source_filter {
         default_models
@@ -1709,7 +1772,7 @@ async fn list_models(
     Query(query): Query<ModelQuery>,
 ) -> impl IntoResponse {
     let config = state.coordinator.config.lock().await;
-    let models = scan_and_merge_models(&config.models_dir, query.source.as_deref());
+    let models = scan_and_merge_models(&config.models_dir, query.source.as_deref(), &config.custom_models);
     Json(models)
 }
 
@@ -1757,7 +1820,11 @@ async fn update_models_dir(
     }
 
     // 4. 扫描新目录
-    let models = scan_and_merge_models(&new_path, None);
+    let custom_models = {
+        let config = state.coordinator.config.lock().await;
+        config.custom_models.clone()
+    };
+    let models = scan_and_merge_models(&new_path, None, &custom_models);
     let downloaded_count = models
         .iter()
         .filter(|m| m.get("isDownloaded").and_then(|v| v.as_bool()) == Some(true))
@@ -1901,7 +1968,7 @@ fn robust_move_or_copy_file(src: &std::path::Path, dst: &std::path::Path) -> std
 /// 重新扫描当前模型目录（支持 HuggingFace/ModelScope 子目录结构）
 async fn rescan_models(State(state): State<AppState>) -> impl IntoResponse {
     let config = state.coordinator.config.lock().await;
-    let models = scan_and_merge_models(&config.models_dir, None);
+    let models = scan_and_merge_models(&config.models_dir, None, &config.custom_models);
     info!("重新扫描模型目录，发现 {} 个模型", models.len());
     Json(models)
 }
@@ -1955,6 +2022,80 @@ async fn get_model_params(
     let config = state.coordinator.config.lock().await;
     let found = config.model_custom_params.get(&query.model_id).cloned();
     Json(json!({ "success": true, "params": found }))
+}
+
+/// POST /api/models/custom/add
+/// 自由添加任意模型：解析 URL → 网络嗅探（主模型大小 + 同目录最小投影大小，不下载）
+/// → 持久化至 config.json → 返回标准 ModelItem 结构供前端立即展示
+async fn add_custom_model(
+    State(state): State<AppState>,
+    Json(payload): Json<AddCustomModelReq>,
+) -> impl IntoResponse {
+    // 1. 解析 URL（不支持的形态直接 400 返回原因）
+    let parsed = match custom_model::parse_model_url(&payload.url) {
+        Ok(p) => p,
+        Err(e) => {
+            warn!("自由添加模型 URL 解析失败: {} ({})", e, payload.url);
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(json!({ "success": false, "error": e })),
+            );
+        }
+    };
+    let resolve_url = custom_model::build_resolve_url(&parsed);
+    let quant = extract_quant_tag_from_name(&parsed.file_name);
+
+    // 2. 网络嗅探：探测失败的值保持 None（前端不显示），不阻断添加流程
+    let client = match reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(25))
+        .build()
+    {
+        Ok(c) => c,
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "success": false, "error": format!("创建网络客户端失败: {}", e) })),
+            );
+        }
+    };
+    let (main_size, mmproj) = custom_model::sniff_model(&client, &parsed, &resolve_url).await;
+    info!(
+        "嗅探自定义模型完成: {} 主模型={:?} 投影={:?}",
+        parsed.file_name, main_size, mmproj
+    );
+
+    // 3. 构造条目并持久化（同 ID 覆盖旧条目）
+    let entry = custom_model::build_entry(&parsed, resolve_url, quant, main_size, mmproj);
+    let disk_hit = {
+        let mut config = state.coordinator.config.lock().await;
+        let data_dir = config.data_dir.clone();
+        if let Some(existing) = config.custom_models.iter_mut().find(|m| m.id == entry.id) {
+            *existing = entry.clone();
+        } else {
+            config.custom_models.push(entry.clone());
+        }
+        let store = crate::config::ConfigStore::new(data_dir);
+        if let Err(e) = store.save(&config) {
+            error!("持久化自定义模型失败 [{}]: {}", entry.id, e);
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "success": false, "error": e.to_string() })),
+            );
+        }
+        // 磁盘存在性判定（该模型文件此前已被手动放入目录的情况）
+        collect_all_ggufs(&config.models_dir)
+            .into_iter()
+            .find(|(_, n)| n.to_lowercase() == entry.file_name.to_lowercase())
+            .map(|(p, _)| p.to_string_lossy().to_string())
+    };
+    info!("已成功持久化自定义模型 [{}] total_size={:?}", entry.id, entry.total_size);
+
+    // 4. 返回标准 ModelItem JSON 供前端立即入列
+    let model_json = custom_model::entry_to_model_json(&entry, disk_hit.is_some(), disk_hit.as_deref());
+    (
+        StatusCode::OK,
+        Json(json!({ "success": true, "model": model_json })),
+    )
 }
 
 /// POST /api/engine/open-ui
@@ -2059,6 +2200,7 @@ pub fn management_routes() -> Router<AppState> {
         .route("/api/engine/models-dir", post(update_models_dir))
         .route("/api/models/rescan", post(rescan_models))
         .route("/api/models/params", post(save_model_params).get(get_model_params))
+        .route("/api/models/custom/add", post(add_custom_model))
         .route("/api/models/download/start", post(start_model_download))
         .route("/api/models/download/status/{task_id}", get(get_download_status))
         .route("/api/models/download/cancel/{task_id}", post(cancel_model_download))

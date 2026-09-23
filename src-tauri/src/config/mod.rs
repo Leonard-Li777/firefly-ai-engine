@@ -1,4 +1,4 @@
 // config/mod.rs
 pub mod store;
 
-pub use store::{ConfigStore, EngineConfig, find_available_port};
+pub use store::{ConfigStore, CustomModelEntry, EngineConfig, find_available_port};

@@ -6,7 +6,7 @@ import {
   DownloadTaskSummary,
   RuntimeParams
 } from './types'
-import { mockApiClient } from './mock-client'
+import { DownloadTaskPoller } from './download-task-poller'
 
 export interface IEngineApiClient {
   /**
@@ -87,6 +87,11 @@ export interface IEngineApiClient {
   getModelParams(modelId: string): Promise<RuntimeParams | undefined>
 
   /**
+   * 自由添加任意模型：提交托管站点 URL，后端解析并网络嗅探大小后返回标准模型条目
+   */
+  addCustomModel(url: string): Promise<ModelItem>
+
+  /**
    * 激活/热切换当前运行的模型
    */
   switchModel(modelId: string, source?: string, localPath?: string, modelName?: string): Promise<{ success: boolean; currentModel: string }>
@@ -115,21 +120,22 @@ export interface IEngineApiClient {
    * 清空运行时日志
    */
   clearEngineLogs(): Promise<{ success: boolean }>
+
+  /**
+   * 绑定真实服务端口（仅 Tauri HTTP 实现提供；mock 实现可忽略）
+   */
+  ensureReady?(): Promise<void>
 }
 
 /**
- * 真实 HTTP / Tauri IPC 客户端实现
- * 优先连接本地基准端口 38400，当连接失败或在独立测试开发沙盒中时平滑降级至 mockApiClient
+ * 纯 HTTP 客户端实现：只负责与本地 llama-server HTTP API 通信，
+ * 不包含任何 mock 回退逻辑。回退/环境选择统一由 api/provider.ts 装配。
  */
-export class EngineApiClient implements IEngineApiClient {
+export class HttpEngineApiClient implements IEngineApiClient {
   private baseUrl = 'http://127.0.0.1:38400'
-  private useMock = false
 
-  constructor() {
-    // 检查是否在纯浏览器或测试环境，若无法访问 Tauri/本地端口则默认走 Mock
-    if (typeof window !== 'undefined' && !(window as any).__TAURI_INTERNALS__) {
-      this.useMock = true
-    }
+  constructor(baseUrl?: string) {
+    if (baseUrl) this.baseUrl = baseUrl
   }
 
   public setBaseUrl(baseUrl: string) {
@@ -138,14 +144,6 @@ export class EngineApiClient implements IEngineApiClient {
 
   public getBaseUrl(): string {
     return this.baseUrl
-  }
-
-  public setUseMock(useMock: boolean) {
-    this.useMock = useMock
-  }
-
-  public isMockMode(): boolean {
-    return this.useMock
   }
 
   /**
@@ -160,7 +158,6 @@ export class EngineApiClient implements IEngineApiClient {
           const actualPort = await invoke<number>('get_server_port')
           if (actualPort && actualPort > 0) {
             this.baseUrl = `http://127.0.0.1:${actualPort}`
-            this.useMock = false
             return
           }
         } catch {
@@ -171,128 +168,78 @@ export class EngineApiClient implements IEngineApiClient {
     }
   }
 
+  /**
+   * 统一的 JSON 请求助手：错误直接向上抛出，由调用方决定处理策略
+   */
+  private async requestJson<T>(path: string, init?: RequestInit): Promise<T> {
+    const res = await fetch(`${this.baseUrl}${path}`, init)
+    if (!res.ok) throw new Error(`HTTP ${res.status} ${path}`)
+    return await res.json()
+  }
+
   async getEngineStatus(): Promise<EngineStatusResponse> {
-    if (this.useMock) return mockApiClient.getEngineStatus()
     await this.ensureReady()
-    try {
-      const res = await fetch(`${this.baseUrl}/api/engine/status`)
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      return await res.json()
-    } catch {
-      return mockApiClient.getEngineStatus()
-    }
+    return this.requestJson<EngineStatusResponse>('/api/engine/status')
   }
 
   async switchEngine(backend: string): Promise<{ success: boolean; message?: string }> {
-    if (this.useMock) return mockApiClient.switchEngine(backend)
     await this.ensureReady()
-    try {
-      const res = await fetch(`${this.baseUrl}/api/engine/switch`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ backend })
-      })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      return await res.json()
-    } catch {
-      return mockApiClient.switchEngine(backend)
-    }
+    return this.requestJson('/api/engine/switch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ backend })
+    })
   }
 
   async getEngineList(): Promise<EngineItem[]> {
-    if (this.useMock) return mockApiClient.getEngineList()
     await this.ensureReady()
-    try {
-      const res = await fetch(`${this.baseUrl}/api/engine/list`)
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const data = await res.json()
-      return Array.isArray(data) ? data : mockApiClient.getEngineList()
-    } catch {
-      return mockApiClient.getEngineList()
-    }
+    const data = await this.requestJson<EngineItem[]>('/api/engine/list')
+    if (!Array.isArray(data)) throw new Error('引擎列表响应格式异常')
+    return data
   }
 
   async downloadEngine(
     backend: string,
     onProgress?: (progress: DownloadProgressEvent) => void
   ): Promise<{ success: boolean }> {
-    if (this.useMock) return mockApiClient.downloadEngine(backend, onProgress)
     await this.ensureReady()
-    try {
-      // 1. 发起引擎下载任务
-      const res = await fetch(`${this.baseUrl}/api/engine/download/start`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ backend })
-      })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const task = await res.json()
-      const taskId: string = task.taskId
+    // 1. 发起引擎下载任务
+    const task = await this.requestJson<{ taskId: string }>('/api/engine/download/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ backend })
+    })
+    const taskId: string = task.taskId
 
-      // 2. 轮询下载进度直到完成
-      await new Promise<void>((resolve, reject) => {
-        const poll = async () => {
-          try {
-            const statusRes = await fetch(`${this.baseUrl}/api/engine/download/status/${taskId}`)
-            if (!statusRes.ok) {
-              reject(new Error(`HTTP ${statusRes.status}`))
-              return
-            }
-            const status = await statusRes.json()
+    // 2. 轮询下载进度直到完成（统一委托 DownloadTaskPoller）
+    const poller = new DownloadTaskPoller(id => this.requestJson<any>(`/api/engine/download/status/${id}`))
+    const outcome = await poller.pollUntilDone(taskId, status => ({
+      taskId,
+      modelId: `engine-${backend}`,
+      sourceName: status.source,
+      percent: status.percent || 0,
+      receivedBytes: status.receivedBytes || 0,
+      totalBytes: status.totalBytes || 0,
+      speedBps: status.speedBps || 0,
+      status: status.status,
+      currentFileName: status.currentFileName,
+      fileIndex: status.fileIndex,
+      totalFiles: status.totalFiles,
+      error: status.error
+    }), onProgress)
 
-            const event: DownloadProgressEvent = {
-              taskId,
-              modelId: `engine-${backend}`,
-              sourceName: status.source,
-              percent: status.percent || 0,
-              receivedBytes: status.receivedBytes || 0,
-              totalBytes: status.totalBytes || 0,
-              speedBps: status.speedBps || 0,
-              status: status.status,
-              currentFileName: status.currentFileName,
-              fileIndex: status.fileIndex,
-              totalFiles: status.totalFiles,
-              error: status.error
-            }
-            onProgress?.(event)
+    if (outcome.kind === 'error') throw new Error(outcome.message.replace('下载失败', '引擎下载失败'))
+    if (outcome.kind === 'canceled') throw new Error('引擎下载已取消')
 
-            if (status.status === 'completed') {
-              resolve()
-            } else if (status.status === 'error') {
-              reject(new Error(status.error || '引擎下载失败'))
-            } else if (status.status === 'canceled') {
-              reject(new Error('引擎下载已取消'))
-            } else {
-              setTimeout(poll, 500)
-            }
-          } catch (e) {
-            reject(e)
-          }
-        }
-        poll()
-      })
-
-      return { success: true }
-    } catch (err) {
-      if (this.useMock || (typeof window !== 'undefined' && !(window as any).__TAURI_INTERNALS__)) {
-        return mockApiClient.downloadEngine(backend, onProgress)
-      }
-      throw err
-    }
+    return { success: true }
   }
 
   async listModels(source?: string): Promise<ModelItem[]> {
-    if (this.useMock) return mockApiClient.listModels(source)
     await this.ensureReady()
-    try {
-      const url = source ? `${this.baseUrl}/api/models?source=${source}` : `${this.baseUrl}/api/models`
-      const res = await fetch(url)
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const data = await res.json()
-      return Array.isArray(data) ? data : mockApiClient.listModels(source)
-    } catch {
-      return mockApiClient.listModels(source)
-    }
+    const url = source ? `/api/models?source=${source}` : '/api/models'
+    const data = await this.requestJson<ModelItem[]>(url)
+    if (!Array.isArray(data)) throw new Error('模型列表响应格式异常')
+    return data
   }
 
   async startModelDownload(
@@ -300,176 +247,108 @@ export class EngineApiClient implements IEngineApiClient {
     options?: { source?: string; forceRestart?: boolean },
     onProgress?: (event: DownloadProgressEvent) => void
   ): Promise<DownloadTaskSummary> {
-    if (this.useMock) return mockApiClient.startModelDownload(modelId, options, onProgress)
     await this.ensureReady()
-    try {
-      // 1. 发起下载任务
-      const res = await fetch(`${this.baseUrl}/api/models/download/start`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          modelId,
-          source: options?.source || 'modelscope',
-          forceRestart: options?.forceRestart || false
-        })
+    // 1. 发起下载任务
+    const task = await this.requestJson<{ taskId: string }>('/api/models/download/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        modelId,
+        source: options?.source || 'modelscope',
+        forceRestart: options?.forceRestart || false
       })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const task = await res.json()
-      const taskId: string = task.taskId
+    })
+    const taskId: string = task.taskId
 
-      // 2. 轮询进度直到完成
-      await new Promise<void>((resolve, reject) => {
-        const poll = async () => {
-          try {
-            const statusRes = await fetch(`${this.baseUrl}/api/models/download/status/${taskId}`)
-            if (!statusRes.ok) {
-              reject(new Error(`HTTP ${statusRes.status}`))
-              return
-            }
-            const status = await statusRes.json()
+    // 2. 轮询进度直到完成（统一委托 DownloadTaskPoller）
+    const poller = new DownloadTaskPoller(id => this.requestJson<any>(`/api/models/download/status/${id}`))
+    const outcome = await poller.pollUntilDone(taskId, status => ({
+      taskId,
+      modelId,
+      percent: status.percent || 0,
+      receivedBytes: status.receivedBytes || 0,
+      totalBytes: status.totalBytes || 0,
+      speedBps: status.speedBps || 0,
+      status: status.status,
+      currentFileName: status.currentFileName,
+      fileIndex: status.fileIndex,
+      totalFiles: status.totalFiles,
+      error: status.error
+    }), onProgress)
 
-            // 映射后端状态到前端 DownloadProgressEvent
-            const event: DownloadProgressEvent = {
-              taskId,
-              modelId,
-              percent: status.percent || 0,
-              receivedBytes: status.receivedBytes || 0,
-              totalBytes: status.totalBytes || 0,
-              speedBps: status.speedBps || 0,
-              status: status.status,
-              currentFileName: status.currentFileName,
-              fileIndex: status.fileIndex,
-              totalFiles: status.totalFiles,
-              error: status.error
-            }
-            onProgress?.(event)
+    if (outcome.kind === 'error') throw new Error(outcome.message)
+    if (outcome.kind === 'canceled') throw new Error(outcome.message)
 
-            if (status.status === 'completed') {
-              resolve()
-            } else if (status.status === 'error') {
-              reject(new Error(status.error || '下载失败'))
-            } else if (status.status === 'canceled') {
-              reject(new Error('下载已取消'))
-            } else {
-              // 继续轮询（500ms 间隔）
-              setTimeout(poll, 500)
-            }
-          } catch (e) {
-            reject(e)
-          }
-        }
-        poll()
-      })
-
-      return { taskId, totalBytes: 0, isDownloaded: true }
-    } catch (err) {
-      // 仅在明确启用 useMock 或在非 Tauri 纯前端单测沙盒环境中回退到 mockApiClient
-      if (this.useMock || (typeof window !== 'undefined' && !(window as any).__TAURI_INTERNALS__)) {
-        return mockApiClient.startModelDownload(modelId, options, onProgress)
-      }
-      // 在 Tauri 真实运行环境中直接向上抛出异常，不再被动伪装成 Mock 成功
-      throw err
-    }
+    return { taskId, totalBytes: 0, isDownloaded: true }
   }
 
   async pauseModelDownload(taskId: string): Promise<void> {
     // 暂停等同于取消（llama-model-download 不支持真正暂停）
-    if (this.useMock) return mockApiClient.pauseModelDownload(taskId)
-    try {
-      await fetch(`${this.baseUrl}/api/models/download/cancel/${taskId}`, { method: 'POST' })
-    } catch {
-      return mockApiClient.pauseModelDownload(taskId)
-    }
+    await this.requestJson<void>(`/api/models/download/cancel/${taskId}`, { method: 'POST' })
   }
 
-  async resumeModelDownload(taskId: string): Promise<void> {
-    if (this.useMock) return mockApiClient.resumeModelDownload(taskId)
-    // 恢复下载：重新发起一个新任务（需要 modelId）
-    // 实际场景中 hook 会重新调用 startDownload，此处忽略
-    return mockApiClient.resumeModelDownload(taskId)
+  async resumeModelDownload(_taskId: string): Promise<void> {
+    // 明确契约：后端不支持断点恢复，恢复下载必须由 hook 重新发起 startModelDownload
+    throw new Error('resumeModelDownload 不受支持：请通过 startModelDownload 重新发起下载')
   }
 
   async cancelModelDownload(taskId: string): Promise<void> {
-    if (this.useMock) return mockApiClient.cancelModelDownload(taskId)
-    try {
-      await fetch(`${this.baseUrl}/api/models/download/cancel/${taskId}`, { method: 'POST' })
-    } catch {
-      return mockApiClient.cancelModelDownload(taskId)
-    }
+    await this.requestJson<void>(`/api/models/download/cancel/${taskId}`, { method: 'POST' })
   }
 
   async updateModelStoragePath(newPath: string): Promise<{ success: boolean; scannedModelsCount: number }> {
-    if (this.useMock) return mockApiClient.updateModelStoragePath(newPath)
     await this.ensureReady()
-    try {
-      const res = await fetch(`${this.baseUrl}/api/engine/models-dir`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path: newPath })
-      })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      return await res.json()
-    } catch {
-      return mockApiClient.updateModelStoragePath(newPath)
-    }
+    return this.requestJson('/api/engine/models-dir', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: newPath })
+    })
   }
 
   async rescanModels(): Promise<ModelItem[]> {
-    if (this.useMock) return mockApiClient.rescanModels()
     await this.ensureReady()
-    try {
-      const res = await fetch(`${this.baseUrl}/api/models/rescan`, { method: 'POST' })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const data = await res.json()
-      return Array.isArray(data) ? data : mockApiClient.rescanModels()
-    } catch {
-      return mockApiClient.rescanModels()
-    }
+    const data = await this.requestJson<ModelItem[]>('/api/models/rescan', { method: 'POST' })
+    if (!Array.isArray(data)) throw new Error('模型列表响应格式异常')
+    return data
   }
 
   async updateRuntimeParams(params: Partial<RuntimeParams>): Promise<{ success: boolean }> {
-    if (this.useMock) return mockApiClient.updateRuntimeParams(params)
     await this.ensureReady()
-    try {
-      const res = await fetch(`${this.baseUrl}/api/engine/params`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(params)
-      })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      return await res.json()
-    } catch {
-      return mockApiClient.updateRuntimeParams(params)
-    }
+    return this.requestJson('/api/engine/params', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params)
+    })
   }
 
   async saveModelParams(modelId: string, params: RuntimeParams): Promise<{ success: boolean }> {
-    if (this.useMock) return mockApiClient.saveModelParams(modelId, params)
     await this.ensureReady()
-    try {
-      const res = await fetch(`${this.baseUrl}/api/models/params`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ modelId, params })
-      })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      return await res.json()
-    } catch {
-      return mockApiClient.saveModelParams(modelId, params)
-    }
+    return this.requestJson('/api/models/params', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ modelId, params })
+    })
   }
 
   async getModelParams(modelId: string): Promise<RuntimeParams | undefined> {
-    if (this.useMock) return mockApiClient.getModelParams(modelId)
     await this.ensureReady()
-    try {
-      const res = await fetch(`${this.baseUrl}/api/models/params?modelId=${encodeURIComponent(modelId)}`)
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const data = await res.json()
-      return data.params
-    } catch {
-      return mockApiClient.getModelParams(modelId)
+    const data = await this.requestJson<{ params?: RuntimeParams }>(`/api/models/params?modelId=${encodeURIComponent(modelId)}`)
+    return data.params
+  }
+
+  async addCustomModel(url: string): Promise<ModelItem> {
+    await this.ensureReady()
+    const res = await fetch(`${this.baseUrl}/api/models/custom/add`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url })
+    })
+    const body = await res.json().catch(() => null)
+    if (!res.ok || !body?.success) {
+      // 优先透出后端解析/嗅探失败的具体原因
+      throw new Error(body?.error || `HTTP ${res.status} /api/models/custom/add`)
     }
+    return body.model as ModelItem
   }
 
   async switchModel(
@@ -478,89 +357,45 @@ export class EngineApiClient implements IEngineApiClient {
     localPath?: string,
     modelName?: string
   ): Promise<{ success: boolean; currentModel: string }> {
-    if (this.useMock) return mockApiClient.switchModel(modelId, source, localPath, modelName)
     await this.ensureReady()
-    try {
-      const res = await fetch(`${this.baseUrl}/api/models/switch`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ modelId, source, localPath, modelName })
-      })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      return await res.json()
-    } catch {
-      return mockApiClient.switchModel(modelId, source, localPath, modelName)
-    }
+    return this.requestJson('/api/models/switch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ modelId, source, localPath, modelName })
+    })
   }
 
   async resetDowngrade(): Promise<{ status: string }> {
-    if (this.useMock) return mockApiClient.resetDowngrade()
     await this.ensureReady()
-    try {
-      const res = await fetch(`${this.baseUrl}/api/engine/reset-downgrade`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      return await res.json()
-    } catch {
-      return mockApiClient.resetDowngrade()
-    }
+    return this.requestJson('/api/engine/reset-downgrade', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    })
   }
 
   async startEngine(): Promise<{ success: boolean; message?: string; error?: string }> {
-    if (this.useMock) return mockApiClient.startEngine()
     await this.ensureReady()
-    try {
-      const res = await fetch(`${this.baseUrl}/api/engine/start`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      })
-      return await res.json()
-    } catch {
-      return mockApiClient.startEngine()
-    }
+    return this.requestJson('/api/engine/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    })
   }
 
   async stopEngine(): Promise<{ success: boolean; message?: string; error?: string }> {
-    if (this.useMock) return mockApiClient.stopEngine()
     await this.ensureReady()
-    try {
-      const res = await fetch(`${this.baseUrl}/api/engine/stop`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      })
-      return await res.json()
-    } catch {
-      return mockApiClient.stopEngine()
-    }
+    return this.requestJson('/api/engine/stop', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    })
   }
 
   async getEngineLogs(): Promise<{ logs: string[] }> {
-    if (this.useMock) return mockApiClient.getEngineLogs()
     await this.ensureReady()
-    try {
-      const res = await fetch(`${this.baseUrl}/api/engine/logs`)
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      return await res.json()
-    } catch {
-      return mockApiClient.getEngineLogs()
-    }
+    return this.requestJson('/api/engine/logs')
   }
 
   async clearEngineLogs(): Promise<{ success: boolean }> {
-    if (this.useMock) return mockApiClient.clearEngineLogs()
     await this.ensureReady()
-    try {
-      const res = await fetch(`${this.baseUrl}/api/engine/logs/clear`, {
-        method: 'POST'
-      })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      return await res.json()
-    } catch {
-      return mockApiClient.clearEngineLogs()
-    }
+    return this.requestJson('/api/engine/logs/clear', { method: 'POST' })
   }
 }
-
-export const engineApiClient = new EngineApiClient()

@@ -50,6 +50,10 @@ pub struct EngineConfig {
     #[serde(default)]
     pub model_custom_params: std::collections::HashMap<String, ModelCustomParams>,
 
+    /// 用户自由添加的自定义模型列表（URL 嗅探后持久化，key 为下载 ID）
+    #[serde(default)]
+    pub custom_models: Vec<CustomModelEntry>,
+
     /// 数据目录（由系统设置，不可用户修改）
     #[serde(skip)]
     pub data_dir: PathBuf,
@@ -94,6 +98,39 @@ pub struct ModelCustomParams {
     /// 重复惩罚 (1.0 ~ 2.0)
     #[serde(default = "default_repeat_penalty")]
     pub repeat_penalty: f64,
+}
+
+/// 用户自由添加的自定义模型条目（URL 嗅探结果持久化至 config.json）
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct CustomModelEntry {
+    /// 下载标识（org/repo:QUANT 或 org/repo:文件名.gguf），同时作为列表 id
+    pub id: String,
+    /// 展示名称（从仓库名/文件名推导）
+    pub name: String,
+    /// 作者（仓库 org 段）
+    #[serde(default)]
+    pub author: Option<String>,
+    /// 下载来源："huggingface" | "modelscope"
+    pub source: String,
+    /// 标准化量化标识（从文件名提取，探测失败为 None）
+    #[serde(default)]
+    pub quant: Option<String>,
+    /// 主模型文件名
+    pub file_name: String,
+    /// 直接下载（resolve）URL，嗅探与下载兜底用
+    pub resolve_url: String,
+    /// 主模型文件大小（字节，HEAD 探测失败为 None）
+    #[serde(default)]
+    pub main_file_size: Option<u64>,
+    /// 同目录最小投影（mmproj）文件名（未探测到为 None）
+    #[serde(default)]
+    pub mmproj_file_name: Option<String>,
+    /// 投影文件大小（字节）
+    #[serde(default)]
+    pub mmproj_file_size: Option<u64>,
+    /// 合计大小 totalSize = 主模型 + 投影（任一缺失时仅为可得部分）
+    #[serde(default)]
+    pub total_size: Option<u64>,
 }
 
 fn default_gpu_layers() -> i32 { 24 }
@@ -152,6 +189,7 @@ impl Default for EngineConfig {
             selected_model_path: None,
             preferred_backend: None,
             model_custom_params: std::collections::HashMap::new(),
+            custom_models: Vec::new(),
             data_dir: PathBuf::new(),
         }
     }

@@ -119,3 +119,25 @@ html:lang(pt) :where(button span, .badge, th),
 html:lang(ru) :where(button span, .badge, th) {
   font-size: calc(1em - 0.5px);
 }
+
+/* ==========================================================================
+   抽屉滑入动画（项目未引入 tailwindcss-animate，animate-in 系列类为无效类，
+   此处提供真实的左侧滑入与蒙层淡入关键帧）
+   ========================================================================== */
+@keyframes drawer-slide-in-from-left {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes overlay-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.drawer-slide-in-from-left {
+  animation: drawer-slide-in-from-left 300ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.overlay-fade-in {
+  animation: overlay-fade-in 200ms ease-out both;
+}

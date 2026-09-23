@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react'
 import {
-  Zap,
   Moon,
   Sun,
   Boxes,
@@ -19,6 +18,7 @@ import { EngineTable } from './components/engine/engine-table'
 import { ThinkingModeCard } from './components/engine/thinking-mode-card'
 import { ModelStorageConfig } from './components/storage/model-storage-config'
 import { ModelListPanel } from './components/model/model-list-panel'
+import { CustomModelAddCard } from './components/model/custom-model-add-card'
 import { ThirdPartyApiView } from './components/api/third-party-api-view'
 import { EngineLogsView } from './components/logs/engine-logs-view'
 import { LocalChatView } from './components/chat/local-chat-view'
@@ -27,7 +27,7 @@ import { Footer } from './components/common/Footer'
 import { ToastContainer } from './components/common/Toast'
 import { useEngineStore } from './stores/engine-store'
 import { useI18nStore } from './lib/i18n'
-import { engineApiClient } from './api/client'
+import { getEngineApiClient, isMockMode } from './api/provider'
 import pkg from '../package.json'
 
 export const App: React.FC = () => {
@@ -69,7 +69,8 @@ export const App: React.FC = () => {
 
     // 初始化加载
     const initApp = async () => {
-      await engineApiClient.ensureReady()
+      // Tauri 环境下先绑定真实动态端口（浏览器/mock 模式无端口概念，getEngineStatus 内部会自动跳过）
+      await getEngineApiClient().ensureReady?.()
 
       await Promise.allSettled([
         fetchEngineStatus(),
@@ -94,16 +95,14 @@ export const App: React.FC = () => {
     }
   }
 
-  const isMock = engineApiClient.isMockMode()
+  const isMock = isMockMode()
 
   return (
     <div dir={dir} className="h-screen max-h-screen w-screen overflow-hidden bg-background text-foreground flex flex-col font-sans transition-colors duration-200">
       {/* 顶部常驻导航与状态条：纯固定 Flex 项，绝不随任何内容滚动 */}
       <header className="shrink-0 z-50 border-b border-border/80 bg-background/95 backdrop-blur-md px-5 py-3 flex flex-wrap lg:flex-nowrap items-center justify-between gap-3 shadow-xs">
         <div className="flex items-center gap-3 shrink-0 min-w-0">
-          <div className="flex h-8.5 w-8.5 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-xs border border-primary/40">
-            <Zap className="h-4.5 w-4.5 fill-current" />
-          </div>
+          <img src="/icon.webp" alt={t('萤核AI引擎')} className="h-8.5 w-8.5 shrink-0 rounded-xl object-cover shadow-xs" draggable={false} />
           <div className="flex flex-col min-w-0">
             <div className="flex items-center gap-2 flex-nowrap">
               <span className="text-sm font-bold tracking-tight text-foreground whitespace-nowrap">{t('萤核AI引擎')}</span>
@@ -290,7 +289,12 @@ export const App: React.FC = () => {
               <ModelListPanel />
             </section>
 
-            {/* 2. 模型存储路径自定义配置与扫描（置于最后） */}
+            {/* 2. 自由添加任意托管模型（URL 嗅探后进入上方模型列表） */}
+            <section>
+              <CustomModelAddCard />
+            </section>
+
+            {/* 3. 模型存储路径自定义配置与扫描（置于最后） */}
             <section>
               <ModelStorageConfig />
             </section>

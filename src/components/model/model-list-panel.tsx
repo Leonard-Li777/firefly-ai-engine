@@ -18,7 +18,8 @@ import {
   Music,
   GraduationCap,
   Settings2,
-  AlertCircle
+  AlertCircle,
+  Power
 } from 'lucide-react'
 import { Card } from '../ui/card'
 import { Badge } from '../ui/badge'
@@ -32,7 +33,7 @@ import { useModelDownload } from '../../hooks/use-model-download'
 import { ModelItem, ModelSource } from '../../api/types'
 import { formatFileSize, formatSpeed, calculateRemainingTime } from '../../lib/utils'
 import { useI18nStore, t } from '../../lib/i18n'
-import { sortModels } from '../../lib/model-sorting'
+import { sortModels, EnrichedModelItem } from '../../lib/model-sorting'
 import { getDisplayRelativeModelPath } from '../../lib/path-utils'
 import { ModelParamDrawer } from './model-param-drawer'
 
@@ -77,7 +78,34 @@ export function getIntelligenceConfig(id?: number | null): IntelligenceLevelItem
 // 别名保留，函数本身接收 id 返回对应配置
 export const INTELLIGENCE_CONFIG = getIntelligenceConfig
 
-interface ModelCardProps {
+/**
+ * 表格统一列模板：模型名称(弹性) | 推荐 | 智能程度 | 能力 | 参数量 | 量化 | 体积 | 显存
+ * 主行与表头共用该模板，保证各指标列纵向严格对齐；
+ * 描述、本地路径、状态与操作按钮各自独占整行子行，不参与网格。
+ */
+const MODEL_GRID =
+  'grid grid-cols-[minmax(0,1fr)_64px_72px_104px_52px_88px_72px_60px] items-center gap-x-3'
+
+/** 表头行：各列标题（小号弱化文字，与数据主行共用网格模板） */
+const ModelColumnHeader: React.FC = () => {
+  const { t } = useI18nStore()
+  return (
+    <div
+      className={`${MODEL_GRID} border-b border-border/50 bg-muted/30 px-4 py-2 text-[11px] font-bold uppercase tracking-wide text-muted-foreground`}
+    >
+      <span className="min-w-0 truncate">{t('models.colModel')}</span>
+      <span>{t('models.colRecommended')}</span>
+      <span>{t('models.colIntelligence')}</span>
+      <span>{t('models.colCapabilities')}</span>
+      <span>{t('models.paramSize')}</span>
+      <span>{t('models.quantization')}</span>
+      <span className="text-right">{t('models.fileSize')}</span>
+      <span className="text-right">{t('models.colVram')}</span>
+    </div>
+  )
+}
+
+interface ModelRowProps {
   model: ModelItem
   isCurrent: boolean
   isEx?: boolean
@@ -85,7 +113,12 @@ interface ModelCardProps {
   onOpenConfig: (model: ModelItem) => void
 }
 
-const ModelCardItem: React.FC<ModelCardProps> = ({ model, isCurrent, isEx = false, onActivate, onOpenConfig }) => {
+/**
+ * 表格单行模型条目：主行网格与表头列对齐（名称/推荐/智能程度/能力/参数量/量化/体积/显存），
+ * 「已激活」状态条、描述、本地路径、状态与操作按钮各自独占整行子行，互不挤压。
+ * 下载进行中以整行子区块展开进度条。
+ */
+const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isEx = false, onActivate, onOpenConfig }) => {
   const { t } = useI18nStore()
   const { fetchModels, modelsDir } = useEngineStore()
   const handleDownloadComplete = React.useCallback(() => {
@@ -133,16 +166,18 @@ const ModelCardItem: React.FC<ModelCardProps> = ({ model, isCurrent, isEx = fals
   const isDownloaded = model.isDownloaded || dl.status === 'completed'
   const isDsparkDownloaded = dsparkDl.status === 'completed'
   const intelligence = INTELLIGENCE_CONFIG(model.intelligenceLevel)
+  const isDownloadingOrPaused = dl.isDownloading || dl.isPaused
 
-  // 整理能力列表
+  // 整理能力列表（自由添加模型未探测到能力时保持为空，不渲染徽章）
   const capabilities = useMemo(() => {
     if (Array.isArray(model.capabilities) && model.capabilities.length > 0) {
       return model.capabilities
     }
+    if (model.isMultiModal) return ['TEXT', 'IMAGE']
+    if (model.custom) return []
     const list = ['TEXT']
-    if (model.isMultiModal) list.push('IMAGE')
     return list
-  }, [model.capabilities, model.isMultiModal])
+  }, [model.capabilities, model.isMultiModal, model.custom])
 
   // 处理激活/设为生效
   const handleActivate = async () => {
@@ -156,83 +191,55 @@ const ModelCardItem: React.FC<ModelCardProps> = ({ model, isCurrent, isEx = fals
 
   return (
     <div
-      className={`group relative flex flex-col justify-between p-5 rounded-2xl border transition-all ${
+      className={`group relative transition-colors ${
         isEx
-          ? 'opacity-40 grayscale-[0.6] border-border bg-muted/10'
+          ? 'opacity-50 grayscale-[0.5]'
           : isCurrent
-            ? 'bg-primary/5 border-primary shadow-md ring-2 ring-primary/15'
-            : 'bg-card/90 border-border hover:border-primary/60 hover:shadow-xs'
+            ? 'bg-primary/5'
+            : 'hover:bg-muted/30'
       }`}
     >
-      {/* 激活角标 */}
+      {/* 「已激活」独立状态条行：整行横幅替代原悬浮角标，不再遮挡任何内容 */}
       {isCurrent && (
-        <Badge className="absolute -top-2.5 -right-2.5 h-5.5 px-2.5 bg-primary text-primary-foreground shadow-xs rounded-full text-[11px] font-bold pointer-events-none z-10 flex items-center gap-1 border border-primary-foreground/20">
-          <Check className="h-3 w-3" />
+        <div className="flex items-center gap-1.5 px-4 py-1 bg-primary/10 border-b border-primary/20 text-[11px] font-bold text-primary">
+          <Check className="h-3 w-3 shrink-0" />
           <span>{t('已激活')}</span>
-        </Badge>
-      )}
-      {/* 显存不足角标 */}
-      {isEx && (
-        <Badge className="absolute -top-2.5 -right-2.5 h-5.5 px-2.5 bg-destructive text-destructive-foreground shadow-xs rounded-full text-[11px] font-bold pointer-events-none z-10 flex items-center gap-1">
-          <AlertCircle className="w-3 h-3" />
-          <span>{t('显存不足')}</span>
-        </Badge>
-      )}
-
-      <div>
-        {/* 卡片头部：标题 + 核心徽章 */}
-        <div className="flex items-start justify-between gap-2.5 mb-2">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <h4 className="font-bold text-base text-foreground tracking-tight leading-snug">
-                {model.name}
-              </h4>
-              {/* 官方推荐 Badge */}
-              {model.recommended && (
-                <Badge className="text-[10px] font-bold h-5 px-2 bg-gradient-to-r from-amber-500 to-orange-600 text-white border-none shadow-xs flex items-center gap-1 shrink-0">
-                  <Star className="h-3 w-3 fill-current text-white" />
-                  <span>{t('推荐')}</span>
-                </Badge>
-              )}
-              {/* 智能级别 Badge */}
-              {intelligence && (
-                <Badge
-                  variant="outline"
-                  className={`text-[10px] font-bold h-5 px-2 flex items-center gap-1 shrink-0 ${intelligence.badgeClass}`}
-                >
-                  <GraduationCap className="h-3 w-3" />
-                  <span>{t('智能程度')}：{intelligence.label}</span>
-                </Badge>
-              )}
-            </div>
-
-            {/* 模型架构参数与量化信息 */}
-            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-              <span className="font-mono text-xs font-bold text-foreground/90 bg-muted px-2 py-0.5 rounded-md border border-border/70">
-                {model.params || '0.8B'}
-              </span>
-              <span className="font-mono text-xs font-semibold text-muted-foreground bg-muted/60 px-2 py-0.5 rounded-md border border-border/60">
-                {model.quant || 'Q4_K_M'}
-              </span>
-              <span className="font-mono text-xs font-semibold text-muted-foreground flex items-center gap-1">
-                <HardDrive className="h-3 w-3 text-muted-foreground/70" />
-                {model.size || formatFileSize(model.fileSize)}
-              </span>
-              {model.vramNeededGB && (
-                <span
-                  className={`text-[11px] font-bold ${
-                    isEx ? 'text-destructive' : 'text-blue-600 dark:text-blue-400'
-                  }`}
-                >
-                  {t('预估显存')} ~{model.vramNeededGB} GB
-                </span>
-              )}
-            </div>
-          </div>
         </div>
+      )}
 
-        {/* 能力标签栏 (文本 / 图片) */}
-        <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+      {/* 主行网格：与表头 8 列严格对齐 */}
+      <div className={`${MODEL_GRID} px-4 pt-3 pb-1.5`}>
+        {/* 列1：模型名称（徽章已拆分为独立列） */}
+        <h4 className="min-w-0 font-bold text-sm text-foreground tracking-tight leading-snug break-words">
+          {model.name}
+        </h4>
+
+        {/* 列2：官方推荐 */}
+        {model.recommended ? (
+          <Badge className="text-[10px] font-bold h-5 px-1.5 bg-gradient-to-r from-amber-500 to-orange-600 text-white border-none shadow-xs flex items-center gap-1 w-fit max-w-full">
+            <Star className="h-3 w-3 fill-current text-white shrink-0" />
+            <span className="truncate">{t('推荐')}</span>
+          </Badge>
+        ) : (
+          <span className="text-xs text-muted-foreground/40">-</span>
+        )}
+
+        {/* 列3：智能程度级别（完整含义悬停查看） */}
+        {intelligence ? (
+          <Badge
+            variant="outline"
+            className={`text-[10px] font-bold h-5 px-1.5 flex items-center gap-1 w-fit max-w-full ${intelligence.badgeClass}`}
+            title={`${t('智能程度')}：${intelligence.label}`}
+          >
+            <GraduationCap className="h-3 w-3 shrink-0" />
+            <span className="truncate">{intelligence.label}</span>
+          </Badge>
+        ) : (
+          <span className="text-xs text-muted-foreground/40">-</span>
+        )}
+
+        {/* 列4：能力标签栏 (文本 / 图片 / 音频)，纵向堆叠避免横向拥挤 */}
+        <div className="flex flex-col items-start gap-1 min-w-0">
           {capabilities.map(cap => {
             const isText = cap === 'TEXT'
             const isImage = cap === 'IMAGE' || cap === 'VISION'
@@ -240,7 +247,7 @@ const ModelCardItem: React.FC<ModelCardProps> = ({ model, isCurrent, isEx = fals
               <Badge
                 key={cap}
                 variant="outline"
-                className={`text-[10px] font-bold h-5 px-2 flex items-center gap-1 ${
+                className={`text-[10px] font-bold h-4.5 px-1.5 flex items-center gap-1 max-w-full ${
                   isText
                     ? 'border-emerald-500/30 text-emerald-700 dark:text-emerald-400 bg-emerald-500/10'
                     : isImage
@@ -249,13 +256,13 @@ const ModelCardItem: React.FC<ModelCardProps> = ({ model, isCurrent, isEx = fals
                 }`}
               >
                 {isText ? (
-                  <FileText className="h-2.5 w-2.5" />
+                  <FileText className="h-2.5 w-2.5 shrink-0" />
                 ) : isImage ? (
-                  <Eye className="h-2.5 w-2.5" />
+                  <Eye className="h-2.5 w-2.5 shrink-0" />
                 ) : (
-                  <Music className="h-2.5 w-2.5" />
+                  <Music className="h-2.5 w-2.5 shrink-0" />
                 )}
-                <span>
+                <span className="truncate">
                   {isText ? t('文本理解') : isImage ? t('图片识别') : cap}
                 </span>
               </Badge>
@@ -263,88 +270,103 @@ const ModelCardItem: React.FC<ModelCardProps> = ({ model, isCurrent, isEx = fals
           })}
         </div>
 
-        {/* 描述信息 */}
-        {model.description && (
-          <p className="text-xs text-muted-foreground leading-relaxed mt-2.5 line-clamp-2">
-            {model.description}
-          </p>
+        {/* 列5：参数量（自由添加模型无法探测时不显示） */}
+        {model.params ? (
+          <span className="font-mono text-xs font-bold text-foreground/90">{model.params}</span>
+        ) : (
+          <span className="text-xs text-muted-foreground/40">-</span>
         )}
+
+        {/* 列6：量化精度（无法探测时不显示） */}
+        {model.quant ? (
+          <span className="font-mono text-xs text-muted-foreground truncate" title={model.quant}>
+            {model.quant}
+          </span>
+        ) : (
+          <span className="text-xs text-muted-foreground/40">-</span>
+        )}
+
+        {/* 列7：模型体积（右对齐等宽数字，探测失败为 0 时不显示） */}
+        <span className="font-mono text-xs text-muted-foreground text-right tabular-nums">
+          {model.size || (model.fileSize > 0 ? formatFileSize(model.fileSize) : '-')}
+        </span>
+
+        {/* 列8：预估显存（右对齐，超标红色警示） */}
+        <span
+          className={`font-mono text-xs font-bold text-right tabular-nums whitespace-nowrap ${
+            isEx ? 'text-destructive' : 'text-blue-600 dark:text-blue-400'
+          }`}
+          title={model.vramNeededGB ? t('预估显存') : undefined}
+        >
+          {model.vramNeededGB ? `~${model.vramNeededGB} GB` : '-'}
+        </span>
       </div>
 
-      {/* 底部操作与下载状态 */}
-      <div className="mt-4 pt-3 border-t border-border/60">
-        {dl.isDownloading || dl.isPaused ? (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs font-semibold">
-              <span className="text-primary truncate max-w-[200px]" title={dl.currentFileName}>
-                {dl.totalFiles && dl.totalFiles > 1
-                  ? `[${(dl.fileIndex || 0) + 1}/${dl.totalFiles}] ${dl.currentFileName}`
-                  : dl.currentFileName || t('正在下载...')}
-              </span>
-              <span className="font-mono text-[11px] font-bold">{dl.progress}%</span>
-            </div>
+      {/* 描述独占整行 */}
+      {!isDownloadingOrPaused && model.description && (
+        <p className="px-4 pb-1.5 text-xs text-muted-foreground leading-relaxed break-words" title={model.description}>
+          {model.description}
+        </p>
+      )}
 
-            <Progress value={dl.progress} className="h-1.5" />
+      {/* 本地路径独占整行（已下载模型展示相对路径，可换行完整查看） */}
+      {isDownloaded && displayRelativePath && (
+        <div className="flex items-start gap-1 px-4 pb-1.5 min-w-0">
+          <HardDrive className="h-3 w-3 shrink-0 mt-0.5 text-muted-foreground/80" />
+          <span className="break-all select-all text-[11px] font-mono text-muted-foreground" title={displayRelativePath}>
+            {displayRelativePath}
+          </span>
+        </div>
+      )}
 
-            <div className="flex flex-wrap items-center justify-between text-[10px] text-muted-foreground font-mono gap-1">
-              <span>
-                {formatFileSize(dl.receivedBytes)} / {formatFileSize(dl.totalBytes || model.fileSize)}
-              </span>
-              <div className="flex items-center gap-1.5">
-                {dl.speedBps > 0 && <span className="text-foreground font-bold">{formatSpeed(dl.speedBps)}</span>}
-                {remainingText && <span>{remainingText}</span>}
-              </div>
-            </div>
+      {/* 状态与操作按钮独占整行：状态在左，按钮全部显示完整文字标签 */}
+      <div className="flex items-center justify-between gap-3 px-4 pb-3">
+        {isDownloadingOrPaused ? (
+          <span className="font-mono text-xs font-bold text-primary tabular-nums">
+            {t('正在下载')} {dl.progress}%
+          </span>
+        ) : dl.status === 'error' ? (
+          <span className="text-xs font-semibold text-destructive truncate min-w-0" title={dl.error || undefined}>
+            {dl.error || t('下载失败')}
+          </span>
+        ) : isDownloaded ? (
+          <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 text-xs font-bold">
+            <FileCheck2 className="h-3.5 w-3.5 shrink-0" />
+            <span>{t('已就绪')}</span>
+          </div>
+        ) : (
+          <span className="text-xs text-muted-foreground/70 font-medium">
+            {isEx ? t('超出显存限制') : t('尚未下载到本地')}
+          </span>
+        )}
 
-            {/* 控制按钮 */}
-            <div className="flex items-center justify-end gap-1.5 pt-1">
+        <div className="flex items-center gap-1.5 shrink-0">
+          {isDownloadingOrPaused ? (
+            <>
               {dl.isPaused ? (
-                <Button size="sm" variant="outline" className="h-7 text-xs px-2.5 rounded-lg font-bold" onClick={resumeDownload}>
+                <Button size="sm" variant="outline" className="h-7.5 text-xs px-3 rounded-lg font-bold" onClick={resumeDownload}>
                   <Play className="h-3 w-3 mr-1" />
                   {t('继续')}
                 </Button>
               ) : (
-                <Button size="sm" variant="outline" className="h-7 text-xs px-2.5 rounded-lg font-bold" onClick={pauseDownload}>
+                <Button size="sm" variant="outline" className="h-7.5 text-xs px-3 rounded-lg font-bold" onClick={pauseDownload}>
                   <Pause className="h-3 w-3 mr-1" />
                   {t('暂停')}
                 </Button>
               )}
-              <Button size="sm" variant="ghost" className="h-7 text-xs px-2.5 rounded-lg text-destructive hover:bg-destructive/10 font-bold" onClick={cancelDownload}>
+              <Button size="sm" variant="ghost" className="h-7.5 text-xs px-3 rounded-lg font-bold text-destructive hover:bg-destructive/10" onClick={cancelDownload}>
                 <X className="h-3 w-3 mr-1" />
                 {t('取消')}
               </Button>
-            </div>
-          </div>
-        ) : dl.status === 'error' ? (
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-xs font-semibold text-destructive truncate">{dl.error || t('下载失败')}</span>
-            <Button size="sm" variant="outline" className="h-7.5 text-xs rounded-lg border-border font-bold" onClick={retryDownload}>
+            </>
+          ) : dl.status === 'error' ? (
+            <Button size="sm" variant="outline" className="h-7.5 text-xs px-3 rounded-lg border-border font-bold" onClick={retryDownload}>
               <RotateCw className="h-3 w-3 mr-1" />
               {t('重试')}
             </Button>
-          </div>
-        ) : isDownloaded ? (
-          <div className="space-y-2.5">
-            {/* 已就绪模型的模型相对路径展示（不显示 base 存储路径） */}
-            {displayRelativePath && (
-              <div className="flex items-center justify-between gap-1.5 text-[11px] font-mono text-muted-foreground bg-muted/40 px-2 py-1 rounded-md border border-border/50">
-                <div className="flex items-center gap-1 min-w-0 flex-1">
-                  <HardDrive className="h-3 w-3 shrink-0 text-muted-foreground/80" />
-                  <span className="truncate select-all" title={displayRelativePath}>
-                    {displayRelativePath}
-                  </span>
-                </div>
-              </div>
-            )}
-
-            <div className="flex items-center justify-between gap-2 flex-wrap">
-              <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 text-xs font-bold">
-                <FileCheck2 className="h-3.5 w-3.5 shrink-0" />
-                <span>{t('已就绪')}</span>
-              </div>
-
-              <div className="flex items-center gap-2">
-              {/* 配置了 DSpark 加速模型且未下载时，【下载加速模型】按钮显示 */}
+          ) : isDownloaded ? (
+            <>
+              {/* 配置了 DSpark 加速模型且未下载时，展示【下载加速模型】按钮 */}
               {dsparkId && !isDsparkDownloaded && (
                 <Button
                   size="sm"
@@ -352,27 +374,27 @@ const ModelCardItem: React.FC<ModelCardProps> = ({ model, isCurrent, isEx = fals
                   onClick={() => startDsparkDownload()}
                   disabled={dsparkDl.isDownloading}
                   title={t('下载投机采样加速模型，大幅提升推理速度')}
-                  className="h-7.5 text-xs px-2.5 rounded-lg border-emerald-500/50 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 font-bold flex items-center gap-1 transition-all"
+                  className="h-7.5 text-xs px-3 rounded-lg border-emerald-500/50 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 font-bold flex items-center gap-1 transition-all"
                 >
-                  <Zap className="h-3 w-3 fill-current text-emerald-500 shrink-0" />
+                  <Zap className={`h-3 w-3 shrink-0 ${dsparkDl.isDownloading ? 'fill-current animate-pulse' : ''}`} />
                   <span>{dsparkDl.isDownloading ? t('加速模型下载中...') : t('下载加速模型')}</span>
                 </Button>
               )}
 
-              {/* 参数配置按钮：仅已下载且显存未超标 (!isEx) 时才显示（hover 时展示） */}
+              {/* 参数配置按钮：仅已下载且显存未超标 (!isEx) 时才显示 */}
               {!isEx && (
                 <Button
                   size="sm"
                   variant="outline"
-                  className="h-7.5 text-xs px-2.5 rounded-lg border-border hover:border-primary/60 font-bold flex items-center gap-1 transition-all opacity-0 group-hover:opacity-100"
+                  className="h-7.5 text-xs px-3 rounded-lg border-border hover:border-primary/60 font-bold flex items-center gap-1 transition-all"
                   onClick={() => onOpenConfig(model)}
                 >
-                  <Settings2 className="h-3.5 w-3.5 text-primary" />
+                  <Settings2 className="h-3.5 w-3.5 text-primary shrink-0" />
                   <span>{t('参数配置')}</span>
                 </Button>
               )}
 
-              {/* 当前运行模型不显示额外徽标，已由右上角「已激活」角标标识；非当前模型展示【激活】按钮 */}
+              {/* 当前模型由行顶「已激活」横幅标识；非当前模型展示【激活】按钮，显存超标时展示禁用按钮 */}
               {isCurrent ? null : isEx ? (
                 <Button
                   size="sm"
@@ -386,66 +408,110 @@ const ModelCardItem: React.FC<ModelCardProps> = ({ model, isCurrent, isEx = fals
               ) : (
                 <Button
                   size="sm"
-                  variant="secondary"
-                  className="h-7.5 text-xs px-3.5 rounded-lg font-bold border border-border hover:border-primary/50 shrink-0"
+                  variant="default"
+                  className="h-7.5 text-xs px-3.5 rounded-lg font-bold shadow-xs shrink-0"
                   onClick={handleActivate}
                   disabled={isActivating}
                 >
+                  <Power className="h-3 w-3 mr-1.5 shrink-0" />
                   {isActivating ? t('切换中...') : t('激活')}
                 </Button>
               )}
-            </div>
-          </div>
+            </>
+          ) : (
+            /* 未下载模型只显示下载按钮，若显存不足则显示禁用显存不足按钮，绝不显示任何参数配置按钮 */
+            isEx ? (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7.5 text-xs px-3 rounded-lg font-bold border-destructive/30 text-destructive/80 bg-destructive/5 shrink-0 cursor-not-allowed opacity-80"
+                disabled={true}
+              >
+                <AlertCircle className="h-3.5 w-3.5 mr-1 text-destructive" />
+                {t('显存不足')}
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7.5 text-xs px-3.5 rounded-lg font-bold border-border hover:border-primary/60 shrink-0"
+                onClick={() => startDownload()}
+              >
+                <Download className="h-3 w-3 mr-1.5 shrink-0" />
+                {t('下载模型')}
+              </Button>
+            )
+          )}
         </div>
-        ) : (
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-xs text-muted-foreground/80 font-medium">
-              {isEx ? (
-                <span className="text-destructive font-semibold flex items-center gap-1">
-                  <AlertCircle className="h-3.5 w-3.5" />
-                  {t('超出显存限制')}
-                </span>
-              ) : (
-                t('尚未下载到本地')
-              )}
+      </div>
+
+      {/* 下载进行中：整行展开进度子区块（文件名+分片、进度条、速率、剩余时间） */}
+      {isDownloadingOrPaused && (
+        <div className="px-4 pb-3 space-y-1.5">
+          <div className="flex items-center justify-between text-xs font-semibold">
+            <span className="text-primary truncate max-w-[360px]" title={dl.currentFileName}>
+              {dl.totalFiles && dl.totalFiles > 1
+                ? `[${(dl.fileIndex || 0) + 1}/${dl.totalFiles}] ${dl.currentFileName}`
+                : dl.currentFileName || t('正在下载...')}
             </span>
-            <div className="flex items-center gap-2">
-              {/* 未下载模型只显示下载按钮，若显存不足则显示禁用显存不足按钮，绝不显示任何参数配置按钮 */}
-              {isEx ? (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7.5 text-xs px-3 rounded-lg font-bold border-destructive/30 text-destructive/80 bg-destructive/5 shrink-0 cursor-not-allowed opacity-80"
-                  disabled={true}
-                >
-                  <AlertCircle className="h-3.5 w-3.5 mr-1 text-destructive" />
-                  {t('显存不足')}
-                </Button>
-              ) : (
-                <Button
-                  size="sm"
-                  variant="default"
-                  className="h-7.5 text-xs px-3.5 rounded-lg font-bold shadow-xs shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={() => startDownload()}
-                >
-                  <Download className="h-3 w-3 mr-1.5 shrink-0" />
-                  {t('下载模型')}
-                </Button>
-              )}
+            <div className="flex items-center gap-2 font-mono text-[11px] text-muted-foreground">
+              <span>
+                {formatFileSize(dl.receivedBytes)} / {formatFileSize(dl.totalBytes || model.fileSize)}
+              </span>
+              {dl.speedBps > 0 && <span className="text-foreground font-bold">{formatSpeed(dl.speedBps)}</span>}
+              {remainingText && <span>{remainingText}</span>}
             </div>
           </div>
-        )}
-      </div>
+
+          <Progress value={dl.progress} className="h-1.5" />
+        </div>
+      )}
     </div>
   )
 }
 
+/**
+ * 分组区块：标题行（图标 + 标题 + 计数）+ 边框包裹的表格化行列表
+ */
+interface ModelGroupSectionProps {
+  icon: React.ReactNode
+  iconClass: string
+  title: string
+  count: number
+  children: React.ReactNode
+}
+
+const ModelGroupSection: React.FC<ModelGroupSectionProps> = ({ icon, iconClass, title, count, children }) => (
+  <section aria-label={title}>
+    <div className="mb-2 flex items-center gap-2">
+      <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${iconClass}`}>
+        {icon}
+      </span>
+      <h3 className="text-xs font-bold text-foreground/90 tracking-wide whitespace-nowrap">{title}</h3>
+      <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-muted border border-border/60 text-muted-foreground tabular-nums">
+        {count}
+      </span>
+      <div className="h-px flex-1 bg-border/50" />
+    </div>
+    <div className="rounded-xl border border-border/60 bg-card/60 divide-y divide-border/40">
+      {children}
+    </div>
+  </section>
+)
+
 export const ModelListPanel: React.FC = () => {
   const { t } = useI18nStore()
-  const { models, fetchModels, activeModelKey, switchModel, regionInfo, engineStatus } = useEngineStore()
+  const { models, fetchModels, activeModelKey, switchModel, regionInfo, engineStatus, lastAddedSource } = useEngineStore()
   const [activeSource, setActiveSource] = useState<ModelSource>('modelscope')
   const [showRecommendedOnly, setShowRecommendedOnly] = useState<boolean>(true)
   const [drawerModel, setDrawerModel] = useState<ModelItem | null>(null)
+
+  // 自由添加成功后，自动切换到新模型所属来源页签，保证列表立即可见
+  useEffect(() => {
+    if (lastAddedSource) {
+      setActiveSource(lastAddedSource.source as ModelSource)
+    }
+  }, [lastAddedSource])
 
   useEffect(() => {
     fetchModels()
@@ -455,16 +521,26 @@ export const ModelListPanel: React.FC = () => {
   const safeModels = Array.isArray(models) ? models : []
   const userVramGB = engineStatus?.hardware?.total_vram_gb
 
-  // 按渠道和推荐过滤，并执行超标计算与加权排序
-  const filteredModels = useMemo(() => {
+  // 按渠道和推荐过滤，并执行超标计算与加权排序后，分为三组：
+  // 已下载 / 待下载（未下载且显存够用）/ 显存不足不可下载
+  const groupedModels = useMemo(() => {
     const matched = safeModels.filter(m => {
       if (!m) return false
       if (m.source !== activeSource) return false
-      if (showRecommendedOnly && !m.recommended) return false
+      // 自由添加的模型为用户显式提交，不受"只看推荐"过滤
+      if (showRecommendedOnly && !m.recommended && !m.custom) return false
       return true
     })
-    return sortModels(matched, userVramGB)
+    const sorted = sortModels(matched, userVramGB)
+    return {
+      downloaded: sorted.filter(m => m.isDownloaded),
+      notDownloaded: sorted.filter(m => !m.isDownloaded && !m.isEx),
+      vramLimited: sorted.filter(m => !m.isDownloaded && m.isEx)
+    }
   }, [safeModels, activeSource, showRecommendedOnly, userVramGB])
+
+  const totalCount =
+    groupedModels.downloaded.length + groupedModels.notDownloaded.length + groupedModels.vramLimited.length
 
   // 统计各来源数量
   const counts = useMemo(() => {
@@ -472,6 +548,24 @@ export const ModelListPanel: React.FC = () => {
     const hfCount = safeModels.filter(m => m && m.source === 'huggingface').length
     return { modelscope: scopeCount, huggingface: hfCount }
   }, [safeModels])
+
+  // 统一渲染单行模型条目
+  const renderModelRow = (model: EnrichedModelItem) => {
+    const modelKey = `${model.id}@${model.source}`
+    const isCurrent = activeModelKey === modelKey
+    return (
+      <ModelRowItem
+        key={modelKey}
+        model={model}
+        isCurrent={isCurrent}
+        isEx={model.isEx}
+        onActivate={async (id, source, localPath, modelName) => {
+          await switchModel(id, source, localPath, modelName || model.name)
+        }}
+        onOpenConfig={targetModel => setDrawerModel(targetModel)}
+      />
+    )
+  }
 
   return (
     <Card className="p-0 overflow-hidden border border-border/70 rounded-2xl bg-card shadow-xs">
@@ -544,30 +638,51 @@ export const ModelListPanel: React.FC = () => {
           </div>
         </div>
 
-        {/* 列表内容区 */}
+        {/* 列表内容区：表头 + 单行表格布局，按 已下载 / 待下载 / 显存不足 三组显示 */}
         <TabsContent value={activeSource} className="p-5 focus-visible:ring-0 m-0">
-          {filteredModels.length === 0 ? (
+          {totalCount === 0 ? (
             <div className="text-center py-16 text-muted-foreground/50 font-bold text-xs">
               {showRecommendedOnly ? t('暂无官方推荐模型') : t('该来源暂无可用模型')}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filteredModels.map(model => {
-                const modelKey = `${model.id}@${model.source}`
-                const isCurrent = activeModelKey === modelKey
-                return (
-                  <ModelCardItem
-                    key={modelKey}
-                    model={model}
-                    isCurrent={isCurrent}
-                    isEx={model.isEx}
-                    onActivate={async (id, source, localPath, modelName) => {
-                      await switchModel(id, source, localPath, modelName || model.name)
-                    }}
-                    onOpenConfig={targetModel => setDrawerModel(targetModel)}
-                  />
-                )
-              })}
+            <div className="space-y-6">
+              {/* 全列表共用一个表头，保证三组之间列宽一致对齐 */}
+              <div className="rounded-xl border border-border/60 overflow-hidden">
+                <ModelColumnHeader />
+              </div>
+
+              {groupedModels.downloaded.length > 0 && (
+                <ModelGroupSection
+                  icon={<FileCheck2 className="h-3 w-3" />}
+                  iconClass="border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10"
+                  title={t('models.groupDownloaded')}
+                  count={groupedModels.downloaded.length}
+                >
+                  {groupedModels.downloaded.map(renderModelRow)}
+                </ModelGroupSection>
+              )}
+
+              {groupedModels.notDownloaded.length > 0 && (
+                <ModelGroupSection
+                  icon={<Download className="h-3 w-3" />}
+                  iconClass="border-primary/30 text-primary bg-primary/10"
+                  title={t('models.groupNotDownloaded')}
+                  count={groupedModels.notDownloaded.length}
+                >
+                  {groupedModels.notDownloaded.map(renderModelRow)}
+                </ModelGroupSection>
+              )}
+
+              {groupedModels.vramLimited.length > 0 && (
+                <ModelGroupSection
+                  icon={<AlertCircle className="h-3 w-3" />}
+                  iconClass="border-destructive/30 text-destructive bg-destructive/10"
+                  title={t('models.groupVramInsufficient')}
+                  count={groupedModels.vramLimited.length}
+                >
+                  {groupedModels.vramLimited.map(renderModelRow)}
+                </ModelGroupSection>
+              )}
             </div>
           )}
         </TabsContent>

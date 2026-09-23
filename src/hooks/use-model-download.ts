@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { DownloadProgressEvent, ModelSource } from '../api/types'
-import { engineApiClient } from '../api/client'
+import { engineApiClient } from '../api/provider'
 import { t } from '../lib/i18n'
 
 export interface ModelDownloadState {
@@ -179,21 +179,17 @@ export function useModelDownload(
     }
   }, [])
 
-  // 恢复下载
+  // 恢复下载：后端不支持断点恢复（resumeModelDownload 为明确不支持契约），
+  // 通过重新发起 startModelDownload 实现恢复（已下载部分由后端断点续传跳过）
   const resumeDownload = useCallback(async () => {
-    if (!taskIdRef.current) return
+    const modelId = modelIdRef.current
+    if (!modelId) return
     try {
-      await engineApiClient.resumeModelDownload(taskIdRef.current)
-      setState(prev => ({
-        ...prev,
-        isDownloading: true,
-        isPaused: false,
-        status: 'downloading'
-      }))
+      await startDownload(modelId, { source: sourceRef.current as ModelSource })
     } catch (e) {
       console.error('恢复下载失败:', e)
     }
-  }, [])
+  }, [startDownload])
 
   // 取消下载
   const cancelDownload = useCallback(async () => {

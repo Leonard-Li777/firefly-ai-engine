@@ -3,6 +3,7 @@
 // 端口：38400~38419 滑动探测
 
 pub mod api;
+pub mod custom_model;
 pub mod proxy;
 
 use anyhow::Result;

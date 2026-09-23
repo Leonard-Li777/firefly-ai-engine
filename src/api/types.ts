@@ -121,6 +121,10 @@ export interface ModelItem {
   capabilities?: string[]
   intelligenceLevel?: 1 | 2 | 3 | 4 | number
   customParams?: Partial<RuntimeParams>
+  /** 用户自由添加的模型（URL 嗅探来源），非探测值不显示 */
+  custom?: boolean
+  /** 自由添加模型的直接下载地址（resolve URL） */
+  resolveUrl?: string
 }
 
 /**

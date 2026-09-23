@@ -5,12 +5,12 @@ import {
   ModelItem,
   RuntimeParams
 } from '../api/types'
-import { engineApiClient } from '../api/client'
+import { engineApiClient } from '../api/provider'
 import { RegionDetectionResult, regionDetector } from '../lib/region-detector'
 import { modelMetadataService } from '../lib/model-metadata-service'
 import { useI18nStore, t } from '../lib/i18n'
 import { resolveToAbsolutePath } from '../lib/path-utils'
-import { ModelResolver } from '../lib/model-resolver'
+import { mergeScannedWithRecommended } from '../lib/model-resolver'
 
 interface EngineStoreState {
   // 状态数据
@@ -26,9 +26,11 @@ interface EngineStoreState {
   error: string | null
   logs: string[]
   logsLoading: boolean
+  /** 自由添加成功信号：面板据此切换到新模型所属来源页签（seq 保证同来源连续添加也能触发） */
+  lastAddedSource: { source: string; seq: number } | null
 
   // 动作
-  fetchEngineStatus: () => Promise<void>
+  fetchEngineStatus: (silent?: boolean) => Promise<void>
   fetchEngineList: () => Promise<void>
   fetchModels: (source?: string) => Promise<void>
   switchEngine: (backend: string) => Promise<boolean>
@@ -38,88 +40,13 @@ interface EngineStoreState {
   updateRuntimeParams: (params: Partial<RuntimeParams>) => Promise<boolean>
   saveModelParams: (modelId: string, params: RuntimeParams) => Promise<boolean>
   getModelParams: (modelId: string) => Promise<RuntimeParams | undefined>
+  addCustomModel: (url: string) => Promise<{ ok: boolean; error?: string }>
   runRegionDetection: (force?: boolean) => Promise<void>
   resetDowngrade: () => Promise<boolean>
   startEngine: () => Promise<boolean>
   stopEngine: () => Promise<boolean>
   fetchLogs: () => Promise<void>
   clearLogs: () => Promise<boolean>
-}
-
-/**
- * 将扫描到的物理模型（或已下载标记）合并至当前语言的推荐模型底表，确保列表永不丢失
- */
-function mergeScannedWithRecommended(scanned: ModelItem[]): ModelItem[] {
-  const currentLang = useI18nStore.getState().currentLanguage || 'zh-CN'
-  const recommendedList = modelMetadataService.getModelsForLanguage(currentLang)
-  const map = new Map<string, ModelItem>()
-
-  // 1. 填入所有官方推荐模型，并通过多级特征精准匹配扫描到的下载状态
-  for (const rec of recommendedList) {
-    const recIdClean = rec.id.split(':')[0].toLowerCase()
-    const recTail = recIdClean.split('/').pop()?.replace(/-gguf$/i, '') || recIdClean
-    // 推荐模型的量化 tag（标准化去除 UD- 前缀小写）
-    const recTag = (rec.id.includes(':')
-      ? rec.id.split(':')[1]
-      : rec.quant || ''
-    ).replace(/^ud-/, '').toLowerCase()
-
-    const existing = scanned.find(m => {
-      // 必须是已经确认下载就绪的扫描模型条目
-      if (!m.isDownloaded && !m.localPath) return false
-
-      // 提取被扫描模型的量化 tag：优先从本地文件名提取，次之从 m.id/m.quant 提取
-      const localFileName = m.localPath ? (m.localPath.split(/[\\/]/).pop() || '') : ''
-      const fileQuant = localFileName ? ModelResolver.extractQuantTag(localFileName) : null
-      const mTag = fileQuant || (m.id.includes(':') ? m.id.split(':')[1] : m.quant || '').replace(/^ud-/, '').toLowerCase()
-
-      // 若双方均指定了量化 tag，则量化 tag 必须严格一致，禁止跨量化串绑！
-      if (recTag && mTag && recTag !== mTag) {
-        return false
-      }
-
-      // 策略 A: ID 完全相同
-      if (m.id === rec.id) return true
-
-      // 策略 B: 清除量化后缀后 repo ID 相同且量化 tag 吻合
-      const mIdClean = m.id.split(':')[0].toLowerCase()
-      if (mIdClean === recIdClean) {
-        return recTag ? recTag === mTag : true
-      }
-
-      // 策略 C: 物理文件路径包含模型核心仓库名且量化 tag 吻合
-      if (localFileName) {
-        const localLower = localFileName.toLowerCase()
-        if (localLower.includes(recTail) || localLower.replace(/\.gguf$/, '').includes(recTail.replace(/-gguf$/, ''))) {
-          return recTag ? recTag === mTag : true
-        }
-      }
-
-      return false
-    })
-
-    const isDownloaded = existing ? Boolean(existing.isDownloaded) : false
-    map.set(rec.id, {
-      ...rec,
-      isDownloaded,
-      localPath: existing?.localPath,
-      sha256: existing?.sha256 || rec.sha256
-    })
-  }
-
-  // 2. 填入扫描到的本地自定义/独有模型（保证本地模型不被丢弃）
-  for (const item of scanned) {
-    const isAlreadyMapped = Array.from(map.values()).some(m => {
-      if (m.id === item.id) return true
-      if (item.localPath && m.localPath === item.localPath) return true
-      return false
-    })
-    if (!isAlreadyMapped) {
-      map.set(item.id, item)
-    }
-  }
-
-  return Array.from(map.values())
 }
 
 export const useEngineStore = create<EngineStoreState>((set, get) => ({
@@ -141,10 +68,12 @@ export const useEngineStore = create<EngineStoreState>((set, get) => ({
   error: null,
   logs: [],
   logsLoading: false,
+  lastAddedSource: null,
 
-  fetchEngineStatus: async () => {
+  fetchEngineStatus: async (silent?: boolean) => {
     try {
-      set({ loading: true, error: null })
+      // silent 模式（后台轮询）不翻转 loading，避免按钮等 UI 因轮询而闪动
+      if (!silent) set({ loading: true, error: null })
       const status = await engineApiClient.getEngineStatus()
       const resolvedDir = status.models_dir
         ? resolveToAbsolutePath(status.models_dir)
@@ -153,7 +82,7 @@ export const useEngineStore = create<EngineStoreState>((set, get) => ({
         engineStatus: status,
         modelsDir: resolvedDir,
         runtimeParams: status.runtime_params || get().runtimeParams,
-        loading: false
+        ...(silent ? {} : { loading: false })
       })
 
       // 如果当前 activeModelKey 尚未确定且已有当前运行模型，尝试反查 activeModelKey
@@ -167,7 +96,7 @@ export const useEngineStore = create<EngineStoreState>((set, get) => ({
         }
       }
     } catch (e: any) {
-      set({ error: e.message || t('获取引擎状态失败'), loading: false })
+      set({ error: e.message || t('获取引擎状态失败'), ...(silent ? {} : { loading: false }) })
     }
   },
 
@@ -183,7 +112,10 @@ export const useEngineStore = create<EngineStoreState>((set, get) => ({
   fetchModels: async (source?: string) => {
     try {
       const rawModels = await engineApiClient.listModels(source)
-      const models = mergeScannedWithRecommended(rawModels)
+      const recommendedList = modelMetadataService.getModelsForLanguage(
+        useI18nStore.getState().currentLanguage || 'zh-CN'
+      )
+      const models = mergeScannedWithRecommended(recommendedList, rawModels)
       set({ models })
 
       // 确定激活模型 Key：
@@ -287,7 +219,11 @@ export const useEngineStore = create<EngineStoreState>((set, get) => ({
   rescanModels: async () => {
     try {
       const scanned = await engineApiClient.rescanModels()
-      const merged = mergeScannedWithRecommended(scanned)
+      // 与 fetchModels 一致：以当前语言推荐底表合并扫描结果，列签名 (recommendedList, scanned)
+      const recommendedList = modelMetadataService.getModelsForLanguage(
+        useI18nStore.getState().currentLanguage || 'zh-CN'
+      )
+      const merged = mergeScannedWithRecommended(recommendedList, scanned)
       set({ models: merged })
     } catch (e: any) {
       console.error('重新扫描模型失败:', e)
@@ -338,6 +274,33 @@ export const useEngineStore = create<EngineStoreState>((set, get) => ({
     } catch (e: any) {
       console.error('获取模型专属参数失败:', e)
       return undefined
+    }
+  },
+
+  addCustomModel: async (url: string) => {
+    try {
+      const model = await engineApiClient.addCustomModel(url)
+      // 同 ID 覆盖（后端持久化同为覆盖语义），否则追加进列表
+      set(state => {
+        const idx = state.models.findIndex(m => m.id === model.id)
+        if (idx >= 0) {
+          const next = [...state.models]
+          next[idx] = { ...next[idx], ...model }
+          return { models: next }
+        }
+        return { models: [...state.models, model] }
+      })
+      // 通知面板切换到新模型所属来源页签，保证添加后可见
+      set(state => ({
+        lastAddedSource: {
+          source: model.source,
+          seq: (state.lastAddedSource?.seq ?? 0) + 1
+        }
+      }))
+      return { ok: true }
+    } catch (e: any) {
+      console.error('自由添加模型失败:', e)
+      return { ok: false, error: e?.message || t('添加模型失败') }
     }
   },
 

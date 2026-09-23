@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { engineApiClient } from '../api/client'
+import { engineApiClient } from '../api/provider'
 import { useEngineStore } from '../stores/engine-store'
 import { DownloadProgressEvent } from '../api/types'
 import { t } from '../lib/i18n'

@@ -141,16 +141,16 @@ export const ModelParamDrawer: React.FC<ModelParamDrawerProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden select-none animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 overflow-hidden select-none">
       {/* 半透明毛玻璃背景蒙层 */}
       <div
-        className="fixed inset-0 bg-background/60 backdrop-blur-xs transition-opacity"
+        className="fixed inset-0 bg-background/60 backdrop-blur-xs overlay-fade-in"
         onClick={() => !isSaving && !isRestarting && onClose()}
       />
 
-      {/* 右侧滑出面板 */}
-      <div className="fixed inset-y-0 right-0 flex max-w-full pl-10">
-        <div className="w-screen max-w-xl bg-card border-l border-border shadow-2xl flex flex-col justify-between animate-in slide-in-from-right duration-300 ease-out">
+      {/* 左侧滑出面板 */}
+      <div className="fixed inset-y-0 left-0 flex max-w-full pr-10">
+        <div className="w-screen max-w-xl bg-card border-r border-border shadow-2xl flex flex-col justify-between drawer-slide-in-from-left">
           
           {/* 抽屉头部 */}
           <div className="p-6 border-b border-border/60 bg-muted/20">

@@ -382,6 +382,41 @@ export class MockApiClient implements IEngineApiClient {
     return this.mockModelCustomParams.get(modelId)
   }
 
+  async addCustomModel(url: string): Promise<ModelItem> {
+    // 仿真后端嗅探：从 URL 推导仓库/文件信息并生成虚拟大小，仅用于脱离后端的 UI 验证
+    const clean = url.trim().split(/[?#]/)[0]
+    const isModelscope = clean.includes('modelscope.cn')
+    const segments = clean.replace(/^https?:\/\/[^/]+\//, '').split('/')
+    const org = isModelscope ? segments[1] : segments[0]
+    const repoName = isModelscope ? segments[2] : segments[1]
+    const fileName = segments[segments.length - 1] || 'model.gguf'
+    if (!org || !repoName || !fileName.endsWith('.gguf')) {
+      throw new Error('URL 形态不受支持（mock）')
+    }
+    const quantMatch = fileName.toUpperCase().match(/(Q\d_[KMS]_[A-Z]+|Q\d_\d|IQ\d_[A-Z]+|BF16|F16)/)
+    const tag = quantMatch ? quantMatch[1] : fileName
+    const id = `${org}/${repoName}:${tag}`
+    if (this.models.some(m => m.id === id)) {
+      throw new Error(`该模型已存在: ${id}`)
+    }
+    const model: ModelItem = {
+      id,
+      name: repoName.replace(/-GGUF$/i, ''),
+      author: org,
+      source: (isModelscope ? 'modelscope' : 'huggingface') as any,
+      quant: tag,
+      fileSize: 4200000000,
+      params: '',
+      description: '',
+      isMultiModal: false,
+      isDownloaded: false,
+      custom: true,
+      resolveUrl: clean
+    }
+    this.models.push({ ...model })
+    return model
+  }
+
   async switchModel(
     modelId: string,
     source?: string,
