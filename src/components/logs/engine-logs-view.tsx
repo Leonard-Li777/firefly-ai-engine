@@ -16,7 +16,7 @@ import {
 import { Button } from '../ui/button'
 import { Badge } from '../ui/badge'
 import { useEngineStore } from '../../stores/engine-store'
-import { useI18nStore } from '../../lib/i18n'
+import { t } from '../../languages'
 
 /**
  * 将单行启动命令格式化为清晰的多行可读形式（按 flag 换行，对超长参数如 --chat-template 进行自然换行，支持 \ 续行符）
@@ -212,8 +212,7 @@ function colorize(line: string): LogLineInfo {
 }
 
 export const EngineLogsView: React.FC = () => {
-  const { t } = useI18nStore()
-  const { logs, logsLoading, fetchLogs, clearLogs } = useEngineStore()
+    const { logs, logsLoading, fetchLogs, clearLogs } = useEngineStore()
   const scrollRef = useRef<HTMLDivElement>(null)
   const [autoScroll, setAutoScroll] = useState(true)
   const [copied, setCopied] = useState(false)

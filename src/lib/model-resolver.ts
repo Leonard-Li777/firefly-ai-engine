@@ -1,4 +1,5 @@
 import { ModelItem, ModelResolution } from '../api/types'
+import { estimateRequiredVRAM } from './model-metadata-service'
 
 /**
  * 虚拟文件系统条目（供前端纯逻辑探测或测试使用）
@@ -271,17 +272,34 @@ export function mergeScannedWithRecommended(recommendedList: ModelItem[], scanne
     })
   }
 
-  // 2. 填入扫描到的本地自定义/独有模型（保证本地模型不被丢弃）
+  // 2. 填入扫描到的本地自定义/独有模型（保证本地模型不被丢弃）；
+  //    此类条目不经过 normalizeRawModel，缺失 vramNeededGB 时按体积估算补齐，保证预估显存列可显示
   for (const item of scanned) {
+    const enriched: ModelItem = {
+      ...item,
+      vramNeededGB:
+        item.vramNeededGB ??
+        (item.fileSize > 0 ? estimateRequiredVRAM(formatFileSizeToSizeStr(item.fileSize)) : undefined)
+    }
     const isAlreadyMapped = Array.from(map.values()).some(m => {
-      if (m.id === item.id) return true
-      if (item.localPath && m.localPath === item.localPath) return true
+      if (m.id === enriched.id) return true
+      if (enriched.localPath && m.localPath === enriched.localPath) return true
       return false
     })
     if (!isAlreadyMapped) {
-      map.set(item.id, item)
+      map.set(enriched.id, enriched)
     }
   }
 
   return Array.from(map.values())
+}
+
+/**
+ * 将字节数转换为体积字符串（如 "558MB", "1.56GB"），供 estimateRequiredVRAM 解析
+ */
+function formatFileSizeToSizeStr(bytes: number): string {
+  if (bytes >= 1024 * 1024 * 1024) {
+    return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)}GB`
+  }
+  return `${Math.round(bytes / (1024 * 1024))}MB`
 }

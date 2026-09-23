@@ -1,5 +1,5 @@
 import { ModelItem } from '../api/types'
-import { SupportedLanguage } from './i18n/types'
+import { SupportedLanguage } from './language'
 
 import modelZhCN from '../assets/models/model_zh-CN.json'
 import modelEnUS from '../assets/models/model_en-US.json'

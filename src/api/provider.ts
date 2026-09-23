@@ -1,4 +1,4 @@
-import { IEngineApiClient } from './client'
+import { HttpEngineApiClient, IEngineApiClient } from './client'
 import { mockApiClient } from './mock-client'
 
 /**
@@ -113,6 +113,16 @@ class FallbackEngineApiClient implements IEngineApiClient {
     // 静默降级到演示数据会伪装"添加成功"，误导用户
     return this.inner.addCustomModel(url)
   }
+
+  deleteModel(modelId: string, localPath?: string) {
+    // 写操作刻意不走 mock 回退：删除是不可逆的磁盘操作，失败原因必须显式透出给用户
+    return this.inner.deleteModel(modelId, localPath)
+  }
+
+  removeCustomModel(modelId: string) {
+    // 写操作刻意不走 mock 回退：移除配置条目的失败原因必须显式透出给用户
+    return this.inner.removeCustomModel(modelId)
+  }
 }
 
 /**
@@ -133,9 +143,8 @@ function assemble(): IEngineApiClient {
   if (!isTauriEnvironment()) {
     return mockApiClient
   }
-  // 延迟 import 避免浏览器/测试环境加载 HTTP 实现时的副作用
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { HttpEngineApiClient } = require('./client') as typeof import('./client')
+  // HttpEngineApiClient 改为顶部静态导入：client.ts 无顶层副作用（仅类型与 DownloadTaskPoller），
+  // 且 mock-client 本就静态依赖 client.ts，此处不能使用 require（浏览器 ESM 无 require，会抛 ReferenceError）
   return new FallbackEngineApiClient(new HttpEngineApiClient())
 }
 

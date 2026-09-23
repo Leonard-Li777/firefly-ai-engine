@@ -8,7 +8,8 @@ import {
 } from './types'
 import { IEngineApiClient } from './client'
 import { modelMetadataService } from '../lib/model-metadata-service'
-import { useI18nStore } from '../lib/i18n'
+import { i18nScope } from '../languages'
+import type { SupportedLanguage } from '../lib/language'
 
 import { resolveToAbsolutePath } from '../lib/path-utils'
 import { LlamaCommandBuilder } from '../lib/command-builder'
@@ -222,7 +223,7 @@ export class MockApiClient implements IEngineApiClient {
   }
 
   async listModels(source?: string): Promise<ModelItem[]> {
-    const currentLang = useI18nStore.getState().currentLanguage || 'zh-CN'
+    const currentLang = (i18nScope.activeLanguage as SupportedLanguage) || 'zh-CN'
     const recommendedList = modelMetadataService.getModelsForLanguage(currentLang)
 
     // 将已有的已下载模型状态映射至推荐列表，或追加独有本地模型
@@ -261,7 +262,7 @@ export class MockApiClient implements IEngineApiClient {
     // 优先在本地已知列表中查找，找不到则从元数据推荐列表中动态补充
     let model = this.models.find(m => m.id === modelId)
     if (!model) {
-      const currentLang = useI18nStore.getState().currentLanguage || 'zh-CN'
+      const currentLang = (i18nScope.activeLanguage as SupportedLanguage) || 'zh-CN'
       const fromMeta = modelMetadataService.getModelById(modelId, currentLang)
       if (fromMeta) {
         // 将推荐模型加入本地缓存，便于后续状态更新（如 isDownloaded）
@@ -423,7 +424,7 @@ export class MockApiClient implements IEngineApiClient {
     _localPath?: string,
     _modelName?: string
   ): Promise<{ success: boolean; currentModel: string }> {
-    const currentLang = useI18nStore.getState().currentLanguage || 'zh-CN'
+    const currentLang = (i18nScope.activeLanguage as SupportedLanguage) || 'zh-CN'
     const meta = modelMetadataService.getModelById(modelId, currentLang, source)
     const targetName = meta ? meta.name : modelId
     this.currentModel = targetName
@@ -431,6 +432,31 @@ export class MockApiClient implements IEngineApiClient {
       success: true,
       currentModel: this.currentModel
     }
+  }
+
+  async deleteModel(modelId: string, _localPath?: string): Promise<{ success: boolean }> {
+    // 对齐真实后端语义：
+    // - 自定义模型：删除整条记录，不再出现在列表中
+    // - 内置模型：仅删除本地目录（重置为未下载态），记录仍保留在推荐底表列表中
+    // 采用原地变更，确保共享的 mock 单例状态被可靠更新
+    const idx = this.models.findIndex(m => m.id === modelId)
+    if (idx < 0) return { success: true }
+    if (this.models[idx].custom) {
+      this.models.splice(idx, 1)
+    } else {
+      this.models[idx].isDownloaded = false
+      this.models[idx].localPath = undefined
+    }
+    return { success: true }
+  }
+
+  async removeCustomModel(modelId: string): Promise<{ success: boolean }> {
+    // Mock 实现：仅移除自定义条目记录，不触碰磁盘，对齐真实后端 /api/models/custom/remove 语义
+    const idx = this.models.findIndex(m => m.id === modelId)
+    if (idx >= 0 && this.models[idx].custom) {
+      this.models.splice(idx, 1)
+    }
+    return { success: true }
   }
 
   async resetDowngrade(): Promise<{ status: string }> {

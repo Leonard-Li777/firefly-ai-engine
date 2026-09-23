@@ -8,7 +8,8 @@ import {
 import { engineApiClient } from '../api/provider'
 import { RegionDetectionResult, regionDetector } from '../lib/region-detector'
 import { modelMetadataService } from '../lib/model-metadata-service'
-import { useI18nStore, t } from '../lib/i18n'
+import { i18nScope, t } from '../languages'
+import type { SupportedLanguage } from '../lib/language'
 import { resolveToAbsolutePath } from '../lib/path-utils'
 import { mergeScannedWithRecommended } from '../lib/model-resolver'
 
@@ -41,6 +42,9 @@ interface EngineStoreState {
   saveModelParams: (modelId: string, params: RuntimeParams) => Promise<boolean>
   getModelParams: (modelId: string) => Promise<RuntimeParams | undefined>
   addCustomModel: (url: string) => Promise<{ ok: boolean; error?: string }>
+  deleteModel: (modelId: string, localPath?: string) => Promise<boolean>
+  removeCustomModel: (modelId: string) => Promise<boolean>
+  activateAndStart: (modelId: string, source?: string, localPath?: string, modelName?: string) => Promise<boolean>
   runRegionDetection: (force?: boolean) => Promise<void>
   resetDowngrade: () => Promise<boolean>
   startEngine: () => Promise<boolean>
@@ -113,7 +117,7 @@ export const useEngineStore = create<EngineStoreState>((set, get) => ({
     try {
       const rawModels = await engineApiClient.listModels(source)
       const recommendedList = modelMetadataService.getModelsForLanguage(
-        useI18nStore.getState().currentLanguage || 'zh-CN'
+        (i18nScope.activeLanguage as SupportedLanguage) || 'zh-CN'
       )
       const models = mergeScannedWithRecommended(recommendedList, rawModels)
       set({ models })
@@ -221,7 +225,7 @@ export const useEngineStore = create<EngineStoreState>((set, get) => ({
       const scanned = await engineApiClient.rescanModels()
       // 与 fetchModels 一致：以当前语言推荐底表合并扫描结果，列签名 (recommendedList, scanned)
       const recommendedList = modelMetadataService.getModelsForLanguage(
-        useI18nStore.getState().currentLanguage || 'zh-CN'
+        (i18nScope.activeLanguage as SupportedLanguage) || 'zh-CN'
       )
       const merged = mergeScannedWithRecommended(recommendedList, scanned)
       set({ models: merged })
@@ -302,6 +306,54 @@ export const useEngineStore = create<EngineStoreState>((set, get) => ({
       console.error('自由添加模型失败:', e)
       return { ok: false, error: e?.message || t('添加模型失败') }
     }
+  },
+
+  deleteModel: async (modelId: string, localPath?: string) => {
+    try {
+      const res = await engineApiClient.deleteModel(modelId, localPath)
+      if (res.success) {
+        // 若删除的是当前激活模型，同步清空前端激活状态
+        const removed = get().models.find(m => m.id === modelId)
+        if (removed && get().activeModelKey === `${removed.id}@${removed.source}`) {
+          set({ activeModelKey: null })
+        }
+        // 删除后刷新模型列表，保持 UI 与磁盘一致
+        await get().fetchModels()
+        return true
+      }
+      return false
+    } catch (e: any) {
+      console.error('删除模型失败:', e)
+      set({ error: e?.message || t('删除模型失败') })
+      return false
+    }
+  },
+
+  removeCustomModel: async (modelId: string) => {
+    try {
+      const res = await engineApiClient.removeCustomModel(modelId)
+      if (res.success) {
+        // 若移除的是当前激活条目，同步清空前端激活状态并刷新列表
+        const removed = get().models.find(m => m.id === modelId)
+        if (removed && get().activeModelKey === `${removed.id}@${removed.source}`) {
+          set({ activeModelKey: null })
+        }
+        await get().fetchModels()
+        return true
+      }
+      return false
+    } catch (e: any) {
+      console.error('移除自定义模型失败:', e)
+      set({ error: e?.message || t('移除模型失败') })
+      return false
+    }
+  },
+
+  activateAndStart: async (modelId: string, source?: string, localPath?: string, modelName?: string) => {
+    // 先切换/激活模型，再启动引擎服务
+    const switched = await get().switchModel(modelId, source, localPath, modelName)
+    if (!switched) return false
+    return get().startEngine()
   },
 
   runRegionDetection: async (force?: boolean) => {

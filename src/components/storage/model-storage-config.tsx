@@ -5,13 +5,12 @@ import { Input } from '../ui/input'
 import { Button } from '../ui/button'
 import { Label } from '../ui/label'
 import { useEngineStore } from '../../stores/engine-store'
-import { useI18nStore } from '../../lib/i18n'
+import { t } from '../../languages'
 import { invoke } from '@tauri-apps/api/core'
 
 import { validateModelPath } from '../../lib/path-utils'
 
 export const ModelStorageConfig: React.FC = () => {
-  const { t } = useI18nStore()
   const { modelsDir, updateStoragePath, rescanModels, loading } = useEngineStore()
   const [inputPath, setInputPath] = useState(modelsDir)
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)

@@ -12,7 +12,7 @@ import {
   Brain
 } from 'lucide-react'
 import { useEngineStore } from '../../stores/engine-store'
-import { useI18nStore } from '../../lib/i18n'
+import { t } from '../../languages'
 import pkg from '../../../package.json'
 
 const THINKING_MODE_STORAGE_KEY = 'firefly_enable_thinking_mode'
@@ -22,8 +22,7 @@ interface FooterProps {
 }
 
 export const Footer: React.FC<FooterProps> = ({ onNavigateTab }) => {
-  const { t } = useI18nStore()
-  const {
+    const {
     engineStatus,
     models,
     activeModelKey,
@@ -53,6 +52,17 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateTab }) => {
     }
   }, [])
 
+  // 即时状态：Footer 常驻所有页签，本地静默轮询引擎状态，
+  // 保证服务停止/启动/就绪/处理中变化时第一时间反映（不翻转全局 loading）
+  const fetchEngineStatus = useEngineStore(s => s.fetchEngineStatus)
+  useEffect(() => {
+    fetchEngineStatus(true)
+    const interval = setInterval(() => {
+      fetchEngineStatus(true)
+    }, 2500)
+    return () => clearInterval(interval)
+  }, [fetchEngineStatus])
+
   // 当前模型信息解析
   const safeModels = Array.isArray(models) ? models : []
   const currentModelItem = safeModels.find(m => `${m.id}@${m.source}` === activeModelKey)
@@ -66,51 +76,44 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateTab }) => {
   const lastError = engineStatus?.last_error || storeError
 
   // 1:1 映射 Desktop 状态与呈现
+  // 状态语义：已停止=服务未运行；启动中...=进程拉起中；处理中=模型加载/下载等工作态；已就绪=闲置可服务
   const statusDisplay = useMemo(() => {
-    const header = `[${t('本地')}] ${activeBackend} - ${currentModelName}`
+    const header = `[${activeBackend}] - ${currentModelName}`
 
     switch (rawStatus) {
       case 'starting':
         return {
-          text: t('{modelInfo} 正在启动服务...', { modelInfo: header }),
+          text: t('{modelInfo} 启动中...', { modelInfo: header }),
           icon: Loader2,
           color: 'text-blue-500',
           animate: 'animate-spin'
         }
       case 'model_loading':
+      case 'downloading':
         return {
-          text: t('{modelInfo} 模型资源加载中...', { modelInfo: header }),
+          text: t('{modelInfo} 处理中...', { modelInfo: header }),
           icon: RefreshCw,
           color: 'text-yellow-500',
           animate: 'animate-spin'
         }
-      case 'downloading':
-        return {
-          text: t('{modelInfo} 模型下载准备中...', { modelInfo: header }),
-          icon: Loader2,
-          color: 'text-amber-500',
-          animate: 'animate-spin'
-        }
       case 'ready':
         return {
-          text: t('{modelInfo} AI 服务就绪', { modelInfo: header }),
+          text: t('{modelInfo} 已就绪', { modelInfo: header }),
           icon: CheckCircle2,
           color: 'text-emerald-500',
           animate: ''
         }
       case 'error':
         return {
-          text: t('{modelInfo} 服务异常: {error}', {
-            modelInfo: header,
-            error: lastError || t('未知异常')
-          }),
+          // 主行只提示「异常」，具体错误信息已由次级提示行展示，避免重复冗长
+          text: t('{modelInfo} 异常', { modelInfo: header }),
           icon: AlertCircle,
           color: 'text-red-500',
           animate: ''
         }
       case 'stopped':
         return {
-          text: t('{modelInfo} AI 服务已停止', { modelInfo: header }),
+          text: t('{modelInfo} 已停止', { modelInfo: header }),
           icon: PauseCircle,
           color: 'text-muted-foreground',
           animate: ''

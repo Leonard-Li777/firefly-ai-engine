@@ -4,8 +4,8 @@ import {
   estimateRequiredVRAM,
   parseSizeToGB
 } from '../src/lib/model-metadata-service'
-import { useI18nStore, t } from '../src/lib/i18n'
-import { SupportedLanguage } from '../src/lib/i18n/types'
+import { i18nScope, t } from '../src/languages'
+import { SupportedLanguage } from '../src/lib/language'
 
 describe('ModelMetadataService & 10 Languages Built-in Metadata', () => {
   const languages: SupportedLanguage[] = [
@@ -60,22 +60,17 @@ describe('ModelMetadataService & 10 Languages Built-in Metadata', () => {
   })
 })
 
-describe('i18n Store & Localization', () => {
-  it('should translate keys correctly in zh-CN', () => {
-    useI18nStore.getState().setLanguage('zh-CN')
-    expect(t('app.title')).toBe('Firefly AI Engine')
-    expect(t('hardware.title')).toBe('硬件环境与驱动诊断')
-    expect(t('storage.scanSuccess', { count: 3 })).toBe('扫描完成，发现 3 个模型')
+describe('标准多语言作用域（VoerkaI18n）行为', () => {
+  it('未翻译文案应原样返回中文源文', () => {
+    expect(t('硬件环境与驱动诊断')).toBe('硬件环境与驱动诊断')
   })
 
-  it('should switch language to en-US and reflect in translations', () => {
-    useI18nStore.getState().setLanguage('en-US')
-    expect(t('hardware.gpuModel')).toBe('GPU Model')
-    expect(t('engine.title')).toBe('Switch Local AI Engine')
-    expect(t('storage.scanSuccess', { count: 5 })).toBe('Scan completed, found 5 models')
+  it('应支持 {name} 插值', () => {
+    expect(t('扫描完成，发现 {count} 个模型', { count: 3 })).toBe('扫描完成，发现 3 个模型')
   })
 
-  it('should fallback gracefully for unsupported keys', () => {
+  it('activeLanguage 应始终有值且未翻译 key 原样回退', () => {
+    expect(i18nScope.activeLanguage).toBeTruthy()
     expect(t('non_existing_path_abc')).toBe('non_existing_path_abc')
   })
 })

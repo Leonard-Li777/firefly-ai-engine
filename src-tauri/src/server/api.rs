@@ -139,6 +139,14 @@ pub struct AddCustomModelReq {
     pub url: String,
 }
 
+/// 删除本地模型请求（删除该模型所在的目录）
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DeleteModelReq {
+    pub model_id: String,
+    pub local_path: Option<String>,
+}
+
 // ─────────────────────── 辅助函数 ───────────────────────
 
 /// 生成唯一任务 ID
@@ -178,61 +186,9 @@ fn scan_and_merge_models(
     source_filter: Option<&str>,
     custom_models: &[CustomModelEntry],
 ) -> Vec<serde_json::Value> {
-    let mut default_models = vec![
-        json!({
-            "id": "qwen/Qwen2.5-0.5B-Instruct-GGUF",
-            "name": "Qwen2.5 0.5B Instruct",
-            "author": "Qwen",
-            "source": "modelscope",
-            "quant": "Q4_K_M",
-            "fileSize": 398000000_u64,
-            "params": "0.5B",
-            "description": "极速响应极低显存占用，适合轻量级任务与边缘部署",
-            "isMultiModal": false,
-            "isDownloaded": false,
-            "sha256": ""
-        }),
-        json!({
-            "id": "qwen/Qwen2.5-1.5B-Instruct-GGUF",
-            "name": "Qwen2.5 1.5B Instruct",
-            "author": "Qwen",
-            "source": "modelscope",
-            "quant": "Q4_K_M",
-            "fileSize": 986000000_u64,
-            "params": "1.5B",
-            "description": "兼顾推理速度与理解深度，中文自然语言处理主力推荐",
-            "isMultiModal": false,
-            "isDownloaded": false,
-            "sha256": ""
-        }),
-        json!({
-            "id": "qwen/Qwen2-VL-2B-Instruct-GGUF",
-            "name": "Qwen2-VL 2B Instruct (多模态)",
-            "author": "Qwen",
-            "source": "modelscope",
-            "quant": "Q4_K_M",
-            "fileSize": 1450000000_u64,
-            "params": "2.0B",
-            "description": "原生视觉多模态语言模型，支持图像理解、文档 OCR 与视觉问答",
-            "isMultiModal": true,
-            "mmprojFileName": "mmproj-qwen2-vl-2b-instruct-f16.gguf",
-            "isDownloaded": false,
-            "sha256": ""
-        }),
-        json!({
-            "id": "unsloth/DeepSeek-R1-Distill-Qwen-1.5B-GGUF",
-            "name": "DeepSeek R1 Distill Qwen 1.5B",
-            "author": "DeepSeek",
-            "source": "huggingface",
-            "quant": "Q4_K_M",
-            "fileSize": 1120000000_u64,
-            "params": "1.5B",
-            "description": "开源推理强化模型，具备思维链深度推理能力",
-            "isMultiModal": false,
-            "isDownloaded": false,
-            "sha256": ""
-        }),
-    ];
+    // 未下载的推荐模型展示由前端推荐底表（modelMetadataService）负责，
+    // 后端只返回磁盘实际扫描到的模型，避免硬编码预设混入列表
+    let mut default_models: Vec<serde_json::Value> = Vec::new();
 
     // 收集所有发现的 .gguf 文件（包括子目录深度扫描），目录不存在时为空
     let found_ggufs: Vec<(PathBuf, String)> = if models_dir.exists() {
@@ -2098,6 +2054,137 @@ async fn add_custom_model(
     )
 }
 
+/// POST /api/models/delete
+/// 删除指定模型所在目录（含 GGUF 文件与附属文件），并清理自定义模型条目与专属参数
+async fn delete_model(
+    State(state): State<AppState>,
+    Json(payload): Json<DeleteModelReq>,
+) -> impl IntoResponse {
+    info!("删除模型: {} localPath: {:?}", payload.model_id, payload.local_path);
+
+    let models_dir = {
+        let mut config = state.coordinator.config.lock().await;
+        let models_dir = config.models_dir.clone();
+        // 清理自定义模型条目与专属参数（普通模型无对应条目时为无操作）
+        let before = config.custom_models.len();
+        config.custom_models.retain(|m| m.id != payload.model_id);
+        config.model_custom_params.remove(&payload.model_id);
+        if config.custom_models.len() != before || config.model_custom_params.contains_key(&payload.model_id) == false {
+            let data_dir = config.data_dir.clone();
+            let store = crate::config::ConfigStore::new(data_dir);
+            if let Err(e) = store.save(&config) {
+                error!("持久化删除模型条目失败 [{}]: {}", payload.model_id, e);
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(json!({ "success": false, "error": e.to_string() })),
+                );
+            }
+        }
+        models_dir
+    };
+
+    // 定位模型所在目录：优先 localPath，其次在模型目录深度匹配 model_id
+    let model_file: Option<PathBuf> = payload
+        .local_path
+        .as_ref()
+        .map(PathBuf::from)
+        .filter(|p| p.exists())
+        .or_else(|| {
+            collect_all_ggufs(&models_dir)
+                .into_iter()
+                .find(|(_, name)| {
+                    let name_lower = name.to_lowercase();
+                    let id_tail = payload.model_id.to_lowercase().split('/').last().unwrap_or("").to_string();
+                    let id_clean = id_tail.split(':').next().unwrap_or(&id_tail).replace("-gguf", "");
+                    name_lower.contains(&id_clean) || id_clean.contains(&name_lower.replace(".gguf", ""))
+                })
+                .map(|(p, _)| p)
+        });
+
+    let Some(model_file) = model_file else {
+        warn!("未找到模型 [{}] 对应的文件，仅清理配置条目", payload.model_id);
+        return (StatusCode::OK, Json(json!({ "success": true })));
+    };
+
+    // 模型所在目录 = 模型文件的父目录（如 .../models/hub/models/unsloth/Qwen3.5-0.8B-GGUF）
+    let Some(model_dir) = model_file.parent().map(|p| p.to_path_buf()) else {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "success": false, "error": "无法定位模型目录" })),
+        );
+    };
+
+    // 安全防线：仅允许删除模型目录内部的路径，且目录必须包含 .gguf 文件
+    let canonical_dir = std::fs::canonicalize(&model_dir).map_err(|e| e.to_string()).ok();
+    let within_models = std::fs::canonicalize(&models_dir)
+        .ok()
+        .zip(canonical_dir.as_ref())
+        .map(|(root, dir)| dir.starts_with(&root))
+        .unwrap_or(false);
+    let has_gguf = collect_all_ggufs(&model_dir).is_empty() == false;
+    if !within_models || !has_gguf {
+        error!("拒绝删除模型目录 [{}]：越界或不含 GGUF 文件", model_dir.display());
+        return (
+            StatusCode::FORBIDDEN,
+            Json(json!({ "success": false, "error": "目标目录不在模型存储目录内或不含模型文件，已拒绝删除" })),
+        );
+    }
+
+    // 若删除的是当前激活模型，先清空激活状态（引擎下次启动自动回退到首个可用模型）
+    {
+        let mut active_model = state.coordinator.active_model.lock().await;
+        if active_model.as_deref() == Some(model_file.to_string_lossy().as_ref()) {
+            *active_model = None;
+            info!("已删除的模型为当前激活模型，已重置激活状态");
+        }
+    }
+
+    match std::fs::remove_dir_all(&model_dir) {
+        Ok(_) => {
+            info!("已删除模型目录: {}", model_dir.display());
+            (StatusCode::OK, Json(json!({ "success": true })))
+        }
+        Err(e) => {
+            error!("删除模型目录失败 [{}]: {}", model_dir.display(), e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "success": false, "error": e.to_string() })),
+            )
+        }
+    }
+}
+
+/// POST /api/models/custom/remove
+/// 移除自定义模型条目：仅删除 config.json 中的自定义配置与专属参数，不删除磁盘上的任何模型文件
+async fn remove_custom_model(
+    State(state): State<AppState>,
+    Json(payload): Json<DeleteModelReq>,
+) -> impl IntoResponse {
+    info!("移除自定义模型条目: {}", payload.model_id);
+    let mut config = state.coordinator.config.lock().await;
+    let before = config.custom_models.len();
+    config.custom_models.retain(|m| m.id != payload.model_id);
+    config.model_custom_params.remove(&payload.model_id);
+    if config.custom_models.len() == before {
+        warn!("移除自定义模型条目未命中: {}", payload.model_id);
+        return (
+            StatusCode::NOT_FOUND,
+            Json(json!({ "success": false, "error": "未找到对应的自定义模型条目" })),
+        );
+    }
+    let data_dir = config.data_dir.clone();
+    let store = crate::config::ConfigStore::new(data_dir);
+    if let Err(e) = store.save(&config) {
+        error!("持久化移除自定义模型条目失败 [{}]: {}", payload.model_id, e);
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "success": false, "error": e.to_string() })),
+        );
+    }
+    info!("已移除自定义模型条目: {}", payload.model_id);
+    (StatusCode::OK, Json(json!({ "success": true })))
+}
+
 /// POST /api/engine/open-ui
 /// 唤醒 Tauri 主窗口（双击托盘图标或主程序调用）
 async fn open_ui() -> impl IntoResponse {
@@ -2201,6 +2288,8 @@ pub fn management_routes() -> Router<AppState> {
         .route("/api/models/rescan", post(rescan_models))
         .route("/api/models/params", post(save_model_params).get(get_model_params))
         .route("/api/models/custom/add", post(add_custom_model))
+        .route("/api/models/custom/remove", post(remove_custom_model))
+        .route("/api/models/delete", post(delete_model))
         .route("/api/models/download/start", post(start_model_download))
         .route("/api/models/download/status/{task_id}", get(get_download_status))
         .route("/api/models/download/cancel/{task_id}", post(cancel_model_download))

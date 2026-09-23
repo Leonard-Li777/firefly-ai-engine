@@ -3,6 +3,7 @@ import {
   Boxes,
   Download,
   Check,
+  CircleCheckBig,
   Pause,
   Play,
   X,
@@ -17,9 +18,12 @@ import {
   FileText,
   Music,
   GraduationCap,
+  Loader2,
   Settings2,
   AlertCircle,
-  Power
+  Power,
+  Trash2,
+  Tag
 } from 'lucide-react'
 import { Card } from '../ui/card'
 import { Badge } from '../ui/badge'
@@ -32,7 +36,7 @@ import { useEngineStore } from '../../stores/engine-store'
 import { useModelDownload } from '../../hooks/use-model-download'
 import { ModelItem, ModelSource } from '../../api/types'
 import { formatFileSize, formatSpeed, calculateRemainingTime } from '../../lib/utils'
-import { useI18nStore, t } from '../../lib/i18n'
+import { t } from '../../languages'
 import { sortModels, EnrichedModelItem } from '../../lib/model-sorting'
 import { getDisplayRelativeModelPath } from '../../lib/path-utils'
 import { ModelParamDrawer } from './model-param-drawer'
@@ -55,19 +59,19 @@ export function getIntelligenceConfig(id?: number | null): IntelligenceLevelItem
 
   const configMap: Record<number, IntelligenceLevelItem> = {
     1: {
-      label: t('models.intelLevel1') || t('小学生'),
+      label: t('小学生'),
       badgeClass: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
     },
     2: {
-      label: t('models.intelLevel2') || t('初中生'),
+      label: t('初中生'),
       badgeClass: 'bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-500/30'
     },
     3: {
-      label: t('models.intelLevel3') || t('高中生'),
+      label: t('高中生'),
       badgeClass: 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30'
     },
     4: {
-      label: t('models.intelLevel4') || t('大学生'),
+      label: t('大学生'),
       badgeClass: 'bg-purple-500/15 text-purple-700 dark:text-purple-400 border-purple-500/30 font-extrabold'
     }
   }
@@ -88,19 +92,18 @@ const MODEL_GRID =
 
 /** 表头行：各列标题（小号弱化文字，与数据主行共用网格模板） */
 const ModelColumnHeader: React.FC = () => {
-  const { t } = useI18nStore()
   return (
     <div
       className={`${MODEL_GRID} border-b border-border/50 bg-muted/30 px-4 py-2 text-[11px] font-bold uppercase tracking-wide text-muted-foreground`}
     >
-      <span className="min-w-0 truncate">{t('models.colModel')}</span>
-      <span>{t('models.colRecommended')}</span>
-      <span>{t('models.colIntelligence')}</span>
-      <span>{t('models.colCapabilities')}</span>
-      <span>{t('models.paramSize')}</span>
-      <span>{t('models.quantization')}</span>
-      <span className="text-right">{t('models.fileSize')}</span>
-      <span className="text-right">{t('models.colVram')}</span>
+      <span className="min-w-0 truncate">{t('模型名称')}</span>
+      <span>{t('推荐')}</span>
+      <span>{t('智能程度')}</span>
+      <span>{t('能力')}</span>
+      <span>{t('参数量')}</span>
+      <span>{t('量化精度')}</span>
+      <span className="text-right">{t('模型大小')}</span>
+      <span className="text-right">{t('预估显存')}</span>
     </div>
   )
 }
@@ -119,7 +122,6 @@ interface ModelRowProps {
  * 下载进行中以整行子区块展开进度条。
  */
 const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isEx = false, onActivate, onOpenConfig }) => {
-  const { t } = useI18nStore()
   const { fetchModels, modelsDir } = useEngineStore()
   const handleDownloadComplete = React.useCallback(() => {
     fetchModels()
@@ -147,6 +149,53 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isEx = false,
   } = useModelDownload(dsparkId || '', dlOptions)
 
   const [isActivating, setIsActivating] = useState(false)
+
+  // 「激活并启动」：读取引擎状态判断当前模型是否已启动/启动中，并触发切换+启动
+  const engineStatus = useEngineStore(s => s.engineStatus)
+  const activateAndStart = useEngineStore(s => s.activateAndStart)
+  const [isStartLaunching, setIsStartLaunching] = useState(false)
+  const isEngineReady = engineStatus?.status === 'ready'
+  const isEngineStarting = engineStatus?.status === 'starting' || engineStatus?.status === 'model_loading'
+  const isModelRunning = isCurrent && isEngineReady
+  const isModelLaunching = isCurrent && (isEngineStarting || isStartLaunching)
+
+  // 处理「激活并启动」：切换模型 → 启动引擎服务
+  const handleActivateAndStart = async () => {
+    try {
+      setIsStartLaunching(true)
+      await activateAndStart(model.id, model.source, model.localPath, model.name)
+    } finally {
+      setIsStartLaunching(false)
+    }
+  }
+
+  // 删除模型：弱化按钮 + 二次确认（首次点击进入确认态，再次点击才真正删除）
+  const deleteModel = useEngineStore(s => s.deleteModel)
+  const [isDeleteConfirm, setIsDeleteConfirm] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const startDeleteConfirm = () => setIsDeleteConfirm(true)
+  const cancelDelete = () => setIsDeleteConfirm(false)
+  const handleDelete = async () => {
+    try {
+      setIsDeleting(true)
+      await deleteModel(model.id, model.localPath)
+      setIsDeleteConfirm(false)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  // 移除自定义模型：仅删除配置条目，不删除磁盘文件（与「删除」逻辑不同）
+  const removeCustomModel = useEngineStore(s => s.removeCustomModel)
+  const handleRemove = async () => {
+    try {
+      setIsDeleting(true)
+      await removeCustomModel(model.id)
+      setIsDeleteConfirm(false)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   // 格式化展示相对路径（不显示 base 存储路径）
   const displayRelativePath = React.useMemo(() => {
@@ -191,21 +240,13 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isEx = false,
 
   return (
     <div
-      className={`group relative transition-colors ${
-        isEx
+      className={`group relative transition-colors rounded-lg ${isEx
           ? 'opacity-50 grayscale-[0.5]'
           : isCurrent
-            ? 'bg-primary/5'
+            ? 'bg-primary/10 ring-1 ring-primary/50 shadow-xs hover:bg-primary/10'
             : 'hover:bg-muted/30'
-      }`}
+        }`}
     >
-      {/* 「已激活」独立状态条行：整行横幅替代原悬浮角标，不再遮挡任何内容 */}
-      {isCurrent && (
-        <div className="flex items-center gap-1.5 px-4 py-1 bg-primary/10 border-b border-primary/20 text-[11px] font-bold text-primary">
-          <Check className="h-3 w-3 shrink-0" />
-          <span>{t('已激活')}</span>
-        </div>
-      )}
 
       {/* 主行网格：与表头 8 列严格对齐 */}
       <div className={`${MODEL_GRID} px-4 pt-3 pb-1.5`}>
@@ -214,8 +255,13 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isEx = false,
           {model.name}
         </h4>
 
-        {/* 列2：官方推荐 */}
-        {model.recommended ? (
+        {/* 列2：推荐来源标识（自定义模型显示「自定义」，官方推荐显示「推荐」，其余占位） */}
+        {model.custom ? (
+          <Badge className="text-[10px] font-bold h-5 px-1.5 bg-sky-500/15 text-sky-700 dark:text-sky-400 border border-sky-500/30 shadow-none flex items-center gap-1 w-fit max-w-full">
+            <Tag className="h-3 w-3 shrink-0" />
+            <span className="truncate">{t('自定义')}</span>
+          </Badge>
+        ) : model.recommended ? (
           <Badge className="text-[10px] font-bold h-5 px-1.5 bg-gradient-to-r from-amber-500 to-orange-600 text-white border-none shadow-xs flex items-center gap-1 w-fit max-w-full">
             <Star className="h-3 w-3 fill-current text-white shrink-0" />
             <span className="truncate">{t('推荐')}</span>
@@ -247,13 +293,12 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isEx = false,
               <Badge
                 key={cap}
                 variant="outline"
-                className={`text-[10px] font-bold h-4.5 px-1.5 flex items-center gap-1 max-w-full ${
-                  isText
+                className={`text-[10px] font-bold h-4.5 px-1.5 flex items-center gap-1 max-w-full ${isText
                     ? 'border-emerald-500/30 text-emerald-700 dark:text-emerald-400 bg-emerald-500/10'
                     : isImage
                       ? 'border-purple-500/30 text-purple-700 dark:text-purple-400 bg-purple-500/10'
                       : 'border-border/70 text-muted-foreground bg-muted/40'
-                }`}
+                  }`}
               >
                 {isText ? (
                   <FileText className="h-2.5 w-2.5 shrink-0" />
@@ -293,9 +338,8 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isEx = false,
 
         {/* 列8：预估显存（右对齐，超标红色警示） */}
         <span
-          className={`font-mono text-xs font-bold text-right tabular-nums whitespace-nowrap ${
-            isEx ? 'text-destructive' : 'text-blue-600 dark:text-blue-400'
-          }`}
+          className={`font-mono text-xs font-bold text-right tabular-nums whitespace-nowrap ${isEx ? 'text-destructive' : 'text-blue-600 dark:text-blue-400'
+            }`}
           title={model.vramNeededGB ? t('预估显存') : undefined}
         >
           {model.vramNeededGB ? `~${model.vramNeededGB} GB` : '-'}
@@ -341,6 +385,43 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isEx = false,
         )}
 
         <div className="flex items-center gap-1.5 shrink-0">
+          {/* 「移除」（仅未下载的自定义模型显示）：删除自定义配置条目，不触碰磁盘文件 */}
+          {model.custom && !isDownloaded && (
+            isDeleteConfirm ? (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7.5 text-xs px-3 rounded-lg border-destructive/50 bg-destructive/10 text-destructive hover:bg-destructive/20 font-bold shrink-0"
+                  onClick={handleRemove}
+                  disabled={isDeleting}
+                >
+                  <Trash2 className="h-3.5 w-3.5 mr-1 shrink-0" />
+                  {isDeleting ? t('删除中...') : t('确认移除')}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7.5 text-xs px-3 rounded-lg font-bold text-muted-foreground shrink-0"
+                  onClick={cancelDelete}
+                  disabled={isDeleting}
+                >
+                  {t('取消')}
+                </Button>
+              </>
+            ) : (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7.5 text-xs px-3 rounded-lg font-bold text-muted-foreground/70 hover:text-destructive hover:bg-destructive/10 shrink-0 opacity-70 hover:opacity-100"
+                title={t('删除该自定义模型记录，不再显示于列表')}
+                onClick={startDeleteConfirm}
+              >
+                <Trash2 className="h-3.5 w-3.5 mr-1 shrink-0" />
+                {t('移除')}
+              </Button>
+            )
+          )}
           {isDownloadingOrPaused ? (
             <>
               {dl.isPaused ? (
@@ -366,6 +447,42 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isEx = false,
             </Button>
           ) : isDownloaded ? (
             <>
+              {/* 删除模型按钮（固定操作区第一位）：弱化样式，二次确认（首次点击进入确认态，再次点击才真正删除） */}
+              {!isEx && (isDeleteConfirm ? (
+                <>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7.5 text-xs px-3 rounded-lg border-destructive/50 bg-destructive/10 text-destructive hover:bg-destructive/20 font-bold shrink-0"
+                    onClick={handleDelete}
+                    disabled={isDeleting}
+                  >
+                    <Trash2 className="h-3.5 w-3.5 mr-1 shrink-0" />
+                    {isDeleting ? t('删除中...') : t('确认删除')}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7.5 text-xs px-3 rounded-lg font-bold text-muted-foreground shrink-0"
+                    onClick={cancelDelete}
+                    disabled={isDeleting}
+                  >
+                    {t('取消')}
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7.5 text-xs px-3 rounded-lg font-bold text-muted-foreground/70 hover:text-destructive hover:bg-destructive/10 shrink-0 opacity-70 hover:opacity-100"
+                  title={t('删除模型文件并移除相关配置，释放磁盘空间')}
+                  onClick={startDeleteConfirm}
+                >
+                  <Trash2 className="h-3.5 w-3.5 mr-1 shrink-0" />
+                  {t('删除')}
+                </Button>
+              ))}
+
               {/* 配置了 DSpark 加速模型且未下载时，展示【下载加速模型】按钮 */}
               {dsparkId && !isDsparkDownloaded && (
                 <Button
@@ -394,8 +511,13 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isEx = false,
                 </Button>
               )}
 
-              {/* 当前模型由行顶「已激活」横幅标识；非当前模型展示【激活】按钮，显存超标时展示禁用按钮 */}
-              {isCurrent ? null : isEx ? (
+              {/* 当前模型展示「已激活」Badge 标识；非当前模型展示【激活】按钮，显存超标时展示禁用按钮 */}
+              {isCurrent ? (
+                <Badge className="h-7.5 text-xs px-3 rounded-lg font-bold bg-primary/15 text-primary border border-primary/30 shrink-0 flex items-center gap-1.5">
+                  <Check className="h-3.5 w-3.5 shrink-0" />
+                  {t('已激活')}
+                </Badge>
+              ) : isEx ? (
                 <Button
                   size="sm"
                   variant="outline"
@@ -408,39 +530,68 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isEx = false,
               ) : (
                 <Button
                   size="sm"
-                  variant="default"
-                  className="h-7.5 text-xs px-3.5 rounded-lg font-bold shadow-xs shrink-0"
+                  variant="outline"
+                  className="h-7.5 text-xs px-3.5 rounded-lg font-bold border-border hover:border-primary/60 shrink-0"
                   onClick={handleActivate}
                   disabled={isActivating}
                 >
-                  <Power className="h-3 w-3 mr-1.5 shrink-0" />
+                  <CircleCheckBig className="h-3 w-3 mr-1.5 shrink-0" />
                   {isActivating ? t('切换中...') : t('激活')}
+                </Button>
+              )}
+
+              {/* 「激活并启动」（操作区最后一位）：当前模型已启动展示 Badge；启动中展示启动中 Badge；未启动时展示切换并启动按钮 */}
+              {isModelRunning ? (
+                <Badge className="h-7.5 text-xs px-3 rounded-lg font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shrink-0 flex items-center gap-1.5">
+                  <Play className="h-3.5 w-3.5 shrink-0 fill-current" />
+                  {t('已启动')}
+                </Badge>
+              ) : isModelLaunching ? (
+                <Badge className="h-7.5 text-xs px-3 rounded-lg font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 shrink-0 flex items-center gap-1.5">
+                  <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
+                  {t('启动中...')}
+                </Badge>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="default"
+                  className="h-7.5 text-xs px-3.5 rounded-lg font-bold shadow-xs shrink-0"
+                  onClick={handleActivateAndStart}
+                  disabled={isStartLaunching || isActivating}
+                >
+                  <Power className="h-3 w-3 mr-1.5 shrink-0" />
+                  {isStartLaunching ? t('启动中...') : t('激活并启动')}
                 </Button>
               )}
             </>
           ) : (
-            /* 未下载模型只显示下载按钮，若显存不足则显示禁用显存不足按钮，绝不显示任何参数配置按钮 */
-            isEx ? (
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7.5 text-xs px-3 rounded-lg font-bold border-destructive/30 text-destructive/80 bg-destructive/5 shrink-0 cursor-not-allowed opacity-80"
-                disabled={true}
-              >
-                <AlertCircle className="h-3.5 w-3.5 mr-1 text-destructive" />
-                {t('显存不足')}
-              </Button>
-            ) : (
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7.5 text-xs px-3.5 rounded-lg font-bold border-border hover:border-primary/60 shrink-0"
-                onClick={() => startDownload()}
-              >
-                <Download className="h-3 w-3 mr-1.5 shrink-0" />
-                {t('下载模型')}
-              </Button>
-            )
+            /* 未下载模型只显示下载按钮，若显存不足则显示禁用显存不足按钮，绝不显示任何参数配置按钮；
+               自由添加的自定义模型即便未下载，也提供「移除记录」按钮（删除后不再显示于列表） */
+            <>
+              {isEx ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7.5 text-xs px-3 rounded-lg font-bold border-destructive/30 text-destructive/80 bg-destructive/5 shrink-0 cursor-not-allowed opacity-80"
+                  disabled={true}
+                >
+                  <AlertCircle className="h-3.5 w-3.5 mr-1 text-destructive" />
+                  {t('显存不足')}
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7.5 text-xs px-3.5 rounded-lg font-bold border-border hover:border-primary/60 shrink-0"
+                  onClick={() => startDownload()}
+                >
+                  <Download className="h-3 w-3 mr-1.5 shrink-0" />
+                  {t('下载模型')}
+                </Button>
+              )}
+
+
+            </>
           )}
         </div>
       </div>
@@ -500,7 +651,6 @@ const ModelGroupSection: React.FC<ModelGroupSectionProps> = ({ icon, iconClass, 
 )
 
 export const ModelListPanel: React.FC = () => {
-  const { t } = useI18nStore()
   const { models, fetchModels, activeModelKey, switchModel, regionInfo, engineStatus, lastAddedSource } = useEngineStore()
   const [activeSource, setActiveSource] = useState<ModelSource>('modelscope')
   const [showRecommendedOnly, setShowRecommendedOnly] = useState<boolean>(true)
@@ -655,7 +805,7 @@ export const ModelListPanel: React.FC = () => {
                 <ModelGroupSection
                   icon={<FileCheck2 className="h-3 w-3" />}
                   iconClass="border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10"
-                  title={t('models.groupDownloaded')}
+                  title={t('已下载模型')}
                   count={groupedModels.downloaded.length}
                 >
                   {groupedModels.downloaded.map(renderModelRow)}
@@ -666,7 +816,7 @@ export const ModelListPanel: React.FC = () => {
                 <ModelGroupSection
                   icon={<Download className="h-3 w-3" />}
                   iconClass="border-primary/30 text-primary bg-primary/10"
-                  title={t('models.groupNotDownloaded')}
+                  title={t('待下载模型')}
                   count={groupedModels.notDownloaded.length}
                 >
                   {groupedModels.notDownloaded.map(renderModelRow)}
@@ -677,7 +827,7 @@ export const ModelListPanel: React.FC = () => {
                 <ModelGroupSection
                   icon={<AlertCircle className="h-3 w-3" />}
                   iconClass="border-destructive/30 text-destructive bg-destructive/10"
-                  title={t('models.groupVramInsufficient')}
+                  title={t('显存不足 · 不可下载')}
                   count={groupedModels.vramLimited.length}
                 >
                   {groupedModels.vramLimited.map(renderModelRow)}
@@ -695,7 +845,7 @@ export const ModelListPanel: React.FC = () => {
         isCurrentRunning={
           drawerModel
             ? activeModelKey === `${drawerModel.id}@${drawerModel.source}` &&
-              engineStatus?.status === 'ready'
+            engineStatus?.status === 'ready'
             : false
         }
         onClose={() => setDrawerModel(null)}

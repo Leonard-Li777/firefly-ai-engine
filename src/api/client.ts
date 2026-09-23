@@ -97,6 +97,16 @@ export interface IEngineApiClient {
   switchModel(modelId: string, source?: string, localPath?: string, modelName?: string): Promise<{ success: boolean; currentModel: string }>
 
   /**
+   * 删除本地模型（删除该模型所在目录），成功后由调用方刷新模型列表
+   */
+  deleteModel(modelId: string, localPath?: string): Promise<{ success: boolean }>
+
+  /**
+   * 移除自定义模型条目：仅删除自定义配置，不删除磁盘模型文件
+   */
+  removeCustomModel(modelId: string): Promise<{ success: boolean }>
+
+  /**
    * 重置驱动降级状态（用户升级驱动后重新检测）
    */
   resetDowngrade(): Promise<{ status: string }>
@@ -363,6 +373,34 @@ export class HttpEngineApiClient implements IEngineApiClient {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ modelId, source, localPath, modelName })
     })
+  }
+
+  async deleteModel(modelId: string, localPath?: string): Promise<{ success: boolean }> {
+    await this.ensureReady()
+    const res = await fetch(`${this.baseUrl}/api/models/delete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ modelId, localPath })
+    })
+    const body = await res.json().catch(() => null)
+    if (!res.ok || !body?.success) {
+      throw new Error(body?.error || `HTTP ${res.status} /api/models/delete`)
+    }
+    return body as { success: boolean }
+  }
+
+  async removeCustomModel(modelId: string): Promise<{ success: boolean }> {
+    await this.ensureReady()
+    const res = await fetch(`${this.baseUrl}/api/models/custom/remove`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ modelId })
+    })
+    const body = await res.json().catch(() => null)
+    if (!res.ok || !body?.success) {
+      throw new Error(body?.error || `HTTP ${res.status} /api/models/custom/remove`)
+    }
+    return body as { success: boolean }
   }
 
   async resetDowngrade(): Promise<{ status: string }> {

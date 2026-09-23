@@ -3,13 +3,12 @@ import { Brain } from 'lucide-react'
 import { Card } from '../ui/card'
 import { Label } from '../ui/label'
 import { Switch } from '../ui/switch'
-import { useI18nStore } from '../../lib/i18n'
+import { t } from '../../languages'
 
 const THINKING_MODE_STORAGE_KEY = 'firefly_enable_thinking_mode'
 
 export const ThinkingModeCard: React.FC = () => {
-  const { t } = useI18nStore()
-  const [enabled, setEnabled] = useState<boolean>(() => {
+    const [enabled, setEnabled] = useState<boolean>(() => {
     if (typeof window !== 'undefined' && window.localStorage) {
       return localStorage.getItem(THINKING_MODE_STORAGE_KEY) === 'true'
     }

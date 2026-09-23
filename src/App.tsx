@@ -26,12 +26,12 @@ import { LanguageSelector } from './components/common/language-selector'
 import { Footer } from './components/common/Footer'
 import { ToastContainer } from './components/common/Toast'
 import { useEngineStore } from './stores/engine-store'
-import { useI18nStore } from './lib/i18n'
+import { i18nScope, t } from './languages'
 import { getEngineApiClient, isMockMode } from './api/provider'
-import pkg from '../package.json'
 
 export const App: React.FC = () => {
-  const { t, dir } = useI18nStore()
+  // 阿拉伯语为 RTL 书写方向，其余语言均为 LTR
+  const dir: 'ltr' | 'rtl' = i18nScope.activeLanguage === 'ar-EG' ? 'rtl' : 'ltr'
   const {
     engineStatus,
     fetchEngineStatus,
@@ -102,12 +102,12 @@ export const App: React.FC = () => {
       {/* 顶部常驻导航与状态条：纯固定 Flex 项，绝不随任何内容滚动 */}
       <header className="shrink-0 z-50 border-b border-border/80 bg-background/95 backdrop-blur-md px-5 py-3 flex flex-wrap lg:flex-nowrap items-center justify-between gap-3 shadow-xs">
         <div className="flex items-center gap-3 shrink-0 min-w-0">
-          <img src="/icon.webp" alt={t('萤核AI引擎')} className="h-8.5 w-8.5 shrink-0 rounded-xl object-cover shadow-xs" draggable={false} />
+          <img src="/icon.ico" alt={t('萤核AI引擎')} className="h-8.5 w-8.5 shrink-0 rounded-xl object-cover shadow-xs" draggable={false} />
           <div className="flex flex-col min-w-0">
             <div className="flex items-center gap-2 flex-nowrap">
-              <span className="text-sm font-bold tracking-tight text-foreground whitespace-nowrap">{t('萤核AI引擎')}</span>
-              <Badge variant="outline" className="text-[10px] h-5 px-1.5 py-0 font-bold font-mono whitespace-nowrap shrink-0 rounded-md border-primary/40 text-primary bg-primary/10">
-                v{pkg.version}
+              <span className="text-2xl font-bold tracking-tight text-foreground whitespace-nowrap">{t('萤核AI引擎')}</span>
+              <Badge variant="outline" className="text-[10px] h-5 px-1.5 mt-2 ml-2 font-bold font-mono whitespace-nowrap shrink-0 rounded-md border-0 text-primary bg-primary/10">
+                {t('独立高可用端侧 AI 推理引擎与模型管理平台')}
               </Badge>
               {isMock && (
                 <Badge variant="secondary" className="text-[10px] h-5 px-1.5 py-0 font-bold whitespace-nowrap shrink-0 rounded-md border border-border/60">
@@ -115,9 +115,6 @@ export const App: React.FC = () => {
                 </Badge>
               )}
             </div>
-            <span className="text-[11px] text-muted-foreground font-medium truncate max-w-[340px] sm:max-w-none">
-              {t('独立高可用端侧 AI 推理引擎与模型管理平台')}
-            </span>
           </div>
         </div>
 

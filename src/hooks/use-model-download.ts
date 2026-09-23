@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { DownloadProgressEvent, ModelSource } from '../api/types'
 import { engineApiClient } from '../api/provider'
-import { t } from '../lib/i18n'
+import { t } from '../languages'
 
 export interface ModelDownloadState {
   isDownloading: boolean
@@ -60,12 +60,12 @@ export function useModelDownload(
   const modelIdRef = useRef(initialModelId)
   const sourceRef = useRef(options.source)
 
-  useEffect(() => {
-    optionsRef.current = options
-    sourceRef.current = options.source
-  })
+  // 保持 options 和 source 的最新引用，无需触发无依赖的 useEffect
+  optionsRef.current = options
+  sourceRef.current = options.source
 
   useEffect(() => {
+    // 仅当 modelId 明确有效且发生变化时才重置状态，防止空 modelId（如无投机加速模型时）反复重置
     if (initialModelId && (modelIdRef.current !== initialModelId || sourceRef.current !== options.source)) {
       modelIdRef.current = initialModelId
       sourceRef.current = options.source
@@ -120,8 +120,14 @@ export function useModelDownload(
             forceRestart: downloadOptions?.forceRestart
           },
           (progress: DownloadProgressEvent) => {
+            // 下载过程中若已通过 progress 回调拿到 taskId，立即挂载到 ref 与 state 中，供取消/暂停使用
+            if (progress.taskId && !taskIdRef.current) {
+              taskIdRef.current = progress.taskId
+            }
+
             setState(prev => ({
               ...prev,
+              taskId: progress.taskId || prev.taskId,
               progress: progress.percent,
               receivedBytes: progress.receivedBytes,
               totalBytes: progress.totalBytes,
@@ -137,6 +143,8 @@ export function useModelDownload(
 
             if (progress.status === 'completed') {
               optionsRef.current.onDownloadComplete?.()
+            } else if (progress.status === 'canceled') {
+              optionsRef.current.onDownloadCancel?.()
             } else if (progress.status === 'error') {
               optionsRef.current.onDownloadError?.(progress.error || t('下载失败'))
             }
@@ -151,6 +159,20 @@ export function useModelDownload(
         }))
       } catch (err: any) {
         const errMsg = err?.message || t('发起模型下载失败')
+        // 如果是由于用户主动取消抛出的异常，状态转为 canceled 而非 error
+        if (errMsg.includes('取消') || errMsg.toLowerCase().includes('cancel')) {
+          taskIdRef.current = undefined
+          setState(prev => ({
+            ...prev,
+            isDownloading: false,
+            isPaused: false,
+            status: 'canceled',
+            error: undefined
+          }))
+          optionsRef.current.onDownloadCancel?.()
+          return
+        }
+
         setState(prev => ({
           ...prev,
           isDownloading: false,

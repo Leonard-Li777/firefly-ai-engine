@@ -1,7 +1,7 @@
 import { ModelItem } from '../api/types'
 import { ModelResolver } from './model-resolver'
 import { modelMetadataService, estimateRequiredVRAM } from './model-metadata-service'
-import { SupportedLanguage } from './i18n/types'
+import { SupportedLanguage } from './language'
 import { toShortPathOnWindows } from './path-utils'
 
 export interface DownloadStrategy {

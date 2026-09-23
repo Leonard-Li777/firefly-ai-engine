@@ -4,10 +4,9 @@ import { Card } from '../ui/card'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
 import { useEngineStore } from '../../stores/engine-store'
-import { useI18nStore } from '../../lib/i18n'
+import { t } from '../../languages'
 
 export const HardwareCard: React.FC = () => {
-  const { t } = useI18nStore()
   const { engineStatus, loading } = useEngineStore()
   const hw = engineStatus?.hardware
   const downgradeInfo = engineStatus?.downgrade_info

@@ -306,6 +306,31 @@ pub fn parse_hf_tree_for_mmproj(body: &Value, dir: &str) -> Option<(String, u64)
     best
 }
 
+/// 解析 ModelScope repo/tree API 响应，找出 dir 目录下指定主模型文件的大小
+/// 响应形如 {"Data":{"Files":[{"Name":"x.gguf","Size":123,"Type":"blob"}]}}
+pub fn parse_modelscope_tree_for_main_file(body: &Value, dir: &str, file_name: &str) -> Option<u64> {
+    let files = body.get("Data")?.get("Files")?.as_array()?;
+    let name_lower = file_name.to_lowercase();
+    for item in files {
+        let name = item.get("Name").and_then(|v| v.as_str()).unwrap_or("");
+        if !name.eq_ignore_ascii_case(file_name) && name.to_lowercase() != name_lower {
+            continue;
+        }
+        // 目录条目 Type 为 "tree"，文件为 "blob"
+        if let Some(t) = item.get("Type").and_then(|v| v.as_str()) {
+            if !t.eq_ignore_ascii_case("blob") {
+                continue;
+            }
+        }
+        let size = item.get("Size").and_then(|v| v.as_u64()).unwrap_or(0);
+        if size > 0 {
+            let _ = dir; // dir 仅用于日志语义，主文件按 Name 精确匹配即可
+            return Some(size);
+        }
+    }
+    None
+}
+
 /// 解析 ModelScope repo/tree API 响应，找出 dir 目录下最小的 mmproj .gguf 文件
 /// 响应形如 {"Data":{"Files":[{"Name":"x.gguf","Path":"...","Size":123,"Type":"blob"}]}}
 pub fn parse_modelscope_tree_for_mmproj(body: &Value, dir: &str) -> Option<(String, u64)> {
@@ -354,8 +379,26 @@ pub async fn sniff_model(
     parsed: &ParsedModelUrl,
     resolve_url: &str,
 ) -> (Option<u64>, Option<(String, u64)>) {
-    // 1. 主模型大小（HEAD resolve URL）
-    let main_size = probe_file_size(client, resolve_url).await;
+    // 1. 主模型大小（HEAD resolve URL）；ModelScope 的 HEAD 探测常被 CDN 拦截（无 content-length），
+    //    失败时回退到仓库树 API 按 Name 精确匹配读取 Size 字段
+    let mut main_size = probe_file_size(client, resolve_url).await;
+    if main_size.is_none() && parsed.source == "modelscope" {
+        let dir = parent_dir_of(&parsed.file_path);
+        let url = format!(
+            "https://modelscope.cn/api/v1/models/{}/repo/tree?Revision={}&Path={}",
+            parsed.repo,
+            parsed.rev,
+            urlencoding(&dir)
+        );
+        if let Ok(resp) = client.get(&url).send().await {
+            if let Ok(body) = resp.json::<Value>().await {
+                main_size = parse_modelscope_tree_for_main_file(&body, &dir, &parsed.file_name);
+            }
+        }
+    }
+    if main_size.is_none() {
+        warn!("[custom-model] 主模型大小嗅探失败: {}", parsed.file_name);
+    }
 
     // 2. 同目录最小 mmproj（仓库树 API）
     let dir = parent_dir_of(&parsed.file_path);

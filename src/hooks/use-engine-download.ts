@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import { engineApiClient } from '../api/provider'
 import { useEngineStore } from '../stores/engine-store'
 import { DownloadProgressEvent } from '../api/types'
-import { t } from '../lib/i18n'
+import { t } from '../languages'
 
 export interface EngineDownloadState {
   isDownloading: boolean

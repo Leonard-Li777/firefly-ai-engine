@@ -24,11 +24,10 @@ import { Label } from '../ui/label'
 import { Alert, AlertTitle, AlertDescription } from '../ui/alert'
 import { toast } from '../common/Toast'
 import { useEngineStore } from '../../stores/engine-store'
-import { useI18nStore } from '../../lib/i18n'
+import { t } from '../../languages'
 import { getModelCustomParams } from '../../lib/model-param-storage'
 
 export const DashboardView: React.FC = () => {
-  const { t } = useI18nStore()
   const {
     engineStatus,
     models,
@@ -102,12 +101,12 @@ export const DashboardView: React.FC = () => {
 
   const [startFailedError, setStartFailedError] = useState<string | null>(null)
 
-  // 轮询服务运行状态，确保进程异常退出或就绪时能第一时间在 UI 上感知
+  // 轮询服务运行状态，确保进程异常退出或就绪时能第一时间在 UI 上感知（静默轮询，不翻转全局 loading）
   useEffect(() => {
     let isMounted = true
     const interval = setInterval(() => {
       if (isMounted) {
-        useEngineStore.getState().fetchEngineStatus()
+        useEngineStore.getState().fetchEngineStatus(true)
       }
     }, 2500)
     return () => {

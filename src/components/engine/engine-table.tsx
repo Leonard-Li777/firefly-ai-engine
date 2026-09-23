@@ -8,11 +8,10 @@ import { Label } from '../ui/label'
 import { useEngineStore } from '../../stores/engine-store'
 import { useEngineDownload } from '../../hooks/use-engine-download'
 import { formatSpeed } from '../../lib/utils'
-import { useI18nStore } from '../../lib/i18n'
+import { t } from '../../languages'
 
 export const EngineTable: React.FC = () => {
-  const { t } = useI18nStore()
-  const { engineList, fetchEngineList, switchEngine, switchingBackend, engineStatus } = useEngineStore()
+    const { engineList, fetchEngineList, switchEngine, switchingBackend, engineStatus } = useEngineStore()
   const { state: downloadState, startDownload } = useEngineDownload()
 
   useEffect(() => {

@@ -12,7 +12,7 @@ import {
 } from 'lucide-react'
 import { ModelItem, RuntimeParams } from '../../api/types'
 import { useEngineStore } from '../../stores/engine-store'
-import { useI18nStore } from '../../lib/i18n'
+import { t } from '../../languages'
 import { DEFAULT_MODEL_PARAMS, saveModelCustomParams } from '../../lib/model-param-storage'
 import { Button } from '../ui/button'
 import { Slider } from '../ui/slider'
@@ -30,8 +30,7 @@ export const ModelParamDrawer: React.FC<ModelParamDrawerProps> = ({
   isCurrentRunning,
   onClose
 }) => {
-  const { t } = useI18nStore()
-  const {
+    const {
     runtimeParams,
     saveModelParams,
     getModelParams,

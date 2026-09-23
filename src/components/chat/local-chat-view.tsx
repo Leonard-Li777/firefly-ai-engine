@@ -4,11 +4,10 @@ import { Button } from '../ui/button'
 import { Card } from '../ui/card'
 import { Badge } from '../ui/badge'
 import { useEngineStore } from '../../stores/engine-store'
-import { useI18nStore } from '../../lib/i18n'
+import { t } from '../../languages'
 
 export const LocalChatView: React.FC = () => {
-  const { t } = useI18nStore()
-  const { engineStatus, startEngine, loading: storeLoading } = useEngineStore()
+    const { engineStatus, startEngine, loading: storeLoading } = useEngineStore()
   const [iframeKey, setIframeKey] = useState<number>(0)
   const [starting, setStarting] = useState(false)
 

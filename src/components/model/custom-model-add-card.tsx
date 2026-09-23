@@ -5,7 +5,8 @@ import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { Label } from '../ui/label'
 import { useEngineStore } from '../../stores/engine-store'
-import { t } from '../../lib/i18n'
+import { t } from '../../languages'
+import { toast } from '../common/Toast'
 
 /** 三种受支持的模型地址示例（modelscope file/view、huggingface blob、huggingface resolve） */
 const SUPPORTED_URL_EXAMPLES = [
@@ -51,6 +52,7 @@ export const CustomModelAddCard: React.FC = () => {
     const res = await addCustomModel(trimmed)
     setSniffing(false)
     if (res.ok) {
+      toast.success(t('已成功添加到模型列表中，请前往列表查看'))
       setFeedback({ type: 'success', message: t('嗅探完成，已作为标准模型卡片加入下方模型列表') })
       setUrl('')
     } else {
@@ -67,7 +69,7 @@ export const CustomModelAddCard: React.FC = () => {
           <span>{t('增加任意模型')}</span>
         </Label>
         <p className="text-xs text-muted-foreground font-normal mt-1 leading-relaxed">
-          {t('自由添加 ModelScope / HuggingFace 托管的任意 GGUF 模型文件，提交后自动通过网络嗅探模型大小（全程不下载任何文件）。')}
+          {t('自由添加 ModelScope / HuggingFace 托管的任意 GGUF 模型文件，并加入上面待下载模型列表。')}
         </p>
       </div>
 
