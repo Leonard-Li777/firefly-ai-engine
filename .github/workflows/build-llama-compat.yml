@@ -90,7 +90,7 @@ jobs:
         if: matrix.target_name == 'vulkan-compat'
         shell: pwsh
         run: |
-          $vulkanVersion = "1.3.290.0"
+          $vulkanVersion = "1.4.357.0"
           $installerUrl = "https://sdk.lunarg.com/sdk/download/$vulkanVersion/windows/vulkansdk-windows-X64-$vulkanVersion.exe"
           $installerPath = "$env:RUNNER_TEMP\VulkanSDK-Installer.exe"
           Write-Host "Downloading Vulkan SDK $vulkanVersion..."
