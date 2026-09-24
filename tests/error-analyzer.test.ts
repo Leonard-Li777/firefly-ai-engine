@@ -8,8 +8,10 @@ import {
 describe('error-analyzer：llama.cpp 错误识别与建议（移植 desktop）', () => {
   it('识别显存不足并优先于驱动问题', () => {
     expect(classifyEngineErrorCode('CUDA error: out of memory')).toBe('INSUFFICIENT_VRAM')
-    expect(classifyEngineErrorCode('vulkan allocation failed')).toBe('GPU_DRIVER_OUTDATED')
+    expect(classifyEngineErrorCode('vulkan allocation failed')).toBe('INSUFFICIENT_VRAM')
     expect(classifyEngineErrorCode('failed to allocate 4096 MiB VRAM')).toBe('INSUFFICIENT_VRAM')
+    expect(classifyEngineErrorCode('cuda runtime version mismatch')).toBe('GPU_DRIVER_OUTDATED')
+    expect(classifyEngineErrorCode('ggml_assert failed')).toBe('GPU_DRIVER_OUTDATED')
   })
 
   it('识别模型加载失败与服务启动失败', () => {
@@ -34,10 +36,15 @@ describe('error-analyzer：llama.cpp 错误识别与建议（移植 desktop）',
     expect(analysis!.rawMessage).toContain('out of memory')
   })
 
-  it('清洗调用栈前缀', () => {
-    const analysis = analyzeEngineError('Error: model loading error\n    at foo (a.js:1:1)')
-    expect(analysis!.rawMessage).not.toContain('at foo')
+  it('清洗调用栈前缀，且清洗失败时回退原文', () => {
+    const analysis = analyzeEngineError('model loading error\n    at foo (a.js:1:1)')
+    expect(analysis).not.toBeNull()
     expect(analysis!.rawMessage).toContain('model loading error')
+
+    // 仅堆栈行时不丢上下文（回退原文）
+    const onlyStack = analyzeEngineError('    at foo (native)')
+    expect(onlyStack).not.toBeNull()
+    expect(onlyStack!.rawMessage.length).toBeGreaterThan(0)
   })
 
   it('空错误返回 null，未知错误走兜底建议', () => {

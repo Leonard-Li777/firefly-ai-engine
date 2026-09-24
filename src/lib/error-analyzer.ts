@@ -34,12 +34,14 @@ export interface EngineErrorAnalysis {
 /** 清洗调用栈与 Electron/运行时前缀，保留可读原因 */
 function cleanErrorText(input: string): string {
   const stackTraceRegex = /^.*?\s*at\s+.+(:\d+:\d+|native|\[as\s.+\]).*$/gm
-  return input
+  const cleaned = input
     .replace(stackTraceRegex, '')
     .replace(/\n\s*\n/g, '\n')
     .replace(/^Error:\s*/i, '')
     .replace(/^Error invoking remote method.*?: Error:\s*/i, '')
     .trim()
+  // 清洗过度导致空文案时回退原文，避免侧边栏丢失上下文
+  return cleaned || input.trim()
 }
 
 /** 按 llama.cpp / 引擎运行时关键词推断错误码（移植 desktop ErrorNormalizer 规则） */
@@ -80,7 +82,6 @@ export function classifyEngineErrorCode(rawText: string): EngineErrorCode {
     searchText.includes('ptx') ||
     (searchText.includes('cuda') && !searchText.includes('busy or unavailable')) ||
     (searchText.includes('gpu') && !searchText.includes('busy or unavailable')) ||
-    searchText.includes('vulkan allocation failed') ||
     searchText.includes('ggml_assert')
   ) {
     return 'GPU_DRIVER_OUTDATED'
