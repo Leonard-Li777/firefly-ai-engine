@@ -775,30 +775,13 @@ async fn start_engine_download(
 
     // 零试探智能路由：自动根据硬件特性修正 CPU 后端或响应 "auto" 模式
     if backend == "auto" {
-        backend = match status.hardware.best_tier.as_str() {
-            "cuda" => "cuda".to_string(),
-            "vulkan" => "vulkan".to_string(),
-            "hip" | "rocm" => "hip".to_string(),
-            "sycl" => "sycl".to_string(),
-            "metal" => "metal".to_string(),
-            _ => {
-                if status.hardware.has_avx2.unwrap_or(false) {
-                    "cpu".to_string()
-                } else if status.hardware.has_avx.unwrap_or(false) {
-                    "cpu-avx".to_string()
-                } else {
-                    "cpu-noavx".to_string()
-                }
-            }
-        };
-    } else if backend == "cpu" {
-        if !status.hardware.has_avx2.unwrap_or(true) {
-            if status.hardware.has_avx.unwrap_or(false) {
-                backend = "cpu-avx".to_string();
-            } else {
-                backend = "cpu-noavx".to_string();
-            }
-        }
+        backend = resolve_auto_backend(
+            status.hardware.best_tier.as_str(),
+            status.hardware.has_avx2,
+            status.hardware.has_avx,
+        );
+    } else {
+        backend = correct_cpu_backend(&backend, status.hardware.has_avx2, status.hardware.has_avx);
     }
 
     let task_id = new_task_id();
@@ -851,6 +834,41 @@ async fn start_engine_download(
         "totalBytes": 0,
         "status": "downloading"
     }))
+}
+
+/// 零试探自动后端路由：根据硬件摘要解析最终下载 backend（Package Flavor，PRD Tier 1-6）
+/// GPU 层级直接命中官方包；CPU 层级按 AVX2 -> AVX -> noAVX 阶梯唯一映射定制补全包
+pub fn resolve_auto_backend(best_tier: &str, has_avx2: Option<bool>, has_avx: Option<bool>) -> String {
+    match best_tier {
+        "cuda" => "cuda".to_string(),
+        "vulkan" => "vulkan".to_string(),
+        "hip" | "rocm" => "hip".to_string(),
+        "sycl" => "sycl".to_string(),
+        "metal" => "metal".to_string(),
+        _ => {
+            // Tier 4/5/6: 无可用 GPU 时按 CPU 指令集阶梯精准命中补全包
+            if has_avx2.unwrap_or(false) {
+                "cpu".to_string()
+            } else if has_avx.unwrap_or(false) {
+                "cpu-avx".to_string()
+            } else {
+                "cpu-noavx".to_string()
+            }
+        }
+    }
+}
+
+/// 显式请求 cpu 后端时的指令集兼容修正：杜绝在无 AVX2 机器上误下官方 AVX2 包导致 0xC000001D
+pub fn correct_cpu_backend(backend: &str, has_avx2: Option<bool>, has_avx: Option<bool>) -> String {
+    if backend == "cpu" && !has_avx2.unwrap_or(true) {
+        if has_avx.unwrap_or(false) {
+            "cpu-avx".to_string()
+        } else {
+            "cpu-noavx".to_string()
+        }
+    } else {
+        backend.to_string()
+    }
 }
 
 /// 解析指定 backend 在当前平台的推荐文件名
