@@ -794,6 +794,7 @@ async fn start_engine_download(
             "cuda" | "cuda12" => Some("llama-bin-win-cuda-12.4-x64.zip".to_string()),
             "cuda13" | "cuda134" => Some("llama-bin-win-cuda-13.4-x64.zip".to_string()),
             "vulkan" => Some("llama-bin-win-vulkan-x64.zip".to_string()),
+            "vulkan-compat" => Some("llama-bin-win-vulkan-compat-x64.zip".to_string()),
             "rocm" | "hip" => Some("llama-bin-win-rocm-10.0-x64.zip".to_string()),
             "sycl" => Some("llama-bin-win-sycl-x64.zip".to_string()),
             "cpu-avx" => Some("llama-bin-win-cpu-avx-x64.zip".to_string()),
@@ -892,6 +893,7 @@ fn resolve_engine_target_package(backend: &str) -> Option<(&'static str, Vec<&'s
                 "cudart-llama-bin-win-cuda-13.3-x64.zip"
             ])),
             "vulkan" => Some(("vulkan", vec!["llama-*-bin-win-vulkan-x64.zip"])),
+            "vulkan-compat" => Some(("vulkan-compat", vec!["llama-*-bin-win-vulkan-compat-x64.zip"])),
             "rocm" | "hip" => Some(("rocm", vec!["llama-*-bin-win-rocm-*-x64.zip"])),
             "sycl" => Some(("sycl", vec!["llama-*-bin-win-sycl-x64.zip"])),
             "cpu" | "cpu-avx2" => Some(("cpu", vec!["llama-*-bin-win-cpu-x64.zip", "llama-*-bin-win-x64.zip", "llama-*-bin-win-avx2-x64.zip"])),
@@ -918,9 +920,122 @@ fn resolve_engine_target_package(backend: &str) -> Option<(&'static str, Vec<&'s
 }
 
 /// 候选下载项定义
-struct EngineDownloadCandidate {
-    version: String,
-    filename: String,
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct EngineDownloadCandidate {
+    pub version: String,
+    pub filename: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct RemoteManifest {
+    #[serde(rename = "latestVersion")]
+    pub latest_version: Option<String>,
+    #[serde(rename = "previousVersion")]
+    pub previous_version: Option<String>,
+}
+
+/// 构造候选下载源列表（严格遵循：GitHub 优先，国内 EdgeOne R2 故障转移降级）
+pub fn build_candidate_urls(version: &str, filename: &str) -> Vec<(&'static str, String)> {
+    let is_compat_flavor = filename.contains("cpu-avx") || filename.contains("cpu-noavx") || filename.contains("vulkan-compat");
+    if is_compat_flavor {
+        vec![
+            (
+                "GitHub 专属兼容发布",
+                format!("https://github.com/Leonard-Li777/firefly-ai-folder/releases/download/llama-compat-{}/{}", version, filename)
+            ),
+            (
+                "国内高速镜像 (EdgeOne R2)",
+                format!("https://download.iocn.cn/llama-cpp/{}/{}", version, filename)
+            ),
+        ]
+    } else {
+        vec![
+            (
+                "GitHub 官方",
+                format!("https://github.com/ggml-org/llama.cpp/releases/download/{}/{}", version, filename)
+            ),
+            (
+                "国内高速镜像 (EdgeOne R2)",
+                format!("https://download.iocn.cn/llama-cpp/{}/{}", version, filename)
+            ),
+        ]
+    }
+}
+
+/// 尝试从 EdgeOne R2 加速节点拉取最新 manifest.json（带时间戳参数穿透缓存）
+pub async fn fetch_latest_manifest() -> Option<RemoteManifest> {
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    let url = format!("https://download.iocn.cn/llama-cpp/manifest.json?t={}", now);
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(5))
+        .build()
+        .ok()?;
+
+    match client.get(&url).header("User-Agent", "firefly-ai-engine").send().await {
+        Ok(resp) if resp.status().is_success() => {
+            resp.json::<RemoteManifest>().await.ok()
+        }
+        _ => None,
+    }
+}
+
+/// 动态生成候选版本下载文件列表
+pub fn resolve_download_candidates(backend: &str, versions: &[String]) -> Vec<EngineDownloadCandidate> {
+    let mut candidates = Vec::new();
+    let is_win = cfg!(windows);
+    let is_darwin = cfg!(target_os = "macos");
+
+    for ver in versions {
+        if is_win {
+            let filename = match backend {
+                "cuda13" | "cuda134" => format!("llama-{}-bin-win-cuda-13.4-x64.zip", ver),
+                "cuda" | "cuda12" => format!("llama-{}-bin-win-cuda-12.4-x64.zip", ver),
+                "vulkan" => format!("llama-{}-bin-win-vulkan-x64.zip", ver),
+                "vulkan-compat" => format!("llama-{}-bin-win-vulkan-compat-x64.zip", ver),
+                "rocm" | "hip" => format!("llama-{}-bin-win-rocm-10.0-x64.zip", ver),
+                "sycl" => format!("llama-{}-bin-win-sycl-x64.zip", ver),
+                "cpu-avx" => format!("llama-{}-bin-win-cpu-avx-x64.zip", ver),
+                "cpu-noavx" => format!("llama-{}-bin-win-cpu-noavx-x64.zip", ver),
+                _ => format!("llama-{}-bin-win-cpu-x64.zip", ver),
+            };
+            candidates.push(EngineDownloadCandidate {
+                version: ver.clone(),
+                filename,
+            });
+        } else if is_darwin {
+            candidates.push(EngineDownloadCandidate {
+                version: ver.clone(),
+                filename: format!("llama-{}-bin-macos-arm64.tar.gz", ver),
+            });
+            candidates.push(EngineDownloadCandidate {
+                version: ver.clone(),
+                filename: format!("llama-{}-bin-macos-x64.tar.gz", ver),
+            });
+        } else {
+            let filename = match backend {
+                "vulkan" => format!("llama-{}-bin-ubuntu-vulkan-x64.tar.gz", ver),
+                _ => format!("llama-{}-bin-ubuntu-x64.tar.gz", ver),
+            };
+            candidates.push(EngineDownloadCandidate {
+                version: ver.clone(),
+                filename,
+            });
+        }
+    }
+
+    if is_win && (backend == "cuda13" || backend == "cuda134") {
+        for ver in versions {
+            candidates.push(EngineDownloadCandidate {
+                version: ver.clone(),
+                filename: format!("llama-{}-bin-win-cuda-13.3-x64.zip", ver),
+            });
+        }
+    }
+
+    candidates
 }
 
 /// 执行带有断点续传的引擎包下载（支持多候选包匹配与双轨故障转移：GitHub -> EdgeOne R2）
@@ -965,31 +1080,8 @@ async fn download_engine_with_resume_and_failover(
             let _ = tokio::fs::create_dir_all(parent).await;
         }
 
-        // 双轨候选源：针对官方构建走官方 Release / EdgeOne R2；针对 cpu-avx / cpu-noavx 走 firefly-ai-folder 专属 Releases
-        let is_compat_flavor = filename.contains("cpu-avx") || filename.contains("cpu-noavx");
-        let candidate_urls = if is_compat_flavor {
-            vec![
-                (
-                    "国内高速镜像 (EdgeOne R2)",
-                    format!("https://download.iocn.cn/llama-cpp/{}/{}", version, filename)
-                ),
-                (
-                    "GitHub 专属兼容发布",
-                    format!("https://github.com/Leonard-Li777/firefly-ai-folder/releases/download/llama-compat-{}/{}", version, filename)
-                ),
-            ]
-        } else {
-            vec![
-                (
-                    "GitHub 官方",
-                    format!("https://github.com/ggml-org/llama.cpp/releases/download/{}/{}", version, filename)
-                ),
-                (
-                    "国内高速镜像 (EdgeOne R2)",
-                    format!("https://download.iocn.cn/llama-cpp/{}/{}", version, filename)
-                ),
-            ]
-        };
+        // 双轨候选源：严格 GitHub 优先，遇超时或网络阻断自动降级 EdgeOne R2
+        let candidate_urls = build_candidate_urls(version, filename);
 
         for (source_name, url) in candidate_urls {
             info!("[引擎下载] 尝试数据源: {} [{}/{}] URL: {}", source_name, version, filename, url);
@@ -1210,53 +1302,26 @@ async fn run_engine_download(
         }
     };
 
-    // 确定下载的目标候选文件清单（按优先级由新到旧排列）
-    let is_win = cfg!(windows);
-    let candidates: Vec<EngineDownloadCandidate> = if is_win {
-        match backend.as_str() {
-            "cuda13" | "cuda134" => vec![
-                EngineDownloadCandidate { version: "b11095".to_string(), filename: "llama-b11095-bin-win-cuda-13.4-x64.zip".to_string() },
-                EngineDownloadCandidate { version: "b11094".to_string(), filename: "llama-b11094-bin-win-cuda-13.4-x64.zip".to_string() },
-                EngineDownloadCandidate { version: "b11093".to_string(), filename: "llama-b11093-bin-win-cuda-13.4-x64.zip".to_string() },
-                EngineDownloadCandidate { version: "b11011".to_string(), filename: "llama-b11011-bin-win-cuda-13.3-x64.zip".to_string() },
-            ],
-            "cuda" | "cuda12" => vec![
-                EngineDownloadCandidate { version: "b11095".to_string(), filename: "llama-b11095-bin-win-cuda-12.4-x64.zip".to_string() },
-                EngineDownloadCandidate { version: "b11063".to_string(), filename: "llama-b11063-bin-win-cuda-12.4-x64.zip".to_string() },
-                EngineDownloadCandidate { version: "b11011".to_string(), filename: "llama-b11011-bin-win-cuda-12.4-x64.zip".to_string() },
-            ],
-            "vulkan" => vec![
-                EngineDownloadCandidate { version: "b11095".to_string(), filename: "llama-b11095-bin-win-vulkan-x64.zip".to_string() },
-                EngineDownloadCandidate { version: "b11063".to_string(), filename: "llama-b11063-bin-win-vulkan-x64.zip".to_string() },
-                EngineDownloadCandidate { version: "b11011".to_string(), filename: "llama-b11011-bin-win-vulkan-x64.zip".to_string() },
-            ],
-            "rocm" | "hip" => vec![
-                EngineDownloadCandidate { version: "b11095".to_string(), filename: "llama-b11095-bin-win-rocm-10.0-x64.zip".to_string() },
-                EngineDownloadCandidate { version: "b11063".to_string(), filename: "llama-b11063-bin-win-rocm-10.0-x64.zip".to_string() },
-                EngineDownloadCandidate { version: "b11011".to_string(), filename: "llama-b11011-bin-win-rocm-10.0-x64.zip".to_string() },
-            ],
-            "sycl" => vec![
-                EngineDownloadCandidate { version: "b11095".to_string(), filename: "llama-b11095-bin-win-sycl-x64.zip".to_string() },
-                EngineDownloadCandidate { version: "b11063".to_string(), filename: "llama-b11063-bin-win-sycl-x64.zip".to_string() },
-                EngineDownloadCandidate { version: "b11011".to_string(), filename: "llama-b11011-bin-win-sycl-x64.zip".to_string() },
-            ],
-            "cpu-avx" => vec![
-                EngineDownloadCandidate { version: "b11095".to_string(), filename: "llama-b11095-bin-win-cpu-avx-x64.zip".to_string() },
-            ],
-            "cpu-noavx" => vec![
-                EngineDownloadCandidate { version: "b11095".to_string(), filename: "llama-b11095-bin-win-cpu-noavx-x64.zip".to_string() },
-            ],
-            _ => vec![
-                EngineDownloadCandidate { version: "b11095".to_string(), filename: "llama-b11095-bin-win-cpu-x64.zip".to_string() },
-                EngineDownloadCandidate { version: "b11011".to_string(), filename: "llama-b11011-bin-win-cpu-x64.zip".to_string() },
-            ],
+    // 动态请求云端 Manifest 确定活跃版本（带 5s 超时与内置版本兜底，?t=timestamp 规避 CDN 缓存）
+    let manifest = fetch_latest_manifest().await;
+    let mut active_versions = Vec::new();
+    if let Some(m) = manifest {
+        if let Some(v) = m.latest_version {
+            active_versions.push(v);
         }
-    } else {
-        vec![
-            EngineDownloadCandidate { version: "b11095".to_string(), filename: "llama-b11095-bin-ubuntu-x64.tar.gz".to_string() },
-            EngineDownloadCandidate { version: "b10718".to_string(), filename: "llama-b10718-bin-ubuntu-x64.tar.gz".to_string() },
-        ]
-    };
+        if let Some(v) = m.previous_version {
+            active_versions.push(v);
+        }
+    }
+    if active_versions.is_empty() {
+        active_versions = vec![
+            "b11095".to_string(),
+            "b11063".to_string(),
+            "b11011".to_string(),
+        ];
+    }
+
+    let candidates = resolve_download_candidates(&backend, &active_versions);
 
     // 目标本地路径定位：%APPDATA%/com.firefly.ai-engine/engines/llama-{version}-bin-...
     let base_engine_dir = if let Some(app_data) = dirs::data_dir() {
@@ -2285,9 +2350,10 @@ async fn remove_custom_model(
 
 /// POST /api/engine/open-ui
 /// 唤醒 Tauri 主窗口（Desktop 错误弹层「在引擎中查看」或主程序调用）
-/// body 可选：{"panel":"error"|"logs"|"default"}
+/// body 可选：{"panel":"error"|"logs"|"models"|"default"}
 /// - error：打开错误分析侧边栏（llama.cpp 错误解读与解决建议）
 /// - logs：跳转运行日志
+/// - models：跳转模型列表页（Desktop 下载引导流深链，见 PRD-0043）
 /// - default/缺省：仅显示并聚焦主窗口
 #[derive(Debug, Deserialize)]
 struct OpenUiPayload {
@@ -2300,7 +2366,7 @@ async fn open_ui(
 ) -> impl IntoResponse {
     let panel = payload
         .and_then(|Json(p)| p.panel)
-        .filter(|p| p == "error" || p == "logs" || p == "default")
+        .filter(|p| p == "error" || p == "logs" || p == "models" || p == "default")
         .unwrap_or_else(|| "default".to_string());
     info!("收到 open-ui 请求，准备显示主窗口 panel={}", panel);
 
@@ -2500,6 +2566,46 @@ mod tests {
 
             let (_, patterns) = resolve_engine_target_package("vulkan").expect("vulkan 必须可解析");
             assert!(patterns.iter().any(|p| p.contains("vulkan-x64")));
+
+            let (_, patterns) = resolve_engine_target_package("vulkan-compat").expect("vulkan-compat 必须可解析");
+            assert!(patterns.iter().any(|p| p.contains("vulkan-compat-x64")));
+        }
+    }
+
+    /// 双轨候选源优先级强制：无论官方包还是增补包，第一源必为 GitHub，第二源必为 EdgeOne R2
+    #[test]
+    fn test_candidate_urls_github_first_and_edgeone_fallback() {
+        // 1. 增补包 (cpu-avx / cpu-noavx / vulkan-compat)
+        let compat_urls = build_candidate_urls("b11095", "llama-b11095-bin-win-cpu-avx-x64.zip");
+        assert_eq!(compat_urls.len(), 2);
+        assert_eq!(compat_urls[0].0, "GitHub 专属兼容发布");
+        assert!(compat_urls[0].1.contains("github.com/Leonard-Li777/firefly-ai-folder/releases/download/llama-compat-b11095"));
+        assert_eq!(compat_urls[1].0, "国内高速镜像 (EdgeOne R2)");
+        assert!(compat_urls[1].1.contains("download.iocn.cn/llama-cpp/b11095"));
+
+        // 2. 官方包 (cuda / vulkan / cpu 等)
+        let official_urls = build_candidate_urls("b11095", "llama-b11095-bin-win-cuda-12.4-x64.zip");
+        assert_eq!(official_urls.len(), 2);
+        assert_eq!(official_urls[0].0, "GitHub 官方");
+        assert!(official_urls[0].1.contains("github.com/ggml-org/llama.cpp/releases/download/b11095"));
+        assert_eq!(official_urls[1].0, "国内高速镜像 (EdgeOne R2)");
+        assert!(official_urls[1].1.contains("download.iocn.cn/llama-cpp/b11095"));
+    }
+
+    /// 动态候选版本构建测试：根据活跃版本列表推导各架构候选包
+    #[test]
+    fn test_resolve_download_candidates_dynamic() {
+        let versions = vec!["b11120".to_string(), "b11095".to_string()];
+        if cfg!(windows) {
+            let candidates = resolve_download_candidates("cuda12", &versions);
+            assert_eq!(candidates.len(), 2);
+            assert_eq!(candidates[0].version, "b11120");
+            assert_eq!(candidates[0].filename, "llama-b11120-bin-win-cuda-12.4-x64.zip");
+            assert_eq!(candidates[1].version, "b11095");
+            assert_eq!(candidates[1].filename, "llama-b11095-bin-win-cuda-12.4-x64.zip");
+
+            let vulkan_compat = resolve_download_candidates("vulkan-compat", &versions);
+            assert_eq!(vulkan_compat[0].filename, "llama-b11120-bin-win-vulkan-compat-x64.zip");
         }
     }
 }
