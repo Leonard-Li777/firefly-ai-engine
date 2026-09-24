@@ -105,6 +105,9 @@ export const App: React.FC = () => {
         setErrorPanelOpen(true)
       } else if (panel === 'logs') {
         setActiveMainTab('logs')
+      } else if (panel === 'models') {
+        // Desktop 下载引导流深链：直达模型列表页（气泡引导由模型列表页自行判断激活）
+        setActiveMainTab('models')
       }
     }
     window.addEventListener(ENGINE_UI_INTENT_EVENT, handleUiIntent as EventListener)

@@ -32,13 +32,20 @@ import { Label } from '../ui/label'
 import { Switch } from '../ui/switch'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../ui/tabs'
 import { useEngineStore } from '../../stores/engine-store'
+import { useEngineDownload } from '../../hooks/use-engine-download'
 import { useModelDownload } from '../../hooks/use-model-download'
 import { ModelItem, ModelSource } from '../../api/types'
 import { formatFileSize, formatSpeed, calculateRemainingTime } from '../../lib/utils'
 import { t } from '../../languages'
+import { toast } from '../common/Toast'
 import { sortModels, EnrichedModelItem } from '../../lib/model-sorting'
 import { getDisplayRelativeModelPath } from '../../lib/path-utils'
 import { ModelParamDrawer } from './model-param-drawer'
+import {
+  ModelBubbleGuide,
+  hasCompletedModelGuideDownload,
+  markModelGuideDownloadDone
+} from './model-bubble-guide'
 
 export interface IntelligenceLevelItem {
   label: string
@@ -113,6 +120,8 @@ interface ModelRowProps {
   isEx?: boolean
   onActivate: (modelId: string, source?: string, localPath?: string, modelName?: string) => Promise<boolean | void>
   onOpenConfig: (model: ModelItem) => void
+  /** 模型下载提交前的联动回调（PRD-0043：联动提交引擎包下载并提示双 tab 进度） */
+  onDownloadSubmit?: () => void
 }
 
 /**
@@ -120,7 +129,7 @@ interface ModelRowProps {
  * 「已激活」状态条、描述、本地路径、状态与操作按钮各自独占整行子行，互不挤压。
  * 下载进行中以整行子区块展开进度条。
  */
-const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isEx = false, onActivate, onOpenConfig }) => {
+const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isEx = false, onActivate, onOpenConfig, onDownloadSubmit }) => {
   const { fetchModels, modelsDir } = useEngineStore()
   const handleDownloadComplete = React.useCallback(() => {
     fetchModels()
@@ -582,7 +591,13 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isEx = false,
                   size="sm"
                   variant="outline"
                   className="h-7.5 text-xs px-3.5 rounded-lg font-bold border-border hover:border-primary/60 shrink-0"
-                  onClick={() => startDownload()}
+                  onClick={() => {
+                    // 提交首次模型下载：标记引导完成（气泡此后永久消失，PRD-0043）
+                    handleModelDownloadSubmitted()
+                    // 联动下载（PRD-0043）：提交模型下载前联动提交引擎包下载并提示双 tab 进度
+                    onDownloadSubmit?.()
+                    startDownload()
+                  }}
                 >
                   <Download className="h-3 w-3 mr-1.5 shrink-0" />
                   {t('下载模型')}
@@ -650,11 +665,53 @@ const ModelGroupSection: React.FC<ModelGroupSectionProps> = ({ icon, iconClass, 
   </section>
 )
 
+/** 单行下载提交时的引导标记回调：首次提交后气泡引导永久消失 */
+function handleModelDownloadSubmitted(): void {
+  markModelGuideDownloadDone()
+}
+
+/** 统计模型列表中已下载模型数量（列表未加载时返回 -1 以区分"空列表"与"未加载"） */
+function safeModelsLen(models: ModelItem[] | null | undefined): number {
+  if (!Array.isArray(models)) return -1
+  return models.filter(m => m && m.isDownloaded).length
+}
+
 export const ModelListPanel: React.FC = () => {
-  const { models, fetchModels, activeModelKey, switchModel, engineStatus, lastAddedSource } = useEngineStore()
+  const { models, fetchModels, activeModelKey, switchModel, engineStatus, engineList, fetchEngineList, lastAddedSource } = useEngineStore()
   const [activeSource, setActiveSource] = useState<ModelSource>('modelscope')
   const [showRecommendedOnly, setShowRecommendedOnly] = useState<boolean>(true)
   const [drawerModel, setDrawerModel] = useState<ModelItem | null>(null)
+
+  // 引擎包联动下载（PRD-0043）：实例化引擎下载 hook，提交模型下载时若最佳引擎包未安装则自动同时下载
+  const { startDownload: startEngineDownload } = useEngineDownload()
+
+  /**
+   * 模型下载提交前的联动处理（PRD-0043）：
+   * - 硬件最佳适配引擎包（matchType === 'best'）未安装时，联动提交引擎包下载（用户无需感知选择）；
+   * - 无论是否联动，均提示用户可在「模型」与「引擎」两个标签页查看各自下载进度。
+   */
+  const handleModelDownloadSubmit = React.useCallback(() => {
+    const bestEngine = (engineList || []).find(e => e.matchType === 'best')
+    if (bestEngine && !bestEngine.isInstalled) {
+      // 联动提交引擎包下载：不 await，两个下载任务并行进行
+      startEngineDownload(bestEngine.backend).catch(() => {
+        // 引擎包下载失败不阻塞模型下载主流程，引擎 tab 内可重试
+      })
+      toast.info(
+        t('已为您自动匹配并开始下载最佳引擎包（{name}），可在「模型」与「引擎」标签页查看下载进度', { name: bestEngine.name })
+      )
+    } else if (bestEngine) {
+      toast.info(t('已开始下载模型，可在「模型」与「引擎」标签页查看下载进度'))
+    }
+  }, [engineList, startEngineDownload])
+
+  // 气泡引导（PRD-0043）：模型列表已加载且本机无任何已下载模型时激活；
+  // 会话内关闭后本次不再显示，下次进入仍会出现，直至完成首次模型下载提交（localStorage 永久标记）
+  const [guideSessionDismissed, setGuideSessionDismissed] = useState(false)
+  const isModelsLoaded = models !== null && models !== undefined
+  const hasAnyDownloadedModel = safeModelsLen(models) > 0
+  const isGuideActive =
+    isModelsLoaded && !hasAnyDownloadedModel && !guideSessionDismissed && !hasCompletedModelGuideDownload()
 
   // 自由添加成功后，自动切换到新模型所属来源页签，保证列表立即可见
   useEffect(() => {
@@ -713,6 +770,7 @@ export const ModelListPanel: React.FC = () => {
           await switchModel(id, source, localPath, modelName || model.name)
         }}
         onOpenConfig={targetModel => setDrawerModel(targetModel)}
+        onDownloadSubmit={handleModelDownloadSubmit}
       />
     )
   }
@@ -765,6 +823,10 @@ export const ModelListPanel: React.FC = () => {
 
         {/* 列表内容区：表头 + 单行表格布局，按 已下载 / 待下载 / 显存不足 三组显示 */}
         <TabsContent value={activeSource} className="p-5 focus-visible:ring-0 m-0">
+          {/* 首次下载气泡引导（PRD-0043）：无任何已下载模型时激活 */}
+          {isGuideActive && (
+            <ModelBubbleGuide onSessionDismiss={() => setGuideSessionDismissed(true)} />
+          )}
           {totalCount === 0 ? (
             <div className="text-center py-16 text-muted-foreground/50 font-bold text-xs">
               {showRecommendedOnly ? t('暂无官方推荐模型') : t('该来源暂无可用模型')}
