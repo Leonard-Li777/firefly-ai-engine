@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import {
   Moon,
   Sun,
@@ -25,6 +25,8 @@ import { LocalChatView } from './components/chat/local-chat-view'
 import { LanguageSelector } from './components/common/language-selector'
 import { Footer } from './components/common/Footer'
 import { ToastContainer } from './components/common/Toast'
+import { ErrorAnalysisSidebar } from './components/errors/error-analysis-sidebar'
+import { ENGINE_UI_INTENT_EVENT, EngineUiIntent, parseUiPanel } from './lib/engine-ui-intent'
 import { useEngineStore } from './stores/engine-store'
 import { i18nScope, t } from './languages'
 import { getEngineApiClient, isMockMode } from './api/provider'
@@ -34,11 +36,19 @@ export const App: React.FC = () => {
   const dir: 'ltr' | 'rtl' = i18nScope.activeLanguage === 'ar-EG' ? 'rtl' : 'ltr'
   const {
     engineStatus,
+    error: storeError,
     fetchEngineStatus,
     fetchEngineList,
     fetchModels,
-    runRegionDetection
+    runRegionDetection,
+    startEngine
   } = useEngineStore()
+
+  // 侧边栏展示用原始错误（引擎 last_error 优先，其次 store 错误）
+  const rawError = useMemo(
+    () => engineStatus?.last_error || storeError || null,
+    [engineStatus?.last_error, storeError]
+  )
 
   // 顶层分层 Tab：
   // 1: 'dashboard' (概览仪表板)
@@ -48,6 +58,8 @@ export const App: React.FC = () => {
   // 5: 'logs' (运行日志)
   // 6: 'api' (第三方应用对接与 API 地址，置于最后)
   const [activeMainTab, setActiveMainTab] = useState<string>('dashboard')
+  // 错误分析侧边栏（Footer 点击错误 / Desktop open-ui panel=error 打开）
+  const [errorPanelOpen, setErrorPanelOpen] = useState(false)
 
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
@@ -82,6 +94,23 @@ export const App: React.FC = () => {
 
     initApp()
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Desktop 经 /api/engine/open-ui 触发的导航意图：error=错误分析侧边栏，logs=运行日志
+  useEffect(() => {
+    const handleUiIntent = (event: Event) => {
+      const detail = (event as CustomEvent<EngineUiIntent>).detail
+      const panel = parseUiPanel(detail?.panel)
+      if (panel === 'error') {
+        setErrorPanelOpen(true)
+      } else if (panel === 'logs') {
+        setActiveMainTab('logs')
+      }
+    }
+    window.addEventListener(ENGINE_UI_INTENT_EVENT, handleUiIntent as EventListener)
+    return () => {
+      window.removeEventListener(ENGINE_UI_INTENT_EVENT, handleUiIntent as EventListener)
+    }
   }, [])
 
   const handleThemeChange = (checked: boolean) => {
@@ -341,7 +370,25 @@ export const App: React.FC = () => {
       </main>
 
       {/* 底部信息栏：全局常驻展示模型状态、引擎警告与思考模式开关 */}
-      <Footer onNavigateTab={setActiveMainTab} />
+      <Footer
+        onNavigateTab={setActiveMainTab}
+        onOpenErrorPanel={() => setErrorPanelOpen(true)}
+      />
+
+      {/* 错误分析侧边栏：llama.cpp/引擎错误解读与解决建议（移植 desktop 分析能力） */}
+      <ErrorAnalysisSidebar
+        isOpen={errorPanelOpen}
+        rawError={rawError}
+        onClose={() => setErrorPanelOpen(false)}
+        onViewLogs={() => {
+          setErrorPanelOpen(false)
+          setActiveMainTab('logs')
+        }}
+        onRetry={() => {
+          void startEngine()
+        }}
+      />
+
       {/* 全局 Toast 通知容器 */}
       <ToastContainer />
     </div>

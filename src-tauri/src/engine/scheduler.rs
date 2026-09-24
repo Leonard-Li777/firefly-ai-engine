@@ -14,9 +14,6 @@ use crate::hardware::{
     SystemResources,
 };
 
-#[cfg(test)]
-use crate::hardware::DowngradeReason as _DowngradeReasonForTest;
-
 /// 已安装引擎信息
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InstalledEngine {
@@ -573,7 +570,7 @@ mod tests {
     /// is_cpu_engine_compatible 指令集标志位组合推导（AVX2 包 / AVX 包 / noAVX 兜底）
     #[test]
     fn test_cpu_engine_compatibility_flag_matrix() {
-        use crate::hardware::{CpuInfo, gpu_info::AccelerationTier as _T};
+        use crate::hardware::CpuInfo;
 
         let modern = CpuInfo { has_avx2: true, has_avx: true, has_fma: true, ..Default::default() };
         let avx1 = CpuInfo { has_avx2: false, has_avx: true, has_fma: false, ..Default::default() };
@@ -597,10 +594,6 @@ mod tests {
         assert!(EngineScheduler::is_cpu_engine_compatible("llama-b11095-bin-win-cpu-noavx-x64", &noavx));
         assert!(EngineScheduler::is_cpu_engine_compatible("llama-b11095-bin-win-cpu-noavx-x64", &avx1));
         assert!(EngineScheduler::is_cpu_engine_compatible("llama-b11095-bin-win-cpu-noavx-x64", &modern));
-
-        // 未使用的占位避免未导入告警
-        let _ = AccelerationTier::Cpu;
-        let _ = _T::Cpu;
     }
 
     /// 画像 4：现代 NVIDIA 独显（驱动合规）→ 命中已安装 CUDA 引擎
@@ -757,13 +750,10 @@ mod tests {
     /// 双显卡笔记本：核显 + 独显排序后独显优先（primary_gpu 语义由 sort_gpus 保证）
     #[test]
     fn test_dual_gpu_discrete_first_ordering() {
-        use crate::hardware::detector::HardwareDetector;
         use crate::hardware::gpu_info::*;
-        use std::path::PathBuf;
 
-        // sort_gpus 为 private，通过公开的 compute_best_tier 间接验证：
-        // 独显 supports_cuda=true 且非 Pascal + 驱动合规时 best_tier 应为 Cuda。
-        // 此处直接断言 GpuInfo 厂商识别与 is_integrated 标记正确即可表达画像意图。
+        // sort_gpus 为 private，通过公开语义验证双显卡画像：
+        // 独显 supports_cuda=true 且核显 is_integrated=true；调度器 best_tier=Cuda 时首选 CUDA。
         let igpu = GpuInfo {
             name: "Intel Iris Xe Graphics".to_string(),
             memory_mb: 0,
@@ -793,7 +783,6 @@ mod tests {
         assert_eq!(dgpu.vendor, GpuVendor::Nvidia);
 
         // 画像意图：独显优先评估 —— best_tier 输入为 Cuda 时调度器首选 CUDA 层级
-        assert_eq!(dgpu.supports_cuda, true);
-        let _ = HardwareDetector::new(PathBuf::from("."));
+        assert!(dgpu.supports_cuda);
     }
 }

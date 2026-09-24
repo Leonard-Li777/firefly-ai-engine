@@ -70,6 +70,8 @@ pub struct AppState {
     pub active_child_pids: ChildPidStore,
     /// llama-model-download 可执行文件路径
     pub model_downloader_path: Arc<PathBuf>,
+    /// Tauri AppHandle：open-ui 显示主窗口并向前端 emit 导航意图（错误分析侧边栏等）
+    pub app_handle: Option<tauri::AppHandle>,
 }
 
 // ─────────────────────── 请求结构 ───────────────────────
@@ -2282,10 +2284,38 @@ async fn remove_custom_model(
 }
 
 /// POST /api/engine/open-ui
-/// 唤醒 Tauri 主窗口（双击托盘图标或主程序调用）
-async fn open_ui() -> impl IntoResponse {
-    info!("收到 open-ui 请求，准备显示主窗口");
-    StatusCode::ACCEPTED
+/// 唤醒 Tauri 主窗口（Desktop 错误弹层「在引擎中查看」或主程序调用）
+/// body 可选：{"panel":"error"|"logs"|"default"}
+/// - error：打开错误分析侧边栏（llama.cpp 错误解读与解决建议）
+/// - logs：跳转运行日志
+/// - default/缺省：仅显示并聚焦主窗口
+#[derive(Debug, Deserialize)]
+struct OpenUiPayload {
+    panel: Option<String>,
+}
+
+async fn open_ui(
+    State(state): State<AppState>,
+    payload: Option<Json<OpenUiPayload>>,
+) -> impl IntoResponse {
+    let panel = payload
+        .and_then(|Json(p)| p.panel)
+        .filter(|p| p == "error" || p == "logs" || p == "default")
+        .unwrap_or_else(|| "default".to_string());
+    info!("收到 open-ui 请求，准备显示主窗口 panel={}", panel);
+
+    // 显示并聚焦主窗口（静默 --silent 启动后由 Desktop 跳转唤起）
+    if let Some(app_handle) = state.app_handle.as_ref() {
+        use tauri::{Emitter, Manager};
+        if let Some(window) = app_handle.get_webview_window("main") {
+            let _ = window.show();
+            let _ = window.set_focus();
+            // 通知前端打开目标面板（错误分析侧边栏 / 运行日志）
+            let _ = window.emit("engine:ui-intent", json!({ "panel": panel }));
+        }
+    }
+
+    (StatusCode::ACCEPTED, Json(json!({ "panel": panel })))
 }
 
 /// POST /api/engine/shutdown

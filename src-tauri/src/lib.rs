@@ -96,10 +96,18 @@ pub fn run() {
 
             let coordinator_clone = coordinator.clone();
             let proxy_state_clone = proxy_state.clone();
+            let app_handle_for_server = app_handle.clone();
 
-            // 在后台启动 Axum HTTP 服务器
+            // 在后台启动 Axum HTTP 服务器（携带 AppHandle 以支持 open-ui 唤起窗口）
             tauri::async_runtime::spawn(async move {
-                match server::start_server(base_port, coordinator_clone.clone(), proxy_state_clone).await {
+                match server::start_server(
+                    base_port,
+                    coordinator_clone.clone(),
+                    proxy_state_clone,
+                    Some(app_handle_for_server),
+                )
+                .await
+                {
                     Ok(actual_port) => {
                         info!("HTTP 服务绑定端口: {}", actual_port);
                         *coordinator_clone.active_port.lock().await = Some(actual_port);

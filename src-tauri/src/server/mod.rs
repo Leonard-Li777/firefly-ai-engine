@@ -28,10 +28,12 @@ use self::proxy::{ProxyState, proxy_handler};
 
 /// 启动 Axum HTTP 服务
 /// 返回实际绑定的端口
+/// app_handle：用于 open-ui 显示主窗口并向前端 emit 导航意图
 pub async fn start_server(
     base_port: u16,
     coordinator: Arc<EngineCoordinator>,
     proxy_state: ProxyState,
+    app_handle: Option<tauri::AppHandle>,
 ) -> Result<u16> {
     let port = find_available_port(base_port).await;
     // 立即记录实际绑定的端口，确保 IPC 在 serve 阻塞前就能返回该端口
@@ -50,6 +52,7 @@ pub async fn start_server(
         download_tasks,
         active_child_pids,
         model_downloader_path,
+        app_handle,
     };
 
     // CORS 配置（允许主程序前端跨域调用）

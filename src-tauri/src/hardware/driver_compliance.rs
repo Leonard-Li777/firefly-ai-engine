@@ -28,7 +28,7 @@ pub struct DowngradeInfo {
 }
 
 /// 降级原因
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum DowngradeReason {
     /// 驱动版本过低
