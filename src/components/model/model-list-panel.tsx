@@ -722,6 +722,8 @@ export const ModelListPanel: React.FC = () => {
 
   useEffect(() => {
     fetchModels()
+    // 联动下载（PRD-0043）：确保引擎列表已加载，供提交下载时判定最佳引擎包安装态
+    fetchEngineList()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
