@@ -59,6 +59,7 @@ export function useModelDownload(
   const optionsRef = useRef(options)
   const modelIdRef = useRef(initialModelId)
   const sourceRef = useRef(options.source)
+  const isPausedRef = useRef(false)
 
   // 保持 options 和 source 的最新引用，无需触发无依赖的 useEffect
   optionsRef.current = options
@@ -100,6 +101,7 @@ export function useModelDownload(
 
       const finalSource = downloadOptions?.source || optionsRef.current.source || 'modelscope'
 
+      isPausedRef.current = false
       setState(prev => ({
         ...prev,
         modelId: finalModelId,
@@ -123,6 +125,11 @@ export function useModelDownload(
             // 下载过程中若已通过 progress 回调拿到 taskId，立即挂载到 ref 与 state 中，供取消/暂停使用
             if (progress.taskId && !taskIdRef.current) {
               taskIdRef.current = progress.taskId
+            }
+
+            // 如果用户已经点击暂停，忽略后续到达的 downloading 进度更新，防止状态被冲掉
+            if (isPausedRef.current) {
+              return
             }
 
             setState(prev => ({
@@ -158,6 +165,11 @@ export function useModelDownload(
           totalBytes: taskSummary.totalBytes
         }))
       } catch (err: any) {
+        // 如果是因为处于暂停状态而导致的异常中断，保持暂停状态，不误报错误
+        if (isPausedRef.current) {
+          return
+        }
+
         const errMsg = err?.message || t('发起模型下载失败')
         // 如果是由于用户主动取消抛出的异常，状态转为 canceled 而非 error
         if (errMsg.includes('取消') || errMsg.toLowerCase().includes('cancel')) {
@@ -188,14 +200,15 @@ export function useModelDownload(
   // 暂停下载
   const pauseDownload = useCallback(async () => {
     if (!taskIdRef.current) return
+    isPausedRef.current = true
+    setState(prev => ({
+      ...prev,
+      isDownloading: false,
+      isPaused: true,
+      status: 'pending'
+    }))
     try {
       await engineApiClient.pauseModelDownload(taskIdRef.current)
-      setState(prev => ({
-        ...prev,
-        isDownloading: false,
-        isPaused: true,
-        status: 'pending'
-      }))
     } catch (e) {
       console.error('暂停下载失败:', e)
     }
@@ -206,6 +219,7 @@ export function useModelDownload(
   const resumeDownload = useCallback(async () => {
     const modelId = modelIdRef.current
     if (!modelId) return
+    isPausedRef.current = false
     try {
       await startDownload(modelId, { source: sourceRef.current as ModelSource })
     } catch (e) {

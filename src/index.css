@@ -24,6 +24,11 @@
   --input: oklch(0.84 0.02 240);
   --ring: oklch(0.55 0.18 240);
   --radius: 0.75rem;
+  /* 滚动条：悬浮胶囊滑块（亮色） */
+  --scrollbar-thumb: rgba(15, 23, 42, 0.18);
+  --scrollbar-thumb-hover: rgba(15, 23, 42, 0.32);
+  --scrollbar-thumb-active: rgba(15, 23, 42, 0.48);
+  --scrollbar-thumb-glow: transparent;
 }
 
 .dark {
@@ -47,6 +52,11 @@
   --border: oklch(0.30 0.045 250);
   --input: oklch(0.30 0.045 250);
   --ring: oklch(0.62 0.16 230);
+  /* 滚动条：悬浮胶囊滑块（暗色）— 冷调海洋天光，hover 带主色微光 */
+  --scrollbar-thumb: oklch(0.78 0.05 230 / 0.2);
+  --scrollbar-thumb-hover: oklch(0.82 0.09 230 / 0.38);
+  --scrollbar-thumb-active: oklch(0.86 0.11 230 / 0.55);
+  --scrollbar-thumb-glow: oklch(0.62 0.16 230 / 0.22);
 }
 
 @theme inline {
@@ -140,4 +150,116 @@ html:lang(ru) :where(button span, .badge, th) {
 
 .overlay-fade-in {
   animation: overlay-fade-in 200ms ease-out both;
+}
+
+/* ==========================================================================
+   滚动条美化（对齐 Desktop 海洋蓝 + 悬浮胶囊滑块）
+   - 轨道透明，滑块用 transparent border + background-clip 内缩成悬浮胶囊
+   - 暗色下呈冷调海洋天光色，hover/active 轻微提亮并带主色微光
+   - 兼容 WebKit / Chromium / Firefox（scrollbar-width + scrollbar-color）
+   ========================================================================== */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb);
+  border-radius: 999px;
+  /* 透明描边 + padding-box 裁切：滑块悬浮于轨道中部，不贴边 */
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  transition: background-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scrollbar-thumb-hover);
+  box-shadow: 0 0 0 1px var(--scrollbar-thumb-glow, transparent);
+}
+
+*::-webkit-scrollbar-thumb:active {
+  background-color: var(--scrollbar-thumb-active);
+  box-shadow: 0 0 0 1px var(--scrollbar-thumb-glow, transparent);
+}
+
+/* 隐藏滚动条但仍可滚动（Tab 横滑等场景） */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+}
+
+/* 窄滚动条：嵌套面板 / 表格横向滚动等紧凑区域 */
+@utility scrollbar-slim {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar-thumb);
+    border-radius: 999px;
+    border: 1px solid transparent;
+    background-clip: padding-box;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: var(--scrollbar-thumb-hover);
+  }
+}
+
+/* 加宽滚动条：日志终端等需要频繁拖拽的区域 */
+@utility scrollbar-comfy {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+
+  &::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar-thumb-hover);
+    border-radius: 999px;
+    border: 3px solid transparent;
+    background-clip: padding-box;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: var(--scrollbar-thumb-active);
+  }
+}
+
+/* 主题切换时滑块颜色平滑过渡（尊重减少动态偏好） */
+@media (prefers-reduced-motion: no-preference) {
+  ::-webkit-scrollbar-thumb {
+    transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  }
 }

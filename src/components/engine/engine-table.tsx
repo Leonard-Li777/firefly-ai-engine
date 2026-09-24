@@ -59,7 +59,7 @@ export const EngineTable: React.FC = () => {
       </div>
 
       {/* 引擎列表表格：平滑滚动容器，解决德文/俄文等长表头溢出问题 */}
-      <div className="border border-border/70 rounded-xl overflow-x-auto bg-background/50 shadow-2xs">
+      <div className="border border-border/70 rounded-xl overflow-x-auto bg-background/50 shadow-2xs scrollbar-slim">
         <table className="w-full text-left border-collapse min-w-[560px]">
           <thead>
             <tr className="border-b border-border/60 bg-muted/40">

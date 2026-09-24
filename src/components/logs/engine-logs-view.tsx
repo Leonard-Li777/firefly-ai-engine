@@ -461,7 +461,7 @@ export const EngineLogsView: React.FC = () => {
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex-1 min-h-0 w-full rounded-2xl bg-[#0d1117] border border-slate-700/50 overflow-auto p-4 font-mono text-xs leading-relaxed shadow-inner select-text"
+        className="flex-1 min-h-0 w-full rounded-2xl bg-[#0d1117] border border-slate-700/50 overflow-auto p-4 font-mono text-xs leading-relaxed shadow-inner select-text scrollbar-comfy"
       >
         {filteredLogs.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full min-h-[300px] gap-3 text-muted-foreground py-16">

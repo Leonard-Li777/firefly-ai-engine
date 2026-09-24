@@ -202,7 +202,7 @@ export const App: React.FC = () => {
             onValueChange={setActiveMainTab}
             className="w-full"
           >
-            <TabsList className="flex justify-start h-12 bg-transparent p-0 rounded-none gap-2 shadow-none border-b-0 overflow-x-auto">
+            <TabsList className="flex justify-start h-12 bg-transparent p-0 rounded-none gap-2 shadow-none border-b-0 overflow-x-auto no-scrollbar">
               {/* Tab 1: 仪表板 Dashboard */}
               <TabsTrigger
                 value="dashboard"

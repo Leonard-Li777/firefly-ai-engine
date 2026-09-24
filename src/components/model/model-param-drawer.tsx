@@ -194,7 +194,7 @@ export const ModelParamDrawer: React.FC<ModelParamDrawerProps> = ({
           </div>
 
           {/* 抽屉内容区：三大功能组，每行一个参数 */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-slim">
 
             {/* 第一组：硬件与计算性能 */}
             <div className="space-y-4">

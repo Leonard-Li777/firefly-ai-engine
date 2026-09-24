@@ -19,9 +19,11 @@ const THINKING_MODE_STORAGE_KEY = 'firefly_enable_thinking_mode'
 
 interface FooterProps {
   onNavigateTab: (tab: string) => void
+  /** 打开错误分析侧边栏（非仅跳转日志） */
+  onOpenErrorPanel?: () => void
 }
 
-export const Footer: React.FC<FooterProps> = ({ onNavigateTab }) => {
+export const Footer: React.FC<FooterProps> = ({ onNavigateTab, onOpenErrorPanel }) => {
     const {
     engineStatus,
     models,
@@ -174,17 +176,23 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateTab }) => {
 
             {/* 次级提示行 */}
             <div className="min-w-0 flex items-center gap-2 mt-0.5">
-              {/* 1. 服务异常详情：点击跳转到 logs 运行日志页排查 */}
+              {/* 1. 服务异常详情：点击打开错误分析侧边栏（含建议，可再进日志） */}
               {showAiError && (
                 <button
                   type="button"
                   className="text-[11px] leading-tight text-red-500 font-medium transition-all duration-200 hover:underline cursor-pointer flex items-center gap-1 text-left truncate max-w-[420px]"
-                  onClick={() => onNavigateTab('logs')}
-                  title={t('点击查看引擎运行日志详情')}
+                  onClick={() => {
+                    if (onOpenErrorPanel) {
+                      onOpenErrorPanel()
+                    } else {
+                      onNavigateTab('logs')
+                    }
+                  }}
+                  title={t('点击查看错误分析与解决建议')}
                 >
                   <AlertCircle className="h-3 w-3 shrink-0 animate-pulse text-red-500" />
                   <span className="truncate">
-                    {lastError || t('服务异常')}，{t('点击查看日志原因')}
+                    {lastError || t('服务异常')}，{t('点击查看原因与建议')}
                   </span>
                 </button>
               )}

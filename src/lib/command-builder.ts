@@ -3,6 +3,22 @@ import { toShortPathOnWindows, resolveModelArgForCmd } from './path-utils'
 import { unifiedModelManager } from './unified-model-manager'
 import { parseSizeToGB } from './model-metadata-service'
 
+/**
+ * 浏览器渲染进程安全获取平台标识：
+ * Node 环境用 process.platform；浏览器环境无 process 全局，
+ * 按用户代理推断（本应用仅面向 Windows/Linux/macOS 桌面端）。
+ */
+function getPlatform(): 'win32' | 'darwin' | 'linux' {
+  const p = (globalThis as any).process?.platform
+  if (p === 'win32' || p === 'darwin' || p === 'linux') return p
+  if (typeof navigator !== 'undefined') {
+    const ua = navigator.userAgent.toLowerCase()
+    if (ua.includes('win')) return 'win32'
+    if (ua.includes('mac')) return 'darwin'
+  }
+  return 'linux'
+}
+
 export interface HardwareInfo {
   gpuModel?: string
   gpuVendor?: 'nvidia' | 'amd' | 'intel' | 'apple' | 'unknown'
@@ -64,7 +80,7 @@ export class LlamaCommandBuilder {
     const finalSource = options.source || modelConfig?.source || 'huggingface'
     const modelBaseDir = modelManager.getModelBaseDir()
 
-    const rawBinary = options.binaryPath || (process.platform === 'win32' ? 'llama-server.exe' : 'llama-server')
+    const rawBinary = options.binaryPath || (getPlatform() === 'win32' ? 'llama-server.exe' : 'llama-server')
     const binaryPath = toShortPathOnWindows(rawBinary)
 
     // 1. 模型路径解析与短路径安全转换
@@ -142,7 +158,7 @@ export class LlamaCommandBuilder {
     const isAppleSilicon =
       hardware.gpuVendor === 'apple' ||
       hardware.osPlatform === 'darwin' ||
-      process.platform === 'darwin'
+      getPlatform() === 'darwin'
 
     if (isCpuMode) {
       calculatedGpuLayers = 0
@@ -348,16 +364,16 @@ export class LlamaCommandBuilder {
     }
 
     // 生产环境开启详细日志，便于排查用户侧的崩溃问题
+    const procEnv = (globalThis as any).process?.env
     const isProduction =
       options.isProduction ??
-      (typeof process !== 'undefined' &&
-        (process.env?.NODE_ENV === 'production' || !!(process as any).env?.APP_PACKAGED))
+      (!!procEnv && (procEnv.NODE_ENV === 'production' || !!procEnv.APP_PACKAGED))
     if (isProduction) {
       baseArgs.push('--verbose')
     }
 
     // Linux 平台特定 NUMA 优化
-    if (process.platform === 'linux' && options.enableNUMA) {
+    if (getPlatform() === 'linux' && options.enableNUMA) {
       baseArgs.push('--numa', 'isolate')
     }
 
@@ -411,17 +427,17 @@ export class LlamaCommandBuilder {
       PYTHONUNBUFFERED: '1'
     }
 
-    if (process.platform === 'win32') {
+    if (getPlatform() === 'win32') {
       env.WER_DONT_SHOW_UI = '1' // 抑制 Windows 错误报告挂起与弹窗
       if (engineDir) {
-        env.Path = `${engineDir};${process.env?.Path || process.env?.PATH || ''}`
+        env.Path = `${engineDir};${procEnv?.Path || procEnv?.PATH || ''}`
       }
-    } else if (process.platform === 'linux') {
+    } else if (getPlatform() === 'linux') {
       if (engineDir) {
-        env.LD_LIBRARY_PATH = `${engineDir}:${process.env?.LD_LIBRARY_PATH || ''}`
+        env.LD_LIBRARY_PATH = `${engineDir}:${procEnv?.LD_LIBRARY_PATH || ''}`
       }
       env.MKL_NUM_THREADS = String(finalThreads)
-    } else if (process.platform === 'darwin') {
+    } else if (getPlatform() === 'darwin') {
       env.VECLIB_MAXIMUM_THREADS = String(finalThreads)
     }
 

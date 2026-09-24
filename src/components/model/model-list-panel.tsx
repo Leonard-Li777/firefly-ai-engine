@@ -366,8 +366,8 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isEx = false,
       {/* 状态与操作按钮独占整行：状态在左，按钮全部显示完整文字标签 */}
       <div className="flex items-center justify-between gap-3 px-4 pb-3">
         {isDownloadingOrPaused ? (
-          <span className="font-mono text-xs font-bold text-primary tabular-nums">
-            {t('正在下载')} {dl.progress}%
+          <span className={`font-mono text-xs font-bold tabular-nums ${dl.isPaused ? 'text-amber-600 dark:text-amber-400' : 'text-primary'}`}>
+            {dl.isPaused ? t('已暂停') : t('正在下载')} {dl.progress}%
           </span>
         ) : dl.status === 'error' ? (
           <span className="text-xs font-semibold text-destructive truncate min-w-0" title={dl.error || undefined}>
@@ -600,21 +600,22 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isEx = false,
       {isDownloadingOrPaused && (
         <div className="px-4 pb-3 space-y-1.5">
           <div className="flex items-center justify-between text-xs font-semibold">
-            <span className="text-primary truncate max-w-[360px]" title={dl.currentFileName}>
+            <span className={`truncate max-w-[360px] ${dl.isPaused ? 'text-amber-600 dark:text-amber-400' : 'text-primary'}`} title={dl.currentFileName}>
               {dl.totalFiles && dl.totalFiles > 1
                 ? `[${(dl.fileIndex || 0) + 1}/${dl.totalFiles}] ${dl.currentFileName}`
-                : dl.currentFileName || t('正在下载...')}
+                : dl.currentFileName || (dl.isPaused ? t('下载已暂停') : t('正在下载...'))}
             </span>
             <div className="flex items-center gap-2 font-mono text-[11px] text-muted-foreground">
               <span>
                 {formatFileSize(dl.receivedBytes)} / {formatFileSize(dl.totalBytes || model.fileSize)}
               </span>
-              {dl.speedBps > 0 && <span className="text-foreground font-bold">{formatSpeed(dl.speedBps)}</span>}
-              {remainingText && <span>{remainingText}</span>}
+              {!dl.isPaused && dl.speedBps > 0 && <span className="text-foreground font-bold">{formatSpeed(dl.speedBps)}</span>}
+              {!dl.isPaused && remainingText && <span>{remainingText}</span>}
+              {dl.isPaused && <span className="text-amber-600 dark:text-amber-400 font-bold">{t('等待继续')}</span>}
             </div>
           </div>
 
-          <Progress value={dl.progress} className="h-1.5" />
+          <Progress value={dl.progress} className={`h-1.5 ${dl.isPaused ? 'opacity-70' : ''}`} />
         </div>
       )}
     </div>
@@ -719,31 +720,6 @@ export const ModelListPanel: React.FC = () => {
 
   return (
     <Card className="p-0 overflow-hidden border border-border/70 rounded-2xl bg-card shadow-xs">
-      {/* 头部面板说明与来源镜像指示 */}
-      <div className="p-5 border-b border-border/40 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <Label className="text-base font-bold tracking-tight text-foreground flex items-center gap-2">
-            <Boxes className="h-4 w-4 text-primary" />
-            <span>{t('模型下载与管理')}</span>
-          </Label>
-          <p className="text-xs text-muted-foreground font-normal mt-1 leading-relaxed">
-            {t('模型决定了文本与多模态分析的准确率与速度。支持为每个模型单独配置引擎启动参数。')}
-          </p>
-        </div>
-
-        {/* 生效镜像指示器 */}
-        <Badge
-          variant={regionInfo?.region === 'cn' ? 'success' : 'info'}
-          className="text-[10px] font-semibold h-6 self-start sm:self-auto flex items-center gap-1 shrink-0 border border-border/40"
-        >
-          <Globe2 className="h-3 w-3" />
-          <span>
-            {regionInfo?.region === 'cn'
-              ? t('当前已生效国内高速加速源')
-              : t('当前生效海外官方直连源')}
-          </span>
-        </Badge>
-      </div>
 
       {/* Tabs 栏：复刻 Desktop 风格 + 右侧 Switch 仅显示推荐 */}
       <Tabs value={activeSource} onValueChange={val => setActiveSource(val as ModelSource)} className="w-full">
@@ -754,7 +730,7 @@ export const ModelListPanel: React.FC = () => {
               className="flex-shrink-0 px-4 h-full rounded-none font-bold text-xs data-[state=active]:border-b-[3px] data-[state=active]:border-primary data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=inactive]:text-muted-foreground transition-all border-b-[3px] border-transparent hover:text-foreground hover:bg-muted/40 relative flex items-center gap-1.5"
             >
               <Sparkles className="w-3.5 h-3.5 text-inherit" />
-              <span>ModelScope ({t('国内高速')})</span>
+              <span>ModelScope ({t('中国高速')})</span>
               <span className="ml-1.5 text-[10px] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground bg-muted/80 px-2 py-0.5 rounded-full text-muted-foreground font-mono border border-border/40 transition-colors">
                 {counts.modelscope}
               </span>

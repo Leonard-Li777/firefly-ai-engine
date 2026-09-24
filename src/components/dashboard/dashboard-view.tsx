@@ -354,7 +354,7 @@ export const DashboardView: React.FC = () => {
                   )}
                 </div>
                 {launchCmd ? (
-                  <pre className="text-[11px] font-mono text-foreground/90 whitespace-pre-wrap break-all leading-relaxed max-h-40 overflow-y-auto">
+                  <pre className="text-[11px] font-mono text-foreground/90 whitespace-pre-wrap break-all leading-relaxed max-h-40 overflow-y-auto scrollbar-slim">
                     {launchCmd}
                   </pre>
                 ) : (
