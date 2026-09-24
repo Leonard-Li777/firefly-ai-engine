@@ -1,0 +1,236 @@
+name: build-llama-compat
+
+on:
+  workflow_dispatch:
+    inputs:
+      llama_tag:
+        description: '上游 llama.cpp Release Tag (留空自动获取官方最新版本，如 b11095)'
+        required: false
+        type: string
+        default: ''
+      upload_release:
+        description: '是否发布到 GitHub Releases'
+        required: false
+        type: boolean
+        default: true
+      upload_r2:
+        description: '是否同步上传 Cloudflare R2 并执行两版本轮转淘汰'
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  resolve-tag:
+    name: Resolve Target llama.cpp Tag
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.get-tag.outputs.tag }}
+    steps:
+      - name: Get target tag
+        id: get-tag
+        shell: bash
+        run: |
+          INPUT_TAG="${{ github.event.inputs.llama_tag }}"
+          if [ -n "$INPUT_TAG" ]; then
+            echo "Using manual input tag: $INPUT_TAG"
+            echo "tag=$INPUT_TAG" >> $GITHUB_OUTPUT
+          else
+            echo "Fetching latest official release tag from ggml-org/llama.cpp..."
+            LATEST_TAG=$(curl -s "https://api.github.com/repos/ggml-org/llama.cpp/releases/latest" | jq -r '.tag_name // empty')
+            if [ -z "$LATEST_TAG" ] || [ "$LATEST_TAG" = "null" ]; then
+              echo "Error: Failed to fetch latest tag from GitHub API, fallback to default b11095"
+              LATEST_TAG="b11095"
+            fi
+            echo "Resolved tag: $LATEST_TAG"
+            echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+          fi
+
+  build-compat-matrix:
+    name: Build Windows x64 (${{ matrix.target_name }})
+    needs: resolve-tag
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target_name: 'cpu-avx'
+            package_flavor: 'cpu-avx'
+            cmake_flags: '-DGGML_AVX=ON -DGGML_AVX2=OFF -DGGML_FMA=OFF -DGGML_AVX512=OFF -DBUILD_SHARED_LIBS=ON'
+            description: '适用二代/三代酷睿、老至强（仅支持基础 AVX1，无 AVX2）'
+          - target_name: 'cpu-noavx'
+            package_flavor: 'cpu-noavx'
+            cmake_flags: '-DGGML_AVX=OFF -DGGML_AVX2=OFF -DGGML_FMA=OFF -DGGML_AVX512=OFF -DBUILD_SHARED_LIBS=ON'
+            description: '适用老奔腾、赛扬、老 AMD 等无任何 AVX 指令集的低配机器（纯 SSE4.2 保底）'
+          - target_name: 'vulkan-compat'
+            package_flavor: 'vulkan-compat'
+            cmake_flags: '-DGGML_VULKAN=ON -DGGML_AVX=ON -DGGML_AVX2=OFF -DGGML_FMA=OFF -DGGML_AVX512=OFF -DBUILD_SHARED_LIBS=ON'
+            description: '适用 Pascal 架构老 N 卡 (GTX 1060 等) 及老驱动/旧核显（兼容型 Vulkan 1.2 规范）'
+
+    steps:
+      - name: Checkout upstream llama.cpp
+        uses: actions/checkout@v4
+        with:
+          repository: 'ggml-org/llama.cpp'
+          ref: ${{ needs.resolve-tag.outputs.tag }}
+          submodules: recursive
+
+      - name: Setup Ninja & CMake
+        uses: ashutoshvarma/setup-ninja@master
+        with:
+          version: 1.11.1
+
+      - name: Setup Vulkan SDK
+        if: matrix.target_name == 'vulkan-compat'
+        uses: humble/setup-vulkan-sdk@v1.2.0
+        with:
+          vulkan-query-version: 1.3.290.0
+          vulkan-components: Vulkan-Headers, Vulkan-Loader
+          vulkan-use-cache: true
+
+      - name: Configure MSVC Environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Configure CMake (${{ matrix.target_name }})
+        shell: pwsh
+        run: |
+          cmake -B build -G "Ninja" `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DLLAMA_CURL=OFF `
+            ${{ matrix.cmake_flags }}
+
+      - name: Build llama.cpp Binary & Libraries
+        shell: pwsh
+        run: |
+          cmake --build build --config Release --target llama-server llama-cli llama-quantize
+
+      - name: Stage Package Files
+        shell: pwsh
+        run: |
+          $flavor = "${{ matrix.package_flavor }}"
+          $tag = "${{ needs.resolve-tag.outputs.tag }}"
+          $stageDir = "dist/llama-$tag-bin-win-$flavor-x64"
+          New-Item -ItemType Directory -Force -Path $stageDir
+
+          # 拷贝核心二进制与 dll
+          Copy-Item -Path "build/bin/*.exe" -Destination $stageDir -Force
+          Copy-Item -Path "build/bin/*.dll" -Destination $stageDir -Force -ErrorAction SilentlyContinue
+
+          # 压缩归档
+          $zipName = "llama-$tag-bin-win-$flavor-x64.zip"
+          Compress-Archive -Path "$stageDir/*" -DestinationPath "dist/$zipName" -Force
+
+          # 计算 SHA256 校验和
+          $hash = (Get-FileHash -Path "dist/$zipName" -Algorithm SHA256).Hash.ToLower()
+          "$hash *$zipName" | Out-File -FilePath "dist/$zipName.sha256" -Encoding ascii
+
+          Write-Host "打包成功: dist/$zipName (SHA256: $hash)"
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: llama-${{ needs.resolve-tag.outputs.tag }}-bin-win-${{ matrix.package_flavor }}-x64
+          path: |
+            dist/*.zip
+            dist/*.sha256
+
+  sync-official-assets:
+    name: Mirror Official Releases (${{ needs.resolve-tag.outputs.tag }})
+    needs: resolve-tag
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.upload_r2 == 'true' || github.event.inputs.upload_r2 == true }}
+    steps:
+      - name: Checkout repository scripts
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile || true
+
+      - name: Mirror Official Assets
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node scripts/sync-official-llama-assets.cjs --tag ${{ needs.resolve-tag.outputs.tag }} --out dist/official
+
+      - name: Upload Official Staged Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: llama-${{ needs.resolve-tag.outputs.tag }}-official-mirror
+          path: dist/official/*
+
+  publish-r2-and-rotate:
+    name: Publish R2 & Two-Version Rotation
+    needs: [resolve-tag, build-compat-matrix, sync-official-assets]
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.upload_r2 == 'true' || github.event.inputs.upload_r2 == true }}
+    steps:
+      - name: Checkout repository scripts
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Download Custom Compat Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: llama-${{ needs.resolve-tag.outputs.tag }}-bin-win-*-x64
+          path: dist/all
+          merge-multiple: true
+
+      - name: Download Official Mirror Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: llama-${{ needs.resolve-tag.outputs.tag }}-official-mirror
+          path: dist/all
+
+      - name: Publish to Cloudflare R2 & Rotate Versions
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+        run: |
+          node scripts/publish-engine-r2.cjs --tag ${{ needs.resolve-tag.outputs.tag }} --dir dist/all
+
+  publish-github-release:
+    name: Publish Custom Compat to GitHub Release
+    needs: [resolve-tag, build-compat-matrix]
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.upload_release == 'true' || github.event.inputs.upload_release == true }}
+    steps:
+      - name: Download Custom Compat Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: llama-${{ needs.resolve-tag.outputs.tag }}-bin-win-*-x64
+          path: dist/release
+          merge-multiple: true
+
+      - name: Publish to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "llama-compat-${{ needs.resolve-tag.outputs.tag }}"
+          name: "llama.cpp ${{ needs.resolve-tag.outputs.tag }} Compatibility Builds (Legacy CPU, Vulkan & Low-End Support)"
+          draft: false
+          prerelease: false
+          files: |
+            dist/release/*.zip
+            dist/release/*.sha256
+          body: |
+            ### llama.cpp ${{ needs.resolve-tag.outputs.tag }} 兼容性长尾硬件补全包
+            
+            本 Release 专为解决低配或老旧硬件无法运行官方 AVX2 构建而生：
+            
+            - `llama-${{ needs.resolve-tag.outputs.tag }}-bin-win-cpu-avx-x64.zip`: 仅开启基础 AVX1，适配二代/三代酷睿（SNB/IVB）及初代至强 E5。
+            - `llama-${{ needs.resolve-tag.outputs.tag }}-bin-win-cpu-noavx-x64.zip`: 关闭所有 AVX 指令集（纯 SSE4.2 兜底），拯救老奔腾/赛扬等全系无 AVX 机器，杜绝 `0xC000001D` 崩溃。
+            - `llama-${{ needs.resolve-tag.outputs.tag }}-bin-win-vulkan-compat-x64.zip`: 宽容型 Vulkan 1.2 规范构建，锁定 AVX1 主机端代码，适配 Pascal 架构老 N 卡（GTX 1060 等）及老驱动/旧核显。

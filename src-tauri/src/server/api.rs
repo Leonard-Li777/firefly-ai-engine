@@ -941,7 +941,7 @@ pub fn build_candidate_urls(version: &str, filename: &str) -> Vec<(&'static str,
         vec![
             (
                 "GitHub 专属兼容发布",
-                format!("https://github.com/Leonard-Li777/firefly-ai-folder/releases/download/llama-compat-{}/{}", version, filename)
+                format!("https://github.com/Leonard-Li777/firefly-ai-engine/releases/download/llama-compat-{}/{}", version, filename)
             ),
             (
                 "国内高速镜像 (EdgeOne R2)",
@@ -2579,7 +2579,7 @@ mod tests {
         let compat_urls = build_candidate_urls("b11095", "llama-b11095-bin-win-cpu-avx-x64.zip");
         assert_eq!(compat_urls.len(), 2);
         assert_eq!(compat_urls[0].0, "GitHub 专属兼容发布");
-        assert!(compat_urls[0].1.contains("github.com/Leonard-Li777/firefly-ai-folder/releases/download/llama-compat-b11095"));
+        assert!(compat_urls[0].1.contains("github.com/Leonard-Li777/firefly-ai-engine/releases/download/llama-compat-b11095"));
         assert_eq!(compat_urls[1].0, "国内高速镜像 (EdgeOne R2)");
         assert!(compat_urls[1].1.contains("download.iocn.cn/llama-cpp/b11095"));
 
