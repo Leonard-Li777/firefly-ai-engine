@@ -165,11 +165,26 @@ async function run() {
 
   let targetTag = inputTag
   if (!targetTag) {
-    log('未指定 Tag，正在获取官方 llama.cpp 最新发布版本...')
-    const latestRelease = await httpsGetJson(
-      'https://api.github.com/repos/ggml-org/llama.cpp/releases/latest'
-    )
-    targetTag = latestRelease.tag_name
+    log('未指定 Tag，正在获取官方 llama.cpp 最新发布版本 (优先匹配 bXXXX)...')
+    try {
+      const releases = await httpsGetJson(
+        'https://api.github.com/repos/ggml-org/llama.cpp/releases'
+      )
+      if (Array.isArray(releases)) {
+        const buildRel = releases.find(r => /^b\d+$/i.test(r.tag_name))
+        if (buildRel) {
+          targetTag = buildRel.tag_name
+        }
+      }
+    } catch (e) {
+      log(`获取 releases 列表失败: ${e.message}，尝试 releases/latest 回退`)
+    }
+    if (!targetTag) {
+      const latestRelease = await httpsGetJson(
+        'https://api.github.com/repos/ggml-org/llama.cpp/releases/latest'
+      )
+      targetTag = latestRelease.tag_name
+    }
     log(`检测到官方最新版本: ${targetTag}`)
   }
 
