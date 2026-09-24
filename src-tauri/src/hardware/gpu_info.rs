@@ -153,6 +153,7 @@ impl AccelerationTier {
 
 /// 系统 CPU 信息
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct CpuInfo {
     pub model: String,
     /// 物理核心数
@@ -161,6 +162,40 @@ pub struct CpuInfo {
     pub threads: u32,
     /// 频率 MHz
     pub speed_mhz: u64,
+    /// 是否支持 AVX2 指令集（通过 CPUID 原生探测，绝不硬编码）
+    pub has_avx2: bool,
+    /// 是否支持基础 AVX 指令集（二代/三代酷睿、老至强）
+    pub has_avx: bool,
+    /// 是否支持 FMA 指令集
+    pub has_fma: bool,
+}
+
+impl Default for CpuInfo {
+    fn default() -> Self {
+        CpuInfo {
+            model: "Generic CPU".to_string(),
+            cores: 4,
+            threads: 8,
+            speed_mhz: 2500,
+            has_avx2: true,
+            has_avx: true,
+            has_fma: true,
+        }
+    }
+}
+
+impl CpuInfo {
+    pub fn test_default(cores: u32, threads: u32) -> Self {
+        CpuInfo {
+            model: "Test CPU".to_string(),
+            cores,
+            threads,
+            speed_mhz: 3000,
+            has_avx2: true,
+            has_avx: true,
+            has_fma: true,
+        }
+    }
 }
 
 /// 系统内存信息

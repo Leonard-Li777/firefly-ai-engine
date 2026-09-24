@@ -270,7 +270,7 @@ impl HardwareDetector {
         let gpus = self.parse_gpus(&fastfetch_data, &memory);
 
         // 计算最佳加速层级
-        let best_acceleration_tier = self.compute_best_tier(&gpus);
+        let best_acceleration_tier = self.compute_best_tier(&gpus).await;
 
         info!(
             "硬件探测完成 - CPU: {}, 内存: {:.1}GB, GPU 数量: {}, 最佳层级: {:?}",
@@ -305,11 +305,15 @@ impl HardwareDetector {
         // 内存信息：通过环境变量获取（Windows）
         let total_mem_mb: u64 = Self::get_system_memory_mb().unwrap_or(8192);
 
+        let (has_avx2, has_avx, has_fma) = Self::probe_cpu_features();
         let cpu = CpuInfo {
             model: "Unknown CPU".to_string(),
             cores: num_cpus.max(1),
             threads: num_cpus,
             speed_mhz: 0,
+            has_avx2,
+            has_avx,
+            has_fma,
         };
 
         let memory = MemoryInfo {
@@ -331,8 +335,107 @@ impl HardwareDetector {
         None
     }
 
+    /// 探测当前系统的 CPU 原生指令集能力（CPUID 动态探测，绝不硬编码）
+    pub fn probe_cpu_features() -> (bool, bool, bool) {
+        #[cfg(target_arch = "x86_64")]
+        {
+            let has_avx2 = is_x86_feature_detected!("avx2");
+            let has_avx = is_x86_feature_detected!("avx");
+            let has_fma = is_x86_feature_detected!("fma");
+            (has_avx2, has_avx, has_fma)
+        }
+        #[cfg(target_arch = "aarch64")]
+        {
+            // ARM64 (Apple Silicon / ARM Windows / Linux) 原生具备 Neon 向量指令，默认视为现代指令集全速支持
+            (true, true, true)
+        }
+        #[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
+        {
+            (false, false, false)
+        }
+    }
+
+    /// 真实探测系统 Vulkan 驱动与运行时（Runtime）是否真正可用
+    /// 解决显卡虽然标称支持但驱动损坏、过旧或未安装 vulkan-1.dll 导致崩溃的问题
+    pub fn probe_vulkan_runtime_available() -> bool {
+        #[cfg(windows)]
+        {
+            use windows_sys::Win32::System::LibraryLoader::{GetProcAddress, LoadLibraryA};
+            unsafe {
+                let dll_name = b"vulkan-1.dll\0";
+                let h_module = LoadLibraryA(dll_name.as_ptr());
+                if h_module.is_null() {
+                    return false;
+                }
+
+                let proc_name = b"vkCreateInstance\0";
+                let proc = GetProcAddress(h_module, proc_name.as_ptr());
+                if proc.is_none() {
+                    windows_sys::Win32::Foundation::FreeLibrary(h_module);
+                    return false;
+                }
+
+                // 极轻量构造一个空的 VkInstanceCreateInfo 尝试初始化握手
+                type PfnVkCreateInstance = unsafe extern "system" fn(
+                    *const VkInstanceCreateInfo,
+                    *const std::ffi::c_void,
+                    *mut *mut std::ffi::c_void,
+                ) -> i32;
+
+                #[repr(C)]
+                struct VkInstanceCreateInfo {
+                    s_type: u32, // VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO = 1
+                    p_next: *const std::ffi::c_void,
+                    flags: u32,
+                    p_application_info: *const std::ffi::c_void,
+                    enabled_layer_count: u32,
+                    pp_enabled_layer_names: *const *const u8,
+                    enabled_extension_count: u32,
+                    pp_enabled_extension_names: *const *const u8,
+                }
+
+                let create_fn: PfnVkCreateInstance = std::mem::transmute(proc.unwrap());
+                let create_info = VkInstanceCreateInfo {
+                    s_type: 1, // VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO
+                    p_next: std::ptr::null(),
+                    flags: 0,
+                    p_application_info: std::ptr::null(),
+                    enabled_layer_count: 0,
+                    pp_enabled_layer_names: std::ptr::null(),
+                    enabled_extension_count: 0,
+                    pp_enabled_extension_names: std::ptr::null(),
+                };
+
+                let mut instance: *mut std::ffi::c_void = std::ptr::null_mut();
+                let res = create_fn(&create_info, std::ptr::null(), &mut instance);
+
+                if res == 0 && !instance.is_null() {
+                    // 销毁实例
+                    let destroy_proc_name = b"vkDestroyInstance\0";
+                    if let Some(destroy_proc) = GetProcAddress(h_module, destroy_proc_name.as_ptr()) {
+                        type PfnVkDestroyInstance = unsafe extern "system" fn(*mut std::ffi::c_void, *const std::ffi::c_void);
+                        let destroy_fn: PfnVkDestroyInstance = std::mem::transmute(destroy_proc);
+                        destroy_fn(instance, std::ptr::null());
+                    }
+                    windows_sys::Win32::Foundation::FreeLibrary(h_module);
+                    true
+                } else {
+                    windows_sys::Win32::Foundation::FreeLibrary(h_module);
+                    false
+                }
+            }
+        }
+        #[cfg(not(windows))]
+        {
+            // Linux / macOS 下如果不是 Windows，保持平台特性判断
+            true
+        }
+    }
+
     /// 解析 CPU 信息
     fn parse_cpu(&self, data: &[Value]) -> CpuInfo {
+        let (has_avx2, has_avx, has_fma) = Self::probe_cpu_features();
+
         let cpu_module = data.iter().find(|m| m["type"] == "CPU");
 
         if let Some(cpu) = cpu_module {
@@ -342,6 +445,9 @@ impl HardwareDetector {
                 cores: result["cores"]["physical"].as_u64().unwrap_or(1) as u32,
                 threads: result["cores"]["logical"].as_u64().unwrap_or(1) as u32,
                 speed_mhz: result["frequency"]["base"].as_u64().unwrap_or(0),
+                has_avx2,
+                has_avx,
+                has_fma,
             };
         }
 
@@ -350,6 +456,9 @@ impl HardwareDetector {
             cores: 1,
             threads: 1,
             speed_mhz: 0,
+            has_avx2,
+            has_avx,
+            has_fma,
         }
     }
 
@@ -376,7 +485,7 @@ impl HardwareDetector {
         }
     }
 
-    /// 解析 GPU 列表（1:1 移植桌面端 parseGPUs）
+    /// 解析 GPU 列表（1:1 移植桌面端 parseGPUs，并结合 Vulkan 真实握手探针校正）
     fn parse_gpus(&self, data: &[Value], memory: &MemoryInfo) -> Vec<GpuInfo> {
         let gpu_module = data.iter().find(|m| m["type"] == "GPU");
 
@@ -403,6 +512,12 @@ impl HardwareDetector {
 
         let is_win = cfg!(windows);
         let is_darwin = cfg!(target_os = "macos");
+
+        // 一次性检验系统 Vulkan 真实运行可用性（避免对每个 GPU 重复握手）
+        let system_vulkan_ok = Self::probe_vulkan_runtime_available();
+        if !system_vulkan_ok {
+            warn!("[硬件探测] 系统 Vulkan 运行时未就绪或驱动不支持，将安全关闭 Vulkan 加速选项");
+        }
 
         let mut raw_gpus: Vec<GpuInfo> = gpu_array
             .iter()
@@ -435,9 +550,12 @@ impl HardwareDetector {
                 // platform_api 字段
                 let platform_api = g["platformApi"].as_str().unwrap_or("");
 
-                let supports_vulkan = platform_api.contains("Vulkan")
+                // 核心：若系统底层 Vulkan 握手失败，则强行置为 false；否则按常规规则判断
+                let supports_vulkan = system_vulkan_ok && (
+                    platform_api.contains("Vulkan")
                     || (vendor != GpuVendor::Apple)
-                    || vendor == GpuVendor::Unknown;
+                    || vendor == GpuVendor::Unknown
+                );
 
                 let supports_sycl = is_win
                     && vendor == GpuVendor::Intel
@@ -583,20 +701,32 @@ impl HardwareDetector {
         });
     }
 
-    /// 计算最佳加速层级（1:1 移植 getBestAccelerationTier）
-    fn compute_best_tier(&self, gpus: &[GpuInfo]) -> AccelerationTier {
+    /// 计算最佳加速层级（考虑独显优先、驱动合规性与 Pascal 架构）
+    async fn compute_best_tier(&self, gpus: &[GpuInfo]) -> AccelerationTier {
         let is_win = cfg!(windows);
         let is_linux = cfg!(target_os = "linux");
 
-        let has_nvidia = gpus.iter().any(|g| g.supports_cuda);
-        let has_metal = gpus.iter().any(|g| g.supports_metal);
+        // 若有 NVIDIA 卡，检查驱动版本与架构
+        if let Some(nv_gpu) = gpus.iter().find(|g| g.supports_cuda) {
+            // Pascal 架构 (GTX 1060 等) 官方 CUDA 12.4 已不原生支持计算能力 CC 6.1，
+            // 优先引导至经过验证的高性能 Vulkan 引擎，若 Vulkan 不可用再回退
+            let is_pascal = super::gpu_info::is_pascal_arch_gpu(&nv_gpu.name);
+            let (_driver_ver, cuda_ver) = super::driver_compliance::detect_nvidia_driver_info().await;
+            let cuda_driver_ok = cuda_ver.map(|v| v >= 12.0).unwrap_or(false);
+
+            if !is_pascal && cuda_driver_ok {
+                return AccelerationTier::Cuda;
+            } else if nv_gpu.supports_vulkan {
+                info!("[最佳层级决策] NVIDIA 显卡 (Pascal 或驱动低于 CUDA 12.0)，自动平滑选用 Vulkan 引擎");
+                return AccelerationTier::Vulkan;
+            }
+        }
+
         let has_sycl = gpus.iter().any(|g| g.supports_sycl);
+        let has_metal = gpus.iter().any(|g| g.supports_metal);
         let has_amd = gpus.iter().any(|g| g.supports_hip);
         let has_vulkan = gpus.iter().any(|g| g.supports_vulkan);
 
-        if has_nvidia {
-            return AccelerationTier::Cuda;
-        }
         if has_sycl {
             return AccelerationTier::Sycl;
         }
@@ -620,5 +750,48 @@ impl HardwareDetector {
     pub async fn clear_cache(&self) {
         let mut cache = self.cache.lock().await;
         cache.clear();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_probe_cpu_features_returns_valid_flags() {
+        let (has_avx2, has_avx, has_fma) = HardwareDetector::probe_cpu_features();
+        // 如果支持 AVX2，通常必支持 AVX
+        if has_avx2 {
+            assert!(has_avx, "支持 AVX2 的 CPU 必须支持 AVX");
+        }
+        println!("当前测试机器 CPU 指令集支持: AVX2={}, AVX={}, FMA={}", has_avx2, has_avx, has_fma);
+    }
+
+    #[test]
+    fn test_probe_vulkan_runtime_does_not_panic() {
+        let res = HardwareDetector::probe_vulkan_runtime_available();
+        println!("当前测试机器 Vulkan 运行时可用性探测结果: {}", res);
+    }
+
+    #[tokio::test]
+    async fn test_pascal_gpu_routes_to_vulkan_if_available() {
+        let detector = HardwareDetector::new(PathBuf::from("."));
+        let gpus = vec![
+            GpuInfo {
+                name: "NVIDIA GeForce GTX 1060 6GB".to_string(),
+                memory_mb: 6144,
+                vendor: GpuVendor::Nvidia,
+                is_integrated: false,
+                supports_cuda: true,
+                supports_vulkan: true,
+                supports_hip: false,
+                supports_metal: false,
+                supports_sycl: false,
+            }
+        ];
+
+        let tier = detector.compute_best_tier(&gpus).await;
+        // GTX 1060 为 Pascal 架构，应平滑路由到 Vulkan，而不是直接上现代 CUDA 12.4
+        assert_eq!(tier, AccelerationTier::Vulkan);
     }
 }

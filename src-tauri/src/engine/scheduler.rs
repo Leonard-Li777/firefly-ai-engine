@@ -178,21 +178,56 @@ impl EngineScheduler {
         }
     }
 
-    /// 选择最佳可用引擎（结合硬件最佳层级 + 已安装引擎 + 降级记录）
+    /// 检查指定 CPU 引擎目录是否与当前系统的 CPU 指令集兼容
+    pub fn is_cpu_engine_compatible(dir_name: &str, cpu: &crate::hardware::CpuInfo) -> bool {
+        let lower = dir_name.to_lowercase();
+        // 官方 Windows 预编译 x64 二进制 (llama-b...-bin-win-x64 或 llama-b...-bin-win-cpu-x64) 默认开启 AVX2
+        let requires_avx2 = lower.contains("avx2")
+            || (lower.contains("win-x64") && !lower.contains("cpu-avx") && !lower.contains("noavx"))
+            || (lower.contains("win-cpu-x64") && !lower.contains("cpu-avx") && !lower.contains("noavx"));
+
+        let requires_avx = lower.contains("cpu-avx") && !lower.contains("noavx");
+
+        if requires_avx2 {
+            cpu.has_avx2
+        } else if requires_avx {
+            cpu.has_avx || cpu.has_avx2
+        } else {
+            // cpu-noavx 纯 SSE4.2 兜底，所有 x86_64 均可运行
+            true
+        }
+    }
+
+    /// 选择最佳可用引擎（结合用户偏好/硬件最佳层级 + 已安装引擎 + 指令集兼容性 + 降级记录）
     pub async fn select_engine(
         &self,
         resources: &SystemResources,
+        preferred_backend: Option<&str>,
     ) -> Result<InstalledEngine> {
         let installed = self.scan_installed_engines().await;
         if installed.is_empty() {
             return Err(anyhow!("bin/ 目录下未发现任何 llama-server 引擎"));
         }
 
-        let best_tier = &resources.best_acceleration_tier;
+        // 若指定了偏好后端，优先从偏好层级开始调度
+        let initial_tier = if let Some(pref) = preferred_backend {
+            match pref.to_lowercase().as_str() {
+                "cuda" | "cuda12" | "cuda13" | "cuda134" => AccelerationTier::Cuda,
+                "vulkan" => AccelerationTier::Vulkan,
+                "rocm" | "hip" => AccelerationTier::Rocm,
+                "sycl" => AccelerationTier::Sycl,
+                "metal" => AccelerationTier::Metal,
+                "cpu" | "cpu-avx" | "cpu-noavx" | "cpu-avx2" => AccelerationTier::Cpu,
+                _ => resources.best_acceleration_tier.clone(),
+            }
+        } else {
+            resources.best_acceleration_tier.clone()
+        };
+
         let degraded = self.degraded_tier.lock().await.clone();
 
-        // 构建候选列表：从最佳层级开始降级
-        let mut candidate_tier = best_tier.clone();
+        // 构建候选列表：从初始层级开始降级
+        let mut candidate_tier = initial_tier;
         loop {
             // 检查是否已标记为不可用
             let should_skip = if let Some(ref deg) = degraded {
@@ -204,15 +239,51 @@ impl EngineScheduler {
 
             // 跳过已降级的层级
             if !should_skip {
-                // 在已安装引擎中查找匹配层级
-                if let Some(engine) = installed.iter().find(|e| e.tier == candidate_tier) {
-                    // 检查该引擎是否已被标记不合规
-                    let binary_str = engine.binary_path.to_string_lossy().to_string();
-                    if !self.compliance.is_non_compliant(&binary_str).await {
-                        info!("调度选择引擎: {} (层级: {:?})", engine.dir_name, engine.tier);
-                        return Ok(engine.clone());
-                    } else {
-                        warn!("引擎 {} 已被标记不合规，跳过", engine.dir_name);
+                if candidate_tier == AccelerationTier::Cpu {
+                    // CPU 候选池：仅保留指令集兼容且未被标记不合规的引擎
+                    let mut cpu_candidates: Vec<InstalledEngine> = Vec::new();
+                    for engine in installed.iter().filter(|e| e.tier == AccelerationTier::Cpu) {
+                        let binary_str = engine.binary_path.to_string_lossy().to_string();
+                        if self.compliance.is_non_compliant(&binary_str).await {
+                            warn!("CPU 引擎 {} 已被标记不合规，跳过", engine.dir_name);
+                            continue;
+                        }
+                        if Self::is_cpu_engine_compatible(&engine.dir_name, &resources.cpu) {
+                            cpu_candidates.push(engine.clone());
+                        } else {
+                            warn!(
+                                "CPU 引擎 {} 与当前硬件指令集不兼容 (has_avx2={}, has_avx={})，跳过",
+                                engine.dir_name, resources.cpu.has_avx2, resources.cpu.has_avx
+                            );
+                        }
+                    }
+
+                    // 排序优先级：AVX2 (1) > AVX (2) > NoAVX (3)
+                    cpu_candidates.sort_by_key(|e| {
+                        let lower = e.dir_name.to_lowercase();
+                        if lower.contains("avx2") || (!lower.contains("avx") && !lower.contains("noavx")) {
+                            1
+                        } else if lower.contains("cpu-avx") {
+                            2
+                        } else {
+                            3
+                        }
+                    });
+
+                    if let Some(best_cpu) = cpu_candidates.into_iter().next() {
+                        info!("调度选择 CPU 引擎: {} (层级: {:?})", best_cpu.dir_name, best_cpu.tier);
+                        return Ok(best_cpu);
+                    }
+                } else {
+                    // 非 CPU 层级（CUDA / Vulkan 等）在已安装引擎中查找匹配
+                    for engine in installed.iter().filter(|e| e.tier == candidate_tier) {
+                        let binary_str = engine.binary_path.to_string_lossy().to_string();
+                        if !self.compliance.is_non_compliant(&binary_str).await {
+                            info!("调度选择引擎: {} (层级: {:?})", engine.dir_name, engine.tier);
+                            return Ok(engine.clone());
+                        } else {
+                            warn!("引擎 {} 已被标记不合规，跳过", engine.dir_name);
+                        }
                     }
                 }
             }
@@ -224,12 +295,17 @@ impl EngineScheduler {
                     candidate_tier = fallback;
                 }
                 None => {
-                    // 所有层级均不可用时，返回第一个可用引擎（保底 CPU）
-                    if let Some(engine) = installed.last() {
-                        warn!("所有层级不可用，使用保底 CPU 引擎: {}", engine.dir_name);
-                        return Ok(engine.clone());
+                    // 所有 GPU 层级均不可用且标准流程已结束时，尝试在已安装引擎中找一个兼容的 CPU 引擎保底
+                    for engine in installed.iter().filter(|e| e.tier == AccelerationTier::Cpu) {
+                        let binary_str = engine.binary_path.to_string_lossy().to_string();
+                        if !self.compliance.is_non_compliant(&binary_str).await
+                            && Self::is_cpu_engine_compatible(&engine.dir_name, &resources.cpu)
+                        {
+                            warn!("使用指令集兼容的保底 CPU 引擎: {}", engine.dir_name);
+                            return Ok(engine.clone());
+                        }
                     }
-                    return Err(anyhow!("没有任何可用的引擎"));
+                    return Err(anyhow!("没有任何与当前硬件指令集兼容的可用引擎"));
                 }
             }
         }
@@ -285,7 +361,7 @@ impl EngineScheduler {
         }
 
         // 尝试降级选择
-        match self.select_engine(resources).await {
+        match self.select_engine(resources, None).await {
             Ok(engine) => {
                 info!("降级成功，切换到: {}", engine.dir_name);
                 Some(engine)
@@ -390,7 +466,7 @@ mod tests {
         // 创建带 NVIDIA GPU 的 SystemResources
         use crate::hardware::gpu_info::*;
         let resources = SystemResources {
-            cpu: CpuInfo { model: "Test".to_string(), cores: 8, threads: 16, speed_mhz: 3000 },
+            cpu: CpuInfo { model: "Test".to_string(), cores: 8, threads: 16, speed_mhz: 3000, ..Default::default() },
             memory: MemoryInfo { total_mb: 16384, available_mb: 8192 },
             gpus: vec![GpuInfo {
                 name: "NVIDIA GeForce RTX 3060".to_string(),
@@ -407,7 +483,85 @@ mod tests {
         };
 
         // 应自动降级到 Vulkan
-        let selected = scheduler.select_engine(&resources).await.unwrap();
+        let selected = scheduler.select_engine(&resources, None).await.unwrap();
         assert_eq!(selected.tier, AccelerationTier::Vulkan, "应降级到 Vulkan");
+    }
+
+    #[tokio::test]
+    async fn test_cpu_engine_instruction_compatibility() {
+        use crate::hardware::gpu_info::*;
+
+        let tmp = TempDir::new().unwrap();
+        let bin_dir = tmp.path().to_path_buf();
+
+        // 创建三套 CPU 变体
+        create_fake_engine(&bin_dir, "llama-b11095-bin-win-cpu-x64"); // 官方预编译默认 AVX2
+        create_fake_engine(&bin_dir, "llama-b11095-bin-win-cpu-avx-x64"); // 兼容补全 AVX1
+        create_fake_engine(&bin_dir, "llama-b11095-bin-win-cpu-noavx-x64"); // 兼容补全 SSE4.2 兜底
+
+        let compliance = DriverComplianceService::new();
+        let scheduler = EngineScheduler::new(bin_dir.clone(), compliance);
+
+        // 1. 现代 CPU (支持 AVX2) -> 优先选择性能最高的 AVX2 包
+        let modern_cpu_res = SystemResources {
+            cpu: CpuInfo {
+                model: "Modern CPU".to_string(),
+                cores: 8,
+                threads: 16,
+                speed_mhz: 3600,
+                has_avx2: true,
+                has_avx: true,
+                has_fma: true,
+            },
+            memory: MemoryInfo { total_mb: 16384, available_mb: 8192 },
+            gpus: vec![],
+            best_acceleration_tier: AccelerationTier::Cpu,
+        };
+        let selected_modern = scheduler.select_engine(&modern_cpu_res, None).await.unwrap();
+        assert_eq!(selected_modern.dir_name, "llama-b11095-bin-win-cpu-x64");
+
+        // 2. 老一代 CPU (仅支持 AVX1，无 AVX2) -> 自动跳过 AVX2 包，选择 cpu-avx 包，杜绝 0xC000001D 崩溃
+        let avx1_cpu_res = SystemResources {
+            cpu: CpuInfo {
+                model: "Intel Core i5-2400 (Sandy Bridge)".to_string(),
+                cores: 4,
+                threads: 4,
+                speed_mhz: 3100,
+                has_avx2: false,
+                has_avx: true,
+                has_fma: false,
+            },
+            memory: MemoryInfo { total_mb: 8192, available_mb: 4096 },
+            gpus: vec![],
+            best_acceleration_tier: AccelerationTier::Cpu,
+        };
+        let selected_avx1 = scheduler.select_engine(&avx1_cpu_res, None).await.unwrap();
+        assert_eq!(selected_avx1.dir_name, "llama-b11095-bin-win-cpu-avx-x64");
+
+        // 3. 远古/低配 CPU (无 AVX) -> 自动跳过 AVX2 与 AVX 包，选择 cpu-noavx 兜底包
+        let noavx_cpu_res = SystemResources {
+            cpu: CpuInfo {
+                model: "Intel Pentium G4560".to_string(),
+                cores: 2,
+                threads: 4,
+                speed_mhz: 3500,
+                has_avx2: false,
+                has_avx: false,
+                has_fma: false,
+            },
+            memory: MemoryInfo { total_mb: 4096, available_mb: 2048 },
+            gpus: vec![],
+            best_acceleration_tier: AccelerationTier::Cpu,
+        };
+        let selected_noavx = scheduler.select_engine(&noavx_cpu_res, None).await.unwrap();
+        assert_eq!(selected_noavx.dir_name, "llama-b11095-bin-win-cpu-noavx-x64");
+
+        // 4. 用户若仅安装了官方 AVX2 包，但 CPU 无 AVX2 -> 拒绝返回不兼容包，避免触发 0xC000001D
+        let tmp_avx2_only = TempDir::new().unwrap();
+        let avx2_bin_dir = tmp_avx2_only.path().to_path_buf();
+        create_fake_engine(&avx2_bin_dir, "llama-b11095-bin-win-cpu-x64");
+        let scheduler_avx2_only = EngineScheduler::new(avx2_bin_dir, DriverComplianceService::new());
+        let result = scheduler_avx2_only.select_engine(&avx1_cpu_res, None).await;
+        assert!(result.is_err(), "在缺乏 AVX2 的 CPU 上不应盲目启动 AVX2 引擎");
     }
 }

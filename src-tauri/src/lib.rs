@@ -116,14 +116,64 @@ pub fn run() {
             let args: Vec<String> = std::env::args().collect();
             let is_silent = args.contains(&"--silent".to_string()) || args.contains(&"--tray".to_string());
 
-            if !is_silent {
-                // 显示主窗口
-                if let Some(window) = app_handle.get_webview_window("main") {
+            if let Some(window) = app_handle.get_webview_window("main") {
+                #[cfg(target_os = "windows")]
+                {
+                    // 为主窗口设置原生高清晰度图标（修复任务栏图标模糊问题）
+                    if let Ok(hwnd) = window.hwnd() {
+                        use windows_sys::Win32::Foundation::HWND;
+                        use windows_sys::Win32::System::LibraryLoader::GetModuleHandleW;
+                        use windows_sys::Win32::UI::WindowsAndMessaging::{
+                            GetSystemMetrics, LoadImageW, SendMessageW, ICON_BIG, ICON_SMALL,
+                            IMAGE_ICON, LR_DEFAULTCOLOR, SM_CXICON, SM_CXSMICON, SM_CYICON,
+                            SM_CYSMICON, WM_SETICON,
+                        };
+
+                        unsafe {
+                            let hinstance = GetModuleHandleW(std::ptr::null());
+                            // 32512 是 tauri-winres 注入的主应用图标资源 ID (IDI_APPLICATION)
+                            let resource_id = 32512 as usize as *const u16;
+
+                            // 1. 获取系统对于大图标的标准尺寸（通常为 32x32 或高 DPI 下的 48x48）
+                            let cx_big = GetSystemMetrics(SM_CXICON);
+                            let cy_big = GetSystemMetrics(SM_CYICON);
+                            let hicon_big = LoadImageW(
+                                hinstance,
+                                resource_id,
+                                IMAGE_ICON,
+                                cx_big,
+                                cy_big,
+                                LR_DEFAULTCOLOR,
+                            );
+                            if !hicon_big.is_null() {
+                                SendMessageW(hwnd.0 as HWND, WM_SETICON, ICON_BIG as usize, hicon_big as isize);
+                            }
+
+                            // 2. 获取系统对于小图标的标准尺寸（通常为 16x16 或高 DPI 下的 24x24）
+                            let cx_small = GetSystemMetrics(SM_CXSMICON);
+                            let cy_small = GetSystemMetrics(SM_CYSMICON);
+                            let hicon_small = LoadImageW(
+                                hinstance,
+                                resource_id,
+                                IMAGE_ICON,
+                                cx_small,
+                                cy_small,
+                                LR_DEFAULTCOLOR,
+                            );
+                            if !hicon_small.is_null() {
+                                SendMessageW(hwnd.0 as HWND, WM_SETICON, ICON_SMALL as usize, hicon_small as isize);
+                            }
+                        }
+                    }
+                }
+
+                if !is_silent {
+                    // 显示主窗口
                     let _ = window.show();
                     let _ = window.set_focus();
+                } else {
+                    info!("以静默模式启动（--silent），主窗口保持隐藏");
                 }
-            } else {
-                info!("以静默模式启动（--silent），主窗口保持隐藏");
             }
 
             Ok(())

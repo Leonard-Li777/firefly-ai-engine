@@ -120,6 +120,7 @@ pub struct GetModelParamsQuery {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SwitchModelReq {
     pub model_id: String,
     pub model_name: Option<String>,
@@ -529,6 +530,31 @@ async fn engine_list(State(state): State<AppState>) -> impl IntoResponse {
         None => true,
     };
 
+    // 根据当前 CPU 指令集特征动态决策最适 CPU 编译变体 (AVX2 -> AVX -> SSE4.2/NoAVX)
+    let (cpu_id, cpu_name, cpu_backend, cpu_perf) = if status.hardware.has_avx2.unwrap_or(false) {
+        ("cpu", "CPU (AVX2)", "cpu", "无显卡加速 (AVX2 深度优化)")
+    } else if status.hardware.has_avx.unwrap_or(false) {
+        ("cpu-avx", "CPU (AVX 兼容)", "cpu-avx", "无显卡加速 (AVX 兼容模式)")
+    } else {
+        ("cpu-noavx", "CPU (SSE4.2 兜底)", "cpu-noavx", "无显卡加速 (SSE4.2 极简兜底)")
+    };
+
+    // 检查已安装 CPU 引擎是否与当前 CPU 指令集真正兼容，杜绝 0xC000001D 假就绪
+    let has_compatible_cpu = installed.iter().any(|e| {
+        if e.tier != crate::hardware::gpu_info::AccelerationTier::Cpu {
+            return false;
+        }
+        crate::engine::scheduler::EngineScheduler::is_cpu_engine_compatible(&e.dir_name, &crate::hardware::CpuInfo {
+            model: "query".to_string(),
+            cores: status.hardware.cpu_cores.unwrap_or(4) as u32,
+            threads: status.hardware.cpu_threads.unwrap_or(4) as u32,
+            speed_mhz: 3000,
+            has_avx2: status.hardware.has_avx2.unwrap_or(false),
+            has_avx: status.hardware.has_avx.unwrap_or(false),
+            has_fma: false,
+        })
+    });
+
     let mut list = Vec::new();
 
     if is_darwin {
@@ -601,14 +627,14 @@ async fn engine_list(State(state): State<AppState>) -> impl IntoResponse {
                 "driverCompliant": true
             }));
             list.push(json!({
-                "id": "cpu",
-                "name": "CPU (AVX2)",
-                "backend": "cpu",
+                "id": cpu_id,
+                "name": cpu_name,
+                "backend": cpu_backend,
                 "matchType": "fallback",
                 "matchText": "保底",
-                "performance": "无显卡加速",
-                "isCurrent": active_backend == "cpu",
-                "isInstalled": has_cpu,
+                "performance": cpu_perf,
+                "isCurrent": active_backend == cpu_backend || active_backend == "cpu",
+                "isInstalled": has_compatible_cpu,
                 "downloadSizeMb": 120,
                 "driverCompliant": true
             }));
@@ -639,14 +665,14 @@ async fn engine_list(State(state): State<AppState>) -> impl IntoResponse {
                 "driverCompliant": true
             }));
             list.push(json!({
-                "id": "cpu",
-                "name": "CPU (AVX2)",
-                "backend": "cpu",
+                "id": cpu_id,
+                "name": cpu_name,
+                "backend": cpu_backend,
                 "matchType": "fallback",
                 "matchText": "保底",
-                "performance": "无显卡加速",
-                "isCurrent": active_backend == "cpu",
-                "isInstalled": has_cpu,
+                "performance": cpu_perf,
+                "isCurrent": active_backend == cpu_backend || active_backend == "cpu",
+                "isInstalled": has_compatible_cpu,
                 "downloadSizeMb": 120,
                 "driverCompliant": true
             }));
@@ -677,14 +703,14 @@ async fn engine_list(State(state): State<AppState>) -> impl IntoResponse {
                 "driverCompliant": true
             }));
             list.push(json!({
-                "id": "cpu",
-                "name": "CPU (AVX2)",
-                "backend": "cpu",
+                "id": cpu_id,
+                "name": cpu_name,
+                "backend": cpu_backend,
                 "matchType": "fallback",
                 "matchText": "保底",
-                "performance": "无显卡加速",
-                "isCurrent": active_backend == "cpu",
-                "isInstalled": has_cpu,
+                "performance": cpu_perf,
+                "isCurrent": active_backend == cpu_backend || active_backend == "cpu",
+                "isInstalled": has_compatible_cpu,
                 "downloadSizeMb": 120,
                 "driverCompliant": true
             }));
@@ -703,14 +729,14 @@ async fn engine_list(State(state): State<AppState>) -> impl IntoResponse {
                 "driverCompliant": true
             }));
             list.push(json!({
-                "id": "cpu",
-                "name": "CPU (AVX2)",
-                "backend": "cpu",
+                "id": cpu_id,
+                "name": cpu_name,
+                "backend": cpu_backend,
                 "matchType": "best",
                 "matchText": "最佳匹配",
-                "performance": "无显卡加速",
-                "isCurrent": active_backend == "cpu",
-                "isInstalled": has_cpu,
+                "performance": cpu_perf,
+                "isCurrent": active_backend == cpu_backend || active_backend == "cpu",
+                "isInstalled": has_compatible_cpu,
                 "downloadSizeMb": 120,
                 "driverCompliant": true
             }));
@@ -744,7 +770,37 @@ async fn start_engine_download(
     State(state): State<AppState>,
     Json(payload): Json<DownloadEngineReq>,
 ) -> impl IntoResponse {
-    let backend = payload.backend.clone();
+    let mut backend = payload.backend.clone();
+    let status = state.coordinator.get_status().await;
+
+    // 零试探智能路由：自动根据硬件特性修正 CPU 后端或响应 "auto" 模式
+    if backend == "auto" {
+        backend = match status.hardware.best_tier.as_str() {
+            "cuda" => "cuda".to_string(),
+            "vulkan" => "vulkan".to_string(),
+            "hip" | "rocm" => "hip".to_string(),
+            "sycl" => "sycl".to_string(),
+            "metal" => "metal".to_string(),
+            _ => {
+                if status.hardware.has_avx2.unwrap_or(false) {
+                    "cpu".to_string()
+                } else if status.hardware.has_avx.unwrap_or(false) {
+                    "cpu-avx".to_string()
+                } else {
+                    "cpu-noavx".to_string()
+                }
+            }
+        };
+    } else if backend == "cpu" {
+        if !status.hardware.has_avx2.unwrap_or(true) {
+            if status.hardware.has_avx.unwrap_or(false) {
+                backend = "cpu-avx".to_string();
+            } else {
+                backend = "cpu-noavx".to_string();
+            }
+        }
+    }
+
     let task_id = new_task_id();
     info!("请求下载 AI 计算引擎: {} 任务ID: {}", backend, task_id);
 
@@ -755,6 +811,8 @@ async fn start_engine_download(
             "vulkan" => Some("llama-bin-win-vulkan-x64.zip".to_string()),
             "rocm" | "hip" => Some("llama-bin-win-rocm-10.0-x64.zip".to_string()),
             "sycl" => Some("llama-bin-win-sycl-x64.zip".to_string()),
+            "cpu-avx" => Some("llama-bin-win-cpu-avx-x64.zip".to_string()),
+            "cpu-noavx" => Some("llama-bin-win-cpu-noavx-x64.zip".to_string()),
             _ => Some("llama-bin-win-cpu-x64.zip".to_string()),
         }
     } else {
@@ -816,7 +874,9 @@ fn resolve_engine_target_package(backend: &str) -> Option<(&'static str, Vec<&'s
             "vulkan" => Some(("vulkan", vec!["llama-*-bin-win-vulkan-x64.zip"])),
             "rocm" | "hip" => Some(("rocm", vec!["llama-*-bin-win-rocm-*-x64.zip"])),
             "sycl" => Some(("sycl", vec!["llama-*-bin-win-sycl-x64.zip"])),
-            "cpu" => Some(("cpu", vec!["llama-*-bin-win-cpu-x64.zip", "llama-*-bin-win-x64.zip", "llama-*-bin-win-avx2-x64.zip"])),
+            "cpu" | "cpu-avx2" => Some(("cpu", vec!["llama-*-bin-win-cpu-x64.zip", "llama-*-bin-win-x64.zip", "llama-*-bin-win-avx2-x64.zip"])),
+            "cpu-avx" => Some(("cpu-avx", vec!["llama-*-bin-win-cpu-avx-x64.zip"])),
+            "cpu-noavx" => Some(("cpu-noavx", vec!["llama-*-bin-win-cpu-noavx-x64.zip"])),
             _ => None,
         }
     } else if is_linux {
@@ -885,19 +945,31 @@ async fn download_engine_with_resume_and_failover(
             let _ = tokio::fs::create_dir_all(parent).await;
         }
 
-        // 双轨候选源：
-        // 源 1: 官方 GitHub Releases 直连
-        // 源 2: 腾讯云 EdgeOne CDN 加速的 Cloudflare R2 域名 (marketing-home 同款规范)
-        let candidate_urls = vec![
-            (
-                "GitHub 官方",
-                format!("https://github.com/ggml-org/llama.cpp/releases/download/{}/{}", version, filename)
-            ),
-            (
-                "国内高速镜像 (EdgeOne R2)",
-                format!("https://download.iocn.cn/llama-cpp/{}/{}", version, filename)
-            ),
-        ];
+        // 双轨候选源：针对官方构建走官方 Release / EdgeOne R2；针对 cpu-avx / cpu-noavx 走 firefly-ai-folder 专属 Releases
+        let is_compat_flavor = filename.contains("cpu-avx") || filename.contains("cpu-noavx");
+        let candidate_urls = if is_compat_flavor {
+            vec![
+                (
+                    "国内高速镜像 (EdgeOne R2)",
+                    format!("https://download.iocn.cn/llama-cpp/{}/{}", version, filename)
+                ),
+                (
+                    "GitHub 专属兼容发布",
+                    format!("https://github.com/Leonard-Li777/firefly-ai-folder/releases/download/llama-compat-{}/{}", version, filename)
+                ),
+            ]
+        } else {
+            vec![
+                (
+                    "GitHub 官方",
+                    format!("https://github.com/ggml-org/llama.cpp/releases/download/{}/{}", version, filename)
+                ),
+                (
+                    "国内高速镜像 (EdgeOne R2)",
+                    format!("https://download.iocn.cn/llama-cpp/{}/{}", version, filename)
+                ),
+            ]
+        };
 
         for (source_name, url) in candidate_urls {
             info!("[引擎下载] 尝试数据源: {} [{}/{}] URL: {}", source_name, version, filename, url);
@@ -1147,6 +1219,12 @@ async fn run_engine_download(
                 EngineDownloadCandidate { version: "b11095".to_string(), filename: "llama-b11095-bin-win-sycl-x64.zip".to_string() },
                 EngineDownloadCandidate { version: "b11063".to_string(), filename: "llama-b11063-bin-win-sycl-x64.zip".to_string() },
                 EngineDownloadCandidate { version: "b11011".to_string(), filename: "llama-b11011-bin-win-sycl-x64.zip".to_string() },
+            ],
+            "cpu-avx" => vec![
+                EngineDownloadCandidate { version: "b11095".to_string(), filename: "llama-b11095-bin-win-cpu-avx-x64.zip".to_string() },
+            ],
+            "cpu-noavx" => vec![
+                EngineDownloadCandidate { version: "b11095".to_string(), filename: "llama-b11095-bin-win-cpu-noavx-x64.zip".to_string() },
             ],
             _ => vec![
                 EngineDownloadCandidate { version: "b11095".to_string(), filename: "llama-b11095-bin-win-cpu-x64.zip".to_string() },

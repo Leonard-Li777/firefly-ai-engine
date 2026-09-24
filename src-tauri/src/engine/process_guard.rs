@@ -182,8 +182,8 @@ impl ProcessGuard {
                 while let Ok(Some(line)) = lines.next_line().await {
                     debug!("[llama-stdout] {}", line);
 
-                    // 检测 server ready 信号
-                    if line.contains("server listening") || line.contains("llama server listening") {
+                    // 检测 server ready 信号（兼容 "server is listening" / "listening on" 两种日志格式）
+                    if line.contains("server listening") || line.contains("listening on") {
                         info!("llama-server 已就绪");
                         {
                             let mut s = status.lock().await;
@@ -273,6 +273,9 @@ impl ProcessGuard {
         let status_clone = self.status.clone();
         let shutting_down_clone = self.shutting_down.clone();
         let last_error_clone = self.last_error.clone();
+        let compliance_clone = self.compliance.clone();
+        let engine_clone = engine.clone();
+        let tx_clone = self.event_tx.clone();
 
         let mut guard = self.child.lock().await;
         *guard = Some(child);
@@ -292,7 +295,28 @@ impl ProcessGuard {
                                 let mut s = status_clone.lock().await;
                                 *s = ProcessStatus::Failed;
                                 let mut err = last_error_clone.lock().await;
-                                if err.is_none() {
+
+                                // 检测是否为 CPU 指令集不兼容触发的崩溃 (0xC000001D = 3221225501 或 -1073741795; Linux 132 SIGILL)
+                                let is_illegal_instruction = exit_status.code().map(|c| {
+                                    c == -1073741795 || (c as u32) == 0xC000_001D || c == 132
+                                }).unwrap_or(false);
+
+                                if is_illegal_instruction {
+                                    let binary_str = engine_clone.binary_path.to_string_lossy().to_string();
+                                    compliance_clone.mark_non_compliant(
+                                        &binary_str,
+                                        DowngradeReason::CpuInstructionUnsupported,
+                                        None,
+                                    ).await;
+                                    let msg = "当前 CPU 缺少该引擎所需的高级指令集(如 AVX2/AVX)，进程触发非法指令异常(0xC000001D)，已标记并隔离".to_string();
+                                    *err = Some(msg.clone());
+                                    let proc_err = ProcessError {
+                                        kind: DowngradeReason::CpuInstructionUnsupported,
+                                        message: msg,
+                                        raw: format!("exit_status: {:?}", exit_status),
+                                    };
+                                    let _ = tx_clone.send(ProcessEvent::FatalError(proc_err));
+                                } else if err.is_none() {
                                     *err = Some(format!("进程异常退出: {:?}", exit_status));
                                 }
                             }
@@ -355,6 +379,17 @@ impl ProcessGuard {
 
     /// 等待 llama-server 就绪（健康检测端口可达）
     pub async fn wait_ready(&self, port: u16, timeout_secs: u64) -> Result<()> {
+        // 本机回环探测必须绕过系统代理：reqwest 默认客户端会读取 HTTP_PROXY/HTTPS_PROXY
+        // 环境变量，导致发往 127.0.0.1 的健康检查被路由到代理上而永远失败（项目内
+        // server/proxy.rs 的客户端同样显式 no_proxy）。单次探测 2 秒超时防止代理挂起阻塞。
+        let client = reqwest::Client::builder()
+            .no_proxy()
+            .connect_timeout(Duration::from_secs(2))
+            .timeout(Duration::from_secs(3))
+            .build()
+            .map_err(|e| anyhow!("构建健康检查客户端失败: {}", e))?;
+        let health_url = format!("http://127.0.0.1:{}/health", port);
+
         let deadline = std::time::Instant::now() + Duration::from_secs(timeout_secs);
 
         loop {
@@ -365,13 +400,15 @@ impl ProcessGuard {
                 ));
             }
 
-            // 轻量 TCP 探测
-            match tokio::net::TcpStream::connect(format!("127.0.0.1:{}", port)).await {
-                Ok(_) => {
-                    info!("llama-server 端口 {} 已可达", port);
+            // HTTP 健康探测：TCP 可达不代表模型已加载完成，
+            // llama-server 的 /health 在模型加载完毕前会返回 503，只有加载完成后才返回 200，
+            // 以此确保「已就绪」状态与日志中 `listening on` 信号（模型加载完成）保持一致
+            match client.get(&health_url).send().await {
+                Ok(resp) if resp.status().is_success() => {
+                    info!("llama-server 健康检查通过，端口 {} 已就绪", port);
                     return Ok(());
                 }
-                Err(_) => {
+                _ => {
                     tokio::time::sleep(Duration::from_millis(500)).await;
                 }
             }

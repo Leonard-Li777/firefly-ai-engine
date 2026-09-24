@@ -568,6 +568,7 @@ mod tests {
                 cores: 8,
                 threads: 16,
                 speed_mhz: 3500,
+                ..Default::default()
             },
             memory: MemoryInfo {
                 total_mb: 32768,
@@ -666,6 +667,7 @@ mod tests {
                 cores: 4,
                 threads: 8,
                 speed_mhz: 2000,
+                ..Default::default()
             },
             memory: MemoryInfo {
                 total_mb: 8192,
@@ -692,6 +694,7 @@ mod tests {
                 cores: 12,
                 threads: 12,
                 speed_mhz: 3500,
+                ..Default::default()
             },
             memory: MemoryInfo {
                 total_mb: 32 * 1024, // 32GB
@@ -725,6 +728,7 @@ mod tests {
                 cores: 10,
                 threads: 12,
                 speed_mhz: 3300,
+                ..Default::default()
             },
             memory: MemoryInfo {
                 total_mb: 16384,

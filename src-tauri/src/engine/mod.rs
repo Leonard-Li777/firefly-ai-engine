@@ -44,6 +44,8 @@ pub struct HardwareSummary {
     pub os_platform: Option<String>,
     pub total_ram_gb: Option<f64>,
     pub used_ram_gb: Option<f64>,
+    pub has_avx2: Option<bool>,
+    pub has_avx: Option<bool>,
 }
 
 /// 核心引擎协调器（单例）
@@ -123,6 +125,8 @@ impl EngineCoordinator {
                         os_platform: Some(std::env::consts::OS.to_string()),
                         total_ram_gb: Some(resources.memory.total_gb()),
                         used_ram_gb: Some(((resources.memory.total_mb.saturating_sub(resources.memory.available_mb)) as f64) / 1024.0),
+                        has_avx2: Some(resources.cpu.has_avx2),
+                        has_avx: Some(resources.cpu.has_avx),
                     },
                     best,
                 )
@@ -140,6 +144,8 @@ impl EngineCoordinator {
                     os_platform: Some(std::env::consts::OS.to_string()),
                     total_ram_gb: None,
                     used_ram_gb: None,
+                    has_avx2: None,
+                    has_avx: None,
                 },
                 "cpu".to_string(),
             ),
@@ -198,13 +204,15 @@ impl EngineCoordinator {
         // 1. 扫描与探测引擎
         let resources = self.hardware.detect(false).await
             .map_err(|e| anyhow::anyhow!("硬件探测失败: {}", e))?;
-        let selected_engine = self.scheduler.select_engine(&resources).await?;
+
+        let (models_dir, preferred_backend) = {
+            let config = self.config.lock().await;
+            (config.models_dir.clone(), config.preferred_backend.clone())
+        };
+
+        let selected_engine = self.scheduler.select_engine(&resources, preferred_backend.as_deref()).await?;
 
         // 2. 确定模型文件
-        let config = self.config.lock().await;
-        let models_dir = config.models_dir.clone();
-        drop(config);
-
         let active_model_lock = self.active_model.lock().await.clone();
         let all_ggufs = crate::server::api::collect_all_ggufs(&models_dir);
 

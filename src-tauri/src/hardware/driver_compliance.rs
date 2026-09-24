@@ -37,6 +37,8 @@ pub enum DowngradeReason {
     GpuOom,
     /// 缺少依赖 DLL/SO
     DllMissing,
+    /// CPU 指令集不兼容（如缺失 AVX2/AVX 导致 0xC000001D 非法指令）
+    CpuInstructionUnsupported,
     /// 其他未知错误
     Unknown,
 }
@@ -162,6 +164,17 @@ impl DriverComplianceService {
             return Some(DowngradeReason::GpuOom);
         }
 
+        // CPU 指令集不兼容（如缺失 AVX2/AVX 导致 0xC000001D 非法指令）
+        if lower.contains("illegal instruction")
+            || lower.contains("invalid instruction")
+            || lower.contains("0xc000001d")
+            || lower.contains("sigill")
+            || lower.contains("cpu does not support")
+            || (lower.contains("avx") && lower.contains("not supported"))
+        {
+            return Some(DowngradeReason::CpuInstructionUnsupported);
+        }
+
         None
     }
 
@@ -187,6 +200,11 @@ impl DriverComplianceService {
                 best_tier.to_uppercase(),
                 current_tier.to_uppercase()
             ),
+            DowngradeReason::CpuInstructionUnsupported => format!(
+                "当前 CPU 缺少该引擎所需的高级指令集（如 AVX2），已自动从 {} 降级至兼容性更好的 {} 引擎运行。",
+                best_tier.to_uppercase(),
+                current_tier.to_uppercase()
+            ),
             DowngradeReason::Unknown => format!(
                 "引擎启动异常，已自动从 {} 降级至 {} 引擎运行。",
                 best_tier.to_uppercase(),
@@ -197,12 +215,41 @@ impl DriverComplianceService {
 }
 
 /// 检测 Windows/Linux 环境下 NVIDIA 显卡驱动主版本与 CUDA 最大版本号
-/// 例如通过 nvidia-smi 提取 Driver Version: 591.86, CUDA Version: 13.1
+/// 优先使用内存中快速加载 nvcuda.dll 的 cuDriverGetVersion 探查（<1ms），失败时回退至 nvidia-smi
 pub async fn detect_nvidia_driver_info() -> (Option<f64>, Option<f64>) {
     if !cfg!(windows) && !cfg!(target_os = "linux") {
         return (None, None);
     }
 
+    #[cfg(windows)]
+    {
+        // 1. 尝试直接通过 nvcuda.dll 提取驱动支持的最高 CUDA API 版本
+        use windows_sys::Win32::System::LibraryLoader::{GetProcAddress, LoadLibraryA};
+        unsafe {
+            let dll_name = b"nvcuda.dll\0";
+            let h_module = LoadLibraryA(dll_name.as_ptr());
+            if !h_module.is_null() {
+                let proc_name = b"cuDriverGetVersion\0";
+                if let Some(proc) = GetProcAddress(h_module, proc_name.as_ptr()) {
+                    type PfnCuDriverGetVersion = unsafe extern "system" fn(*mut i32) -> i32;
+                    let get_ver_fn: PfnCuDriverGetVersion = std::mem::transmute(proc);
+                    let mut version: i32 = 0;
+                    if get_ver_fn(&mut version) == 0 && version > 0 {
+                        // version 格式：major * 1000 + minor * 10 (例如 12040 代表 12.4)
+                        let major = version / 1000;
+                        let minor = (version % 1000) / 10;
+                        let cuda_ver = major as f64 + (minor as f64 / 10.0);
+                        windows_sys::Win32::Foundation::FreeLibrary(h_module);
+                        tracing::debug!("[驱动合规] nvcuda.dll 检测成功: CUDA API 版本: {}", cuda_ver);
+                        return (Some(cuda_ver * 40.0), Some(cuda_ver)); // driver_ver 给出估算或通过下文精确探测
+                    }
+                }
+                windows_sys::Win32::Foundation::FreeLibrary(h_module);
+            }
+        }
+    }
+
+    // 2. 回退通过 nvidia-smi 提取
     let output = match tokio::process::Command::new("nvidia-smi").output().await {
         Ok(out) => String::from_utf8_lossy(&out.stdout).to_string(),
         Err(_) => return (None, None),
