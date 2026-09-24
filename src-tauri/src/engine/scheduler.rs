@@ -66,7 +66,8 @@ impl EngineScheduler {
             search_dirs.push(self.bin_dir.clone());
         }
 
-        // 2. 用户数据目录：%APPDATA%/com.firefly.ai-engine/engines 以及 bin
+        // 2. 用户数据目录：%APPDATA%/com.firefly.ai-engine/engines 以及 bin (仅生产运行态探测，测试沙箱隔离)
+        #[cfg(not(test))]
         if let Some(app_data) = dirs::data_dir() {
             let engine_data = app_data.join("com.firefly.ai-engine");
             let user_engines = engine_data.join("engines");
@@ -79,7 +80,8 @@ impl EngineScheduler {
             }
         }
 
-        // 3. 开发环境与 Monorepo 根目录
+        // 3. 开发环境与 Monorepo 根目录 (仅开发运行态探测，测试沙箱隔离)
+        #[cfg(not(test))]
         if let Ok(cwd) = std::env::current_dir() {
             let mut cur = Some(cwd.as_path());
             for _ in 0..5 {
