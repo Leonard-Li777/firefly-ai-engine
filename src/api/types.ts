@@ -3,7 +3,22 @@
  * 严格遵循 ADR-0033 与 PRD-0033 规范
  */
 
-export type EngineBackend = 'vulkan' | 'cuda' | 'metal' | 'cpu' | 'rocm' | 'sycl'
+export type EngineBackend =
+  | 'vulkan'
+  | 'cuda'
+  | 'cuda12'
+  | 'cuda13'
+  | 'cuda134'
+  | 'metal'
+  | 'cpu'
+  | 'cpu-avx'
+  | 'cpu-noavx'
+  | 'cpu-avx2'
+  | 'rocm'
+  | 'hip'
+  | 'sycl'
+  | string
+
 export type EngineRunStatus = 'starting' | 'ready' | 'model_loading' | 'downloading' | 'error' | 'stopped'
 export type ModelSource = 'huggingface' | 'modelscope'
 
@@ -22,6 +37,8 @@ export interface HardwareSpec {
   os_platform?: 'win32' | 'darwin' | 'linux'
   total_ram_gb?: number
   used_ram_gb?: number
+  has_avx2?: boolean
+  has_avx?: boolean
 }
 
 /**

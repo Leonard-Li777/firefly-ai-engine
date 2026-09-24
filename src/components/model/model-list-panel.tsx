@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import {
-  Boxes,
   Download,
   Check,
   CircleCheckBig,
@@ -652,7 +651,7 @@ const ModelGroupSection: React.FC<ModelGroupSectionProps> = ({ icon, iconClass, 
 )
 
 export const ModelListPanel: React.FC = () => {
-  const { models, fetchModels, activeModelKey, switchModel, regionInfo, engineStatus, lastAddedSource } = useEngineStore()
+  const { models, fetchModels, activeModelKey, switchModel, engineStatus, lastAddedSource } = useEngineStore()
   const [activeSource, setActiveSource] = useState<ModelSource>('modelscope')
   const [showRecommendedOnly, setShowRecommendedOnly] = useState<boolean>(true)
   const [drawerModel, setDrawerModel] = useState<ModelItem | null>(null)
