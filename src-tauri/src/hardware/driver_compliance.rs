@@ -327,3 +327,113 @@ pub fn get_fallback_tier(current: &AccelerationTier) -> Option<AccelerationTier>
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// 驱动过旧 / CUDA API 版本不足 → GpuDriverOutdated（避免拉起高版本 CUDA 引擎闪退）
+    #[test]
+    fn classify_driver_outdated_branches() {
+        assert_eq!(
+            DriverComplianceService::classify_error("CUDA error: driver version is insufficient for CUDA driver version"),
+            Some(DowngradeReason::GpuDriverOutdated)
+        );
+        assert_eq!(
+            DriverComplianceService::classify_error("insufficient driver"),
+            Some(DowngradeReason::GpuDriverOutdated)
+        );
+        assert_eq!(
+            DriverComplianceService::classify_error("NVML driver/library version mismatch"),
+            Some(DowngradeReason::GpuDriverOutdated)
+        );
+    }
+
+    /// CPU 指令集缺失（0xC000001D 非法指令）→ CpuInstructionUnsupported
+    #[test]
+    fn classify_cpu_instruction_unsupported_branches() {
+        assert_eq!(
+            DriverComplianceService::classify_error("Exception 0xC000001D in thread illegal instruction"),
+            Some(DowngradeReason::CpuInstructionUnsupported)
+        );
+        assert_eq!(
+            DriverComplianceService::classify_error("this CPU does not support AVX2"),
+            Some(DowngradeReason::CpuInstructionUnsupported)
+        );
+        assert_eq!(
+            DriverComplianceService::classify_error("SIGILL: illegal instruction"),
+            Some(DowngradeReason::CpuInstructionUnsupported)
+        );
+    }
+
+    /// 显存瞬时耗尽 / Vulkan 分配失败 → GpuOom（触发熔断降级）
+    #[test]
+    fn classify_oom_branches() {
+        assert_eq!(
+            DriverComplianceService::classify_error("CUDA out of memory: tried to allocate 512 MiB"),
+            Some(DowngradeReason::GpuOom)
+        );
+        assert_eq!(
+            DriverComplianceService::classify_error("vk_error_out_of_device_memory"),
+            Some(DowngradeReason::GpuOom)
+        );
+    }
+
+    /// 缺失运行库 DLL / SO → DllMissing
+    #[test]
+    fn classify_dll_missing_branches() {
+        assert_eq!(
+            DriverComplianceService::classify_error("The specified module could not be found. nvcuda.dll"),
+            Some(DowngradeReason::DllMissing)
+        );
+            assert_eq!(
+            DriverComplianceService::classify_error("cannot find shared library libcublas.so.12"),
+            Some(DowngradeReason::DllMissing)
+        );
+    }
+
+    /// 无法分类的未知错误返回 None，交由 Unknown 降级消息兜底
+    #[test]
+    fn classify_unknown_returns_none() {
+        assert_eq!(DriverComplianceService::classify_error("some random stderr"), None);
+    }
+
+    /// mark_non_compliant / is_non_compliant 状态转移（路径规范化后命中同一缓存键）
+    #[tokio::test]
+    async fn mark_and_query_non_compliant_state() {
+        let svc = DriverComplianceService::new();
+        assert!(!svc.is_non_compliant("C:\\engines\\cuda\\llama-server.exe").await);
+
+        svc.mark_non_compliant(
+            "C:\\engines\\cuda\\llama-server.exe",
+            DowngradeReason::GpuDriverOutdated,
+            Some("NVIDIA GeForce GTX 1060".to_string()),
+        )
+        .await;
+        // 正反斜杠与大小写归一后仍应命中
+        assert!(svc.is_non_compliant("c:/engines/CUDA/llama-server.exe").await);
+
+        svc.clear_cache().await;
+        assert!(!svc.is_non_compliant("C:\\engines\\cuda\\llama-server.exe").await);
+    }
+
+    /// 降级阶梯：CUDA/HIP/SYCL/ROCm → Vulkan → CPU，CPU 为终点
+    #[test]
+    fn fallback_tier_ladder_is_complete() {
+        assert_eq!(get_fallback_tier(&AccelerationTier::Cuda), Some(AccelerationTier::Vulkan));
+        assert_eq!(get_fallback_tier(&AccelerationTier::Vulkan), Some(AccelerationTier::Cpu));
+        assert_eq!(get_fallback_tier(&AccelerationTier::Cpu), None);
+    }
+
+    /// 驱动过旧降级消息包含用户可读指引（更新驱动以解锁 GPU 加速）
+    #[test]
+    fn downgrade_message_mentions_driver_update() {
+        let msg = DriverComplianceService::make_downgrade_message(
+            &DowngradeReason::GpuDriverOutdated,
+            "CUDA",
+            "VULKAN",
+        );
+        assert!(msg.contains("驱动"), "消息应提示更新驱动: {}", msg);
+        assert!(msg.contains("VULKAN"));
+    }
+}
+

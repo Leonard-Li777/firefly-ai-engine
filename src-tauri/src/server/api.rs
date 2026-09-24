@@ -2395,3 +2395,81 @@ pub fn management_routes() -> Router<AppState> {
         .route("/api/engine/shutdown", post(shutdown))
         .route("/api/engine/reset-downgrade", post(reset_downgrade))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ── 零试探 Package Flavor 路由：6 种典型软硬件画像端到端推导 ──
+
+    /// 画像 1：二代酷睿 / 初代至强 E5（仅 AVX1，无独显）→ 定制补全 cpu-avx
+    #[test]
+    fn profile_sandy_bridge_routes_to_cpu_avx() {
+        let backend = resolve_auto_backend("cpu", Some(false), Some(true));
+        assert_eq!(backend, "cpu-avx");
+        // 显式请求 cpu 也应被修正为 cpu-avx，杜绝误下 AVX2 官方包
+        assert_eq!(correct_cpu_backend("cpu", Some(false), Some(true)), "cpu-avx");
+    }
+
+    /// 画像 2：老奔腾 / 赛扬（无任何 AVX）→ 定制补全 cpu-noavx 纯 SSE4.2 兜底
+    #[test]
+    fn profile_pentium_celeron_routes_to_cpu_noavx() {
+        let backend = resolve_auto_backend("cpu", Some(false), Some(false));
+        assert_eq!(backend, "cpu-noavx");
+        assert_eq!(correct_cpu_backend("cpu", Some(false), Some(false)), "cpu-noavx");
+        // has_avx2 / has_avx 均缺失（探测失败）时同样兜底 noavx
+        assert_eq!(resolve_auto_backend("cpu", None, None), "cpu-noavx");
+    }
+
+    /// 画像 3：现代 AVX2 CPU（无可用 GPU）→ 官方 CPU-AVX2 包
+    #[test]
+    fn profile_modern_avx2_routes_to_cpu() {
+        assert_eq!(resolve_auto_backend("cpu", Some(true), Some(true)), "cpu");
+        // 显式 cpu 请求 + 已有 AVX2 → 保持 cpu 不变
+        assert_eq!(correct_cpu_backend("cpu", Some(true), Some(true)), "cpu");
+    }
+
+    /// 画像 4：NVIDIA 现代独显（CUDA 驱动合规）→ 官方 CUDA 12.4 包
+    #[test]
+    fn profile_modern_nvidia_routes_to_cuda() {
+        assert_eq!(resolve_auto_backend("cuda", Some(true), Some(true)), "cuda");
+        // 非 CPU 后端不被指令集修正逻辑改写
+        assert_eq!(correct_cpu_backend("cuda", Some(false), Some(false)), "cuda");
+    }
+
+    /// 画像 5：GTX 1060 Pascal / 驱动过旧 → 平滑路由到官方 Vulkan 包
+    #[test]
+    fn profile_pascal_or_outdated_driver_routes_to_vulkan() {
+        assert_eq!(resolve_auto_backend("vulkan", Some(true), Some(true)), "vulkan");
+        assert_eq!(correct_cpu_backend("vulkan", None, None), "vulkan");
+    }
+
+    /// 画像 6：双显卡笔记本核显 / 无加速 → 按 CPU 指令集阶梯唯一命中补全包
+    #[test]
+    fn profile_dual_gpu_or_cpu_fallback_is_unique() {
+        // 驱动均不合规落入 cpu 层级后，仍按 AVX 阶梯唯一映射
+        assert_eq!(resolve_auto_backend("hip", Some(true), Some(true)), "hip");
+        assert_eq!(resolve_auto_backend("sycl", Some(false), Some(true)), "sycl");
+        assert_eq!(resolve_auto_backend("metal", Some(false), Some(false)), "metal");
+        // 未知/空 best_tier 视作 CPU 阶梯
+        assert_eq!(resolve_auto_backend("", Some(false), Some(true)), "cpu-avx");
+    }
+
+    /// 下载目标文件名与 Package Flavor 一一对应（cpu-avx / cpu-noavx 长尾补全包）
+    #[test]
+    fn resolve_target_package_maps_cpu_flavors() {
+        if cfg!(windows) {
+            let (_, patterns) = resolve_engine_target_package("cpu-avx").expect("cpu-avx 必须可解析");
+            assert!(patterns.iter().any(|p| p.contains("cpu-avx-x64")));
+
+            let (_, patterns) = resolve_engine_target_package("cpu-noavx").expect("cpu-noavx 必须可解析");
+            assert!(patterns.iter().any(|p| p.contains("cpu-noavx-x64")));
+
+            let (_, patterns) = resolve_engine_target_package("cuda").expect("cuda 必须可解析");
+            assert!(patterns.iter().any(|p| p.contains("cuda-12.4")));
+
+            let (_, patterns) = resolve_engine_target_package("vulkan").expect("vulkan 必须可解析");
+            assert!(patterns.iter().any(|p| p.contains("vulkan-x64")));
+        }
+    }
+}
