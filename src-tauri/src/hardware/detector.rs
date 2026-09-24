@@ -794,4 +794,123 @@ mod tests {
         // GTX 1060 为 Pascal 架构，应平滑路由到 Vulkan，而不是直接上现代 CUDA 12.4
         assert_eq!(tier, AccelerationTier::Vulkan);
     }
+
+    /// 核显 / 独显识别：Core Ultra iGPU、AMD 780M 核显、RTX 独显
+    #[test]
+    fn test_detect_integrated_gpu_profiles() {
+        let intel_igpu = HardwareDetector::detect_integrated_gpu(
+            "Intel Iris Xe Graphics",
+            &GpuVendor::Intel,
+            "integrated",
+        );
+        assert!(intel_igpu, "Iris Xe + integrated 标记应识别为核显");
+
+        let amd_igpu = HardwareDetector::detect_integrated_gpu(
+            "AMD Radeon 780M",
+            &GpuVendor::Amd,
+            "",
+        );
+        assert!(amd_igpu, "Radeon 780M 应识别为核显");
+
+        let nvidia_dgpu = HardwareDetector::detect_integrated_gpu(
+            "NVIDIA GeForce RTX 4060",
+            &GpuVendor::Nvidia,
+            "discrete",
+        );
+        assert!(!nvidia_dgpu, "NVIDIA 独显不应识别为核显");
+
+        let arc_dgpu = HardwareDetector::detect_integrated_gpu(
+            "Intel Arc A770",
+            &GpuVendor::Intel,
+            "",
+        );
+        assert!(!arc_dgpu, "Intel Arc 应识别为独显");
+    }
+
+    /// GPU 排序：独显优先于核显，同厂商按显存加权（双显卡笔记本画像）
+    #[test]
+    fn test_sort_gpus_discrete_before_integrated() {
+        let mut gpus = vec![
+            GpuInfo {
+                name: "Intel Iris Xe Graphics".to_string(),
+                memory_mb: 0,
+                vendor: GpuVendor::Intel,
+                is_integrated: true,
+                supports_cuda: false,
+                supports_vulkan: true,
+                supports_hip: false,
+                supports_metal: false,
+                supports_sycl: false,
+            },
+            GpuInfo {
+                name: "NVIDIA GeForce RTX 3060 Laptop GPU".to_string(),
+                memory_mb: 6144,
+                vendor: GpuVendor::Nvidia,
+                is_integrated: false,
+                supports_cuda: true,
+                supports_vulkan: true,
+                supports_hip: false,
+                supports_metal: false,
+                supports_sycl: false,
+            },
+            GpuInfo {
+                name: "AMD Radeon Graphics".to_string(),
+                memory_mb: 512,
+                vendor: GpuVendor::Amd,
+                is_integrated: true,
+                supports_cuda: false,
+                supports_vulkan: true,
+                supports_hip: false,
+                supports_metal: false,
+                supports_sycl: false,
+            },
+        ];
+
+        HardwareDetector::sort_gpus(&mut gpus);
+
+        // NVIDIA 独显得分最高应排第一；核显在后
+        assert_eq!(gpus[0].name, "NVIDIA GeForce RTX 3060 Laptop GPU");
+        assert!(!gpus[0].is_integrated);
+        assert!(gpus[1].is_integrated || gpus[2].is_integrated);
+        // 主 GPU（primary_gpu 语义）必须是独显
+        let primary_is_dgpu = !gpus[0].is_integrated;
+        assert!(primary_is_dgpu, "双显卡笔记本必须独显优先");
+    }
+
+    /// Pascal 识别等价类：GTX 10xx 命中、RTX 30xx 不命中
+    #[test]
+    fn test_is_pascal_arch_gpu_equivalence_classes() {
+        use crate::hardware::gpu_info::is_pascal_arch_gpu;
+        assert!(is_pascal_arch_gpu("NVIDIA GeForce GTX 1060 6GB"));
+        assert!(is_pascal_arch_gpu("NVIDIA GeForce GTX 1050 Ti"));
+        assert!(is_pascal_arch_gpu("NVIDIA GeForce GTX 1080 Ti"));
+        assert!(!is_pascal_arch_gpu("NVIDIA GeForce RTX 3060"));
+        assert!(!is_pascal_arch_gpu("NVIDIA GeForce RTX 4070"));
+        assert!(!is_pascal_arch_gpu("AMD Radeon RX 6800 XT"));
+    }
+
+    /// Vulkan 探针失败时 supports_vulkan 强制矫正为 false 的分支（system_vulkan_ok=false 语义）
+    /// 通过 compute_best_tier 在无任何可用 GPU 加速时回退 CPU 验证不崩溃
+    #[tokio::test]
+    async fn test_no_usable_acceleration_falls_back_to_cpu() {
+        let detector = HardwareDetector::new(PathBuf::from("."));
+        let gpus = vec![GpuInfo {
+            name: "Unknown GPU".to_string(),
+            memory_mb: 512,
+            vendor: GpuVendor::Unknown,
+            is_integrated: false,
+            supports_cuda: false,
+            supports_vulkan: false, // 模拟 Vulkan 运行时握手失败后的矫正结果
+            supports_hip: false,
+            supports_metal: false,
+            supports_sycl: false,
+        }];
+
+        let tier = detector.compute_best_tier(&gpus).await;
+        assert_eq!(
+            tier,
+            AccelerationTier::Cpu,
+            "Vulkan/CUDA 均不可用时必须安全落入 CPU，绝不拉起崩溃引擎"
+        );
+    }
 }
