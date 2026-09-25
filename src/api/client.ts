@@ -25,6 +25,11 @@ export interface IEngineApiClient {
   getEngineList(): Promise<EngineItem[]>
 
   /**
+   * 删除指定的计算引擎（仅允许非激活引擎）
+   */
+  deleteEngine(backend: string): Promise<{ success: boolean; error?: string }>
+
+  /**
    * 下载未安装的引擎扩展包（如 Windows CUDA 12.4 套件）
    */
   downloadEngine(
@@ -206,6 +211,15 @@ export class HttpEngineApiClient implements IEngineApiClient {
     const data = await this.requestJson<EngineItem[]>('/api/engine/list')
     if (!Array.isArray(data)) throw new Error('引擎列表响应格式异常')
     return data
+  }
+
+  async deleteEngine(backend: string): Promise<{ success: boolean; error?: string }> {
+    await this.ensureReady()
+    return this.requestJson('/api/engine/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ backend })
+    })
   }
 
   async downloadEngine(

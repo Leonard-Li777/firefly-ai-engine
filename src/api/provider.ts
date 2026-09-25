@@ -31,6 +31,10 @@ class FallbackEngineApiClient implements IEngineApiClient {
     return this.withFallback('getEngineList', () => this.inner.getEngineList(), () => mockApiClient.getEngineList())
   }
 
+  deleteEngine(backend: string) {
+    return this.withFallback('deleteEngine', () => this.inner.deleteEngine(backend), () => mockApiClient.deleteEngine(backend))
+  }
+
   downloadEngine(backend: string, onProgress?: (p: any) => void) {
     return this.withFallback('downloadEngine', () => this.inner.downloadEngine(backend, onProgress), () => mockApiClient.downloadEngine(backend, onProgress))
   }

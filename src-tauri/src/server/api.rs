@@ -135,6 +135,11 @@ pub struct DownloadEngineReq {
     pub backend: String,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct DeleteEngineReq {
+    pub backend: String,
+}
+
 /// 自由添加任意模型请求（url 为托管站点文件页/直链地址）
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -512,100 +517,130 @@ async fn engine_list(State(state): State<AppState>) -> impl IntoResponse {
         })
     });
 
+    // 异步拉取或从缓存获取最新 manifest.json，用于提取精确下载包体积
+    let manifest = get_cached_manifest().await;
+
     let mut list = Vec::new();
 
     if is_darwin {
-        // macOS 平台：仅输出 Metal (Apple Silicon) 与 CPU
+        // macOS 平台：输出 Metal (Apple Silicon) 与 CPU
+        let metal_size = resolve_package_size_mb(manifest.as_ref(), "metal", 180.0);
+        let cpu_size = resolve_package_size_mb(manifest.as_ref(), "cpu", 120.0);
+        let metal_recommended = best_tier == "metal";
+
         list.push(json!({
             "id": "metal",
             "name": "Apple Metal",
             "backend": "metal",
-            "matchType": "best",
-            "matchText": "最佳匹配",
+            "matchType": if metal_recommended { "best" } else { "compatible" },
+            "matchText": if metal_recommended { "最佳匹配" } else { "兼容模式" },
+            "isRecommended": metal_recommended,
             "performance": "100% 统一内存利用",
             "isCurrent": active_backend == "metal",
             "isInstalled": has_metal,
-            "downloadSizeMb": 180,
+            "downloadSizeMb": metal_size,
             "driverCompliant": true
         }));
         list.push(json!({
             "id": "cpu",
             "name": "CPU",
             "backend": "cpu",
-            "matchType": "fallback",
-            "matchText": "保底",
+            "matchType": if !metal_recommended { "best" } else { "fallback" },
+            "matchText": if !metal_recommended { "最佳匹配" } else { "保底" },
+            "isRecommended": !metal_recommended,
             "performance": "无显卡加速",
             "isCurrent": active_backend == "cpu",
             "isInstalled": has_cpu,
-            "downloadSizeMb": 120,
+            "downloadSizeMb": cpu_size,
             "driverCompliant": true
         }));
     } else {
         // Windows / Linux 平台：绝对不展示 Apple Metal
+        let vulkan_size = resolve_package_size_mb(manifest.as_ref(), "vulkan", 31.0);
+        let cpu_size = resolve_package_size_mb(manifest.as_ref(), cpu_backend, 18.0);
+
         if is_nvidia {
+            let cuda13_size = resolve_package_size_mb(manifest.as_ref(), "cuda134", 150.2);
+            let cuda12_size = resolve_package_size_mb(manifest.as_ref(), "cuda", 254.7);
+
+            // 当驱动合规时，优先推荐 CUDA 13.4；若驱动未达标则推荐 CUDA 12.4
+            let recommend_cuda13 = cuda13_compliant;
+            let recommend_cuda12 = !cuda13_compliant && cuda12_compliant;
+            let recommend_vulkan = !cuda13_compliant && !cuda12_compliant;
+
             // CUDA 13.4（最新驱动）
             list.push(json!({
                 "id": "cuda134",
                 "name": "CUDA 13.4",
                 "backend": "cuda134",
-                "matchType": "best",
-                "matchText": "最新最佳",
+                "matchType": if recommend_cuda13 { "best" } else { "compatible" },
+                "matchText": if recommend_cuda13 { "最新最佳" } else { "兼容模式" },
+                "isRecommended": recommend_cuda13,
                 "performance": "100% 性能利用 (最新驱动)",
                 "isCurrent": active_backend == "cuda134",
                 "isInstalled": installed.iter().any(|e| e.dir_name.contains("cuda-13")),
-                "downloadSizeMb": 480,
+                "downloadSizeMb": cuda13_size,
                 "driverCompliant": cuda13_compliant,
                 "driverUpdateUrl": nvidia_update_url
             }));
-            // CUDA 12.4（主流驱动）
+            // CUDA 12.4（主流驱动，驱动合规即为正确适配）
             list.push(json!({
                 "id": "cuda",
                 "name": "CUDA 12.4",
                 "backend": "cuda",
-                "matchType": "best",
-                "matchText": "最佳匹配",
+                "matchType": if cuda12_compliant { "best" } else { "compatible" },
+                "matchText": if cuda12_compliant { "正确适配" } else { "兼容模式" },
+                "isRecommended": recommend_cuda12,
                 "performance": "100% 性能利用",
                 "isCurrent": active_backend == "cuda",
                 "isInstalled": has_cuda,
-                "downloadSizeMb": 450,
+                "downloadSizeMb": cuda12_size,
                 "driverCompliant": cuda12_compliant,
                 "driverUpdateUrl": nvidia_update_url
             }));
+            // Vulkan 通用加速 (NVIDIA 卡下属于跨平台兼容模式)
             list.push(json!({
                 "id": "vulkan",
                 "name": "Vulkan",
                 "backend": "vulkan",
-                "matchType": "compatible",
-                "matchText": "兼容模式",
+                "matchType": if recommend_vulkan { "best" } else { "compatible" },
+                "matchText": if recommend_vulkan { "最佳匹配" } else { "兼容模式" },
+                "isRecommended": recommend_vulkan,
                 "performance": "70% 性能利用",
                 "isCurrent": active_backend == "vulkan",
                 "isInstalled": has_vulkan,
-                "downloadSizeMb": 280,
+                "downloadSizeMb": vulkan_size,
                 "driverCompliant": true
             }));
+            // CPU 保底
             list.push(json!({
                 "id": cpu_id,
                 "name": cpu_name,
                 "backend": cpu_backend,
                 "matchType": "fallback",
                 "matchText": "保底",
+                "isRecommended": false,
                 "performance": cpu_perf,
                 "isCurrent": active_backend == cpu_backend || active_backend == "cpu",
                 "isInstalled": has_compatible_cpu,
-                "downloadSizeMb": 120,
+                "downloadSizeMb": cpu_size,
                 "driverCompliant": true
             }));
         } else if is_amd {
+            let hip_size = resolve_package_size_mb(manifest.as_ref(), "hip", 252.6);
+            let hip_recommended = best_tier == "hip" || best_tier == "rocm";
+
             list.push(json!({
                 "id": "hip",
                 "name": "ROCm / HIP",
                 "backend": "hip",
-                "matchType": "best",
-                "matchText": "最佳匹配",
+                "matchType": if hip_recommended { "best" } else { "compatible" },
+                "matchText": if hip_recommended { "最佳匹配" } else { "兼容模式" },
+                "isRecommended": hip_recommended,
                 "performance": "100% 性能利用",
                 "isCurrent": active_backend == "hip" || active_backend == "rocm",
                 "isInstalled": has_hip,
-                "downloadSizeMb": 400,
+                "downloadSizeMb": hip_size,
                 "driverCompliant": true,
                 "driverUpdateUrl": amd_update_url
             }));
@@ -613,12 +648,13 @@ async fn engine_list(State(state): State<AppState>) -> impl IntoResponse {
                 "id": "vulkan",
                 "name": "Vulkan",
                 "backend": "vulkan",
-                "matchType": "compatible",
-                "matchText": "兼容模式",
+                "matchType": if !hip_recommended { "best" } else { "compatible" },
+                "matchText": if !hip_recommended { "最佳匹配" } else { "兼容模式" },
+                "isRecommended": !hip_recommended,
                 "performance": "70% 性能利用",
                 "isCurrent": active_backend == "vulkan",
                 "isInstalled": has_vulkan,
-                "downloadSizeMb": 280,
+                "downloadSizeMb": vulkan_size,
                 "driverCompliant": true
             }));
             list.push(json!({
@@ -627,23 +663,28 @@ async fn engine_list(State(state): State<AppState>) -> impl IntoResponse {
                 "backend": cpu_backend,
                 "matchType": "fallback",
                 "matchText": "保底",
+                "isRecommended": false,
                 "performance": cpu_perf,
                 "isCurrent": active_backend == cpu_backend || active_backend == "cpu",
                 "isInstalled": has_compatible_cpu,
-                "downloadSizeMb": 120,
+                "downloadSizeMb": cpu_size,
                 "driverCompliant": true
             }));
         } else if is_intel {
+            let sycl_size = resolve_package_size_mb(manifest.as_ref(), "sycl", 120.2);
+            let sycl_recommended = best_tier == "sycl";
+
             list.push(json!({
                 "id": "sycl",
                 "name": "Intel SYCL",
                 "backend": "sycl",
-                "matchType": "compatible",
-                "matchText": "兼容模式",
+                "matchType": if sycl_recommended { "best" } else { "compatible" },
+                "matchText": if sycl_recommended { "最佳匹配" } else { "兼容模式" },
+                "isRecommended": sycl_recommended,
                 "performance": "80% 性能利用",
                 "isCurrent": active_backend == "sycl",
                 "isInstalled": has_sycl,
-                "downloadSizeMb": 350,
+                "downloadSizeMb": sycl_size,
                 "driverCompliant": true,
                 "driverUpdateUrl": intel_update_url
             }));
@@ -651,12 +692,13 @@ async fn engine_list(State(state): State<AppState>) -> impl IntoResponse {
                 "id": "vulkan",
                 "name": "Vulkan",
                 "backend": "vulkan",
-                "matchType": "compatible",
-                "matchText": "兼容模式",
+                "matchType": if !sycl_recommended { "best" } else { "compatible" },
+                "matchText": if !sycl_recommended { "最佳匹配" } else { "兼容模式" },
+                "isRecommended": !sycl_recommended,
                 "performance": "70% 性能利用",
                 "isCurrent": active_backend == "vulkan",
                 "isInstalled": has_vulkan,
-                "downloadSizeMb": 280,
+                "downloadSizeMb": vulkan_size,
                 "driverCompliant": true
             }));
             list.push(json!({
@@ -665,38 +707,102 @@ async fn engine_list(State(state): State<AppState>) -> impl IntoResponse {
                 "backend": cpu_backend,
                 "matchType": "fallback",
                 "matchText": "保底",
+                "isRecommended": false,
                 "performance": cpu_perf,
                 "isCurrent": active_backend == cpu_backend || active_backend == "cpu",
                 "isInstalled": has_compatible_cpu,
-                "downloadSizeMb": 120,
+                "downloadSizeMb": cpu_size,
                 "driverCompliant": true
             }));
         } else {
-            // 通用/纯 CPU 情况
+            // 通用/纯 CPU 情况：若检测到 Vulkan 则列出 Vulkan，否则 CPU 为最佳推荐
+            let has_gpu = !status.hardware.gpu_name.is_empty();
+            let recommend_vulkan = has_gpu;
+            let recommend_cpu = !has_gpu;
+
             list.push(json!({
                 "id": "vulkan",
                 "name": "Vulkan (GPU通用)",
                 "backend": "vulkan",
-                "matchType": "compatible",
-                "matchText": "兼容模式",
+                "matchType": if recommend_vulkan { "best" } else { "compatible" },
+                "matchText": if recommend_vulkan { "最佳匹配" } else { "兼容模式" },
+                "isRecommended": recommend_vulkan,
                 "performance": "70% 性能利用",
                 "isCurrent": active_backend == "vulkan",
                 "isInstalled": has_vulkan,
-                "downloadSizeMb": 280,
+                "downloadSizeMb": vulkan_size,
                 "driverCompliant": true
             }));
             list.push(json!({
                 "id": cpu_id,
                 "name": cpu_name,
                 "backend": cpu_backend,
-                "matchType": "best",
-                "matchText": "最佳匹配",
+                "matchType": if recommend_cpu { "best" } else { "fallback" },
+                "matchText": if recommend_cpu { "最佳匹配" } else { "保底" },
+                "isRecommended": recommend_cpu,
                 "performance": cpu_perf,
                 "isCurrent": active_backend == cpu_backend || active_backend == "cpu",
                 "isInstalled": has_compatible_cpu,
-                "downloadSizeMb": 120,
+                "downloadSizeMb": cpu_size,
                 "driverCompliant": true
             }));
+        }
+    }
+
+    // 解析云端最新版本构建号（如 "b11095" -> 11095）用于版本更新对比
+    let latest_version_str = manifest.as_ref().and_then(|m| m.latest_version.clone());
+    let latest_build_num = latest_version_str.as_deref().and_then(|v| {
+        let trimmed = v.trim_start_matches('b');
+        trimmed.parse::<u64>().ok()
+    });
+
+    // 针对每个条目，对比本地安装构建版本与云端最新版本
+    for item in list.iter_mut() {
+        let is_installed = item.get("isInstalled").and_then(|v| v.as_bool()).unwrap_or(false);
+        let backend_str = item.get("backend").and_then(|v| v.as_str()).unwrap_or("");
+
+        let mut item_installed_build = None;
+        if is_installed {
+            // 从 installed 列表中找到与当前条目匹配的引擎项
+            for eng in &installed {
+                let eng_tier_str = match eng.tier {
+                    crate::hardware::gpu_info::AccelerationTier::Cuda => {
+                        if eng.dir_name.contains("cuda-13") {
+                            "cuda134"
+                        } else {
+                            "cuda"
+                        }
+                    }
+                    crate::hardware::gpu_info::AccelerationTier::Vulkan => "vulkan",
+                    crate::hardware::gpu_info::AccelerationTier::Cpu => "cpu",
+                    crate::hardware::gpu_info::AccelerationTier::Metal => "metal",
+                    crate::hardware::gpu_info::AccelerationTier::Rocm | crate::hardware::gpu_info::AccelerationTier::Hip => "hip",
+                    crate::hardware::gpu_info::AccelerationTier::Sycl => "sycl",
+                };
+                if eng_tier_str == backend_str || (backend_str.starts_with("cpu") && eng_tier_str == "cpu") {
+                    if let Some(ref bn) = eng.build_num {
+                        if let Ok(num) = bn.parse::<u64>() {
+                            item_installed_build = Some(num);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        let has_update = match (is_installed, item_installed_build, latest_build_num) {
+            (true, Some(inst_b), Some(latest_b)) => latest_b > inst_b,
+            _ => false,
+        };
+
+        if let Some(obj) = item.as_object_mut() {
+            obj.insert("hasUpdate".to_string(), json!(has_update));
+            if let Some(ref lv) = latest_version_str {
+                obj.insert("latestVersion".to_string(), json!(lv));
+            }
+            if let Some(inst_b) = item_installed_build {
+                obj.insert("installedVersion".to_string(), json!(format!("b{}", inst_b)));
+            }
         }
     }
 
@@ -718,6 +824,99 @@ async fn switch_engine(
     // 清除当前活跃引擎，下次启动时重新选择
     *state.coordinator.active_engine.lock().await = None;
     Json(json!({ "success": true, "message": "引擎切换成功，重启后生效" }))
+}
+
+/// POST /api/engine/delete
+/// 删除指定的本地已安装引擎目录（拒绝删除当前正在激活运行的引擎）
+async fn delete_engine(
+    State(state): State<AppState>,
+    Json(payload): Json<DeleteEngineReq>,
+) -> impl IntoResponse {
+    let backend = payload.backend;
+    info!("请求删除计算引擎目录: {}", backend);
+
+    let status = state.coordinator.get_status().await;
+    if status.active_backend == backend {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(json!({
+                "success": false,
+                "error": "无法删除当前正在激活运行的引擎，请先切换至其他引擎"
+            })),
+        );
+    }
+
+    let installed = state.coordinator.scheduler.scan_installed_engines().await;
+    let target_engine = installed.into_iter().find(|eng| {
+        let eng_tier_str = match eng.tier {
+            crate::hardware::gpu_info::AccelerationTier::Cuda => {
+                if eng.dir_name.contains("cuda-13") {
+                    "cuda134"
+                } else {
+                    "cuda"
+                }
+            }
+            crate::hardware::gpu_info::AccelerationTier::Vulkan => "vulkan",
+            crate::hardware::gpu_info::AccelerationTier::Cpu => "cpu",
+            crate::hardware::gpu_info::AccelerationTier::Metal => "metal",
+            crate::hardware::gpu_info::AccelerationTier::Rocm | crate::hardware::gpu_info::AccelerationTier::Hip => "hip",
+            crate::hardware::gpu_info::AccelerationTier::Sycl => "sycl",
+        };
+        eng_tier_str == backend || (backend.starts_with("cpu") && eng_tier_str == "cpu")
+    });
+
+    let Some(target) = target_engine else {
+        return (
+            StatusCode::NOT_FOUND,
+            Json(json!({
+                "success": false,
+                "error": format!("未找到计算后端 {} 对应的已安装引擎目录", backend)
+            })),
+        );
+    };
+
+    let target_dir = target.binary_path.parent().map(|p| p.to_path_buf()).unwrap_or_else(|| {
+        let base_engine_dir = if let Some(app_data) = dirs::data_dir() {
+            app_data.join("com.firefly.ai-engine").join("engines")
+        } else {
+            PathBuf::from("engines")
+        };
+        base_engine_dir.join(&target.dir_name)
+    });
+
+    info!("定位到待删除引擎目录: {:?}", target_dir);
+
+    if !target_dir.exists() {
+        return (
+            StatusCode::NOT_FOUND,
+            Json(json!({ "success": false, "error": "目标引擎目录不存在" })),
+        );
+    }
+
+    // 安全检查：目录名必须以 llama- 开头
+    let dir_name = target_dir.file_name().unwrap_or_default().to_string_lossy();
+    if !dir_name.to_lowercase().starts_with("llama-") {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(json!({ "success": false, "error": "拒绝删除非 llama 引擎目录" })),
+        );
+    }
+
+    match std::fs::remove_dir_all(&target_dir) {
+        Ok(_) => {
+            info!("已成功删除引擎目录: {:?}", target_dir);
+            // 重新扫描已安装引擎
+            let _ = state.coordinator.scheduler.scan_installed_engines().await;
+            (StatusCode::OK, Json(json!({ "success": true })))
+        }
+        Err(e) => {
+            error!("删除引擎目录失败: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "success": false, "error": format!("删除引擎目录失败: {}", e) })),
+            )
+        }
+    }
 }
 
 /// POST /api/engine/download/start
@@ -881,12 +1080,109 @@ pub struct EngineDownloadCandidate {
     pub filename: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
+pub struct ManifestPackageInfo {
+    pub file: Option<String>,
+    pub size: Option<u64>,
+    pub sha256: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct ManifestVersionInfo {
+    #[serde(default)]
+    pub packages: HashMap<String, ManifestPackageInfo>,
+}
+
+#[derive(Debug, Deserialize, Clone)]
 pub struct RemoteManifest {
     #[serde(rename = "latestVersion")]
     pub latest_version: Option<String>,
     #[serde(rename = "previousVersion")]
     pub previous_version: Option<String>,
+    #[serde(default)]
+    pub versions: HashMap<String, ManifestVersionInfo>,
+}
+
+/// 内存缓存 manifest.json 结果（TTL 5分钟）
+static MANIFEST_CACHE: Mutex<Option<(RemoteManifest, std::time::Instant)>> = Mutex::const_new(None);
+
+/// 获取 manifest.json，优先使用内存缓存
+pub async fn get_cached_manifest() -> Option<RemoteManifest> {
+    {
+        let guard = MANIFEST_CACHE.lock().await;
+        if let Some((manifest, instant)) = guard.as_ref() {
+            if instant.elapsed() < std::time::Duration::from_secs(300) {
+                return Some(manifest.clone());
+            }
+        }
+    }
+
+    if let Some(manifest) = fetch_latest_manifest().await {
+        let mut guard = MANIFEST_CACHE.lock().await;
+        *guard = Some((manifest.clone(), std::time::Instant::now()));
+        return Some(manifest);
+    }
+
+    let guard = MANIFEST_CACHE.lock().await;
+    guard.as_ref().map(|(m, _)| m.clone())
+}
+
+/// 根据 backend 与 manifest 计算精确的文件大小（MB，保留 1 位小数）
+pub fn resolve_package_size_mb(manifest: Option<&RemoteManifest>, backend: &str, fallback_mb: f64) -> f64 {
+    let manifest = match manifest {
+        Some(m) => m,
+        None => return fallback_mb,
+    };
+
+    let ver = match manifest.latest_version.as_deref() {
+        Some(v) => v,
+        None => return fallback_mb,
+    };
+
+    let ver_info = match manifest.versions.get(ver) {
+        Some(info) => info,
+        None => return fallback_mb,
+    };
+
+    let key = match backend {
+        "cuda134" | "cuda13" => "cuda134",
+        "cuda" | "cuda12" | "cuda124" => "cuda124",
+        "vulkan" => "vulkan",
+        "vulkan-compat" => "vulkan-compat",
+        "rocm" | "hip" => "rocm",
+        "sycl" => "sycl",
+        "metal" => if cfg!(target_arch = "aarch64") { "metal-arm64" } else { "metal-x64" },
+        "cpu-avx" => "cpu-avx",
+        "cpu-noavx" => "cpu-noavx",
+        "cpu" | "cpu-avx2" => "cpu",
+        _ => backend,
+    };
+
+    if let Some(pkg) = ver_info.packages.get(key) {
+        if let Some(bytes) = pkg.size {
+            let mut total_bytes = bytes;
+            // Windows 下 CUDA 引擎包含配套的 cudart 运行库包，合并计算精确总大小
+            if cfg!(windows) {
+                if key == "cuda134" {
+                    if let Some(cudart_pkg) = ver_info.packages.get("cudart-cuda134") {
+                        if let Some(cb) = cudart_pkg.size {
+                            total_bytes += cb;
+                        }
+                    }
+                } else if key == "cuda124" {
+                    if let Some(cudart_pkg) = ver_info.packages.get("cudart-cuda124") {
+                        if let Some(cb) = cudart_pkg.size {
+                            total_bytes += cb;
+                        }
+                    }
+                }
+            }
+            let mb = (total_bytes as f64) / (1024.0 * 1024.0);
+            return (mb * 10.0).round() / 10.0;
+        }
+    }
+
+    fallback_mb
 }
 
 /// 构造候选下载源列表（严格遵循：GitHub 优先，国内 EdgeOne R2 故障转移降级）
@@ -1309,18 +1605,18 @@ async fn run_engine_download(
     let target_dest_dir = base_engine_dir.join(format!("llama-{}-bin-win-{}-x64", final_version, tier_name));
     info!("[引擎下载] 成功获取包: {}，准备部署至 {:?}", final_filename, target_dest_dir);
 
-    // 2. 解压部署阶段
+    // 2. 解压部署主包
     {
         let mut lock = tasks.lock().await;
         if let Some(task) = lock.get_mut(&task_id) {
             task.percent = 100.0;
-            task.current_file_name = Some("正在解压引擎组件...".to_string());
+            task.current_file_name = Some("正在解压主引擎组件...".to_string());
         }
     }
 
-    info!("[引擎下载] 正在解压至目标目录: {:?}", target_dest_dir);
+    info!("[引擎下载] 正在解压主包至目标目录: {:?}", target_dest_dir);
     if let Err(e) = extract_engine_archive(&downloaded_archive_path, &target_dest_dir) {
-        error!("[引擎下载] 解压部署失败: {}", e);
+        error!("[引擎下载] 解压主包部署失败: {}", e);
         let mut lock = tasks.lock().await;
         if let Some(task) = lock.get_mut(&task_id) {
             task.status = DownloadStatus::Error;
@@ -1329,7 +1625,69 @@ async fn run_engine_download(
         return;
     }
 
-    // 3. 完成并标记
+    // 3. 针对 Windows CUDA 引擎，自动下载并解压配套的 cudart 运行时依赖包合并到同一目录
+    if cfg!(windows) && backend.starts_with("cuda") {
+        let cudart_candidates = if final_filename.contains("cuda-13.4") {
+            vec![
+                EngineDownloadCandidate {
+                    version: final_version.clone(),
+                    filename: "cudart-llama-bin-win-cuda-13.4-x64.zip".to_string(),
+                },
+                EngineDownloadCandidate {
+                    version: final_version.clone(),
+                    filename: "cudart-llama-bin-win-cuda-13.3-x64.zip".to_string(),
+                },
+            ]
+        } else if final_filename.contains("cuda-13.3") {
+            vec![EngineDownloadCandidate {
+                version: final_version.clone(),
+                filename: "cudart-llama-bin-win-cuda-13.3-x64.zip".to_string(),
+            }]
+        } else {
+            vec![EngineDownloadCandidate {
+                version: final_version.clone(),
+                filename: "cudart-llama-bin-win-cuda-12.4-x64.zip".to_string(),
+            }]
+        };
+
+        info!("[引擎下载] Windows CUDA 引擎需要配套 cudart 库，开始连带下载: {:?}", cudart_candidates);
+        {
+            let mut lock = tasks.lock().await;
+            if let Some(task) = lock.get_mut(&task_id) {
+                task.percent = 0.0;
+                task.status = DownloadStatus::Downloading;
+                task.current_file_name = Some("正在下载 CUDA 运行时组件 (cudart)...".to_string());
+            }
+        }
+
+        match download_engine_with_resume_and_failover(
+            &task_id,
+            &cudart_candidates,
+            &base_engine_dir,
+            &tasks,
+        ).await {
+            Ok((cudart_path, _cudart_ver, cudart_file)) => {
+                info!("[引擎下载] 成功下载 cudart 运行时包: {}，正在解压合并至 {:?}", cudart_file, target_dest_dir);
+                {
+                    let mut lock = tasks.lock().await;
+                    if let Some(task) = lock.get_mut(&task_id) {
+                        task.percent = 100.0;
+                        task.current_file_name = Some("正在解压 CUDA 运行时组件...".to_string());
+                    }
+                }
+                if let Err(e) = extract_engine_archive(&cudart_path, &target_dest_dir) {
+                    warn!("[引擎下载] 解压 cudart 运行时包失败 (尝试继续): {}", e);
+                } else {
+                    info!("[引擎下载] 成功合并解压 cudart 运行时包到 {:?}", target_dest_dir);
+                }
+            }
+            Err(e) => {
+                warn!("[引擎下载] 下载 cudart 运行时包失败: {} (引擎主程序已就绪，如系统已全局安装 CUDA 驱动/Toolkit 仍可运行)", e);
+            }
+        }
+    }
+
+    // 4. 完成并标记
     {
         let mut lock = tasks.lock().await;
         if let Some(task) = lock.get_mut(&task_id) {
@@ -2426,6 +2784,7 @@ pub fn management_routes() -> Router<AppState> {
         .route("/api/engine/logs/clear", post(clear_engine_logs))
         .route("/api/engine/list", get(engine_list))
         .route("/api/engine/switch", post(switch_engine))
+        .route("/api/engine/delete", post(delete_engine))
         .route("/api/engine/download/start", post(start_engine_download))
         .route("/api/engine/download/status/{task_id}", get(get_download_status))
         .route("/api/engine/download/cancel/{task_id}", post(cancel_model_download))

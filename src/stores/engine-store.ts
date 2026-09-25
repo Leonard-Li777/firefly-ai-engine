@@ -57,6 +57,7 @@ interface EngineStoreState {
   fetchEngineList: () => Promise<void>
   fetchModels: (source?: string) => Promise<void>
   switchEngine: (backend: string) => Promise<boolean>
+  deleteEngine: (backend: string) => Promise<boolean>
   switchModel: (modelId: string, source?: string, localPath?: string, modelName?: string) => Promise<boolean>
   updateStoragePath: (newPath: string) => Promise<boolean>
   rescanModels: () => Promise<void>
@@ -223,6 +224,20 @@ export const useEngineStore = create<EngineStoreState>((set, get) => ({
       return false
     } finally {
       set({ switchingBackend: null })
+    }
+  },
+
+  deleteEngine: async (backend: string) => {
+    try {
+      const res = await engineApiClient.deleteEngine(backend)
+      if (res.success) {
+        await Promise.all([get().fetchEngineStatus(), get().fetchEngineList()])
+        return true
+      }
+      return false
+    } catch (e: any) {
+      console.error('删除引擎失败:', e)
+      return false
     }
   },
 

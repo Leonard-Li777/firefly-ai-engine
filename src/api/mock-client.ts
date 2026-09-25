@@ -182,6 +182,14 @@ export class MockApiClient implements IEngineApiClient {
     return [...this.engines]
   }
 
+  async deleteEngine(backend: string): Promise<{ success: boolean; error?: string }> {
+    const engine = this.engines.find(e => e.backend === backend)
+    if (!engine) return { success: false, error: '未找到指定引擎' }
+    if (engine.isCurrent) return { success: false, error: '无法删除当前激活引擎' }
+    engine.isInstalled = false
+    return { success: true }
+  }
+
   async downloadEngine(
     backend: string,
     onProgress?: (progress: DownloadProgressEvent) => void

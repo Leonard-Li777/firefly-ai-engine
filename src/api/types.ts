@@ -96,9 +96,13 @@ export interface EngineItem {
   backend: EngineBackend
   matchType: 'best' | 'compatible' | 'fallback'
   matchText: string
+  isRecommended?: boolean
   performance: string
   isCurrent: boolean
   isInstalled: boolean
+  hasUpdate?: boolean
+  latestVersion?: string
+  installedVersion?: string
   downloadSizeMb?: number
   driverCompliant?: boolean
   driverUpdateUrl?: string
