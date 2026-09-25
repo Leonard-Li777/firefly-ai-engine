@@ -51,8 +51,12 @@ fn is_under_exe_dir(resource_dir: &Path, exe_dir: &Path) -> bool {
 /// 2. macOS .app 包内标准 Contents/Resources（固定一步包内布局，非任意向上）
 /// 3. Tauri resource_dir 仅当位于 exe 目录之下时才采纳；
 ///    否则（例如宿主 desktop 的共享 extraResources）一律丢弃。
-/// 4. debug 构建额外锚定本项目根（编译期 CARGO_MANIFEST_DIR），覆盖 cargo tauri dev 的
-///    `build/extraResources` 资源拓扑——这是引擎自身资源，不是宿主 desktop。
+///
+/// 历史说明：曾额外锚定编译期 `CARGO_MANIFEST_DIR/..`（引擎工程根）以覆盖开发态资源拓扑。
+/// 该锚点已移除——引擎统一由 desktop 部署到集成目录
+/// `apps/desktop/build/extraResources/bin/firefly-ai-engine/` 并以最终发布形态运行，
+/// 开发态资源由 `_up_/build/extraResources`（`cargo tauri dev`）或集成目录内的 1:1 镜像提供，
+/// 二者物理上都在 exe 目录之内。
 pub fn allowed_install_roots(resource_dir: Option<&Path>) -> Vec<PathBuf> {
     let mut roots: Vec<PathBuf> = Vec::new();
 
@@ -78,23 +82,21 @@ pub fn allowed_install_roots(resource_dir: Option<&Path>) -> Vec<PathBuf> {
         }
     }
 
-    // 开发态：编译期锚定本项目根（apps/firefly-ai-engine），非运行时向上探测
-    #[cfg(debug_assertions)]
-    {
-        let project_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..");
-        push_unique(&mut roots, project_root);
-        if let Some(res) = resource_dir {
-            push_unique(&mut roots, res.to_path_buf());
-        }
-    }
-
     roots
 }
 
 /// 安装目录下标准 bin 子路径（不向父级扩散）
+///
+/// - `build/extraResources/bin`：desktop 集成目录 1:1 镜像（ADR-0033）与引擎自身
+///   `pnpm setup-resources` 产物落点
+/// - `_up_/build/extraResources/bin`：Tauri 对 `../build/extraResources/**/*` 资源模式的
+///   归一化落点（见 tauri-utils `ResourcePaths`：`..` 段被改写为 `_up_`），
+///   覆盖 `cargo tauri dev` 与引擎独立打包形态。该目录**物理上位于 exe 目录之内**，
+///   与「向父级探测」有本质区别。
 fn install_bin_subpaths(root: &Path) -> Vec<PathBuf> {
     vec![
         root.join("build").join("extraResources").join("bin"),
+        root.join("_up_").join("build").join("extraResources").join("bin"),
         root.join("extraResources").join("bin"),
         root.join("bin"),
         root.join("resources").join("bin"),
@@ -118,16 +120,16 @@ pub fn user_data_root() -> Option<PathBuf> {
 }
 
 /// 允许的用户数据目录 bin 搜索目录列表
+///
+/// 仅限引擎自身命名空间 `com.firefly.ai-engine`。
+/// 不再包含宿主 desktop 的 `%APPDATA%/firefly-ai-folder/bin`：
+/// 该目录属宿主应用的用户数据，不属于「引擎自身安装目录 / 自身用户数据目录」两类白名单。
 pub fn allowed_user_data_bin_dirs() -> Vec<PathBuf> {
     let mut dirs = Vec::new();
     if let Some(root) = user_data_root() {
         push_unique(&mut dirs, root.join("bin"));
         push_unique(&mut dirs, root.join("extraResources").join("bin"));
         push_unique(&mut dirs, root.join("engines"));
-    }
-    // 既有兼容：桌面产品用户数据下的 bin（fastfetch 等）
-    if let Some(data) = dirs::data_dir() {
-        push_unique(&mut dirs, data.join("firefly-ai-folder").join("bin"));
     }
     dirs
 }
@@ -194,5 +196,76 @@ mod tests {
         push_unique(&mut list, PathBuf::from(r"\\?\D:\app\bin"));
         push_unique(&mut list, PathBuf::from(r"d:\app\bin\"));
         assert_eq!(list.len(), 1, "应识别为同一搜索根");
+    }
+
+    #[test]
+    fn test_install_roots_never_escape_exe_dir() {
+        // 回归：不得再出现 CARGO_MANIFEST_DIR 之类的工程根锚点，
+        // 所有安装根都必须落在 exe 目录之内。
+        let exe_dir = std::env::current_exe()
+            .expect("测试进程应有可执行路径")
+            .parent()
+            .expect("可执行文件应有父目录")
+            .to_path_buf();
+
+        let roots = allowed_install_roots(None);
+        assert!(!roots.is_empty(), "至少应包含 exe 所在目录");
+        for root in &roots {
+            assert!(
+                is_under_exe_dir(root, &exe_dir),
+                "安装根越出 exe 目录: {root:?}（exe_dir={exe_dir:?}）"
+            );
+        }
+    }
+
+    #[test]
+    fn test_host_shared_root_rejected_even_with_debug_build() {
+        // 宿主 desktop 的共享 extraResources 一律不得成为安装根（debug 构建同样如此）
+        let host_root = PathBuf::from("/repo/apps/desktop/build/extraResources");
+        let roots = allowed_install_roots(Some(host_root.as_path()));
+        assert!(
+            !roots.contains(&host_root),
+            "宿主共享资源根不得进入安装根: {roots:?}"
+        );
+    }
+
+    #[test]
+    fn test_integration_layout_maps_to_own_extra_resources() {
+        // desktop 集成目录布局：exe 位于 .../extraResources/bin/firefly-ai-engine/
+        // 引擎自身资源应解析到同级的 build/extraResources/bin，而不是宿主共享的 bin
+        let exe_dir = Path::new("/repo/apps/desktop/build/extraResources/bin/firefly-ai-engine");
+        let subpaths = install_bin_subpaths(exe_dir);
+
+        assert!(
+            subpaths.contains(&exe_dir.join("build").join("extraResources").join("bin")),
+            "应包含集成目录内的 1:1 镜像资源路径"
+        );
+        assert!(
+            !subpaths.contains(&PathBuf::from("/repo/apps/desktop/build/extraResources/bin")),
+            "不得包含宿主共享 bin 目录"
+        );
+    }
+
+    #[test]
+    fn test_up_prefix_subpath_covers_tauri_dev_layout() {
+        // cargo tauri dev / 引擎独立打包：Tauri 把 ../build/extraResources 归一化为 _up_/
+        let exe_dir = Path::new("/repo/apps/firefly-ai-engine/src-tauri/target/debug");
+        let subpaths = install_bin_subpaths(exe_dir);
+        assert!(
+            subpaths.contains(&exe_dir.join("_up_").join("build").join("extraResources").join("bin")),
+            "应包含 Tauri `_up_` 归一化资源路径"
+        );
+    }
+
+    #[test]
+    fn test_user_data_dirs_only_engine_namespace() {
+        // 用户数据白名单只应落在引擎自身命名空间下，不得指向宿主 desktop 的 firefly-ai-folder
+        for dir in allowed_user_data_bin_dirs() {
+            let s = dir.to_string_lossy().to_lowercase();
+            assert!(
+                !s.contains("firefly-ai-folder"),
+                "用户数据白名单不得包含宿主 desktop 目录: {dir:?}"
+            );
+        }
     }
 }

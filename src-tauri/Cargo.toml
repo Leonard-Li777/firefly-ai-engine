@@ -15,6 +15,13 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 name = "firefly-ai-engine"
 path = "src/main.rs"
 
+[features]
+# 生产协议特性：由 Tauri CLI（`tauri build`）或 scripts/engine-build-to-desktop.js 显式启用。
+# 未启用时 tauri::is_dev() 为 true，主窗口会加载 build.devUrl（http://localhost:38410），
+# 并把配置改为运行时从磁盘读取；一旦脱离 vite dev server 单独启动（desktop 以 --silent --tray 拉起）
+# WebView2 就会显示「找不到网页」。启用后改为内嵌 dist/ 前端资源（Windows 走 http://tauri.localhost）。
+custom-protocol = ["tauri/custom-protocol"]
+
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
