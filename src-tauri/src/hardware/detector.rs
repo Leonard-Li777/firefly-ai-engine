@@ -60,27 +60,32 @@ impl DetectorCache {
 /// 硬件探测服务
 pub struct HardwareDetector {
     cache: Mutex<DetectorCache>,
-    /// fastfetch 可执行文件路径（lazy 初始化）
-    fastfetch_path: Mutex<Option<PathBuf>>,
-    /// 应用根目录（用于查找 bin/fastfetch）
-    app_dir: PathBuf,
+    /// fastfetch 查找结果缓存：None=未查找，Some(Ok)=命中，Some(Err)=已查找未命中（避免反复刷屏）
+    fastfetch_lookup: Mutex<Option<std::result::Result<PathBuf, String>>>,
+    /// 安装目录下的 bin 搜索目录（仅自身安装树，禁止宿主共享根）
+    install_bin_dirs: Vec<PathBuf>,
 }
 
 impl HardwareDetector {
-    pub fn new(app_dir: PathBuf) -> Self {
+    pub fn new(install_bin_dirs: Vec<PathBuf>) -> Self {
         HardwareDetector {
             cache: Mutex::new(DetectorCache::new()),
-            fastfetch_path: Mutex::new(None),
-            app_dir,
+            fastfetch_lookup: Mutex::new(None),
+            install_bin_dirs,
         }
     }
 
     /// 获取 fastfetch 可执行文件路径
-    /// 优先级：1. {app_dir}/bin/fastfetch  2. {app_dir}/../bin/fastfetch  3. PATH
+    /// 资源查找范围仅限：自身安装目录与用户数据目录，禁止向上逐级探测
+    /// 优先级：1. 安装目录 bin  2. 用户数据目录
+    /// 查找结果（含失败）会缓存，避免每次探测重复扫盘并刷日志
     async fn get_fastfetch_path(&self) -> Result<PathBuf> {
-        let mut cached = self.fastfetch_path.lock().await;
-        if let Some(ref p) = *cached {
-            return Ok(p.clone());
+        let mut lookup = self.fastfetch_lookup.lock().await;
+        if let Some(ref cached) = *lookup {
+            return match cached {
+                Ok(p) => Ok(p.clone()),
+                Err(msg) => Err(anyhow!(msg.clone())),
+            };
         }
 
         let executable = if cfg!(windows) { "fastfetch.exe" } else { "fastfetch" };
@@ -106,56 +111,15 @@ impl HardwareDetector {
             }
         };
 
-        // 1. 基于当前工作目录 CWD 向上逐级探测（适配 cargo tauri dev / pnpm dev 开发态）
-        if let Ok(cwd) = std::env::current_dir() {
-            let mut cur = Some(cwd.as_path());
-            for _ in 0..5 {
-                if let Some(dir) = cur {
-                    collect_from_bin(dir.join("build").join("extraResources").join("bin"));
-                    collect_from_bin(dir.join("apps").join("firefly-ai-engine").join("build").join("extraResources").join("bin"));
-                    collect_from_bin(dir.join("apps").join("desktop").join("build").join("extraResources").join("bin"));
-                    collect_from_bin(dir.join("extraResources").join("bin"));
-                    collect_from_bin(dir.join("bin"));
-                    cur = dir.parent();
-                } else {
-                    break;
-                }
-            }
+        // 1. 自身安装目录 bin（由 resource_scope 限定，不含宿主 desktop 共享根）
+        for bin_dir in &self.install_bin_dirs {
+            collect_from_bin(bin_dir.clone());
         }
 
-        // 2. 基于当前可执行文件目录向上探测（适配打包交付态）
-        if let Ok(exe) = std::env::current_exe() {
-            let mut cur = exe.parent();
-            for _ in 0..5 {
-                if let Some(dir) = cur {
-                    collect_from_bin(dir.join("build").join("extraResources").join("bin"));
-                    collect_from_bin(dir.join("apps").join("firefly-ai-engine").join("build").join("extraResources").join("bin"));
-                    collect_from_bin(dir.join("extraResources").join("bin"));
-                    collect_from_bin(dir.join("bin"));
-                    cur = dir.parent();
-                } else {
-                    break;
-                }
-            }
+        // 2. 用户数据目录
+        for bin_dir in crate::resource_scope::allowed_user_data_bin_dirs() {
+            collect_from_bin(bin_dir);
         }
-
-        // 3. 基于标准拓扑 self.app_dir (resource_dir) 与其 parent
-        collect_from_bin(self.app_dir.join("build").join("extraResources").join("bin"));
-        collect_from_bin(self.app_dir.join("extraResources").join("bin"));
-        collect_from_bin(self.app_dir.join("bin"));
-        if let Some(parent) = self.app_dir.parent() {
-            collect_from_bin(parent.join("build").join("extraResources").join("bin"));
-            collect_from_bin(parent.join("bin"));
-        }
-
-        // 4. 基于 AppData 用户数据目录与开发目录相对路径
-        if let Some(app_data) = dirs::data_dir() {
-            collect_from_bin(app_data.join("com.firefly.ai-engine").join("bin"));
-            collect_from_bin(app_data.join("com.firefly.ai-engine").join("extraResources").join("bin"));
-            collect_from_bin(app_data.join("firefly-ai-folder").join("bin"));
-        }
-        collect_from_bin(PathBuf::from("build").join("extraResources").join("bin"));
-        collect_from_bin(PathBuf::from("bin"));
 
         for candidate in &candidates {
             if candidate.exists() {
@@ -172,27 +136,17 @@ impl HardwareDetector {
                     }
                 }
                 let path = candidate.clone();
-                *cached = Some(path.clone());
+                *lookup = Some(Ok(path.clone()));
                 return Ok(path);
             }
         }
 
-        // 5. PATH 中查找
-        if let Ok(output) = std::process::Command::new(if cfg!(windows) { "where" } else { "which" })
-            .arg(executable)
-            .output()
-        {
-            if output.status.success() {
-                let path_str = String::from_utf8_lossy(&output.stdout).trim().to_string();
-                let path = PathBuf::from(path_str);
-                if path.exists() {
-                    *cached = Some(path.clone());
-                    return Ok(path);
-                }
-            }
-        }
-
-        Err(anyhow!("未找到 fastfetch 可执行文件，已搜索路径: {:?}", candidates))
+        // 资源查找范围仅限安装目录与用户数据目录，不再回退 PATH
+        // 失败结果同样缓存，防止调用方高频探测时反复扫盘刷屏
+        let msg = format!("未找到 fastfetch 可执行文件，已搜索路径: {:?}", candidates);
+        warn!("{}", msg);
+        *lookup = Some(Err(msg.clone()));
+        Err(anyhow!(msg))
     }
 
     /// 执行 fastfetch 并解析 JSON
@@ -261,6 +215,7 @@ impl HardwareDetector {
             Ok(data) => data,
             Err(e) => {
                 warn!("fastfetch 执行失败，回退到系统 API 兜底: {}", e);
+                // 兜底结果同样入缓存，避免调用方高频探测时反复失败刷屏
                 return self.fallback_detect().await;
             }
         };
@@ -327,6 +282,10 @@ impl HardwareDetector {
             gpus: vec![],
             best_acceleration_tier: AccelerationTier::Cpu,
         };
+
+        // 兜底结果写入缓存（TTL 5 分钟），杜绝每次状态轮询都重扫 fastfetch 并刷 WARN
+        let mut cache = self.cache.lock().await;
+        cache.set(resources.clone());
 
         Ok(resources)
     }
@@ -775,7 +734,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_pascal_gpu_routes_to_vulkan_if_available() {
-        let detector = HardwareDetector::new(PathBuf::from("."));
+        let detector = HardwareDetector::new(vec![PathBuf::from(".")]);
         let gpus = vec![
             GpuInfo {
                 name: "NVIDIA GeForce GTX 1060 6GB".to_string(),
@@ -893,7 +852,7 @@ mod tests {
     /// 通过 compute_best_tier 在无任何可用 GPU 加速时回退 CPU 验证不崩溃
     #[tokio::test]
     async fn test_no_usable_acceleration_falls_back_to_cpu() {
-        let detector = HardwareDetector::new(PathBuf::from("."));
+        let detector = HardwareDetector::new(vec![PathBuf::from(".")]);
         let gpus = vec![GpuInfo {
             name: "Unknown GPU".to_string(),
             memory_mb: 512,

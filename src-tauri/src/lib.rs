@@ -4,6 +4,7 @@
 pub mod config;
 pub mod engine;
 pub mod hardware;
+pub mod resource_scope;
 pub mod server;
 
 use config::ConfigStore;
@@ -12,7 +13,6 @@ use hardware::{DriverComplianceService, HardwareDetector};
 use server::proxy::ProxyState;
 use tauri::Manager;
 
-use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tracing::info;
@@ -72,12 +72,13 @@ pub fn run() {
 
             let config = Arc::new(Mutex::new(loaded_config));
 
-            // 初始化硬件检测器（以 app_dir 为 bin 搜索起点）
-            let app_install_dir = app_handle
-                .path()
-                .resource_dir()
-                .unwrap_or_else(|_| PathBuf::from("."));
-            let hardware = Arc::new(HardwareDetector::new(app_install_dir.clone()));
+            // 资源查找范围：仅自身安装目录（锚定 exe）与用户数据目录
+            // 禁止使用可能解析到宿主 desktop 共享 extraResources 的 resource_dir 作为安装根
+            let tauri_resource_dir = app_handle.path().resource_dir().ok();
+            let install_bin_dirs =
+                resource_scope::allowed_install_bin_dirs(tauri_resource_dir.as_deref());
+            info!("资源查找安装目录 bin: {:?}", install_bin_dirs);
+            let hardware = Arc::new(HardwareDetector::new(install_bin_dirs.clone()));
 
             // 初始化驱动合规服务
             let compliance = DriverComplianceService::new();
@@ -85,11 +86,10 @@ pub fn run() {
             let proxy_state = ProxyState::new();
 
             // 初始化引擎协调器
-            let bin_dir = app_install_dir.join("bin");
             let coordinator = EngineCoordinator::new(
                 hardware.clone(),
                 compliance,
-                bin_dir,
+                install_bin_dirs,
                 config.clone(),
                 proxy_state.clone(),
             );

@@ -65,17 +65,19 @@ pub struct EngineCoordinator {
     pub active_model: Arc<Mutex<Option<String>>>,
     /// 当前加载的模型配置名（用于 --alias 等）
     pub active_model_name: Arc<Mutex<Option<String>>>,
+    /// 安装目录下的 bin 搜索目录（资源查找白名单）
+    pub install_bin_dirs: Vec<PathBuf>,
 }
 
 impl EngineCoordinator {
     pub fn new(
         hardware: Arc<HardwareDetector>,
         compliance: Arc<DriverComplianceService>,
-        bin_dir: PathBuf,
+        bin_dirs: Vec<PathBuf>,
         config: Arc<Mutex<EngineConfig>>,
         proxy_state: ProxyState,
     ) -> Arc<Self> {
-        let scheduler = Arc::new(EngineScheduler::new(bin_dir, compliance.clone()));
+        let scheduler = Arc::new(EngineScheduler::new(bin_dirs.clone(), compliance.clone()));
         let guard = ProcessGuard::new(compliance.clone());
 
         Arc::new(EngineCoordinator {
@@ -89,6 +91,7 @@ impl EngineCoordinator {
             active_engine: Arc::new(Mutex::new(None)),
             active_model: Arc::new(Mutex::new(None)),
             active_model_name: Arc::new(Mutex::new(None)),
+            install_bin_dirs: bin_dirs,
         })
     }
 

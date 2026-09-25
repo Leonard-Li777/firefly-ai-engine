@@ -378,12 +378,11 @@ fn collect_ggufs_recursive(
 }
 
 /// 获取 llama-model-download 可执行文件路径
-/// 查找顺序（严格遵循 1:1 目录拓扑与多工作空间兼容）：
-/// 1. 当前工作目录及其祖先目录下的 build/extraResources/bin/llama-model-download-*
-/// 2. 当前 exe 同级或父级 build/extraResources/bin/llama-model-download-*/llama-model-download[.exe]
-/// 3. 开发态相对路径 apps/firefly-ai-engine/build/extraResources/bin/...
-/// 4. 回退 PATH
-pub fn resolve_model_downloader() -> PathBuf {
+/// 资源查找范围仅限：自身安装目录与用户数据目录，禁止向上逐级探测
+/// 查找顺序：
+/// 1. 安装目录 bin（resource_scope 白名单，不含宿主 desktop 共享根）
+/// 2. 用户数据目录
+pub fn resolve_model_downloader(install_bin_dirs: &[PathBuf]) -> PathBuf {
     let exe_name = if cfg!(windows) { "llama-model-download.exe" } else { "llama-model-download" };
 
     // 辅助闭包：在指定 bin 目录下检索以 llama-model-download- 开头的子目录
@@ -413,65 +412,21 @@ pub fn resolve_model_downloader() -> PathBuf {
         None
     };
 
-    // 1. 基于当前工作目录及其父级逐层向上探测（适配 cargo tauri dev / pnpm dev 开发态）
-    if let Ok(cwd) = std::env::current_dir() {
-        let mut cur = Some(cwd.as_path());
-        for _ in 0..5 {
-            if let Some(dir) = cur {
-                if let Some(found) = find_in_bin_dir(dir.join("build").join("extraResources").join("bin")) {
-                    return found;
-                }
-                if let Some(found) = find_in_bin_dir(dir.join("apps").join("firefly-ai-engine").join("build").join("extraResources").join("bin")) {
-                    return found;
-                }
-                if let Some(found) = find_in_bin_dir(dir.join("apps").join("desktop").join("build").join("extraResources").join("bin")) {
-                    return found;
-                }
-                if let Some(found) = find_in_bin_dir(dir.join("extraResources").join("bin")) {
-                    return found;
-                }
-                if let Some(found) = find_in_bin_dir(dir.join("bin")) {
-                    return found;
-                }
-                cur = dir.parent();
-            } else {
-                break;
-            }
+    // 1. 自身安装目录 bin
+    for bin_dir in install_bin_dirs {
+        if let Some(found) = find_in_bin_dir(bin_dir.clone()) {
+            return found;
         }
     }
 
-    // 2. 基于当前可执行文件目录向上探测（适配构建打包交付态）
-    if let Ok(exe) = std::env::current_exe() {
-        let mut cur = exe.parent();
-        for _ in 0..5 {
-            if let Some(dir) = cur {
-                // 打包环境资源目录 (resource_dir 或 extraResources)
-                if let Some(found) = find_in_bin_dir(dir.join("build").join("extraResources").join("bin")) {
-                    return found;
-                }
-                if let Some(found) = find_in_bin_dir(dir.join("apps").join("firefly-ai-engine").join("build").join("extraResources").join("bin")) {
-                    return found;
-                }
-                if let Some(found) = find_in_bin_dir(dir.join("extraResources").join("bin")) {
-                    return found;
-                }
-                if let Some(found) = find_in_bin_dir(dir.join("bin")) {
-                    return found;
-                }
-                cur = dir.parent();
-            } else {
-                break;
-            }
+    // 2. 用户数据目录
+    for bin_dir in crate::resource_scope::allowed_user_data_bin_dirs() {
+        if let Some(found) = find_in_bin_dir(bin_dir) {
+            return found;
         }
     }
 
-    // 3. 开发模式相对路径：build/extraResources/bin/
-    let dev_bin = PathBuf::from("build").join("extraResources").join("bin");
-    if let Some(found) = find_in_bin_dir(dev_bin) {
-        return found;
-    }
-
-    // 4. 回退到 PATH 中查找
+    // 未命中时返回裸文件名（调用方按错误路径处理），不再向上探测
     PathBuf::from(exe_name)
 }
 

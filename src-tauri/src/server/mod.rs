@@ -43,8 +43,8 @@ pub async fn start_server(
     let download_tasks = Arc::new(Mutex::new(HashMap::new()));
     let active_child_pids = Arc::new(Mutex::new(HashMap::new()));
 
-    // 查找 llama-model-download 可执行文件路径
-    let model_downloader_path = Arc::new(resolve_model_downloader());
+    // 查找 llama-model-download 可执行文件路径（仅在安装目录与用户数据目录内查找）
+    let model_downloader_path = Arc::new(resolve_model_downloader(&coordinator.install_bin_dirs));
     info!("llama-model-download 路径: {:?}", model_downloader_path);
 
     let app_state = AppState {

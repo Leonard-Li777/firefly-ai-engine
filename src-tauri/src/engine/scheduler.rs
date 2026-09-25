@@ -29,8 +29,8 @@ pub struct InstalledEngine {
 
 /// 引擎调度器
 pub struct EngineScheduler {
-    /// 引擎 bin 目录
-    bin_dir: PathBuf,
+    /// 安装目录下的引擎 bin 目录列表（仅自身安装树）
+    bin_dirs: Vec<PathBuf>,
     /// 驱动合规服务
     compliance: Arc<DriverComplianceService>,
     /// 当前正在使用的引擎（用于防止重启死循环）
@@ -41,16 +41,21 @@ pub struct EngineScheduler {
 }
 
 impl EngineScheduler {
-    pub fn new(bin_dir: PathBuf, compliance: Arc<DriverComplianceService>) -> Self {
+    pub fn new(bin_dirs: Vec<PathBuf>, compliance: Arc<DriverComplianceService>) -> Self {
         EngineScheduler {
-            bin_dir,
+            bin_dirs,
             compliance,
             current_engine: Mutex::new(None),
             degraded_tier: Mutex::new(None),
         }
     }
 
-    /// 扫描所有可能目录中已安装的引擎（内置目录 + 用户数据热更新目录）
+    /// 获取安装目录下的引擎 bin 目录列表（用于资源查找限定在安装目录内）
+    pub fn bin_dirs(&self) -> &[PathBuf] {
+        &self.bin_dirs
+    }
+
+    /// 扫描允许目录中已安装的引擎（安装目录 bin_dir + 用户数据热更新目录）
     /// 目录命名规范：llama-b{build}-bin-{platform}-{backend}-{arch}/
     pub async fn scan_installed_engines(&self) -> Vec<InstalledEngine> {
         let server_name = if cfg!(windows) {
@@ -61,41 +66,19 @@ impl EngineScheduler {
 
         let mut search_dirs = Vec::new();
 
-        // 1. 主协调器传入的 bin_dir
-        if self.bin_dir.exists() {
-            search_dirs.push(self.bin_dir.clone());
+        // 1. 自身安装目录下的 bin 目录列表（由 resource_scope 限定，不含宿主共享根）
+        for bin_dir in &self.bin_dirs {
+            if bin_dir.exists() {
+                search_dirs.push(bin_dir.clone());
+            }
         }
 
         // 2. 用户数据目录：%APPDATA%/com.firefly.ai-engine/engines 以及 bin (仅生产运行态探测，测试沙箱隔离)
+        // 资源查找范围仅限安装目录与用户数据目录，禁止基于 CWD/exe 向上逐级探测
         #[cfg(not(test))]
-        if let Some(app_data) = dirs::data_dir() {
-            let engine_data = app_data.join("com.firefly.ai-engine");
-            let user_engines = engine_data.join("engines");
-            if user_engines.exists() {
-                search_dirs.push(user_engines);
-            }
-            let user_bin = engine_data.join("bin");
-            if user_bin.exists() {
-                search_dirs.push(user_bin);
-            }
-        }
-
-        // 3. 开发环境与 Monorepo 根目录 (仅开发运行态探测，测试沙箱隔离)
-        #[cfg(not(test))]
-        if let Ok(cwd) = std::env::current_dir() {
-            let mut cur = Some(cwd.as_path());
-            for _ in 0..5 {
-                if let Some(dir) = cur {
-                    let d1 = dir.join("build").join("extraResources").join("bin");
-                    if d1.exists() { search_dirs.push(d1); }
-                    let d2 = dir.join("apps").join("desktop").join("build").join("extraResources").join("bin");
-                    if d2.exists() { search_dirs.push(d2); }
-                    let d3 = dir.join("extraResources").join("bin");
-                    if d3.exists() { search_dirs.push(d3); }
-                    cur = dir.parent();
-                } else {
-                    break;
-                }
+        for bin_dir in crate::resource_scope::allowed_user_data_bin_dirs() {
+            if bin_dir.exists() {
+                search_dirs.push(bin_dir);
             }
         }
 
@@ -408,7 +391,7 @@ mod tests {
         create_fake_engine(&bin_dir, "llama-b4321-bin-win-cpu-x64");
 
         let compliance = DriverComplianceService::new();
-        let scheduler = EngineScheduler::new(bin_dir.clone(), compliance);
+        let scheduler = EngineScheduler::new(vec![bin_dir.clone()], compliance);
 
         let engines = scheduler.scan_installed_engines().await;
         // 过滤出该临时测试目录下的引擎（避免被工作区本地环境其他构建目录的引擎污染）
@@ -463,7 +446,7 @@ mod tests {
             )
             .await;
 
-        let scheduler = EngineScheduler::new(bin_dir, compliance);
+        let scheduler = EngineScheduler::new(vec![bin_dir], compliance);
 
         // 创建带 NVIDIA GPU 的 SystemResources
         use crate::hardware::gpu_info::*;
@@ -502,7 +485,7 @@ mod tests {
         create_fake_engine(&bin_dir, "llama-b11095-bin-win-cpu-noavx-x64"); // 兼容补全 SSE4.2 兜底
 
         let compliance = DriverComplianceService::new();
-        let scheduler = EngineScheduler::new(bin_dir.clone(), compliance);
+        let scheduler = EngineScheduler::new(vec![bin_dir.clone()], compliance);
 
         // 1. 现代 CPU (支持 AVX2) -> 优先选择性能最高的 AVX2 包
         let modern_cpu_res = SystemResources {
@@ -562,7 +545,7 @@ mod tests {
         let tmp_avx2_only = TempDir::new().unwrap();
         let avx2_bin_dir = tmp_avx2_only.path().to_path_buf();
         create_fake_engine(&avx2_bin_dir, "llama-b11095-bin-win-cpu-x64");
-        let scheduler_avx2_only = EngineScheduler::new(avx2_bin_dir, DriverComplianceService::new());
+        let scheduler_avx2_only = EngineScheduler::new(vec![avx2_bin_dir], DriverComplianceService::new());
         let result = scheduler_avx2_only.select_engine(&avx1_cpu_res, None).await;
         assert!(result.is_err(), "在缺乏 AVX2 的 CPU 上不应盲目启动 AVX2 引擎");
     }
@@ -607,7 +590,7 @@ mod tests {
         create_fake_engine(&bin_dir, "llama-b11095-bin-win-vulkan-x64");
         create_fake_engine(&bin_dir, "llama-b11095-bin-win-cpu-x64");
 
-        let scheduler = EngineScheduler::new(bin_dir, DriverComplianceService::new());
+        let scheduler = EngineScheduler::new(vec![bin_dir], DriverComplianceService::new());
         let resources = SystemResources {
             cpu: CpuInfo { model: "Ryzen 7".to_string(), cores: 8, threads: 16, speed_mhz: 4000, has_avx2: true, has_avx: true, has_fma: true },
             memory: MemoryInfo { total_mb: 32768, available_mb: 16384 },
@@ -641,7 +624,7 @@ mod tests {
         create_fake_engine(&bin_dir, "llama-b11095-bin-win-vulkan-x64");
         create_fake_engine(&bin_dir, "llama-b11095-bin-win-cpu-x64");
 
-        let scheduler = EngineScheduler::new(bin_dir, DriverComplianceService::new());
+        let scheduler = EngineScheduler::new(vec![bin_dir], DriverComplianceService::new());
         let resources = SystemResources {
             cpu: CpuInfo { model: "Intel Core i5-6500".to_string(), cores: 4, threads: 4, speed_mhz: 3200, has_avx2: true, has_avx: true, has_fma: true },
             memory: MemoryInfo { total_mb: 16384, available_mb: 8192 },
@@ -686,7 +669,7 @@ mod tests {
             )
             .await;
 
-        let scheduler = EngineScheduler::new(bin_dir, compliance);
+        let scheduler = EngineScheduler::new(vec![bin_dir], compliance);
         let resources = SystemResources {
             cpu: CpuInfo { model: "Intel Core i5".to_string(), cores: 4, threads: 8, speed_mhz: 3000, has_avx2: true, has_avx: true, has_fma: true },
             memory: MemoryInfo { total_mb: 16384, available_mb: 8192 },
@@ -723,7 +706,7 @@ mod tests {
         create_fake_engine(&bin_dir, "llama-b11095-bin-win-cpu-x64");
 
         let compliance = DriverComplianceService::new();
-        let scheduler = EngineScheduler::new(bin_dir, compliance);
+        let scheduler = EngineScheduler::new(vec![bin_dir], compliance);
 
         let resources = SystemResources {
             cpu: CpuInfo {
