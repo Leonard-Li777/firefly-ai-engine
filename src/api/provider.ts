@@ -127,6 +127,15 @@ class FallbackEngineApiClient implements IEngineApiClient {
     // 写操作刻意不走 mock 回退：移除配置条目的失败原因必须显式透出给用户
     return this.inner.removeCustomModel(modelId)
   }
+
+  consumeUiIntent() {
+    // 读操作 + 幂等消费：取不到时降级为「无待消费意图」，不阻塞前端挂载
+    return this.withFallback(
+      'consumeUiIntent',
+      () => this.inner.consumeUiIntent(),
+      () => mockApiClient.consumeUiIntent()
+    )
+  }
 }
 
 /**
@@ -139,7 +148,13 @@ class FallbackEngineApiClient implements IEngineApiClient {
  */
 let instance: IEngineApiClient | null = null
 
-function isTauriEnvironment(): boolean {
+/**
+ * 是否运行在 Tauri WebView 中（浏览器/测试环境为 false）
+ *
+ * 供 provider 装配与 Tauri 事件桥接（src/lib/engine-ui-intent.ts）共用：
+ * 非 Tauri 环境下 `@tauri-apps/api` 的 listen/invoke 均不可用。
+ */
+export function isTauriEnvironment(): boolean {
   return typeof window !== 'undefined' && !!(window as any).__TAURI_INTERNALS__
 }
 

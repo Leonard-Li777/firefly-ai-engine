@@ -57,6 +57,22 @@ pub struct DownloadTask {
 pub type DownloadTaskStore = Arc<Mutex<HashMap<String, DownloadTask>>>;
 /// 活跃下载子进程 PID 映射 (taskId -> pid)
 pub type ChildPidStore = Arc<Mutex<HashMap<String, u32>>>;
+/// 待消费的 UI 导航意图存储（open-ui 深链补偿）
+pub type UiIntentStore = Arc<Mutex<Option<UiIntentRecord>>>;
+
+/// open-ui 深链意图记录
+///
+/// Tauri 的 `window.emit` 只在 WebView 前端已挂载监听器时才能送达。Desktop 的
+/// 引导条会**并行**发起「静默拉起引擎」与 `openUI({panel:'models'})`，此时引擎可能
+/// 刚启动、前端尚未挂载，事件必然丢失。故 open-ui 除 emit 外还把意图写入本记录，
+/// 由前端在挂载后调用 `POST /api/engine/ui-intent/consume` 一次性补偿取回。
+#[derive(Debug, Clone, Serialize)]
+pub struct UiIntentRecord {
+    /// 目标面板：error / logs / models / default
+    pub panel: String,
+    /// 单调递增序号，便于前端识别「比已应用更新」的意图
+    pub seq: u64,
+}
 
 // ─────────────────────── 应用状态 ───────────────────────
 
@@ -72,6 +88,8 @@ pub struct AppState {
     pub model_downloader_path: Arc<PathBuf>,
     /// Tauri AppHandle：open-ui 显示主窗口并向前端 emit 导航意图（错误分析侧边栏等）
     pub app_handle: Option<tauri::AppHandle>,
+    /// 待消费的 UI 导航意图（前端尚未挂载时的事件补偿，见 `UiIntentRecord`）
+    pub ui_intent: UiIntentStore,
 }
 
 // ─────────────────────── 请求结构 ───────────────────────
@@ -2683,18 +2701,53 @@ async fn open_ui(
         .unwrap_or_else(|| "default".to_string());
     info!("收到 open-ui 请求，准备显示主窗口 panel={}", panel);
 
+    // 先记录「待消费意图」，再 emit：
+    // 前端若已挂载则立即收到事件、随后调用 consume 端点清空；若尚未挂载（引擎冷启动），
+    // 则由前端挂载后通过 consume 端点补偿取回，避免深链事件丢失。
+    let seq = record_ui_intent(&state.ui_intent, &panel).await;
+
     // 显示并聚焦主窗口（静默 --silent 启动后由 Desktop 跳转唤起）
     if let Some(app_handle) = state.app_handle.as_ref() {
         use tauri::{Emitter, Manager};
         if let Some(window) = app_handle.get_webview_window("main") {
             let _ = window.show();
             let _ = window.set_focus();
-            // 通知前端打开目标面板（错误分析侧边栏 / 运行日志）
-            let _ = window.emit("engine:ui-intent", json!({ "panel": panel }));
+            // 通知前端打开目标面板（错误分析侧边栏 / 运行日志 / 模型列表）
+            let _ = window.emit("engine:ui-intent", json!({ "panel": panel, "seq": seq }));
         }
     }
 
-    (StatusCode::ACCEPTED, Json(json!({ "panel": panel })))
+    (StatusCode::ACCEPTED, Json(json!({ "panel": panel, "seq": seq })))
+}
+
+/// POST /api/engine/ui-intent/consume
+/// 一次性取回并清空「待消费的 UI 导航意图」（见 `UiIntentRecord`）。
+/// 前端挂载后调用，用于补偿 open-ui 早于前端就绪而丢失的事件；
+/// 事件通道正常送达时前端也会调用本端点以清空，避免 WebView 重载后重复跳转。
+async fn consume_ui_intent(State(state): State<AppState>) -> impl IntoResponse {
+    match take_ui_intent(&state.ui_intent).await {
+        Some(record) => {
+            info!("前端补偿消费 UI 意图 panel={} seq={}", record.panel, record.seq);
+            (StatusCode::OK, Json(json!({ "intent": record })))
+        }
+        None => (StatusCode::OK, Json(json!({ "intent": null }))),
+    }
+}
+
+/// 写入待消费的 UI 导航意图，返回本次递增序号
+async fn record_ui_intent(store: &UiIntentStore, panel: &str) -> u64 {
+    let mut slot = store.lock().await;
+    let next = slot.as_ref().map(|r| r.seq).unwrap_or(0) + 1;
+    *slot = Some(UiIntentRecord {
+        panel: panel.to_string(),
+        seq: next,
+    });
+    next
+}
+
+/// 取回并清空待消费的 UI 导航意图（一次性消费语义）
+async fn take_ui_intent(store: &UiIntentStore) -> Option<UiIntentRecord> {
+    store.lock().await.take()
 }
 
 /// POST /api/engine/shutdown
@@ -2802,6 +2855,7 @@ pub fn management_routes() -> Router<AppState> {
         .route("/api/engine/params", post(update_params))
         .route("/api/engine/hardware", get(hardware_info))
         .route("/api/engine/open-ui", post(open_ui))
+        .route("/api/engine/ui-intent/consume", post(consume_ui_intent))
         .route("/api/engine/shutdown", post(shutdown))
         .route("/api/engine/reset-downgrade", post(reset_downgrade))
 }
@@ -2921,5 +2975,62 @@ mod tests {
             let vulkan_compat = resolve_download_candidates("vulkan-compat", &versions);
             assert_eq!(vulkan_compat[0].filename, "llama-b11120-bin-win-vulkan-compat-x64.zip");
         }
+    }
+
+    // ── UI 导航意图（open-ui 深链）待消费存储 ──
+
+    fn new_ui_intent_store() -> UiIntentStore {
+        Arc::new(Mutex::new(None))
+    }
+
+    /// 无待消费意图时消费返回 None（前端正常挂载、无深链）
+    #[tokio::test]
+    async fn ui_intent_consume_returns_none_when_empty() {
+        let store = new_ui_intent_store();
+        assert!(take_ui_intent(&store).await.is_none());
+    }
+
+    /// 一次性消费语义：取回后清空，避免 WebView 重载后重复跳转
+    #[tokio::test]
+    async fn ui_intent_is_consumed_exactly_once() {
+        let store = new_ui_intent_store();
+        let seq = record_ui_intent(&store, "models").await;
+        assert_eq!(seq, 1);
+
+        let taken = take_ui_intent(&store).await.expect("应取回待消费意图");
+        assert_eq!(taken.panel, "models");
+        assert_eq!(taken.seq, 1);
+
+        assert!(
+            take_ui_intent(&store).await.is_none(),
+            "二次消费必须为空，否则重载会重复跳转"
+        );
+    }
+
+    /// 序号单调递增，且仅保留最新意图（冷启动期间连续多次 open-ui 时以最后一次为准）
+    #[tokio::test]
+    async fn ui_intent_seq_monotonic_and_latest_wins() {
+        let store = new_ui_intent_store();
+        assert_eq!(record_ui_intent(&store, "logs").await, 1);
+        assert_eq!(record_ui_intent(&store, "models").await, 2);
+
+        let taken = take_ui_intent(&store).await.expect("应取回待消费意图");
+        assert_eq!(taken.panel, "models");
+        assert_eq!(taken.seq, 2);
+
+        // 消费后序号从 0 重新计数（store 已空）
+        assert_eq!(record_ui_intent(&store, "error").await, 1);
+    }
+
+    /// 前端契约：序列化字段名为 panel / seq（前端 UiIntentRecord 依赖该形状）
+    #[test]
+    fn ui_intent_record_serializes_to_panel_and_seq() {
+        let record = UiIntentRecord {
+            panel: "models".to_string(),
+            seq: 3,
+        };
+        let value = serde_json::to_value(&record).expect("序列化失败");
+        assert_eq!(value["panel"], "models");
+        assert_eq!(value["seq"], 3);
     }
 }

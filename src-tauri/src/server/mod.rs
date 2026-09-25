@@ -53,6 +53,8 @@ pub async fn start_server(
         active_child_pids,
         model_downloader_path,
         app_handle,
+        // 待消费的 UI 导航意图：open-ui 写入、前端挂载后补偿消费
+        ui_intent: Arc::new(Mutex::new(None)),
     };
 
     // CORS 配置（允许主程序前端跨域调用）

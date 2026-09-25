@@ -13,6 +13,7 @@ export type EngineErrorCode =
   | 'GPU_DRIVER_OUTDATED'
   | 'LOCAL_AI_UNSUPPORTED'
   | 'ENGINE_NOT_FOUND'
+  | 'MODEL_NOT_FOUND'
   | 'MODEL_LOAD_FAILED'
   | 'SERVER_START_FAILED'
   | 'SERVER_CRASHED'
@@ -95,6 +96,21 @@ export function classifyEngineErrorCode(rawText: string): EngineErrorCode {
     searchText.includes('找不到指定的文件')
   ) {
     return 'ENGINE_NOT_FOUND'
+  }
+
+  // 模型缺失：尚未下载 / 存储目录为空 / 指定模型文件不存在
+  // 必须早于「模型加载失败」与「服务启动失败」判定——这类失败与模型内容无关，
+  // 只是没有可用的 .gguf 文件，给用户的建议应是「先去下载模型」而非「检查文件损坏」。
+  if (
+    searchText.includes('未检测到任何 gguf') ||
+    searchText.includes('没有可用 gguf') ||
+    searchText.includes('未找到模型文件') ||
+    searchText.includes('模型文件不存在') ||
+    searchText.includes('未检测到可用模型') ||
+    searchText.includes('no gguf model') ||
+    searchText.includes('model file not found')
+  ) {
+    return 'MODEL_NOT_FOUND'
   }
 
   // 模型加载
@@ -204,6 +220,19 @@ export function getEngineErrorInfo(code: EngineErrorCode): Omit<
         solutions: [
           t('重新安装应用或恢复引擎组件'),
           t('检查模型与引擎安装目录是否被安全软件隔离'),
+          t('查看运行日志获取更多技术细节')
+        ],
+        canRetry: true
+      }
+    case 'MODEL_NOT_FOUND':
+      return {
+        severity: 'high',
+        title: t('尚未下载模型'),
+        userMessage: t('当前模型存储目录下没有可用的 GGUF 模型文件，引擎无法启动'),
+        solutions: [
+          t('前往「模型管理」下载一个模型后重试'),
+          t('在「模型管理」中重新扫描存储目录'),
+          t('确认模型存储目录设置正确且包含 .gguf 文件'),
           t('查看运行日志获取更多技术细节')
         ],
         canRetry: true

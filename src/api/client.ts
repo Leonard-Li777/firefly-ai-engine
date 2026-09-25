@@ -4,7 +4,8 @@ import {
   ModelItem,
   DownloadProgressEvent,
   DownloadTaskSummary,
-  RuntimeParams
+  RuntimeParams,
+  UiIntentConsumeResponse
 } from './types'
 import { DownloadTaskPoller } from './download-task-poller'
 
@@ -140,6 +141,14 @@ export interface IEngineApiClient {
    * 绑定真实服务端口（仅 Tauri HTTP 实现提供；mock 实现可忽略）
    */
   ensureReady?(): Promise<void>
+
+  /**
+   * 一次性取回并清空引擎侧「待消费的 UI 导航意图」
+   *
+   * 用于补偿 open-ui 早于 WebView 前端挂载而丢失的深链事件（引擎冷启动场景）；
+   * 事件正常送达时前端也会调用本方法以清空，避免 WebView 重载后重复跳转。
+   */
+  consumeUiIntent(): Promise<UiIntentConsumeResponse>
 }
 
 /**
@@ -449,5 +458,10 @@ export class HttpEngineApiClient implements IEngineApiClient {
   async clearEngineLogs(): Promise<{ success: boolean }> {
     await this.ensureReady()
     return this.requestJson('/api/engine/logs/clear', { method: 'POST' })
+  }
+
+  async consumeUiIntent(): Promise<UiIntentConsumeResponse> {
+    await this.ensureReady()
+    return this.requestJson<UiIntentConsumeResponse>('/api/engine/ui-intent/consume', { method: 'POST' })
   }
 }

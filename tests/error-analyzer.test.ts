@@ -26,6 +26,32 @@ describe('error-analyzer：llama.cpp 错误识别与建议（移植 desktop）',
     expect(classifyEngineErrorCode('no space left on device')).toBe('DISK_FULL')
   })
 
+  it('识别模型缺失（未下载），且不误判为加载失败或服务启动失败', () => {
+    // Rust 侧 start_service 在未检测到模型时抛出的原文
+    expect(
+      classifyEngineErrorCode('当前模型存储目录下未检测到任何 GGUF 模型文件，请先在模型管理中下载模型')
+    ).toBe('MODEL_NOT_FOUND')
+    expect(
+      classifyEngineErrorCode('未找到模型文件: qwen.gguf，且当前存储目录中没有可用 GGUF 模型')
+    ).toBe('MODEL_NOT_FOUND')
+    expect(classifyEngineErrorCode('模型文件不存在: D:/models/a.gguf，请在模型管理中重新下载')).toBe(
+      'MODEL_NOT_FOUND'
+    )
+    expect(classifyEngineErrorCode('no gguf model found in models dir')).toBe('MODEL_NOT_FOUND')
+  })
+
+  it('模型缺失给出「去模型管理下载」类建议', () => {
+    const analysis = analyzeEngineError(
+      '当前模型存储目录下未检测到任何 GGUF 模型文件，请先在模型管理中下载模型'
+    )
+    expect(analysis).not.toBeNull()
+    expect(analysis!.code).toBe('MODEL_NOT_FOUND')
+    expect(analysis!.severity).toBe('high')
+    expect(analysis!.canRetry).toBe(true)
+    expect(analysis!.solutions.join('\n')).toContain('模型管理')
+    expect(analysis!.rawMessage).toContain('GGUF')
+  })
+
   it('输出用户可读标题与解决建议', () => {
     const analysis = analyzeEngineError('CUDA error: out of memory')
     expect(analysis).not.toBeNull()

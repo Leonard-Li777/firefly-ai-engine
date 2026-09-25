@@ -194,7 +194,25 @@ impl EngineCoordinator {
     }
 
     /// 启动引擎子进程服务
+    ///
+    /// 失败时把原因写入 `guard.last_error`，使 `/api/engine/status` 能把它带给引擎前端
+    /// （Footer 错误行 / 错误分析侧边栏）。**校验类失败**（未检测到 GGUF 模型、
+    /// 引擎二进制缺失、模型文件不存在等）在拉起子进程之前就已返回，不会进入
+    /// 子进程监控循环，若不显式落库，前端将完全看不到失败原因。
     pub async fn start_service(&self) -> anyhow::Result<()> {
+        match self.start_service_inner().await {
+            Ok(()) => Ok(()),
+            Err(e) => {
+                let message = e.to_string();
+                tracing::error!("引擎服务启动失败: {}", message);
+                self.guard.set_last_error(message).await;
+                Err(e)
+            }
+        }
+    }
+
+    /// `start_service` 的实际实现；错误由调用方统一落库
+    async fn start_service_inner(&self) -> anyhow::Result<()> {
         let current_status = self.guard.status().await;
         if current_status == ProcessStatus::Running || current_status == ProcessStatus::Starting {
             tracing::info!("引擎服务已经在运行或启动中，无需重复启动");

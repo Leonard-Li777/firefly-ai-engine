@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Moon,
   Sun,
@@ -26,7 +26,7 @@ import { LanguageSelector } from './components/common/language-selector'
 import { Footer } from './components/common/Footer'
 import { ToastContainer } from './components/common/Toast'
 import { ErrorAnalysisSidebar } from './components/errors/error-analysis-sidebar'
-import { ENGINE_UI_INTENT_EVENT, EngineUiIntent, parseUiPanel } from './lib/engine-ui-intent'
+import { bindEngineUiIntentBridge, ENGINE_UI_INTENT_EVENT, EngineUiIntent, parseUiPanel } from './lib/engine-ui-intent'
 import { useEngineStore } from './stores/engine-store'
 import { i18nScope, t } from './languages'
 import { getEngineApiClient, isMockMode } from './api/provider'
@@ -50,6 +50,9 @@ export const App: React.FC = () => {
     [engineStatus?.last_error, storeError]
   )
 
+  // 引擎侧记录的新错误（不含前端操作产生的 storeError）——用于自动展开错误面板
+  const engineLastError = engineStatus?.last_error || null
+
   // 顶层分层 Tab：
   // 1: 'dashboard' (概览仪表板)
   // 2: 'models' (模型库与存储管理)
@@ -60,6 +63,22 @@ export const App: React.FC = () => {
   const [activeMainTab, setActiveMainTab] = useState<string>('dashboard')
   // 错误分析侧边栏（Footer 点击错误 / Desktop open-ui panel=error 打开）
   const [errorPanelOpen, setErrorPanelOpen] = useState(false)
+
+  // 出现「新的」引擎错误时自动展开错误分析面板。
+  // 典型场景：Desktop（engine-bridge）拉起 AI 服务失败（如未下载任何 GGUF 模型），
+  // 用户并未在引擎内点击任何按钮，仅在 Footer 显示一行提示容易被忽略。
+  // 对同一个错误值只自动展开一次：Footer 每 2.5s 轮询状态，用户手动关闭后不应反复弹出；
+  // 错误被清除（启动成功）后复位，下次失败仍会自动展开。
+  const autoOpenedErrorRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (!engineLastError) {
+      autoOpenedErrorRef.current = null
+      return
+    }
+    if (autoOpenedErrorRef.current === engineLastError) return
+    autoOpenedErrorRef.current = engineLastError
+    setErrorPanelOpen(true)
+  }, [engineLastError])
 
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
@@ -96,7 +115,7 @@ export const App: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Desktop 经 /api/engine/open-ui 触发的导航意图：error=错误分析侧边栏，logs=运行日志
+  // Desktop 经 /api/engine/open-ui 触发的导航意图：error=错误分析侧边栏，logs=运行日志，models=模型管理
   useEffect(() => {
     const handleUiIntent = (event: Event) => {
       const detail = (event as CustomEvent<EngineUiIntent>).detail
@@ -110,9 +129,13 @@ export const App: React.FC = () => {
         setActiveMainTab('models')
       }
     }
+    // 必须先注册 DOM 监听，再绑定桥接：桥接层会同步派发补偿意图的 DOM 事件，
+    // 顺序颠倒会漏掉首个意图
     window.addEventListener(ENGINE_UI_INTENT_EVENT, handleUiIntent as EventListener)
+    const disposeBridge = bindEngineUiIntentBridge()
     return () => {
       window.removeEventListener(ENGINE_UI_INTENT_EVENT, handleUiIntent as EventListener)
+      disposeBridge()
     }
   }, [])
 

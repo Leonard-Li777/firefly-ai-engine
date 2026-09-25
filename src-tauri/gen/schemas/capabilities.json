@@ -1,1 +1,1 @@
-{}
+{"default":{"identifier":"default","description":"萤核AI引擎主窗口默认能力。当前仅需事件监听权限：Desktop 经 POST /api/engine/open-ui 深链（模型管理 / 错误分析 / 运行日志）时，Rust 侧以 window.emit(\"engine:ui-intent\") 通知前端；Tauri 2 的权限系统默认拒绝 webview 监听事件，缺失本能力时深链只能前置窗口而无法切换面板。","local":true,"windows":["main"],"permissions":["core:event:allow-listen","core:event:allow-unlisten"]}}

@@ -353,6 +353,22 @@ impl ProcessGuard {
         *err = None;
     }
 
+    /// 记录最近一次错误，并把进程状态置为 [`ProcessStatus::Failed`]
+    ///
+    /// 供**启动前的校验类失败**使用（如未检测到 GGUF 模型、引擎二进制缺失、
+    /// 模型文件不存在）。这类错误在拉起子进程之前就已返回，不会进入下方的
+    /// 子进程监控循环，因此不会被自动记录——必须显式落库，否则
+    /// `/api/engine/status` 的 `last_error` 恒为 `None`，
+    /// 引擎前端（Footer 错误行 / 错误分析侧边栏）无从展示失败原因。
+    ///
+    /// 锁顺序与 [`Self::mark_running`] 保持一致（status → last_error），避免死锁。
+    pub async fn set_last_error(&self, message: impl Into<String>) {
+        let mut status = self.status.lock().await;
+        *status = ProcessStatus::Failed;
+        let mut err = self.last_error.lock().await;
+        *err = Some(message.into());
+    }
+
     /// 标记运行成功状态
     pub async fn mark_running(&self) {
         let mut status = self.status.lock().await;
@@ -494,5 +510,69 @@ impl Drop for ProcessGuard {
                 });
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn make_guard() -> Arc<ProcessGuard> {
+        ProcessGuard::new(DriverComplianceService::new())
+    }
+
+    /// 校验类失败必须能落库：状态置为 Failed 且 last_error 有值，
+    /// 否则 `/api/engine/status` 的 last_error 恒为 None，前端无法展示。
+    #[tokio::test]
+    async fn set_last_error_records_message_and_marks_failed() {
+        let guard = make_guard();
+
+        assert!(guard.last_error().await.is_none());
+        assert_eq!(guard.status().await, ProcessStatus::Stopped);
+
+        guard
+            .set_last_error("当前模型存储目录下未检测到任何 GGUF 模型文件，请先在模型管理中下载模型")
+            .await;
+
+        assert_eq!(
+            guard.last_error().await.as_deref(),
+            Some("当前模型存储目录下未检测到任何 GGUF 模型文件，请先在模型管理中下载模型")
+        );
+        assert_eq!(guard.status().await, ProcessStatus::Failed);
+    }
+
+    /// 启动成功路径必须清空上一次的错误，避免残留错误误导用户。
+    #[tokio::test]
+    async fn mark_running_clears_previous_error() {
+        let guard = make_guard();
+        guard.set_last_error("上一次启动失败").await;
+
+        guard.mark_running().await;
+
+        assert!(guard.last_error().await.is_none());
+        assert_eq!(guard.status().await, ProcessStatus::Running);
+    }
+
+    /// Failed 状态不应阻止重试：`start_service` 只对 Running / Starting 提前返回。
+    #[tokio::test]
+    async fn failed_status_is_retryable() {
+        let guard = make_guard();
+        guard.set_last_error("首次失败").await;
+
+        let status = guard.status().await;
+        assert_ne!(status, ProcessStatus::Running);
+        assert_ne!(status, ProcessStatus::Starting);
+    }
+
+    /// 清空错误不应改变进程状态（与 set_last_error 的语义区分）。
+    #[tokio::test]
+    async fn clear_last_error_keeps_status_untouched() {
+        let guard = make_guard();
+        guard.set_last_error("失败").await;
+
+        guard.clear_last_error().await;
+
+        assert!(guard.last_error().await.is_none());
+        assert_eq!(guard.status().await, ProcessStatus::Failed);
     }
 }

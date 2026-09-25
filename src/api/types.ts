@@ -186,3 +186,23 @@ export interface ModelResolution {
   dirPath: string
   dirType: 'modern' | 'modelscope' | 'legacy' | 'root'
 }
+
+/**
+ * open-ui 深链意图记录（引擎侧「待消费」存储）
+ *
+ * Desktop 的引导条会并行发起「静默拉起引擎」与 `openUI({panel})`，此时引擎可能刚启动、
+ * WebView 前端尚未挂载，Tauri 事件必然丢失。引擎把意图暂存于此，前端挂载后一次性取回补偿。
+ */
+export interface UiIntentRecord {
+  /** 目标面板：error / logs / models / default */
+  panel: string
+  /** 单调递增序号 */
+  seq: number
+}
+
+/**
+ * POST /api/engine/ui-intent/consume 响应：取回并清空待消费意图
+ */
+export interface UiIntentConsumeResponse {
+  intent: UiIntentRecord | null
+}

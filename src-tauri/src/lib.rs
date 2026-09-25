@@ -202,3 +202,57 @@ pub fn run() {
             }
         });
 }
+
+#[cfg(test)]
+mod acl_capability_tests {
+    //! 校验主窗口的 ACL 能力声明（`src-tauri/capabilities/default.json`）。
+    //!
+    //! 背景：Desktop 通过 `POST /api/engine/open-ui` 深链唤起引擎面板时，Rust 侧以
+    //! `window.emit("engine:ui-intent")` 通知前端。Tauri 2 对 webview 默认零权限，
+    //! 缺少 `core:event:allow-listen` 时前端 `listen()` 会抛
+    //! `event.listen not allowed`，表现为「只前置窗口、不切换面板」。
+    //!
+    //! 本模块直接对**编译期解析后的 runtime authority** 调用 `resolve_access`，
+    //! 因此无需启动 WebView2 即可确证 ACL 是否生效——避免依赖真实浏览器运行时。
+
+    use tauri::ipc::Origin;
+
+    /// 主窗口（label = `main`）必须被授予事件监听 / 取消监听权限。
+    #[test]
+    fn main_window_can_listen_and_unlisten_events() {
+        let mut ctx: tauri::Context<tauri::Wry> = tauri::generate_context!();
+        let authority = ctx.runtime_authority_mut();
+
+        for command in ["plugin:event|listen", "plugin:event|unlisten"] {
+            assert!(
+                authority
+                    .resolve_access(command, "main", "main", &Origin::Local)
+                    .is_some(),
+                "主窗口 main 未被授予 {command} 权限；\
+                 请检查 src-tauri/capabilities/default.json 是否声明 core:event:allow-listen"
+            );
+        }
+    }
+
+    /// 反向断言：能力声明限定 `windows: ["main"]`，未声明的 label 不应获得该权限。
+    ///
+    /// 若本断言失败，说明能力被误声明为全局（缺少 windows 约束），
+    /// 会把事件监听权限扩散到所有窗口。
+    #[test]
+    fn undeclared_window_labels_are_not_granted_event_permissions() {
+        let mut ctx: tauri::Context<tauri::Wry> = tauri::generate_context!();
+        let authority = ctx.runtime_authority_mut();
+
+        assert!(
+            authority
+                .resolve_access(
+                    "plugin:event|listen",
+                    "not-a-declared-window",
+                    "not-a-declared-webview",
+                    &Origin::Local,
+                )
+                .is_none(),
+            "未声明的窗口 label 不应获得事件监听权限，能力声明可能缺少 windows 约束"
+        );
+    }
+}

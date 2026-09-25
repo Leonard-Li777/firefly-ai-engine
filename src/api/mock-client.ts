@@ -4,7 +4,8 @@ import {
   ModelItem,
   DownloadProgressEvent,
   DownloadTaskSummary,
-  RuntimeParams
+  RuntimeParams,
+  UiIntentConsumeResponse
 } from './types'
 import { IEngineApiClient } from './client'
 import { modelMetadataService } from '../lib/model-metadata-service'
@@ -530,6 +531,11 @@ export class MockApiClient implements IEngineApiClient {
   async clearEngineLogs(): Promise<{ success: boolean }> {
     this.mockLogs = []
     return { success: true }
+  }
+
+  /** 沙盒模式无真实引擎进程，不存在待消费的深链意图 */
+  async consumeUiIntent(): Promise<UiIntentConsumeResponse> {
+    return { intent: null }
   }
 }
 
