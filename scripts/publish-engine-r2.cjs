@@ -132,10 +132,18 @@ function createR2Client(credentials) {
 
       const contentHash =
         options.contentHash || 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
-      const canonicalUri = encodeURI(pathStr)
+      const urlObj = new URL(`https://${host}${pathStr}`)
+      const canonicalUri = urlObj.pathname
+      const queryParams = []
+      urlObj.searchParams.forEach((val, key) => {
+        queryParams.push(`${encodeURIComponent(key)}=${encodeURIComponent(val)}`)
+      })
+      queryParams.sort()
+      const canonicalQueryString = queryParams.join('&')
+
       const canonicalHeaders = `host:${host}\nx-amz-content-sha256:${contentHash}\nx-amz-date:${amzDate}\n`
       const signedHeaders = 'host;x-amz-content-sha256;x-amz-date'
-      const canonicalRequest = `${method}\n${canonicalUri}\n\n${canonicalHeaders}\n${signedHeaders}\n${contentHash}`
+      const canonicalRequest = `${method}\n${canonicalUri}\n${canonicalQueryString}\n${canonicalHeaders}\n${signedHeaders}\n${contentHash}`
 
       const credentialScope = `${dateStamp}/${REGION}/${service}/aws4_request`
       const stringToSign = `AWS4-HMAC-SHA256\n${amzDate}\n${credentialScope}\n${hash(canonicalRequest)}`
