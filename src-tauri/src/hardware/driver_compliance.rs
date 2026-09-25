@@ -221,9 +221,35 @@ pub async fn detect_nvidia_driver_info() -> (Option<f64>, Option<f64>) {
         return (None, None);
     }
 
+    // 1. 优先尝试通过 nvidia-smi 提取最精确的 Driver Version 与 CUDA Version
+    if let Ok(output) = tokio::process::Command::new("nvidia-smi").output().await {
+        let text = String::from_utf8_lossy(&output.stdout).to_string();
+        let driver_re = regex::Regex::new(r"Driver Version:\s*(\d+\.?\d*)").ok();
+        let cuda_re = regex::Regex::new(r"CUDA Version:\s*(\d+\.?\d*)").ok();
+
+        let driver_ver = driver_re
+            .and_then(|re| re.captures(&text))
+            .and_then(|cap| cap.get(1))
+            .and_then(|m| m.as_str().parse::<f64>().ok());
+
+        let cuda_ver = cuda_re
+            .and_then(|re| re.captures(&text))
+            .and_then(|cap| cap.get(1))
+            .and_then(|m| m.as_str().parse::<f64>().ok());
+
+        if driver_ver.is_some() || cuda_ver.is_some() {
+            tracing::info!(
+                "[驱动合规] nvidia-smi 探测成功 - 驱动版本: {:?}, CUDA 版本: {:?}",
+                driver_ver,
+                cuda_ver
+            );
+            return (driver_ver, cuda_ver);
+        }
+    }
+
     #[cfg(windows)]
     {
-        // 1. 尝试直接通过 nvcuda.dll 提取驱动支持的最高 CUDA API 版本
+        // 2. 回退通过 nvcuda.dll 提取驱动支持的最高 CUDA API 版本
         use windows_sys::Win32::System::LibraryLoader::{GetProcAddress, LoadLibraryA};
         unsafe {
             let dll_name = b"nvcuda.dll\0";
@@ -235,13 +261,32 @@ pub async fn detect_nvidia_driver_info() -> (Option<f64>, Option<f64>) {
                     let get_ver_fn: PfnCuDriverGetVersion = std::mem::transmute(proc);
                     let mut version: i32 = 0;
                     if get_ver_fn(&mut version) == 0 && version > 0 {
-                        // version 格式：major * 1000 + minor * 10 (例如 12040 代表 12.4)
+                        // version 格式：major * 1000 + minor * 10 (例如 13010 代表 13.1, 12040 代表 12.4)
                         let major = version / 1000;
                         let minor = (version % 1000) / 10;
                         let cuda_ver = major as f64 + (minor as f64 / 10.0);
                         windows_sys::Win32::Foundation::FreeLibrary(h_module);
-                        tracing::debug!("[驱动合规] nvcuda.dll 检测成功: CUDA API 版本: {}", cuda_ver);
-                        return (Some(cuda_ver * 40.0), Some(cuda_ver)); // driver_ver 给出估算或通过下文精确探测
+
+                        // 根据 NVIDIA 官方驱动与 CUDA 版本对应关系精确基准估算：
+                        // CUDA 13.0+ 对应 Windows 驱动最低 R560 (560.00+)
+                        // CUDA 12.4+ 对应 Windows 驱动最低 R550 (550.58+)
+                        // CUDA 12.0+ 对应 Windows 驱动最低 R525 (527.41+)
+                        let baseline_driver_ver = if cuda_ver >= 13.0 {
+                            565.0
+                        } else if cuda_ver >= 12.4 {
+                            550.0
+                        } else if cuda_ver >= 12.0 {
+                            525.0
+                        } else {
+                            450.0
+                        };
+
+                        tracing::info!(
+                            "[驱动合规] nvcuda.dll 探测成功: CUDA API 版本: {}, 映射驱动基准: {}",
+                            cuda_ver,
+                            baseline_driver_ver
+                        );
+                        return (Some(baseline_driver_ver), Some(cuda_ver));
                     }
                 }
                 windows_sys::Win32::Foundation::FreeLibrary(h_module);
@@ -249,27 +294,7 @@ pub async fn detect_nvidia_driver_info() -> (Option<f64>, Option<f64>) {
         }
     }
 
-    // 2. 回退通过 nvidia-smi 提取
-    let output = match tokio::process::Command::new("nvidia-smi").output().await {
-        Ok(out) => String::from_utf8_lossy(&out.stdout).to_string(),
-        Err(_) => return (None, None),
-    };
-
-    // 正则提取 Driver Version: (\d+\.\d+)
-    let driver_re = regex::Regex::new(r"Driver Version:\s*(\d+\.?\d*)").ok();
-    let cuda_re = regex::Regex::new(r"CUDA Version:\s*(\d+\.?\d*)").ok();
-
-    let driver_ver = driver_re
-        .and_then(|re| re.captures(&output))
-        .and_then(|cap| cap.get(1))
-        .and_then(|m| m.as_str().parse::<f64>().ok());
-
-    let cuda_ver = cuda_re
-        .and_then(|re| re.captures(&output))
-        .and_then(|cap| cap.get(1))
-        .and_then(|m| m.as_str().parse::<f64>().ok());
-
-    (driver_ver, cuda_ver)
+    (None, None)
 }
 
 /// 获取显卡驱动官方下载页面 URL（支持 CN / 国际区分）
