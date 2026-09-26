@@ -44,6 +44,7 @@
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "4.3.4",
+    "@voerkai18n/cli": "3.0.22",
     "jsdom": "^26.0.0",
     "tailwindcss": "4.1.18",
     "typescript": "5.9.3",
