@@ -119,6 +119,8 @@ interface ModelRowProps {
   model: ModelItem
   isCurrent: boolean
   isEx?: boolean
+  /** Desktop 深链引导的目标行：呼吸高亮光晕（Issue 0046 §3） */
+  highlighted?: boolean
   onActivate: (modelId: string, source?: string, localPath?: string, modelName?: string) => Promise<boolean | void>
   onOpenConfig: (model: ModelItem) => void
   /** 模型下载提交前的联动回调（PRD-0043：联动提交引擎包下载并提示双 tab 进度） */
@@ -130,7 +132,7 @@ interface ModelRowProps {
  * 「已激活」状态条、描述、本地路径、状态与操作按钮各自独占整行子行，互不挤压。
  * 下载进行中以整行子区块展开进度条。
  */
-const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isEx = false, onActivate, onOpenConfig, onDownloadSubmit }) => {
+const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isEx = false, highlighted = false, onActivate, onOpenConfig, onDownloadSubmit }) => {
   const { fetchModels, modelsDir } = useEngineStore()
   const handleDownloadComplete = React.useCallback(() => {
     fetchModels()
@@ -272,13 +274,21 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isEx = false,
 
   return (
     <div
-      className={`group relative transition-colors rounded-lg ${isEx
+      data-model-key={`${model.id}@${model.source}`}
+      className={`group relative transition-colors rounded-lg ${highlighted ? 'model-row-highlight' : ''} ${isEx
           ? 'opacity-50 grayscale-[0.5]'
           : isCurrent
             ? 'bg-primary/10 ring-1 ring-primary/50 shadow-xs hover:bg-primary/10'
             : 'hover:bg-muted/30'
         }`}
     >
+      {/* 引导安装提示横幅（Desktop 深链聚焦目标模型时呈现，Issue 0046 §3） */}
+      {highlighted && (
+        <div className="flex items-center gap-2 rounded-t-lg border-b border-primary/30 bg-primary/10 px-4 py-1.5 text-[11px] font-medium text-primary">
+          <Sparkles className="h-3.5 w-3.5 shrink-0" />
+          <span>{t('高维修正需要该模型，请下载后启用')}</span>
+        </div>
+      )}
 
       {/* 主行网格：与表头 8 列严格对齐 */}
       <div className={`${MODEL_GRID} px-4 pt-3 pb-1.5`}>
@@ -700,11 +710,29 @@ function safeModelsLen(models: ModelItem[] | null | undefined): number {
   return models.filter(m => m && m.isDownloaded).length
 }
 
-export const ModelListPanel: React.FC = () => {
+/** 高亮呼吸光晕持续时长（毫秒）：足够用户看清目标行，又不长期干扰浏览 */
+const FOCUS_HIGHLIGHT_DURATION_MS = 6000
+
+export interface ModelListPanelProps {
+  /**
+   * Desktop 深链聚焦目标（Issue 0046 §3）：模型 id/名称关键词。
+   * 命中后自动切到对应来源页签、滚动居中并呈现呼吸高亮光晕 + 引导横幅。
+   */
+  focusModel?: string
+  /** 推荐模型源：命中时自动切换页签，保证可顺畅下载的源在前 */
+  focusSource?: ModelSource
+}
+
+export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focusSource }) => {
   const { models, fetchModels, activeModelKey, switchModel, engineStatus, engineList, fetchEngineList, lastAddedSource } = useEngineStore()
   const [activeSource, setActiveSource] = useState<ModelSource>('modelscope')
   const [showRecommendedOnly, setShowRecommendedOnly] = useState<boolean>(true)
   const [drawerModel, setDrawerModel] = useState<ModelItem | null>(null)
+  /** 当前处于呼吸高亮状态的模型行 key（`${id}@${source}`） */
+  const [highlightedKey, setHighlightedKey] = useState<string | null>(null)
+  const listContainerRef = React.useRef<HTMLDivElement | null>(null)
+  /** 已成功应用过聚焦的关键词：避免列表刷新时重复滚动/高亮 */
+  const focusAppliedRef = React.useRef<string | null>(null)
 
   // 引擎包联动下载（PRD-0043）：实例化引擎下载 hook，提交模型下载时若最佳引擎包未安装则自动同时下载
   const { startDownload: startEngineDownload } = useEngineDownload()
@@ -751,6 +779,56 @@ export const ModelListPanel: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  /**
+   * Desktop 深链聚焦（Issue 0046 §3）：
+   * 命中关键词后自动切源、取消「只看推荐」过滤、滚动居中并呈现呼吸高亮光晕。
+   * 关键词为空时不动作；高亮在 FOCUS_HIGHLIGHT_DURATION_MS 后自动消退。
+   */
+  useEffect(() => {
+    const keyword = focusModel?.trim().toLowerCase()
+    if (!keyword) {
+      setHighlightedKey(null)
+      focusAppliedRef.current = null
+      return
+    }
+    // 同一关键词只应用一次，避免 models 刷新（下载完成等）触发重复滚动
+    if (focusAppliedRef.current === keyword) return
+
+    // 推荐源优先：先切到可顺畅下载的源页签
+    if (focusSource) {
+      setActiveSource(focusSource)
+    }
+    // WeMM 等嵌入模型通常非「推荐」条目，需放开过滤才能看到目标行
+    setShowRecommendedOnly(false)
+
+    let cancelled = false
+    let clearTimer: ReturnType<typeof setTimeout> | null = null
+
+    // 等待列表渲染完成（models 可能仍在加载）后再定位；双 rAF 保证 DOM 已提交
+    const raf = requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (cancelled) return
+        const container = listContainerRef.current
+        if (!container) return
+        const rows = Array.from(container.querySelectorAll<HTMLElement>('[data-model-key]'))
+        const target = rows.find(el => (el.dataset.modelKey || '').toLowerCase().includes(keyword))
+        if (!target) return
+        focusAppliedRef.current = keyword
+        setHighlightedKey(target.dataset.modelKey || null)
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        clearTimer = setTimeout(() => {
+          if (!cancelled) setHighlightedKey(null)
+        }, FOCUS_HIGHLIGHT_DURATION_MS)
+      })
+    })
+
+    return () => {
+      cancelled = true
+      cancelAnimationFrame(raf)
+      if (clearTimer) clearTimeout(clearTimer)
+    }
+  }, [focusModel, focusSource, models])
+
   const safeModels = Array.isArray(models) ? models : []
   const userVramGB = engineStatus?.hardware?.total_vram_gb
 
@@ -792,6 +870,7 @@ export const ModelListPanel: React.FC = () => {
         model={model}
         isCurrent={isCurrent}
         isEx={model.isEx}
+        highlighted={highlightedKey === modelKey}
         onActivate={async (id, source, localPath, modelName) => {
           await switchModel(id, source, localPath, modelName || model.name)
         }}
@@ -858,7 +937,7 @@ export const ModelListPanel: React.FC = () => {
               {showRecommendedOnly ? t('暂无官方推荐模型') : t('该来源暂无可用模型')}
             </div>
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-6" ref={listContainerRef}>
               {/* 全列表共用一个表头，保证三组之间列宽一致对齐 */}
               <div className="rounded-xl border border-border/60 overflow-hidden">
                 <ModelColumnHeader />

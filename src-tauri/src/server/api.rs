@@ -70,6 +70,12 @@ pub type UiIntentStore = Arc<Mutex<Option<UiIntentRecord>>>;
 pub struct UiIntentRecord {
     /// 目标面板：error / logs / models / default
     pub panel: String,
+    /// 目标模型关键词（模型面板滚动聚焦 + 呼吸高亮，见 Issue 0046 §3）
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub focus_model: Option<String>,
+    /// 推荐模型源（modelscope / huggingface）
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source: Option<String>,
     /// 单调递增序号，便于前端识别「比已应用更新」的意图
     pub seq: u64,
 }
@@ -2737,22 +2743,48 @@ async fn remove_custom_model(
 #[derive(Debug, Deserialize)]
 struct OpenUiPayload {
     panel: Option<String>,
+    /// 目标模型关键词（Issue 0046 §3）：前端据此滚动聚焦并呼吸高亮对应模型行
+    focus_model: Option<String>,
+    /// 推荐模型源（modelscope / huggingface）：前端据此预选可顺畅下载的源
+    source: Option<String>,
 }
 
 async fn open_ui(
     State(state): State<AppState>,
     payload: Option<Json<OpenUiPayload>>,
 ) -> impl IntoResponse {
-    let panel = payload
-        .and_then(|Json(p)| p.panel)
+    let parsed = payload.map(|Json(p)| p);
+    let panel = parsed
+        .as_ref()
+        .and_then(|p| p.panel.clone())
         .filter(|p| p == "error" || p == "logs" || p == "models" || p == "default")
         .unwrap_or_else(|| "default".to_string());
-    info!("收到 open-ui 请求，准备显示主窗口 panel={}", panel);
+    // 空串与纯空白视为未指定，避免前端拿到无意义的高亮目标
+    let focus_model = parsed
+        .as_ref()
+        .and_then(|p| p.focus_model.clone())
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty());
+    let source = parsed
+        .as_ref()
+        .and_then(|p| p.source.clone())
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty());
+    info!(
+        "收到 open-ui 请求，准备显示主窗口 panel={} focus_model={:?} source={:?}",
+        panel, focus_model, source
+    );
 
     // 先记录「待消费意图」，再 emit：
     // 前端若已挂载则立即收到事件、随后调用 consume 端点清空；若尚未挂载（引擎冷启动），
     // 则由前端挂载后通过 consume 端点补偿取回，避免深链事件丢失。
-    let seq = record_ui_intent(&state.ui_intent, &panel).await;
+    let seq = record_ui_intent(
+        &state.ui_intent,
+        &panel,
+        focus_model.as_deref(),
+        source.as_deref(),
+    )
+    .await;
 
     // 显示并聚焦主窗口（静默 --silent 启动后由 Desktop 跳转唤起）
     if let Some(app_handle) = state.app_handle.as_ref() {
@@ -2761,11 +2793,27 @@ async fn open_ui(
             let _ = window.show();
             let _ = window.set_focus();
             // 通知前端打开目标面板（错误分析侧边栏 / 运行日志 / 模型列表）
-            let _ = window.emit("engine:ui-intent", json!({ "panel": panel, "seq": seq }));
+            let _ = window.emit(
+                "engine:ui-intent",
+                json!({
+                    "panel": panel,
+                    "focus_model": focus_model,
+                    "source": source,
+                    "seq": seq
+                }),
+            );
         }
     }
 
-    (StatusCode::ACCEPTED, Json(json!({ "panel": panel, "seq": seq })))
+    (
+        StatusCode::ACCEPTED,
+        Json(json!({
+            "panel": panel,
+            "focus_model": focus_model,
+            "source": source,
+            "seq": seq
+        })),
+    )
 }
 
 /// POST /api/engine/ui-intent/consume
@@ -2783,11 +2831,18 @@ async fn consume_ui_intent(State(state): State<AppState>) -> impl IntoResponse {
 }
 
 /// 写入待消费的 UI 导航意图，返回本次递增序号
-async fn record_ui_intent(store: &UiIntentStore, panel: &str) -> u64 {
+async fn record_ui_intent(
+    store: &UiIntentStore,
+    panel: &str,
+    focus_model: Option<&str>,
+    source: Option<&str>,
+) -> u64 {
     let mut slot = store.lock().await;
     let next = slot.as_ref().map(|r| r.seq).unwrap_or(0) + 1;
     *slot = Some(UiIntentRecord {
         panel: panel.to_string(),
+        focus_model: focus_model.map(|s| s.to_string()),
+        source: source.map(|s| s.to_string()),
         seq: next,
     });
     next
@@ -3042,7 +3097,7 @@ mod tests {
     #[tokio::test]
     async fn ui_intent_is_consumed_exactly_once() {
         let store = new_ui_intent_store();
-        let seq = record_ui_intent(&store, "models").await;
+        let seq = record_ui_intent(&store, "models", None, None).await;
         assert_eq!(seq, 1);
 
         let taken = take_ui_intent(&store).await.expect("应取回待消费意图");
@@ -3059,15 +3114,34 @@ mod tests {
     #[tokio::test]
     async fn ui_intent_seq_monotonic_and_latest_wins() {
         let store = new_ui_intent_store();
-        assert_eq!(record_ui_intent(&store, "logs").await, 1);
-        assert_eq!(record_ui_intent(&store, "models").await, 2);
+        assert_eq!(record_ui_intent(&store, "logs", None, None).await, 1);
+        assert_eq!(record_ui_intent(&store, "models", None, None).await, 2);
 
         let taken = take_ui_intent(&store).await.expect("应取回待消费意图");
         assert_eq!(taken.panel, "models");
         assert_eq!(taken.seq, 2);
 
         // 消费后序号从 0 重新计数（store 已空）
-        assert_eq!(record_ui_intent(&store, "error").await, 1);
+        assert_eq!(record_ui_intent(&store, "error", None, None).await, 1);
+    }
+
+    /// Issue 0046 §3：模型深链意图必须完整携带 focus_model 与推荐源
+    #[tokio::test]
+    async fn ui_intent_carries_focus_model_and_source() {
+        let store = new_ui_intent_store();
+        let seq = record_ui_intent(
+            &store,
+            "models",
+            Some("WeMM-Embedding-2B"),
+            Some("modelscope"),
+        )
+        .await;
+        assert_eq!(seq, 1);
+
+        let taken = take_ui_intent(&store).await.expect("应取回待消费意图");
+        assert_eq!(taken.panel, "models");
+        assert_eq!(taken.focus_model.as_deref(), Some("WeMM-Embedding-2B"));
+        assert_eq!(taken.source.as_deref(), Some("modelscope"));
     }
 
     /// 前端契约：序列化字段名为 panel / seq（前端 UiIntentRecord 依赖该形状）
@@ -3075,10 +3149,28 @@ mod tests {
     fn ui_intent_record_serializes_to_panel_and_seq() {
         let record = UiIntentRecord {
             panel: "models".to_string(),
+            focus_model: Some("WeMM-Embedding-2B".to_string()),
+            source: Some("modelscope".to_string()),
             seq: 3,
         };
         let value = serde_json::to_value(&record).expect("序列化失败");
         assert_eq!(value["panel"], "models");
         assert_eq!(value["seq"], 3);
+        assert_eq!(value["focus_model"], "WeMM-Embedding-2B");
+        assert_eq!(value["source"], "modelscope");
+    }
+
+    /// 未指定 focus_model / source 时字段应被省略，避免前端拿到 null 造成误判
+    #[test]
+    fn ui_intent_record_omits_absent_focus_fields() {
+        let record = UiIntentRecord {
+            panel: "logs".to_string(),
+            focus_model: None,
+            source: None,
+            seq: 1,
+        };
+        let value = serde_json::to_value(&record).expect("序列化失败");
+        assert!(value.get("focus_model").is_none());
+        assert!(value.get("source").is_none());
     }
 }

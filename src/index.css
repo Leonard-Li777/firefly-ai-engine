@@ -153,6 +153,35 @@ html:lang(ru) :where(button span, .badge, th) {
 }
 
 /* ==========================================================================
+   模型行引导聚焦呼吸高亮（Issue 0046 §3）
+   Desktop 深链携带 focus_model 时，目标模型行呈现呼吸光晕 + 主色描边，
+   引导用户直接完成下载，无需在长列表中自行寻找。
+   ========================================================================== */
+@keyframes model-row-breathe {
+  0%,
+  100% {
+    box-shadow: 0 0 0 1px color-mix(in oklab, var(--primary) 45%, transparent),
+      0 0 0 0 color-mix(in oklab, var(--primary) 30%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 2px color-mix(in oklab, var(--primary) 75%, transparent),
+      0 0 18px 4px color-mix(in oklab, var(--primary) 35%, transparent);
+  }
+}
+
+.model-row-highlight {
+  animation: model-row-breathe 1600ms ease-in-out infinite;
+  background-color: color-mix(in oklab, var(--primary) 8%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .model-row-highlight {
+    animation: none;
+    box-shadow: 0 0 0 2px color-mix(in oklab, var(--primary) 75%, transparent);
+  }
+}
+
+/* ==========================================================================
    滚动条美化（对齐 Desktop 海洋蓝 + 悬浮胶囊滑块）
    - 轨道透明，滑块用 transparent border + background-clip 内缩成悬浮胶囊
    - 暗色下呈冷调海洋天光色，hover/active 轻微提亮并带主色微光

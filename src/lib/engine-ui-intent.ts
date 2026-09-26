@@ -12,10 +12,17 @@ import { getEngineApiClient, isTauriEnvironment } from '../api/provider'
 
 export type EngineUiPanel = 'error' | 'logs' | 'models' | 'default'
 
+/** 推荐模型源（与 model-source 的 source 字段对齐） */
+export type EngineUiSource = 'modelscope' | 'huggingface'
+
 export const ENGINE_UI_INTENT_EVENT = 'engine:ui-intent'
 
 export interface EngineUiIntent {
   panel: EngineUiPanel
+  /** 目标模型关键词（Issue 0046 §3）：模型面板滚动聚焦 + 呼吸高亮 */
+  focusModel?: string
+  /** 推荐模型源：模型面板据此预选可顺畅下载的源页签 */
+  source?: EngineUiSource
 }
 
 /** 解析 open-ui body 中的 panel 字段 */
@@ -24,14 +31,34 @@ export function parseUiPanel(raw: unknown): EngineUiPanel {
   return 'default'
 }
 
+/** 解析 open-ui body 中的 source 字段（非法值返回 undefined，避免误切页签） */
+export function parseUiSource(raw: unknown): EngineUiSource | undefined {
+  return raw === 'modelscope' || raw === 'huggingface' ? raw : undefined
+}
+
+/** 解析 focus_model 字段：空白串视为未指定 */
+export function parseFocusModel(raw: unknown): string | undefined {
+  if (typeof raw !== 'string') return undefined
+  const trimmed = raw.trim()
+  return trimmed.length > 0 ? trimmed : undefined
+}
+
 /**
  * 在 window 上派发 UI 意图 DOM 事件（App 的订阅契约）。
  * 桥接层与测试都经由本函数投递，保证两者走完全相同的路径。
  */
-export function dispatchEngineUiIntent(panel: EngineUiPanel): void {
-  window.dispatchEvent(
-    new CustomEvent<EngineUiIntent>(ENGINE_UI_INTENT_EVENT, { detail: { panel } })
-  )
+export function dispatchEngineUiIntent(intent: EngineUiIntent): void {
+  window.dispatchEvent(new CustomEvent<EngineUiIntent>(ENGINE_UI_INTENT_EVENT, { detail: intent }))
+}
+
+/** 从任意形态的 payload 中规整出完整意图（实时事件与补偿取回共用） */
+export function normalizeUiIntent(payload: unknown): EngineUiIntent {
+  const raw = (payload ?? {}) as Record<string, unknown>
+  return {
+    panel: parseUiPanel(raw.panel),
+    focusModel: parseFocusModel(raw.focus_model ?? raw.focusModel),
+    source: parseUiSource(raw.source)
+  }
 }
 
 /**
@@ -57,8 +84,8 @@ export function bindEngineUiIntentBridge(): () => void {
   void (async () => {
     try {
       const { listen } = await import('@tauri-apps/api/event')
-      const off = await listen<EngineUiIntent>(ENGINE_UI_INTENT_EVENT, (event) => {
-        dispatchEngineUiIntent(parseUiPanel(event.payload?.panel))
+      const off = await listen<Record<string, unknown>>(ENGINE_UI_INTENT_EVENT, (event) => {
+        dispatchEngineUiIntent(normalizeUiIntent(event.payload))
         // 实时事件已送达，清空引擎侧待消费记录
         void consumePendingUiIntent()
       })
@@ -85,11 +112,12 @@ export function bindEngineUiIntentBridge(): () => void {
 }
 
 /** 取回并清空引擎侧待消费意图；失败时静默返回 null（不阻塞前端挂载） */
-async function consumePendingUiIntent(): Promise<EngineUiPanel | null> {
+async function consumePendingUiIntent(): Promise<EngineUiIntent | null> {
   try {
     const res = await getEngineApiClient().consumeUiIntent()
-    const panel = res?.intent?.panel
-    return panel ? parseUiPanel(panel) : null
+    const intent = res?.intent
+    if (!intent) return null
+    return normalizeUiIntent(intent)
   } catch {
     return null
   }

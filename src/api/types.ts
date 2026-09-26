@@ -196,6 +196,10 @@ export interface ModelResolution {
 export interface UiIntentRecord {
   /** 目标面板：error / logs / models / default */
   panel: string
+  /** 目标模型关键词（模型面板滚动聚焦 + 呼吸高亮，Issue 0046 §3；未指定时字段省略） */
+  focus_model?: string
+  /** 推荐模型源（modelscope / huggingface；未指定时字段省略） */
+  source?: string
   /** 单调递增序号 */
   seq: number
 }

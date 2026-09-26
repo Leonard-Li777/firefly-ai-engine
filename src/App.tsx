@@ -29,7 +29,13 @@ import { LanguageSelector } from './components/common/language-selector'
 import { Footer } from './components/common/Footer'
 import { ToastContainer } from './components/common/Toast'
 import { ErrorAnalysisSidebar } from './components/errors/error-analysis-sidebar'
-import { bindEngineUiIntentBridge, ENGINE_UI_INTENT_EVENT, EngineUiIntent, parseUiPanel } from './lib/engine-ui-intent'
+import {
+  bindEngineUiIntentBridge,
+  ENGINE_UI_INTENT_EVENT,
+  EngineUiIntent,
+  EngineUiSource,
+  parseUiPanel
+} from './lib/engine-ui-intent'
 import { useEngineStore } from './stores/engine-store'
 import { i18nScope, t } from './languages'
 import { getEngineApiClient, isMockMode } from './api/provider'
@@ -66,6 +72,12 @@ export const App: React.FC = () => {
   const [activeMainTab, setActiveMainTab] = useState<string>('dashboard')
   // 错误分析侧边栏（Footer 点击错误 / Desktop open-ui panel=error 打开）
   const [errorPanelOpen, setErrorPanelOpen] = useState(false)
+  // Issue 0046 §3：Desktop 深链携带的目标模型与推荐源。
+  // 模型面板据此滚动聚焦 + 呼吸高亮，并预选可顺畅下载的源页签。
+  const [modelFocusRequest, setModelFocusRequest] = useState<{
+    focusModel: string
+    source?: EngineUiSource
+  } | null>(null)
 
   // 出现「新的」引擎错误时自动展开错误分析面板。
   // 典型场景：Desktop（engine-bridge）拉起 AI 服务失败（如未下载任何 GGUF 模型），
@@ -151,6 +163,12 @@ export const App: React.FC = () => {
       } else if (panel === 'models') {
         // Desktop 下载引导流深链：直达模型列表页（气泡引导由模型列表页自行判断激活）
         setActiveMainTab('models')
+        // Issue 0046 §3：携带目标模型与推荐源时，交由模型列表页滚动聚焦 + 呼吸高亮
+        setModelFocusRequest(
+          detail?.focusModel
+            ? { focusModel: detail.focusModel, source: detail.source }
+            : null
+        )
       }
     }
     // 必须先注册 DOM 监听，再绑定桥接：桥接层会同步派发补偿意图的 DOM 事件，
@@ -396,7 +414,10 @@ export const App: React.FC = () => {
           <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in duration-200">
             {/* 1. 双轨模型生态与高速下载、独立启动参数配置 */}
             <section>
-              <ModelListPanel />
+              <ModelListPanel
+                focusModel={modelFocusRequest?.focusModel}
+                focusSource={modelFocusRequest?.source}
+              />
             </section>
 
             {/* 2. 自由添加任意托管模型（URL 嗅探后进入上方模型列表） */}
