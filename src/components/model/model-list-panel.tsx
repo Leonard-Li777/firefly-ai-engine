@@ -40,6 +40,7 @@ import { t } from '../../languages'
 import { toast } from '../common/Toast'
 import { sortModels, EnrichedModelItem } from '../../lib/model-sorting'
 import { getDisplayRelativeModelPath } from '../../lib/path-utils'
+import { ModelResolver } from '../../lib/model-resolver'
 import { ModelParamDrawer } from './model-param-drawer'
 import {
   ModelBubbleGuide,
@@ -205,11 +206,6 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isEx = false,
     }
   }
 
-  // 格式化展示相对路径（不显示 base 存储路径）
-  const displayRelativePath = React.useMemo(() => {
-    return getDisplayRelativeModelPath(model.localPath, modelsDir)
-  }, [model.localPath, modelsDir])
-
   // 剩余时间文字
   const remainingTime = calculateRemainingTime(dl.receivedBytes, dl.totalBytes, dl.speedBps)
   let remainingText = ''
@@ -224,6 +220,34 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isEx = false,
   const isDsparkDownloaded = dsparkDl.status === 'completed'
   const intelligence = INTELLIGENCE_CONFIG(model.intelligenceLevel)
   const isDownloadingOrPaused = dl.isDownloading || dl.isPaused
+
+  // 格式化展示相对路径（不显示 base 存储路径）
+  // 兜底：模型已判定为已下载但 localPath 缺失（如下载完成瞬间 fetchModels 尚未刷新、
+  // 或合并匹配失配）时，用 ModelResolver 从当前 modelsDir 主动推导物理路径，
+  // 避免"已就绪却无路径"的悬空状态。
+  const displayRelativePath = React.useMemo(() => {
+    let localPath = model.localPath
+    if (!localPath && isDownloaded) {
+      const baseDir = modelsDir
+      if (baseDir) {
+        const resolution = ModelResolver.resolve(model.id, baseDir, undefined, model.source)
+        if (resolution?.modelPath) localPath = resolution.modelPath
+      }
+    }
+    return getDisplayRelativeModelPath(localPath, modelsDir)
+  }, [model.localPath, model.id, model.source, modelsDir, isDownloaded])
+
+  // 自动修复：已下载但 localPath 持续缺失（推导也失败）时，触发一次后端重扫描刷新列表，
+  // 让磁盘上已存在的物理文件条目（含 localPath）合并进推荐底表。组件生命周期内仅触发一次。
+  const rescanModels = useEngineStore(s => s.rescanModels)
+  const hasRescannedRef = React.useRef(false)
+  useEffect(() => {
+    if (!isDownloaded || model.localPath || hasRescannedRef.current) return
+    if (!displayRelativePath) {
+      hasRescannedRef.current = true
+      rescanModels()
+    }
+  }, [isDownloaded, model.localPath, displayRelativePath, rescanModels])
 
   // 整理能力列表（自由添加模型未探测到能力时保持为空，不渲染徽章）
   const capabilities = useMemo(() => {

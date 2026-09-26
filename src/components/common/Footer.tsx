@@ -72,7 +72,8 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateTab, onOpenErrorPanel 
     currentModelItem?.name || engineStatus?.current_model || 'Qwen 3.5 0.8B (内置快速)'
 
   const rawStatus = engineStatus?.status || 'stopped'
-  const activeBackend = (engineStatus?.active_backend || 'vulkan').toUpperCase()
+  // 当前引擎：后端未上报（如从未下载任何引擎）时为空串，不硬编码兜底
+  const activeBackend = (engineStatus?.active_backend || '').toUpperCase()
   const port = engineStatus?.port || 38400
   const hw = engineStatus?.hardware
   const lastError = engineStatus?.last_error || storeError
@@ -80,7 +81,9 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateTab, onOpenErrorPanel 
   // 1:1 映射 Desktop 状态与呈现
   // 状态语义：已停止=服务未运行；启动中...=进程拉起中；处理中=模型加载/下载等工作态；已就绪=闲置可服务
   const statusDisplay = useMemo(() => {
-    const header = `[${activeBackend}] - ${currentModelName}`
+    const header = activeBackend
+      ? `[${activeBackend}] - ${currentModelName}`
+      : currentModelName
 
     switch (rawStatus) {
       case 'starting':

@@ -20,7 +20,8 @@ export const EngineTable: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const currentBackend = engineStatus?.active_backend || 'vulkan'
+  // 当前引擎：后端未上报（如从未下载任何引擎）时为空串，不硬编码兜底，UI 不标记任何"当前引擎"
+  const currentBackend = engineStatus?.active_backend || ''
   const hw = engineStatus?.hardware
   const isDarwin = hw?.os_platform === 'darwin' || (typeof navigator !== 'undefined' && /mac/i.test(navigator.userAgent))
 

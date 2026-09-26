@@ -110,56 +110,71 @@ impl EngineCoordinator {
         let preferred_backend = config.preferred_backend.clone();
         drop(config);
 
-        // 获取硬件信息
-        let (hardware, auto_recommended_tier) = match self.hardware.detect(false).await {
+        // 获取硬件信息（best_tier 仅供前端展示"最佳适配"，不参与当前引擎判定）
+        let hardware = match self.hardware.detect(false).await {
             Ok(resources) => {
                 let gpu = resources.primary_gpu();
                 let best = resources.best_acceleration_tier.as_str().to_string();
-                (
-                    HardwareSummary {
-                        gpu_name: gpu.map(|g| g.name.clone()).unwrap_or_default(),
-                        total_vram_gb: gpu.map(|g| g.memory_gb()).unwrap_or(0.0),
-                        used_vram_gb: None,
-                        best_tier: best.clone(),
-                        current_tier: String::new(), // 下方统一填入
-                        is_integrated: gpu.map(|g| g.is_integrated).unwrap_or(false),
-                        cpu_cores: Some(resources.cpu.cores as usize),
-                        cpu_threads: Some(resources.cpu.threads as usize),
-                        os_platform: Some(std::env::consts::OS.to_string()),
-                        total_ram_gb: Some(resources.memory.total_gb()),
-                        used_ram_gb: Some(((resources.memory.total_mb.saturating_sub(resources.memory.available_mb)) as f64) / 1024.0),
-                        has_avx2: Some(resources.cpu.has_avx2),
-                        has_avx: Some(resources.cpu.has_avx),
-                    },
-                    best,
-                )
-            }
-            Err(_) => (
                 HardwareSummary {
-                    gpu_name: String::new(),
-                    total_vram_gb: 0.0,
+                    gpu_name: gpu.map(|g| g.name.clone()).unwrap_or_default(),
+                    total_vram_gb: gpu.map(|g| g.memory_gb()).unwrap_or(0.0),
                     used_vram_gb: None,
-                    best_tier: "cpu".to_string(),
-                    current_tier: "cpu".to_string(),
-                    is_integrated: false,
-                    cpu_cores: None,
-                    cpu_threads: None,
+                    best_tier: best,
+                    current_tier: String::new(), // 下方统一填入
+                    is_integrated: gpu.map(|g| g.is_integrated).unwrap_or(false),
+                    cpu_cores: Some(resources.cpu.cores as usize),
+                    cpu_threads: Some(resources.cpu.threads as usize),
                     os_platform: Some(std::env::consts::OS.to_string()),
-                    total_ram_gb: None,
-                    used_ram_gb: None,
-                    has_avx2: None,
-                    has_avx: None,
-                },
-                "cpu".to_string(),
-            ),
+                    total_ram_gb: Some(resources.memory.total_gb()),
+                    used_ram_gb: Some(((resources.memory.total_mb.saturating_sub(resources.memory.available_mb)) as f64) / 1024.0),
+                    has_avx2: Some(resources.cpu.has_avx2),
+                    has_avx: Some(resources.cpu.has_avx),
+                }
+            }
+            Err(_) => HardwareSummary {
+                gpu_name: String::new(),
+                total_vram_gb: 0.0,
+                used_vram_gb: None,
+                best_tier: "cpu".to_string(),
+                current_tier: String::new(),
+                is_integrated: false,
+                cpu_cores: None,
+                cpu_threads: None,
+                os_platform: Some(std::env::consts::OS.to_string()),
+                total_ram_gb: None,
+                used_ram_gb: None,
+                has_avx2: None,
+                has_avx: None,
+            },
         };
 
+        // 当前引擎只反映真实状态：
+        // 1. 引擎实际运行中 → 运行引擎的层级；
+        // 2. 引擎未运行但用户显式选择过 → 仅当该引擎确实已安装时才上报（否则视为未选定）；
+        // 3. 其余情况（如开源独立模式从未下载任何引擎）→ 空串，UI 不得标记任何"当前引擎"。
+        // 注意：不再兜底到硬件最佳层级——未下载 ≠ 已选定。
         let active_engine = self.active_engine.lock().await.clone();
-        let active_backend = active_engine
-            .as_ref()
-            .map(|e| e.tier.as_str().to_string())
-            .or(preferred_backend)
-            .unwrap_or(auto_recommended_tier);
+        let active_backend = if proc_status == ProcessStatus::Running || proc_status == ProcessStatus::Starting {
+            active_engine
+                .as_ref()
+                .map(|e| e.tier.as_str().to_string())
+                .unwrap_or_default()
+        } else {
+            let installed = self.scheduler.scan_installed_engines().await;
+            let preferred_matches = preferred_backend
+                .as_deref()
+                .map(|pref| {
+                    let tier = crate::hardware::gpu_info::AccelerationTier::from_str(pref);
+                    // "cpu" 等未知变体一律解析为 Cpu，直接按层级比对已安装引擎
+                    installed.iter().any(|e| e.tier == tier)
+                })
+                .unwrap_or(false);
+            if preferred_matches {
+                preferred_backend.unwrap_or_default()
+            } else {
+                String::new()
+            }
+        };
 
         let active_port = self.active_port.lock().await.unwrap_or(38400);
         let active_model = self.active_model.lock().await.clone();

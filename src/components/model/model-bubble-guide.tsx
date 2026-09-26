@@ -65,8 +65,15 @@ export const ModelBubbleGuide: React.FC<ModelBubbleGuideProps> = ({ onSessionDis
         <div className="flex items-start gap-2">
           <GraduationCap className="h-3.5 w-3.5 mt-0.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
           <span>
+            <span className="font-bold text-foreground/90">{t('模型')}</span>
+            {t('：相当于AI的大脑，千人千面，AI模型也各个能力不同。')}
+          </span>
+        </div>
+        <div className="flex items-start gap-2">
+          <GraduationCap className="h-3.5 w-3.5 mt-0.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+          <span>
             <span className="font-bold text-foreground/90">{t('智能程度')}</span>
-            {t('：表示模型的推理能力层级，智能程度越高分析质量越好，但下载体积、耗时与资源占用也相应更高。')}
+            {t('：表示模型的智力水平（小学、初中、高中、大学），智能程度越高分析质量越好，但下载体积、耗时与资源占用也相应更高。')}
           </span>
         </div>
         <div className="flex items-start gap-2">
@@ -79,7 +86,7 @@ export const ModelBubbleGuide: React.FC<ModelBubbleGuideProps> = ({ onSessionDis
         <div className="flex items-start gap-2">
           <Zap className="h-3.5 w-3.5 mt-0.5 text-primary shrink-0" />
           <span>
-            {t('选择模型开始下载时，系统会自动为您匹配并下载最佳计算引擎包，无需手动选择。可在「模型」与「引擎」标签页查看各自下载进度。')}
+            {t('选择模型开始下载时，系统会自动为您匹配并下载最佳计算引擎包。可在「模型」与「引擎」标签页查看各自下载进度。')}
           </span>
         </div>
       </div>

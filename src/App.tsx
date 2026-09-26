@@ -5,6 +5,8 @@ import {
   Boxes,
   Sliders,
   LayoutDashboard,
+  Download,
+  X,
   Terminal,
   Bot,
   ExternalLink
@@ -19,6 +21,7 @@ import { ThinkingModeCard } from './components/engine/thinking-mode-card'
 import { ModelStorageConfig } from './components/storage/model-storage-config'
 import { ModelListPanel } from './components/model/model-list-panel'
 import { CustomModelAddCard } from './components/model/custom-model-add-card'
+import { hasCompletedModelGuideDownload } from './components/model/model-bubble-guide'
 import { ThirdPartyApiView } from './components/api/third-party-api-view'
 import { EngineLogsView } from './components/logs/engine-logs-view'
 import { LocalChatView } from './components/chat/local-chat-view'
@@ -114,6 +117,27 @@ export const App: React.FC = () => {
     initApp()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // 首次使用引导（PRD-0043 全局层）：模型列表加载完成后，若本机无任何已下载模型
+  // 且未完成过首次下载引导 → 自动切换到「模型管理」tab。仅此一次自动切换：
+  // 用户随后手动切到其它 tab 时不拽回，由下方常驻引导横幅承接继续引导。
+  const models = useEngineStore(s => s.models)
+  const isFirstUseModelsEmpty = Array.isArray(models) && models.length > 0 && models.every(m => !m.isDownloaded)
+  const hasAutoSwitchedRef = useRef(false)
+  useEffect(() => {
+    if (hasAutoSwitchedRef.current) return
+    if (!Array.isArray(models) || models.length === 0) return // 列表未加载完成，等待
+    hasAutoSwitchedRef.current = true
+    if (isFirstUseModelsEmpty && !hasCompletedModelGuideDownload()) {
+      setActiveMainTab('models')
+    }
+  }, [models, isFirstUseModelsEmpty])
+
+  // 全局引导横幅：首次使用（无任何已下载模型）且未完成首次下载提交时显示；
+  // 点击直达模型管理，会话内可关闭（不持久化，下次启动若仍未下载会再出现）
+  const [guideBannerDismissed, setGuideBannerDismissed] = useState(false)
+  const showFirstUseBanner =
+    Array.isArray(models) && models.length > 0 && isFirstUseModelsEmpty && !guideBannerDismissed && !hasCompletedModelGuideDownload()
 
   // Desktop 经 /api/engine/open-ui 触发的导航意图：error=错误分析侧边栏，logs=运行日志，models=模型管理
   useEffect(() => {
@@ -315,6 +339,40 @@ export const App: React.FC = () => {
           </Tabs>
         </div>
       </div>
+
+      {/* 首次使用全局引导横幅：本机无任何已下载模型时显示，点击直达模型管理 */}
+      {showFirstUseBanner && (
+        <div className="shrink-0 z-30 bg-primary/5 border-b border-primary/20 px-6 py-2.5 shadow-2xs">
+          <div className="max-w-6xl mx-auto flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <Download className="h-4 w-4 text-primary shrink-0" />
+              <span className="text-xs font-semibold text-foreground truncate">
+                {t('欢迎使用萤核AI引擎！首次使用请先下载一个模型，才能启动本地AI推理服务。')}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              {/* 已在模型管理页时无需跳转按钮，仅保留关闭 */}
+              {activeMainTab !== 'models' && (
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-xs"
+                  onClick={() => setActiveMainTab('models')}
+                >
+                  {t('前往下载模型')}
+                </button>
+              )}
+              <button
+                type="button"
+                className="h-7 w-7 inline-flex items-center justify-center rounded-lg text-muted-foreground/60 hover:text-foreground hover:bg-muted/60 transition-colors"
+                title={t('暂不引导')}
+                onClick={() => setGuideBannerDismissed(true)}
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 主工作区：自适应占据剩余所有高度，无外溢 */}
       <main

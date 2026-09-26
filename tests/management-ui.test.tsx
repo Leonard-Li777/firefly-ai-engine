@@ -61,8 +61,8 @@ describe('Tier 2 管理视窗核心组件交互测试', () => {
       fireEvent.click(updateDriverBtn)
       expect(openedUrl).toContain('nvidia.cn')
 
-      // CUDA 12.4 初始为未安装且驱动适配，应呈现【下载引擎】按钮
-      const downloadBtn = screen.getByText(/下载引擎.*450MB/)
+      // CUDA 12.4 初始为未安装且驱动适配，应呈现【下载引擎】按钮（下载体积已在独立"引擎大小"列展示）
+      const downloadBtn = screen.getByRole('button', { name: /下载引擎/ })
       expect(downloadBtn).toBeInTheDocument()
 
       // 点击下载引擎按钮触发下载状态

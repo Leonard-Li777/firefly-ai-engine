@@ -78,8 +78,8 @@ export const DashboardView: React.FC = () => {
   const isRunning = rawStatus === 'ready'
   const isStarting = rawStatus === 'starting'
 
-  // 当前引擎
-  const activeBackend = engineStatus?.active_backend || 'vulkan'
+  // 当前引擎：后端未上报（如从未下载任何引擎）时显示占位符，不硬编码兜底
+  const activeBackend = engineStatus?.active_backend || t('未选定')
 
   // 根据 activeModelKey 精确获取当前模型对象，并融合专属启动参数
   const currentModelItem = safeModels.find(m => `${m.id}@${m.source}` === activeModelKey)

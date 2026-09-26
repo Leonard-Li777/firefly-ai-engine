@@ -330,12 +330,15 @@ fn scan_and_merge_models(
 
             // 未匹配到预设模型则作为本地自定义模型添加（已被自由添加条目认领的文件除外，避免出现重复行）
             if !matched && !claimed_files.iter().any(|c| c == file_path) {
+                // 从文件名提取真实量化标记，避免硬编码 Q4_K_M 与物理文件不符
+                let real_quant = extract_quant_tag_from_name(&file_name.to_lowercase())
+                    .unwrap_or_else(|| "Q4_K_M".to_string());
                 default_models.push(json!({
                     "id": file_name.trim_end_matches(".gguf"),
                     "name": file_name.trim_end_matches(".gguf"),
                     "author": "Local",
                     "source": "modelscope",
-                    "quant": "Q4_K_M",
+                    "quant": real_quant,
                     "fileSize": file_size,
                     "params": "Unknown",
                     "description": "本地自定义模型",
@@ -538,13 +541,56 @@ async fn engine_list(State(state): State<AppState>) -> impl IntoResponse {
     // 异步拉取或从缓存获取最新 manifest.json，用于提取精确下载包体积
     let manifest = get_cached_manifest().await;
 
+    // 计算实际生效层级：从硬件最佳层级沿降级链（如 CUDA→Vulkan→CPU）找到第一个「已安装」的层级。
+    // 集成模式自带 Vulkan/CPU 引擎时，即使硬件最佳为 CUDA（未下载），推荐标记也应落在实际可运行的
+    // Vulkan 上，而不是把「推荐」标给一个尚未下载的引擎；仅当链上全部未安装时保持硬件最佳以引导下载。
+    let parse_backend_tier = |s: &str| crate::hardware::gpu_info::AccelerationTier::from_str(s);
+    let is_tier_installed = |tier: &crate::hardware::gpu_info::AccelerationTier| -> bool {
+        installed
+            .iter()
+            .any(|e| e.tier == *tier && (tier != &crate::hardware::gpu_info::AccelerationTier::Cpu || {
+                // CPU 层级必须指令集兼容才算可用
+                crate::engine::scheduler::EngineScheduler::is_cpu_engine_compatible(&e.dir_name, &crate::hardware::CpuInfo {
+                    model: "query".to_string(),
+                    cores: status.hardware.cpu_cores.unwrap_or(4) as u32,
+                    threads: status.hardware.cpu_threads.unwrap_or(4) as u32,
+                    speed_mhz: 3000,
+                    has_avx2: status.hardware.has_avx2.unwrap_or(false),
+                    has_avx: status.hardware.has_avx.unwrap_or(false),
+                    has_fma: false,
+                })
+            }))
+    };
+    let effective_tier = {
+        let mut tier = parse_backend_tier(&best_tier);
+        let mut all_missing = true;
+        loop {
+            if is_tier_installed(&tier) {
+                all_missing = false;
+                break;
+            }
+            match crate::hardware::driver_compliance::get_fallback_tier(&tier) {
+                Some(next) => tier = next,
+                None => break,
+            }
+        }
+        if all_missing {
+            // 全部未安装：保持硬件最佳层级，用于引导下载推荐方向
+            parse_backend_tier(&best_tier)
+        } else {
+            tier
+        }
+    };
+    let effective_str = effective_tier.as_str().to_string();
+
     let mut list = Vec::new();
 
     if is_darwin {
         // macOS 平台：输出 Metal (Apple Silicon) 与 CPU
         let metal_size = resolve_package_size_mb(manifest.as_ref(), "metal", 180.0);
         let cpu_size = resolve_package_size_mb(manifest.as_ref(), "cpu", 120.0);
-        let metal_recommended = best_tier == "metal";
+        // 推荐标记基于实际生效层级（已安装优先），而非仅硬件最佳
+        let metal_recommended = effective_str == "metal";
 
         list.push(json!({
             "id": "metal",
@@ -581,10 +627,11 @@ async fn engine_list(State(state): State<AppState>) -> impl IntoResponse {
             let cuda13_size = resolve_package_size_mb(manifest.as_ref(), "cuda134", 150.2);
             let cuda12_size = resolve_package_size_mb(manifest.as_ref(), "cuda", 254.7);
 
-            // 当驱动合规时，优先推荐 CUDA 13.4；若驱动未达标则推荐 CUDA 12.4
-            let recommend_cuda13 = cuda13_compliant;
-            let recommend_cuda12 = !cuda13_compliant && cuda12_compliant;
-            let recommend_vulkan = !cuda13_compliant && !cuda12_compliant;
+            // 推荐标记基于实际生效层级（已安装优先），而非仅驱动合规：
+            // 驱动合规但 CUDA 未下载时，推荐应落在实际可运行的 Vulkan/CPU 上
+            let recommend_cuda13 = effective_str == "cuda" && cuda13_compliant;
+            let recommend_cuda12 = effective_str == "cuda" && !cuda13_compliant && cuda12_compliant;
+            let recommend_vulkan = effective_str == "vulkan";
 
             // CUDA 13.4（最新驱动）
             list.push(json!({
@@ -646,7 +693,8 @@ async fn engine_list(State(state): State<AppState>) -> impl IntoResponse {
             }));
         } else if is_amd {
             let hip_size = resolve_package_size_mb(manifest.as_ref(), "hip", 252.6);
-            let hip_recommended = best_tier == "hip" || best_tier == "rocm";
+            // 推荐标记基于实际生效层级（已安装优先），而非仅硬件最佳
+            let hip_recommended = effective_str == "hip" || effective_str == "rocm";
 
             list.push(json!({
                 "id": "hip",
@@ -690,7 +738,8 @@ async fn engine_list(State(state): State<AppState>) -> impl IntoResponse {
             }));
         } else if is_intel {
             let sycl_size = resolve_package_size_mb(manifest.as_ref(), "sycl", 120.2);
-            let sycl_recommended = best_tier == "sycl";
+            // 推荐标记基于实际生效层级（已安装优先），而非仅硬件最佳
+            let sycl_recommended = effective_str == "sycl";
 
             list.push(json!({
                 "id": "sycl",
@@ -734,9 +783,8 @@ async fn engine_list(State(state): State<AppState>) -> impl IntoResponse {
             }));
         } else {
             // 通用/纯 CPU 情况：若检测到 Vulkan 则列出 Vulkan，否则 CPU 为最佳推荐
-            let has_gpu = !status.hardware.gpu_name.is_empty();
-            let recommend_vulkan = has_gpu;
-            let recommend_cpu = !has_gpu;
+            let recommend_vulkan = effective_str == "vulkan";
+            let recommend_cpu = effective_str == "cpu";
 
             list.push(json!({
                 "id": "vulkan",
