@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { DownloadProgressEvent, ModelSource } from '../api/types'
 import { engineApiClient } from '../api/provider'
+import { captureEvent } from '../lib/posthog'
 import { t } from '../languages'
 
 export interface ModelDownloadState {
@@ -113,6 +114,7 @@ export function useModelDownload(
       }))
 
       optionsRef.current.onDownloadStart?.()
+      captureEvent('开始下载模型', { modelId: finalModelId, source: finalSource })
 
       try {
         const taskSummary = await engineApiClient.startModelDownload(
@@ -149,10 +151,12 @@ export function useModelDownload(
             optionsRef.current.onDownloadProgress?.(progress)
 
             if (progress.status === 'completed') {
+              captureEvent('模型下载完成', { modelId: finalModelId, source: finalSource })
               optionsRef.current.onDownloadComplete?.()
             } else if (progress.status === 'canceled') {
               optionsRef.current.onDownloadCancel?.()
             } else if (progress.status === 'error') {
+              captureEvent('模型下载失败', { modelId: finalModelId, source: finalSource })
               optionsRef.current.onDownloadError?.(progress.error || t('下载失败'))
             }
           }

@@ -31,6 +31,7 @@
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
     "lucide-react": "0.471.2",
+    "posthog-js": "1.364.7",
     "react": "19.2.6",
     "react-dom": "19.2.6",
     "tailwind-merge": "2.6.0",

@@ -12,6 +12,7 @@ import { i18nScope, t } from '../languages'
 import type { SupportedLanguage } from '../lib/language'
 import { resolveToAbsolutePath } from '../lib/path-utils'
 import { mergeScannedWithRecommended } from '../lib/model-resolver'
+import { captureEvent } from '../lib/posthog'
 
 /**
  * 判断列表中的模型是否就是后端当前运行的模型。
@@ -227,6 +228,7 @@ export const useEngineStore = create<EngineStoreState>((set, get) => ({
       const effectiveIsEmbedding = isEmbedding !== undefined ? isEmbedding : (matched?.isEmbedding || modelId.toLowerCase().includes('wemm'))
       const res = await engineApiClient.switchModel(modelId, source, effectiveLocalPath, effectiveModelName, effectiveIsEmbedding)
       if (res.success) {
+        captureEvent('切换模型', { modelId, source: source || 'modelscope', isEmbedding: effectiveIsEmbedding })
         const key = matched ? `${matched.id}@${matched.source}` : `${modelId}@${source || 'modelscope'}`
         const displayName = effectiveModelName || matched?.name || res.currentModel || modelId
         set(state => ({
@@ -253,6 +255,7 @@ export const useEngineStore = create<EngineStoreState>((set, get) => ({
       set({ switchingBackend: backend })
       const res = await engineApiClient.switchEngine(backend)
       if (res.success) {
+        captureEvent('切换生效引擎', { backend })
         await Promise.all([get().fetchEngineStatus(), get().fetchEngineList()])
         return true
       }
@@ -284,6 +287,7 @@ export const useEngineStore = create<EngineStoreState>((set, get) => ({
       const resolvedPath = resolveToAbsolutePath(newPath)
       const res = await engineApiClient.updateModelStoragePath(resolvedPath)
       if (res.success) {
+        captureEvent('更新模型存储路径')
         set({ modelsDir: resolvedPath })
         await get().fetchModels()
         return true
@@ -376,6 +380,8 @@ export const useEngineStore = create<EngineStoreState>((set, get) => ({
           seq: (state.lastAddedSource?.seq ?? 0) + 1
         }
       }))
+      // 仅记录来源，不上报 URL（可能含第三方私有地址）
+      captureEvent('自由添加模型', { source: model.source })
       return { ok: true }
     } catch (e: any) {
       console.error('自由添加模型失败:', e)
@@ -475,6 +481,10 @@ export const useEngineStore = create<EngineStoreState>((set, get) => ({
 
       const res = await engineApiClient.startEngine(options)
       if (res.success) {
+        captureEvent('启动AI服务', {
+          mode: options?.mode || 'language',
+          modelId: options?.modelId ?? get().activeModelKey ?? undefined
+        })
         await get().fetchEngineStatus()
         await get().fetchLogs()
         return true
@@ -495,6 +505,7 @@ export const useEngineStore = create<EngineStoreState>((set, get) => ({
       set({ loading: true, error: null })
       const res = await engineApiClient.stopEngine()
       if (res.success) {
+        captureEvent('停止AI服务')
         await get().fetchEngineStatus()
         await get().fetchLogs()
         return true
