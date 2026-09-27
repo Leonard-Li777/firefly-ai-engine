@@ -78,6 +78,22 @@ describe('Tier 2 管理视窗核心组件交互测试', () => {
     }
   })
 
+  it('点击【切换引擎】能够成功切换引擎，并在表格中更新当前引擎标记与状态', async () => {
+    render(<EngineTable />)
+
+    // 初始 CPU (AVX2) 具有【切换引擎】按钮
+    const switchBtn = screen.getByRole('button', { name: /切换引擎/ })
+    expect(switchBtn).toBeInTheDocument()
+
+    // 点击切换至 CPU
+    fireEvent.click(switchBtn)
+
+    // 等待切换完成并生效为当前引擎
+    await waitFor(() => {
+      expect(useEngineStore.getState().engineStatus?.active_backend).toBe('cpu')
+    })
+  })
+
   it('ModelStorageConfig 允许用户通过【浏览】选择新目录后直接迁移生效，且始终显示绝对路径', async () => {
     // 模拟 window.prompt 返回新绝对路径
     const originalPrompt = window.prompt

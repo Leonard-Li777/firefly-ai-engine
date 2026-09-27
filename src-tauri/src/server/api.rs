@@ -491,7 +491,8 @@ async fn engine_list(State(state): State<AppState>) -> impl IntoResponse {
     let gpu_name = status.hardware.gpu_name.to_lowercase();
     let is_darwin = cfg!(target_os = "macos") || status.hardware.os_platform.as_deref() == Some("darwin");
 
-    let has_cuda = installed.iter().any(|e| e.tier == crate::hardware::gpu_info::AccelerationTier::Cuda);
+    let has_cuda13 = installed.iter().any(|e| e.tier == crate::hardware::gpu_info::AccelerationTier::Cuda && e.dir_name.contains("cuda-13"));
+    let has_cuda12 = installed.iter().any(|e| e.tier == crate::hardware::gpu_info::AccelerationTier::Cuda && !e.dir_name.contains("cuda-13"));
     let has_vulkan = installed.iter().any(|e| e.tier == crate::hardware::gpu_info::AccelerationTier::Vulkan);
     let has_cpu = installed.iter().any(|e| e.tier == crate::hardware::gpu_info::AccelerationTier::Cpu);
     let has_metal = installed.iter().any(|e| e.tier == crate::hardware::gpu_info::AccelerationTier::Metal);
@@ -617,7 +618,7 @@ async fn engine_list(State(state): State<AppState>) -> impl IntoResponse {
                 "isRecommended": recommend_cuda13,
                 "performance": "100% 性能利用 (最新驱动)",
                 "isCurrent": active_backend == "cuda134",
-                "isInstalled": installed.iter().any(|e| e.dir_name.contains("cuda-13")),
+                "isInstalled": has_cuda13,
                 "downloadSizeMb": cuda13_size,
                 "driverCompliant": cuda13_compliant,
                 "driverUpdateUrl": nvidia_update_url
@@ -632,7 +633,7 @@ async fn engine_list(State(state): State<AppState>) -> impl IntoResponse {
                 "isRecommended": recommend_cuda12,
                 "performance": "100% 性能利用",
                 "isCurrent": active_backend == "cuda",
-                "isInstalled": has_cuda,
+                "isInstalled": has_cuda12,
                 "downloadSizeMb": cuda12_size,
                 "driverCompliant": cuda12_compliant,
                 "driverUpdateUrl": nvidia_update_url
@@ -803,9 +804,9 @@ async fn engine_list(State(state): State<AppState>) -> impl IntoResponse {
         let is_installed = item.get("isInstalled").and_then(|v| v.as_bool()).unwrap_or(false);
         let backend_str = item.get("backend").and_then(|v| v.as_str()).unwrap_or("");
 
-        let mut item_installed_build = None;
+        let mut max_installed_build: Option<u64> = None;
         if is_installed {
-            // 从 installed 列表中找到与当前条目匹配的引擎项
+            // 从 installed 列表中找到与当前条目匹配的所有引擎项，选取最大构建号
             for eng in &installed {
                 let eng_tier_str = match eng.tier {
                     crate::hardware::gpu_info::AccelerationTier::Cuda => {
@@ -824,15 +825,14 @@ async fn engine_list(State(state): State<AppState>) -> impl IntoResponse {
                 if eng_tier_str == backend_str || (backend_str.starts_with("cpu") && eng_tier_str == "cpu") {
                     if let Some(ref bn) = eng.build_num {
                         if let Ok(num) = bn.parse::<u64>() {
-                            item_installed_build = Some(num);
-                            break;
+                            max_installed_build = Some(max_installed_build.map_or(num, |curr| curr.max(num)));
                         }
                     }
                 }
             }
         }
 
-        let has_update = match (is_installed, item_installed_build, latest_build_num) {
+        let has_update = match (is_installed, max_installed_build, latest_build_num) {
             (true, Some(inst_b), Some(latest_b)) => latest_b > inst_b,
             _ => false,
         };
@@ -842,7 +842,7 @@ async fn engine_list(State(state): State<AppState>) -> impl IntoResponse {
             if let Some(ref lv) = latest_version_str {
                 obj.insert("latestVersion".to_string(), json!(lv));
             }
-            if let Some(inst_b) = item_installed_build {
+            if let Some(inst_b) = max_installed_build {
                 obj.insert("installedVersion".to_string(), json!(format!("b{}", inst_b)));
             }
         }
@@ -852,20 +852,96 @@ async fn engine_list(State(state): State<AppState>) -> impl IntoResponse {
 }
 
 /// POST /api/engine/switch
-/// 切换 AI 计算后端（同时更新配置）
+/// 切换 AI 计算后端（同时持久化配置；若服务正在运行则自动热重启生效）
 async fn switch_engine(
     State(state): State<AppState>,
     Json(payload): Json<SwitchEngineReq>,
 ) -> impl IntoResponse {
     info!("请求切换计算后端至: {}", payload.backend);
-    // 更新活跃后端配置
+
+    // 1. 验证目标后端对应引擎是否已在本地安装
+    let installed = state.coordinator.scheduler.scan_installed_engines().await;
+    let backend_installed = installed.iter().any(|eng| {
+        let eng_tier_str = match eng.tier {
+            crate::hardware::gpu_info::AccelerationTier::Cuda => {
+                if eng.dir_name.contains("cuda-13") {
+                    "cuda134"
+                } else {
+                    "cuda"
+                }
+            }
+            crate::hardware::gpu_info::AccelerationTier::Vulkan => "vulkan",
+            crate::hardware::gpu_info::AccelerationTier::Cpu => "cpu",
+            crate::hardware::gpu_info::AccelerationTier::Metal => "metal",
+            crate::hardware::gpu_info::AccelerationTier::Rocm | crate::hardware::gpu_info::AccelerationTier::Hip => "hip",
+            crate::hardware::gpu_info::AccelerationTier::Sycl => "sycl",
+        };
+        eng_tier_str == payload.backend || (payload.backend.starts_with("cpu") && eng_tier_str == "cpu")
+    });
+
+    if !backend_installed {
+        warn!("请求切换的目标后端未安装: {}", payload.backend);
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(json!({
+                "success": false,
+                "error": format!("未找到计算后端 {} 对应的已安装引擎，请先下载安装", payload.backend)
+            })),
+        );
+    }
+
+    // 2. 更新首选后端配置并持久化到磁盘
     {
         let mut config = state.coordinator.config.lock().await;
         config.preferred_backend = Some(payload.backend.clone());
+        if let Err(e) = config.save_to_disk() {
+            warn!("持久化切换引擎配置失败: {}", e);
+        }
     }
-    // 清除当前活跃引擎，下次启动时重新选择
-    *state.coordinator.active_engine.lock().await = None;
-    Json(json!({ "success": true, "message": "引擎切换成功，重启后生效" }))
+
+    // 3. 用户显式切换引擎，重置历史降级记录与合规性缓存
+    state.coordinator.scheduler.reset_degradation().await;
+
+    // 4. 若当前推理服务正在运行或正在启动，执行热重启以无缝切换到新引擎
+    let proc_status = state.coordinator.guard.status().await;
+    if proc_status == crate::engine::ProcessStatus::Running || proc_status == crate::engine::ProcessStatus::Starting {
+        info!("当前引擎服务运行中，正在热重启以切换至新后端: {}", payload.backend);
+        // 先停掉旧服务
+        if let Err(e) = state.coordinator.stop_service().await {
+            warn!("切换后端时停止旧服务失败: {}", e);
+        }
+        // 启动新服务（start_service 内部会根据最新的 preferred_backend 选取新引擎启动）
+        if let Err(e) = state.coordinator.start_service().await {
+            let err_msg = format!("切换引擎后启动服务失败: {}", e);
+            error!("{}", err_msg);
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({
+                    "success": false,
+                    "error": err_msg
+                })),
+            );
+        }
+        info!("引擎服务热重启成功，已生效后端: {}", payload.backend);
+        (
+            StatusCode::OK,
+            Json(json!({
+                "success": true,
+                "message": format!("已成功切换并重启至 {} 引擎", payload.backend)
+            })),
+        )
+    } else {
+        // 未在运行，清除活跃引擎缓存，下次启动时读取最新配置
+        *state.coordinator.active_engine.lock().await = None;
+        info!("首选引擎已切换为: {}（将在启动服务时生效）", payload.backend);
+        (
+            StatusCode::OK,
+            Json(json!({
+                "success": true,
+                "message": format!("首选引擎已切换为 {}，启动服务后生效", payload.backend)
+            })),
+        )
+    }
 }
 
 /// POST /api/engine/delete
@@ -1721,6 +1797,7 @@ async fn run_engine_download(
                     warn!("[引擎下载] 解压 cudart 运行时包失败 (尝试继续): {}", e);
                 } else {
                     info!("[引擎下载] 成功合并解压 cudart 运行时包到 {:?}", target_dest_dir);
+                    let _ = std::fs::remove_file(&cudart_path);
                 }
             }
             Err(e) => {
@@ -1729,7 +1806,100 @@ async fn run_engine_download(
         }
     }
 
-    // 4. 完成并标记
+    // 4. 验证新引擎完整性并清理主安装包
+    let binary_name = if cfg!(windows) { "llama-server.exe" } else { "llama-server" };
+    let new_binary = target_dest_dir.join(binary_name);
+    if !new_binary.exists() {
+        error!("[引擎下载] 解压后未找到核心可执行程序: {:?}", new_binary);
+        let mut lock = tasks.lock().await;
+        if let Some(task) = lock.get_mut(&task_id) {
+            task.status = DownloadStatus::Error;
+            task.error = Some("引擎解压不完整，未找到可执行程序".to_string());
+        }
+        return;
+    }
+    let _ = std::fs::remove_file(&downloaded_archive_path);
+
+    // 5. 扫描属于当前 backend 的同类旧版本引擎目录
+    let mut old_dirs_to_clean = Vec::new();
+    if let Ok(entries) = std::fs::read_dir(&base_engine_dir) {
+        for entry in entries.filter_map(|e| e.ok()) {
+            let path = entry.path();
+            if !path.is_dir() || path == target_dest_dir {
+                continue;
+            }
+            let d_name = path.file_name().unwrap_or_default().to_string_lossy().to_string();
+            if !d_name.to_lowercase().starts_with("llama-") {
+                continue;
+            }
+            let belongs = match backend.as_str() {
+                "cuda13" | "cuda134" => d_name.contains("cuda-13"),
+                "cuda" | "cuda12" => d_name.contains("cuda-12"),
+                "vulkan" => d_name.contains("vulkan"),
+                "vulkan-compat" => d_name.contains("vulkan-compat"),
+                "rocm" | "hip" => d_name.contains("rocm"),
+                "sycl" => d_name.contains("sycl"),
+                "cpu-avx" => d_name.contains("cpu-avx"),
+                "cpu-noavx" => d_name.contains("cpu-noavx"),
+                "cpu" => d_name.contains("cpu") && !d_name.contains("cpu-avx") && !d_name.contains("cpu-noavx"),
+                _ => false,
+            };
+            if belongs {
+                old_dirs_to_clean.push(path);
+            }
+        }
+    }
+
+    // 6. 若更新的正是当前正在运行的引擎，优雅停止旧服务 -> 热重启新版本 -> 清理旧目录
+    let status = app_state.coordinator.get_status().await;
+    let proc_status = app_state.coordinator.guard.status().await;
+    let is_running = proc_status == crate::engine::ProcessStatus::Running || proc_status == crate::engine::ProcessStatus::Starting;
+    let is_current_backend = status.active_backend == backend;
+
+    if is_running && is_current_backend {
+        info!("[引擎更新] 当前更新的后端 {} 正在运行，执行热切换流程...", backend);
+        // 停止旧引擎服务
+        if let Err(e) = app_state.coordinator.stop_service().await {
+            warn!("[引擎更新] 切换时停止旧引擎服务失败: {}", e);
+        }
+        // 更新首选后端配置并持久化
+        {
+            let mut config = app_state.coordinator.config.lock().await;
+            config.preferred_backend = Some(backend.clone());
+            if let Err(e) = config.save_to_disk() {
+                warn!("[引擎更新] 持久化配置失败: {}", e);
+            }
+        }
+        // 清理活跃引擎引用与降级状态
+        *app_state.coordinator.active_engine.lock().await = None;
+        app_state.coordinator.scheduler.reset_degradation().await;
+
+        // 启动新版本引擎服务
+        if let Err(e) = app_state.coordinator.start_service().await {
+            error!("[引擎更新] 热重启新版本引擎服务失败: {}", e);
+        } else {
+            info!("[引擎更新] 新版本引擎服务热重启成功！");
+        }
+
+        // 旧引擎进程已完全退出，安全清理旧版本目录
+        for old_dir in old_dirs_to_clean {
+            info!("[引擎更新] 清理旧版本引擎目录: {:?}", old_dir);
+            if let Err(e) = std::fs::remove_dir_all(&old_dir) {
+                warn!("[引擎更新] 清理旧引擎目录失败: {:?}", e);
+            }
+        }
+    } else {
+        // 当前未运行该引擎，直接清理历史旧版本目录
+        info!("[引擎更新] 当前未运行后端 {}，清理历史旧版本目录", backend);
+        for old_dir in old_dirs_to_clean {
+            info!("[引擎更新] 清理旧版本引擎目录: {:?}", old_dir);
+            if let Err(e) = std::fs::remove_dir_all(&old_dir) {
+                warn!("[引擎更新] 清理旧引擎目录失败: {:?}", e);
+            }
+        }
+    }
+
+    // 7. 完成并标记
     {
         let mut lock = tasks.lock().await;
         if let Some(task) = lock.get_mut(&task_id) {
@@ -1739,7 +1909,7 @@ async fn run_engine_download(
         }
     }
 
-    // 触发引擎扫描更新
+    // 重新扫描已安装引擎
     let _ = app_state.coordinator.scheduler.scan_installed_engines().await;
     info!("[引擎下载] 任务 {} 全部执行完成！引擎已就绪部署。", task_id);
 }

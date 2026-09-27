@@ -277,7 +277,7 @@ export const EngineTable: React.FC = () => {
                           size="sm"
                           variant="default"
                           className="h-7.5 font-bold text-xs px-3 rounded-lg shadow-xs shrink-0"
-                          disabled={isSwitching || downloadState.isDownloading}
+                          disabled={switchingBackend !== null || downloadState.isDownloading}
                           onClick={() => switchEngine(item.backend)}
                         >
                           {isSwitching ? (

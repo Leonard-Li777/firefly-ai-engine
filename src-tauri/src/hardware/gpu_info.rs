@@ -122,7 +122,7 @@ impl AccelerationTier {
     /// 从字符串解析
     pub fn from_str(s: &str) -> Self {
         match s.to_lowercase().as_str() {
-            "cuda" => AccelerationTier::Cuda,
+            "cuda" | "cuda12" | "cuda13" | "cuda134" => AccelerationTier::Cuda,
             "rocm" => AccelerationTier::Rocm,
             "hip" => AccelerationTier::Hip,
             "metal" => AccelerationTier::Metal,

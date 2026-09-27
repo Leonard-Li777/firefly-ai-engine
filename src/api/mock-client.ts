@@ -166,17 +166,17 @@ export class MockApiClient implements IEngineApiClient {
     }
   }
 
-  async switchEngine(backend: string): Promise<{ success: boolean; message?: string }> {
+  async switchEngine(backend: string): Promise<{ success: boolean; message?: string; error?: string }> {
     const target = this.engines.find(e => e.backend === backend)
-    if (!target) return { success: false, message: '未找到指定引擎' }
-    if (!target.isInstalled) return { success: false, message: '引擎尚未安装，请先下载' }
+    if (!target) return { success: false, message: '未找到指定引擎', error: '未找到指定引擎' }
+    if (!target.isInstalled) return { success: false, message: '引擎尚未安装，请先下载', error: '引擎尚未安装，请先下载' }
 
     this.currentBackend = backend as any
     this.engines = this.engines.map(e => ({
       ...e,
       isCurrent: e.backend === backend
     }))
-    return { success: true }
+    return { success: true, message: `已成功切换至 ${target.name} 引擎` }
   }
 
   async getEngineList(): Promise<EngineItem[]> {
@@ -225,6 +225,14 @@ export class MockApiClient implements IEngineApiClient {
         if (percent >= 100) {
           clearInterval(interval)
           engine.isInstalled = true
+          engine.hasUpdate = false
+          if (engine.latestVersion) {
+            engine.installedVersion = engine.latestVersion
+          }
+          if (engine.isCurrent) {
+            this.status = 'ready'
+            this.mockLogs.push(`[stdout] service restarted with updated engine ${backend}`)
+          }
           resolve({ success: true })
         }
       }, 100)

@@ -261,7 +261,31 @@ impl EngineScheduler {
                     }
                 } else {
                     // 非 CPU 层级（CUDA / Vulkan 等）在已安装引擎中查找匹配
-                    for engine in installed.iter().filter(|e| e.tier == candidate_tier) {
+                    let mut matched_engines: Vec<&InstalledEngine> = installed
+                        .iter()
+                        .filter(|e| e.tier == candidate_tier)
+                        .collect();
+
+                    matched_engines.sort_by(|a, b| {
+                        if candidate_tier == AccelerationTier::Cuda {
+                            let is_cuda13_pref = preferred_backend.map(|p| p.contains("13")).unwrap_or(false);
+                            let is_cuda12_pref = preferred_backend.map(|p| p == "cuda" || p.contains("12")).unwrap_or(false);
+                            let a_is_13 = a.dir_name.contains("cuda-13");
+                            let b_is_13 = b.dir_name.contains("cuda-13");
+                            if is_cuda13_pref && (a_is_13 != b_is_13) {
+                                return if a_is_13 { std::cmp::Ordering::Less } else { std::cmp::Ordering::Greater };
+                            }
+                            if is_cuda12_pref && (a_is_13 != b_is_13) {
+                                return if !a_is_13 { std::cmp::Ordering::Less } else { std::cmp::Ordering::Greater };
+                            }
+                        }
+                        // 优先选择构建版本号更高（最新版）的引擎
+                        let a_bn = a.build_num.as_deref().and_then(|v| v.parse::<u64>().ok()).unwrap_or(0);
+                        let b_bn = b.build_num.as_deref().and_then(|v| v.parse::<u64>().ok()).unwrap_or(0);
+                        b_bn.cmp(&a_bn)
+                    });
+
+                    for engine in matched_engines {
                         let binary_str = engine.binary_path.to_string_lossy().to_string();
                         if !self.compliance.is_non_compliant(&binary_str).await {
                             info!("调度选择引擎: {} (层级: {:?})", engine.dir_name, engine.tier);

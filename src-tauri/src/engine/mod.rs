@@ -170,7 +170,17 @@ impl EngineCoordinator {
         let active_backend = if proc_status == ProcessStatus::Running || proc_status == ProcessStatus::Starting {
             active_engine
                 .as_ref()
-                .map(|e| e.tier.as_str().to_string())
+                .map(|e| {
+                    if e.tier == crate::hardware::gpu_info::AccelerationTier::Cuda {
+                        if e.dir_name.contains("cuda-13") {
+                            "cuda134".to_string()
+                        } else {
+                            "cuda".to_string()
+                        }
+                    } else {
+                        e.tier.as_str().to_string()
+                    }
+                })
                 .unwrap_or_default()
         } else {
             let installed = self.scheduler.scan_installed_engines().await;

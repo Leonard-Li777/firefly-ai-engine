@@ -13,6 +13,7 @@ import type { SupportedLanguage } from '../lib/language'
 import { resolveToAbsolutePath } from '../lib/path-utils'
 import { mergeScannedWithRecommended } from '../lib/model-resolver'
 import { captureEvent } from '../lib/posthog'
+import { toast } from '../components/common/Toast'
 
 /**
  * 判断列表中的模型是否就是后端当前运行的模型。
@@ -256,12 +257,24 @@ export const useEngineStore = create<EngineStoreState>((set, get) => ({
       const res = await engineApiClient.switchEngine(backend)
       if (res.success) {
         captureEvent('切换生效引擎', { backend })
+        set(state => ({
+          engineStatus: state.engineStatus
+            ? { ...state.engineStatus, active_backend: backend }
+            : state.engineStatus,
+          engineList: state.engineList.map(e => ({
+            ...e,
+            isCurrent: e.backend === backend || (backend === 'cpu' && e.backend.startsWith('cpu'))
+          }))
+        }))
         await Promise.all([get().fetchEngineStatus(), get().fetchEngineList()])
+        toast.success(res.message || t('已成功切换引擎'))
         return true
       }
+      toast.error(res.error || res.message || t('切换引擎失败'))
       return false
     } catch (e: any) {
       console.error('切换引擎失败:', e)
+      toast.error(e.message || t('切换引擎异常'))
       return false
     } finally {
       set({ switchingBackend: null })

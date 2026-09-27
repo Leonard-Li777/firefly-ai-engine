@@ -18,7 +18,7 @@ export interface IEngineApiClient {
   /**
    * 切换 AI 计算引擎后端 (vulkan / cpu / cuda / metal)
    */
-  switchEngine(backend: string): Promise<{ success: boolean; message?: string }>
+  switchEngine(backend: string): Promise<{ success: boolean; message?: string; error?: string }>
 
   /**
    * 获取可用引擎列表（含已安装、未安装及下载状态）
@@ -206,7 +206,7 @@ export class HttpEngineApiClient implements IEngineApiClient {
     return this.requestJson<EngineStatusResponse>('/api/engine/status')
   }
 
-  async switchEngine(backend: string): Promise<{ success: boolean; message?: string }> {
+  async switchEngine(backend: string): Promise<{ success: boolean; message?: string; error?: string }> {
     await this.ensureReady()
     return this.requestJson('/api/engine/switch', {
       method: 'POST',

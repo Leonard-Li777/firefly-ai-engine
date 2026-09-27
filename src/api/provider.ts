@@ -194,5 +194,9 @@ export function isMockMode(): boolean {
  * 属性访问时实时解析到当前装配/注入的实例，兼容测试注入口替换。
  */
 export const engineApiClient: IEngineApiClient = new Proxy({} as IEngineApiClient, {
-  get: (_target, prop: string) => (getEngineApiClient() as any)[prop]
+  get: (_target, prop: string) => {
+    const client = getEngineApiClient() as any
+    const value = client[prop]
+    return typeof value === 'function' ? value.bind(client) : value
+  }
 })
