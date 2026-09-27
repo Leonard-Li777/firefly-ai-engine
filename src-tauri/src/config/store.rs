@@ -38,9 +38,17 @@ pub struct EngineConfig {
     #[serde(default)]
     pub custom_context_window: Option<u32>,
 
-    /// 当前选中的模型文件路径
+    /// 当前选中的模型文件路径（已由 active_language_model / active_embedding_model 替代）
     #[serde(default)]
     pub selected_model_path: Option<PathBuf>,
+
+    /// 当前选中的主语言模型标识（model_id 或 model_key）
+    #[serde(default)]
+    pub active_language_model: Option<String>,
+
+    /// 当前选中的嵌入向量模型标识（如 WeMM-Embedding 2B）
+    #[serde(default)]
+    pub active_embedding_model: Option<String>,
 
     /// 当前使用的加速后端（None = 自动选择）
     #[serde(default)]
@@ -57,6 +65,14 @@ pub struct EngineConfig {
     /// 数据目录（由系统设置，不可用户修改）
     #[serde(skip)]
     pub data_dir: PathBuf,
+}
+
+impl EngineConfig {
+    /// 持久化当前配置到磁盘 config.json
+    pub fn save_to_disk(&self) -> Result<()> {
+        let store = ConfigStore::new(self.data_dir.clone());
+        store.save(self)
+    }
 }
 
 /// 每个模型的专属运行时参数（支持保存至 config.json）
@@ -187,6 +203,8 @@ impl Default for EngineConfig {
             custom_gpu_layers: None,
             custom_context_window: None,
             selected_model_path: None,
+            active_language_model: None,
+            active_embedding_model: None,
             preferred_backend: None,
             model_custom_params: std::collections::HashMap::new(),
             custom_models: Vec::new(),

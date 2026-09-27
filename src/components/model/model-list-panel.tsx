@@ -746,7 +746,7 @@ export interface ModelListPanelProps {
 }
 
 export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focusSource }) => {
-  const { models, fetchModels, activeModelKey, switchModel, engineStatus, engineList, fetchEngineList, lastAddedSource } = useEngineStore()
+  const { models, fetchModels, activeModelKey, activeLanguageModelKey, activeEmbeddingModelKey, switchModel, engineStatus, engineList, fetchEngineList, lastAddedSource } = useEngineStore()
   const [activeSource, setActiveSource] = useState<ModelSource>('modelscope')
   const [showRecommendedOnly, setShowRecommendedOnly] = useState<boolean>(true)
   const [drawerModel, setDrawerModel] = useState<ModelItem | null>(null)
@@ -906,7 +906,13 @@ export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focu
   // 统一渲染单行模型条目
   const renderModelRow = (model: EnrichedModelItem) => {
     const modelKey = `${model.id}@${model.source}`
-    const isCurrent = activeModelKey === modelKey
+    // 双槽位解耦判定：
+    // - 嵌入向量模型：对比 activeEmbeddingModelKey，未配置时已下载的 WeMM 默认视为就绪
+    // - 语言模型：对比 activeLanguageModelKey，未启动或未配置时降级使用 activeModelKey
+    const isCurrent = model.isEmbedding
+      ? (activeEmbeddingModelKey === modelKey || (!activeEmbeddingModelKey && model.isDownloaded && (activeModelKey === modelKey || model.id.toLowerCase().includes('wemm'))))
+      : (activeLanguageModelKey === modelKey || (!activeLanguageModelKey && activeModelKey === modelKey))
+
     return (
       <ModelRowItem
         key={modelKey}
@@ -915,7 +921,7 @@ export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focu
         isEx={model.isEx}
         highlighted={highlightedKey === modelKey}
         onActivate={async (id, source, localPath, modelName) => {
-          await switchModel(id, source, localPath, modelName || model.name)
+          await switchModel(id, source, localPath, modelName || model.name, model.isEmbedding)
         }}
         onOpenConfig={targetModel => setDrawerModel(targetModel)}
         onDownloadSubmit={handleModelDownloadSubmit}

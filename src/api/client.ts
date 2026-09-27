@@ -100,7 +100,7 @@ export interface IEngineApiClient {
   /**
    * 激活/热切换当前运行的模型
    */
-  switchModel(modelId: string, source?: string, localPath?: string, modelName?: string): Promise<{ success: boolean; currentModel: string }>
+  switchModel(modelId: string, source?: string, localPath?: string, modelName?: string, isEmbedding?: boolean): Promise<{ success: boolean; currentModel: string }>
 
   /**
    * 删除本地模型（删除该模型所在目录），成功后由调用方刷新模型列表
@@ -120,7 +120,7 @@ export interface IEngineApiClient {
   /**
    * 启动 AI 引擎后台服务
    */
-  startEngine(): Promise<{ success: boolean; message?: string; error?: string }>
+  startEngine(options?: { mode?: 'language' | 'embedding'; modelId?: string }): Promise<{ success: boolean; message?: string; error?: string }>
 
   /**
    * 停止 AI 引擎后台服务
@@ -388,13 +388,14 @@ export class HttpEngineApiClient implements IEngineApiClient {
     modelId: string,
     source?: string,
     localPath?: string,
-    modelName?: string
+    modelName?: string,
+    isEmbedding?: boolean
   ): Promise<{ success: boolean; currentModel: string }> {
     await this.ensureReady()
     return this.requestJson('/api/models/switch', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ modelId, source, localPath, modelName })
+      body: JSON.stringify({ modelId, source, localPath, modelName, isEmbedding })
     })
   }
 
@@ -434,11 +435,12 @@ export class HttpEngineApiClient implements IEngineApiClient {
     })
   }
 
-  async startEngine(): Promise<{ success: boolean; message?: string; error?: string }> {
+  async startEngine(options?: { mode?: 'language' | 'embedding'; modelId?: string }): Promise<{ success: boolean; message?: string; error?: string }> {
     await this.ensureReady()
     return this.requestJson('/api/engine/start', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json' },
+      body: options ? JSON.stringify(options) : undefined
     })
   }
 

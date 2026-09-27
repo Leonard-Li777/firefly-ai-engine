@@ -42,6 +42,8 @@ interface EngineStoreState {
   models: ModelItem[]
   modelsDir: string
   activeModelKey: string | null
+  activeLanguageModelKey: string | null
+  activeEmbeddingModelKey: string | null
   runtimeParams: RuntimeParams
   regionInfo: RegionDetectionResult | null
   loading: boolean
@@ -58,7 +60,7 @@ interface EngineStoreState {
   fetchModels: (source?: string) => Promise<void>
   switchEngine: (backend: string) => Promise<boolean>
   deleteEngine: (backend: string) => Promise<boolean>
-  switchModel: (modelId: string, source?: string, localPath?: string, modelName?: string) => Promise<boolean>
+  switchModel: (modelId: string, source?: string, localPath?: string, modelName?: string, isEmbedding?: boolean) => Promise<boolean>
   updateStoragePath: (newPath: string) => Promise<boolean>
   rescanModels: () => Promise<void>
   updateRuntimeParams: (params: Partial<RuntimeParams>) => Promise<boolean>
@@ -67,10 +69,10 @@ interface EngineStoreState {
   addCustomModel: (url: string) => Promise<{ ok: boolean; error?: string }>
   deleteModel: (modelId: string, localPath?: string) => Promise<boolean>
   removeCustomModel: (modelId: string) => Promise<boolean>
-  activateAndStart: (modelId: string, source?: string, localPath?: string, modelName?: string) => Promise<boolean>
+  activateAndStart: (modelId: string, source?: string, localPath?: string, modelName?: string, isEmbedding?: boolean) => Promise<boolean>
   runRegionDetection: (force?: boolean) => Promise<void>
   resetDowngrade: () => Promise<boolean>
-  startEngine: () => Promise<boolean>
+  startEngine: (options?: { mode?: 'language' | 'embedding'; modelId?: string }) => Promise<boolean>
   stopEngine: () => Promise<boolean>
   fetchLogs: () => Promise<void>
   clearLogs: () => Promise<boolean>
@@ -82,6 +84,8 @@ export const useEngineStore = create<EngineStoreState>((set, get) => ({
   models: [],
   modelsDir: resolveToAbsolutePath('build/extraResources/models'),
   activeModelKey: null,
+  activeLanguageModelKey: null,
+  activeEmbeddingModelKey: null,
   runtimeParams: {
     n_gpu_layers: 24,
     threads: 8,
@@ -112,8 +116,7 @@ export const useEngineStore = create<EngineStoreState>((set, get) => ({
         ...(silent ? {} : { loading: false })
       })
 
-      // 依据后端 current_model 反查 activeModelKey：
-      // 未确定时直接反查；已确定但与真实运行模型不一致时（如初始化竞态下兜底到了错误条目）进行校正
+      // 依据后端 current_model 反查 activeModelKey（当前进程实际运行的模型）
       if (status.current_model) {
         const currentModels = get().models
         const matched = currentModels.find(m => matchCurrentModel(m, status.current_model!))
@@ -122,6 +125,25 @@ export const useEngineStore = create<EngineStoreState>((set, get) => ({
           if (get().activeModelKey !== realKey) {
             set({ activeModelKey: realKey })
           }
+        }
+      }
+
+      // 双槽位解耦映射：持久化的语言模型与嵌入模型槽位
+      const currentModels = get().models
+      if (status.active_language_model) {
+        const langPref = status.active_language_model
+        const matchedLang = currentModels.find(m => !m.isEmbedding && (m.id === langPref || `${m.id}@${m.source}` === langPref || matchCurrentModel(m, langPref)))
+        const langKey = matchedLang ? `${matchedLang.id}@${matchedLang.source}` : langPref
+        if (get().activeLanguageModelKey !== langKey) {
+          set({ activeLanguageModelKey: langKey })
+        }
+      }
+      if (status.active_embedding_model) {
+        const embPref = status.active_embedding_model
+        const matchedEmb = currentModels.find(m => m.isEmbedding && (m.id === embPref || `${m.id}@${m.source}` === embPref || matchCurrentModel(m, embPref)))
+        const embKey = matchedEmb ? `${matchedEmb.id}@${matchedEmb.source}` : embPref
+        if (get().activeEmbeddingModelKey !== embKey) {
+          set({ activeEmbeddingModelKey: embKey })
         }
       }
     } catch (e: any) {
@@ -148,39 +170,52 @@ export const useEngineStore = create<EngineStoreState>((set, get) => ({
       set({ models })
 
       // 确定激活模型 Key：
-      // 1. 若当前运行模型已在状态中，优先对齐当前运行模型
-      // 2. 否则选择第一个已下载就绪的模型
-      // 3. 否则选择官方推荐模型
-      const currentActiveKey = get().activeModelKey
-      const currentModelName = get().engineStatus?.current_model
+      // 1. 语言模型槽位：优先对齐后端已持久化的 active_language_model；否则选第一个已下载的语言模型，再兜底推荐模型
+      // 2. 嵌入模型槽位：优先对齐后端已持久化的 active_embedding_model；否则选 WeMM 或首个已下载 embedding 模型
+      const engineStatus = get().engineStatus
+      const langModels = models.filter(m => !m.isEmbedding)
+      const embModels = models.filter(m => m.isEmbedding)
 
-      if (currentModelName) {
-        const activeItem = models.find(m => matchCurrentModel(m, currentModelName))
-        if (activeItem) {
-          set({ activeModelKey: `${activeItem.id}@${activeItem.source}` })
-          return
-        }
+      let targetLangKey = get().activeLanguageModelKey
+      if (engineStatus?.active_language_model) {
+        const matched = langModels.find(m => m.id === engineStatus.active_language_model || `${m.id}@${m.source}` === engineStatus.active_language_model || matchCurrentModel(m, engineStatus.active_language_model!))
+        if (matched) targetLangKey = `${matched.id}@${matched.source}`
+      }
+      if (!targetLangKey && langModels.length > 0) {
+        const initialLang = langModels.find(m => m.isDownloaded) || langModels.find(m => m.recommended) || langModels[0]
+        if (initialLang) targetLangKey = `${initialLang.id}@${initialLang.source}`
       }
 
-      if (!currentActiveKey && models.length > 0) {
-        const downloaded = models.find(m => m.isDownloaded)
-        const initial = downloaded || models.find(m => m.recommended) || models[0]
-        if (initial) {
-          const key = `${initial.id}@${initial.source}`
-          set(state => ({
-            activeModelKey: key,
-            engineStatus: state.engineStatus
-              ? { ...state.engineStatus, current_model: initial.name }
-              : state.engineStatus
-          }))
-        }
+      let targetEmbKey = get().activeEmbeddingModelKey
+      if (engineStatus?.active_embedding_model) {
+        const matched = embModels.find(m => m.id === engineStatus.active_embedding_model || `${m.id}@${m.source}` === engineStatus.active_embedding_model || matchCurrentModel(m, engineStatus.active_embedding_model!))
+        if (matched) targetEmbKey = `${matched.id}@${matched.source}`
       }
+      if (!targetEmbKey && embModels.length > 0) {
+        const initialEmb = embModels.find(m => m.isDownloaded) || embModels[0]
+        if (initialEmb) targetEmbKey = `${initialEmb.id}@${initialEmb.source}`
+      }
+
+      // 运行态 activeModelKey 仅当当前运行模型可查时对齐
+      let targetActiveKey = get().activeModelKey
+      if (engineStatus?.current_model) {
+        const activeItem = models.find(m => matchCurrentModel(m, engineStatus.current_model!))
+        if (activeItem) targetActiveKey = `${activeItem.id}@${activeItem.source}`
+      } else if (!targetActiveKey) {
+        targetActiveKey = targetLangKey
+      }
+
+      set({
+        activeLanguageModelKey: targetLangKey,
+        activeEmbeddingModelKey: targetEmbKey,
+        activeModelKey: targetActiveKey
+      })
     } catch (e: any) {
       console.error('获取模型列表失败:', e)
     }
   },
 
-  switchModel: async (modelId: string, source?: string, localPath?: string, modelName?: string) => {
+  switchModel: async (modelId: string, source?: string, localPath?: string, modelName?: string, isEmbedding?: boolean) => {
     try {
       set({ loading: true })
       const models = get().models
@@ -189,12 +224,15 @@ export const useEngineStore = create<EngineStoreState>((set, get) => ({
       )
       const effectiveLocalPath = localPath || matched?.localPath
       const effectiveModelName = modelName || matched?.name
-      const res = await engineApiClient.switchModel(modelId, source, effectiveLocalPath, effectiveModelName)
+      const effectiveIsEmbedding = isEmbedding !== undefined ? isEmbedding : (matched?.isEmbedding || modelId.toLowerCase().includes('wemm'))
+      const res = await engineApiClient.switchModel(modelId, source, effectiveLocalPath, effectiveModelName, effectiveIsEmbedding)
       if (res.success) {
         const key = matched ? `${matched.id}@${matched.source}` : `${modelId}@${source || 'modelscope'}`
         const displayName = effectiveModelName || matched?.name || res.currentModel || modelId
         set(state => ({
           activeModelKey: key,
+          activeLanguageModelKey: effectiveIsEmbedding ? state.activeLanguageModelKey : key,
+          activeEmbeddingModelKey: effectiveIsEmbedding ? key : state.activeEmbeddingModelKey,
           engineStatus: state.engineStatus
             ? { ...state.engineStatus, current_model: displayName }
             : state.engineStatus
@@ -386,11 +424,11 @@ export const useEngineStore = create<EngineStoreState>((set, get) => ({
     }
   },
 
-  activateAndStart: async (modelId: string, source?: string, localPath?: string, modelName?: string) => {
+  activateAndStart: async (modelId: string, source?: string, localPath?: string, modelName?: string, isEmbedding?: boolean) => {
     // 先切换/激活模型，再启动引擎服务
-    const switched = await get().switchModel(modelId, source, localPath, modelName)
+    const switched = await get().switchModel(modelId, source, localPath, modelName, isEmbedding)
     if (!switched) return false
-    return get().startEngine()
+    return get().startEngine({ mode: isEmbedding ? 'embedding' : 'language' })
   },
 
   runRegionDetection: async (force?: boolean) => {
@@ -402,7 +440,7 @@ export const useEngineStore = create<EngineStoreState>((set, get) => ({
     }
   },
 
-    resetDowngrade: async () => {
+  resetDowngrade: async () => {
     try {
       set({ loading: true })
       await engineApiClient.resetDowngrade()
@@ -416,24 +454,26 @@ export const useEngineStore = create<EngineStoreState>((set, get) => ({
     }
   },
 
-  startEngine: async () => {
+  startEngine: async (options?: { mode?: 'language' | 'embedding'; modelId?: string }) => {
     try {
       set({ loading: true, error: null })
 
-      // 若前端已选定激活模型且模型列表中存在，先调用 switchModel 确保后端 active_model 同步
-      const activeKey = get().activeModelKey
-      const models = get().models
-      if (activeKey && models.length > 0) {
-        const [activeId, activeSource] = activeKey.split('@')
-        const activeModel = models.find(
-          m => m.id === activeId && (!activeSource || m.source === activeSource)
-        )
-        if (activeModel?.isDownloaded) {
-          await engineApiClient.switchModel(activeModel.id, activeModel.source, activeModel.localPath, activeModel.name)
+      // 若前端已选定激活语言模型且未显式指定 options，先确保主语言模型同步
+      if (!options) {
+        const langKey = get().activeLanguageModelKey || get().activeModelKey
+        const models = get().models
+        if (langKey && models.length > 0) {
+          const [activeId, activeSource] = langKey.split('@')
+          const activeModel = models.find(
+            m => m.id === activeId && (!activeSource || m.source === activeSource)
+          )
+          if (activeModel?.isDownloaded) {
+            await engineApiClient.switchModel(activeModel.id, activeModel.source, activeModel.localPath, activeModel.name, activeModel.isEmbedding)
+          }
         }
       }
 
-      const res = await engineApiClient.startEngine()
+      const res = await engineApiClient.startEngine(options)
       if (res.success) {
         await get().fetchEngineStatus()
         await get().fetchLogs()

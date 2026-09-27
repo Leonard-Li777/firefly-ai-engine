@@ -84,10 +84,10 @@ class FallbackEngineApiClient implements IEngineApiClient {
     return this.withFallback('getModelParams', () => this.inner.getModelParams(modelId), () => mockApiClient.getModelParams(modelId))
   }
 
-  switchModel(modelId: string, source?: string, localPath?: string, modelName?: string) {
+  switchModel(modelId: string, source?: string, localPath?: string, modelName?: string, isEmbedding?: boolean) {
     return this.withFallback(
       'switchModel',
-      () => this.inner.switchModel(modelId, source, localPath, modelName),
+      () => this.inner.switchModel(modelId, source, localPath, modelName, isEmbedding),
       () => mockApiClient.switchModel(modelId, source, localPath, modelName)
     )
   }
@@ -96,8 +96,8 @@ class FallbackEngineApiClient implements IEngineApiClient {
     return this.withFallback('resetDowngrade', () => this.inner.resetDowngrade(), () => mockApiClient.resetDowngrade())
   }
 
-  startEngine() {
-    return this.withFallback('startEngine', () => this.inner.startEngine(), () => mockApiClient.startEngine())
+  startEngine(options?: { mode?: 'language' | 'embedding'; modelId?: string }) {
+    return this.withFallback('startEngine', () => this.inner.startEngine(options), () => mockApiClient.startEngine())
   }
 
   stopEngine() {

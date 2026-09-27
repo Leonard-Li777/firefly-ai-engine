@@ -76,6 +76,8 @@ pub struct ModelInfo {
     pub top_k: Option<u32>,
     /// 用户自定义重复惩罚
     pub repeat_penalty: Option<f64>,
+    /// 是否为嵌入模式（--embedding，用于 WeMM-Embedding 等向量模型）
+    pub is_embedding: bool,
     /// 是否为生产环境（注入 --verbose）
     pub is_production: bool,
 }
@@ -414,6 +416,11 @@ impl ParamBuilder {
                     "3".to_string(),
                 ]);
             }
+
+            // 嵌入向量服务模式（多模态高维修正专用）
+            if info.is_embedding {
+                args.push("--embedding".to_string());
+            }
         }
 
         args.extend([
@@ -613,6 +620,7 @@ mod tests {
             top_p: None,
             top_k: None,
             repeat_penalty: None,
+            is_embedding: false,
             is_production: false,
         }
     }
@@ -789,5 +797,17 @@ mod tests {
         assert_eq!(args[md_idx + 1], "D:\\models\\dspark.gguf");
 
         assert!(args.contains(&"--verbose".to_string()));
+    }
+
+    #[test]
+    fn test_to_args_with_embedding() {
+        let resources = make_resources_with_dgpu(12 * 1024);
+        let mut model = make_model(2.0, 1.8);
+        model.is_embedding = true;
+
+        let params = ParamBuilder::compute(&resources, &model, "cuda");
+        let args = ParamBuilder::to_args(&params, 38400, "D:\\models\\wemm.gguf", "wemm-2b", Some(&model));
+
+        assert!(args.contains(&"--embedding".to_string()), "应该注入 --embedding 参数");
     }
 }

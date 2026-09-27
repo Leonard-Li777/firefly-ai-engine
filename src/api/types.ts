@@ -77,7 +77,9 @@ export type ModelCustomParams = RuntimeParams
 export interface EngineStatusResponse {
   status: EngineRunStatus
   active_backend: EngineBackend
-  current_model: string
+  current_model: string | null
+  active_language_model?: string | null
+  active_embedding_model?: string | null
   models_dir: string
   vram_usage_mb: number
   port: number

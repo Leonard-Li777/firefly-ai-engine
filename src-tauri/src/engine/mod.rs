@@ -21,6 +21,8 @@ pub struct EngineStatus {
     pub status: String,         // "starting" | "ready" | "error" | "stopped"
     pub active_backend: String, // "cuda" | "vulkan" | "cpu" | ...
     pub current_model: Option<String>,
+    pub active_language_model: Option<String>,
+    pub active_embedding_model: Option<String>,
     pub models_dir: String,
     pub port: u16,
     pub vram_usage_mb: Option<u64>,
@@ -115,6 +117,8 @@ impl EngineCoordinator {
         let config = self.config.lock().await;
         let models_dir = config.models_dir.to_string_lossy().to_string();
         let preferred_backend = config.preferred_backend.clone();
+        let active_language_model = config.active_language_model.clone();
+        let active_embedding_model = config.active_embedding_model.clone();
         drop(config);
 
         // 获取硬件信息（best_tier 仅供前端展示"最佳适配"，不参与当前引擎判定）
@@ -222,6 +226,8 @@ impl EngineCoordinator {
             status: status_str.to_string(),
             active_backend,
             current_model: active_model,
+            active_language_model,
+            active_embedding_model,
             models_dir,
             port: active_port,
             vram_usage_mb: None,
@@ -265,15 +271,16 @@ impl EngineCoordinator {
         let resources = self.hardware.detect(false).await
             .map_err(|e| anyhow::anyhow!("硬件探测失败: {}", e))?;
 
-        let (models_dir, preferred_backend) = {
+        let (models_dir, preferred_backend, active_lang_pref) = {
             let config = self.config.lock().await;
-            (config.models_dir.clone(), config.preferred_backend.clone())
+            (config.models_dir.clone(), config.preferred_backend.clone(), config.active_language_model.clone())
         };
 
         let selected_engine = self.scheduler.select_engine(&resources, preferred_backend.as_deref()).await?;
 
-        // 2. 确定模型文件
-        let active_model_lock = self.active_model.lock().await.clone();
+        // 2. 确定模型文件（优先使用当前运行指定或持久化的主语言模型）
+        let active_model_lock = self.active_model.lock().await.clone()
+            .or(active_lang_pref);
         let all_ggufs = crate::server::api::collect_all_ggufs(&models_dir);
 
         let model_path = if let Some(m) = active_model_lock {
@@ -293,16 +300,23 @@ impl EngineCoordinator {
                     !name_lower.starts_with("mmproj") && (name_lower.contains(&m_clean) || m_clean.contains(&name_lower.replace(".gguf", "")))
                 }).map(|(p, _)| p.clone())
                 .or_else(|| {
-                    // 降级为已下载的第一个非 mmproj gguf
-                    all_ggufs.iter().find(|(_, name)| !name.to_lowercase().starts_with("mmproj")).map(|(p, _)| p.clone())
+                    // 降级为已下载的第一个非 mmproj、非 wemm 的主语言模型
+                    all_ggufs.iter().find(|(_, name)| {
+                        let nl = name.to_lowercase();
+                        !nl.starts_with("mmproj") && !nl.contains("wemm")
+                    }).map(|(p, _)| p.clone())
                 })
                 .ok_or_else(|| anyhow::anyhow!("未找到模型文件: {}，且当前存储目录中没有可用 GGUF 模型", m))?
             }
         } else {
-            // 没有指定激活模型时，从模型目录中挑选第一个已下载就绪的非 mmproj 模型
-            all_ggufs.iter().find(|(_, name)| !name.to_lowercase().starts_with("mmproj"))
-                .map(|(p, _)| p.clone())
-                .ok_or_else(|| anyhow::anyhow!("当前模型存储目录下未检测到任何 GGUF 模型文件，请先在模型管理中下载模型"))?
+            // 没有指定激活模型时，从模型目录中挑选第一个已下载就绪的非 mmproj、非 wemm 的主语言模型
+            all_ggufs.iter().find(|(_, name)| {
+                let nl = name.to_lowercase();
+                !nl.starts_with("mmproj") && !nl.contains("wemm")
+            })
+            .or_else(|| all_ggufs.iter().find(|(_, name)| !name.to_lowercase().starts_with("mmproj")))
+            .map(|(p, _)| p.clone())
+            .ok_or_else(|| anyhow::anyhow!("当前模型存储目录下未检测到任何 GGUF 模型文件，请先在模型管理中下载模型"))?
         };
 
         if !model_path.exists() {
@@ -373,6 +387,7 @@ impl EngineCoordinator {
             top_p: user_model_params.as_ref().map(|p| p.top_p),
             top_k: user_model_params.as_ref().map(|p| p.top_k),
             repeat_penalty: user_model_params.as_ref().map(|p| p.repeat_penalty),
+            is_embedding: model_str.to_lowercase().contains("wemm") || model_str.to_lowercase().contains("embedding"),
             is_production: !cfg!(debug_assertions),
         };
 

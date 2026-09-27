@@ -124,6 +124,13 @@ pub struct UpdateParamsReq {
     pub ubatch_size: Option<u32>,
 }
 
+#[derive(Debug, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct StartEngineReq {
+    pub mode: Option<String>,
+    pub model_id: Option<String>,
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct StartModelDownloadReq {
@@ -152,6 +159,7 @@ pub struct SwitchModelReq {
     pub model_name: Option<String>,
     pub source: Option<String>,
     pub local_path: Option<String>,
+    pub is_embedding: Option<bool>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -2218,13 +2226,40 @@ async fn switch_model(
 
     let current_model = model_path.clone().unwrap_or_else(|| payload.model_id.clone());
 
-    // 更新活跃模型
+    // 更新活跃模型内存锁
     {
         let mut active_model = state.coordinator.active_model.lock().await;
         *active_model = model_path.clone();
 
         let mut active_model_name = state.coordinator.active_model_name.lock().await;
         *active_model_name = payload.model_name.clone();
+    }
+
+    // 判断是否为嵌入向量模型（如 WeMM）
+    let is_embedding = payload.is_embedding.unwrap_or_else(|| {
+        let id_lower = payload.model_id.to_lowercase();
+        let name_lower = payload.model_name.as_deref().unwrap_or("").to_lowercase();
+        id_lower.contains("wemm") || id_lower.contains("embedding") || name_lower.contains("wemm") || name_lower.contains("embedding")
+    });
+
+    let model_key = match &payload.source {
+        Some(src) => format!("{}@{}", payload.model_id, src),
+        None => payload.model_id.clone(),
+    };
+
+    // 持久化双槽位解耦配置：
+    // 若为嵌入模型，只持久化 active_embedding_model，绝不改写 active_language_model；
+    // 若为主语言模型，持久化 active_language_model。
+    {
+        let mut config = state.coordinator.config.lock().await;
+        if is_embedding {
+            config.active_embedding_model = Some(model_key);
+        } else {
+            config.active_language_model = Some(model_key);
+        }
+        if let Err(e) = config.save_to_disk() {
+            warn!("持久化模型激活配置失败: {}", e);
+        }
     }
 
     info!("模型已切换至: {} (名称: {:?})", current_model, payload.model_name);
@@ -2850,9 +2885,63 @@ async fn reset_downgrade(State(state): State<AppState>) -> impl IntoResponse {
 }
 
 /// POST /api/engine/start
-/// 启动 llama.cpp 推理服务子进程
-async fn start_engine_service(State(state): State<AppState>) -> impl IntoResponse {
-    info!("收到 start_engine_service 请求");
+/// 启动 llama.cpp 推理服务子进程（支持 mode: "language" | "embedding" 意图调度）
+async fn start_engine_service(
+    State(state): State<AppState>,
+    body: axum::body::Bytes,
+) -> impl IntoResponse {
+    let req: StartEngineReq = if !body.is_empty() {
+        serde_json::from_slice(&body).unwrap_or_default()
+    } else {
+        StartEngineReq::default()
+    };
+    info!("收到 start_engine_service 请求，mode: {:?}, model_id: {:?}", req.mode, req.model_id);
+
+    // 意图路由与目标模型预设
+    if let Some(ref m) = req.model_id {
+        *state.coordinator.active_model.lock().await = Some(m.clone());
+    } else if req.mode.as_deref() == Some("embedding") {
+        let (active_emb, models_dir) = {
+            let config = state.coordinator.config.lock().await;
+            (config.active_embedding_model.clone(), config.models_dir.clone())
+        };
+        let target = active_emb.or_else(|| {
+            let ggufs = collect_all_ggufs(&models_dir);
+            ggufs.iter().find(|(_, name)| name.to_lowercase().contains("wemm")).map(|(p, _)| p.to_string_lossy().to_string())
+        });
+        if let Some(target_emb) = target {
+            *state.coordinator.active_model.lock().await = Some(target_emb);
+        }
+    } else if req.mode.as_deref() == Some("language") {
+        let active_lang = {
+            let config = state.coordinator.config.lock().await;
+            config.active_language_model.clone()
+        };
+        if let Some(target_lang) = active_lang {
+            *state.coordinator.active_model.lock().await = Some(target_lang);
+        }
+    }
+
+    // 若当前正在运行，检查是否需要意图切换
+    let proc_status = state.coordinator.guard.status().await;
+    if proc_status == crate::engine::process_guard::ProcessStatus::Running {
+        let target_model = state.coordinator.active_model.lock().await.clone();
+        let running_model = state.coordinator.get_status().await.current_model;
+        let need_restart = match (&target_model, &running_model) {
+            (Some(t), Some(r)) => {
+                let t_clean = t.replace('\\', "/").to_lowercase();
+                let r_clean = r.replace('\\', "/").to_lowercase();
+                !t_clean.contains(&r_clean) && !r_clean.contains(&t_clean)
+            }
+            _ => false,
+        };
+
+        if need_restart {
+            info!("目标意图模型与当前运行模型不一致，执行平滑重启切换至: {:?}", target_model);
+            let _ = state.coordinator.stop_service().await;
+        }
+    }
+
     match state.coordinator.start_service().await {
         Ok(_) => (StatusCode::OK, Json(json!({ "success": true, "message": "服务启动成功" }))),
         Err(e) => {
@@ -3137,5 +3226,63 @@ mod tests {
         let value = serde_json::to_value(&record).expect("序列化失败");
         assert!(value.get("focus_model").is_none());
         assert!(value.get("source").is_none());
+    }
+
+    /// 双槽位解耦验证：修改 embedding 模型不污染 active_language_model
+    #[test]
+    fn test_dual_slot_config_independence() {
+        let mut config = crate::config::EngineConfig::default();
+        config.active_language_model = Some("qwen2.5-7b@modelscope".to_string());
+
+        // 模拟切换至 WeMM
+        let is_embedding = true;
+        let wemm_key = "wemm-2b@modelscope".to_string();
+        if is_embedding {
+            config.active_embedding_model = Some(wemm_key);
+        } else {
+            config.active_language_model = Some(wemm_key);
+        }
+
+        assert_eq!(config.active_language_model.as_deref(), Some("qwen2.5-7b@modelscope"), "主语言模型绝不能被 embedding 覆盖");
+        assert_eq!(config.active_embedding_model.as_deref(), Some("wemm-2b@modelscope"));
+    }
+
+    /// 状态端点验证：未启动（current_model 为 None）时依然稳定输出 dual slots
+    #[test]
+    fn test_engine_status_serializes_dual_slots() {
+        let status = crate::engine::EngineStatus {
+            status: "stopped".to_string(),
+            active_backend: "cuda".to_string(),
+            current_model: None,
+            active_language_model: Some("qwen2.5-7b@modelscope".to_string()),
+            active_embedding_model: Some("wemm-2b@modelscope".to_string()),
+            models_dir: "C:\\models".to_string(),
+            port: 38400,
+            vram_usage_mb: None,
+            hardware: crate::engine::HardwareSummary {
+                gpu_name: "RTX 4090".to_string(),
+                total_vram_gb: 24.0,
+                used_vram_gb: None,
+                best_tier: "cuda".to_string(),
+                current_tier: "cuda".to_string(),
+                is_integrated: false,
+                cpu_cores: Some(16),
+                cpu_threads: Some(32),
+                os_platform: Some("windows".to_string()),
+                total_ram_gb: Some(64.0),
+                used_ram_gb: None,
+                has_avx2: Some(true),
+                has_avx: Some(true),
+            },
+            downgrade_info: None,
+            runtime_params: None,
+            last_error: None,
+        };
+
+        let val = serde_json::to_value(&status).expect("序列化失败");
+        assert_eq!(val["status"], "stopped");
+        assert_eq!(val["current_model"], serde_json::Value::Null);
+        assert_eq!(val["active_language_model"], "qwen2.5-7b@modelscope");
+        assert_eq!(val["active_embedding_model"], "wemm-2b@modelscope");
     }
 }
