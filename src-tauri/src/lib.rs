@@ -6,16 +6,19 @@ pub mod engine;
 pub mod hardware;
 pub mod resource_scope;
 pub mod server;
+pub mod win_proc;
 
 use config::ConfigStore;
 use engine::EngineCoordinator;
 use hardware::{DriverComplianceService, HardwareDetector};
 use server::proxy::ProxyState;
+use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
+use tauri::tray::{MouseButton, TrayIconEvent};
 use tauri::Manager;
 
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use tracing::info;
+use tracing::{info, warn};
 
 /// 获取当前 Axum HTTP 服务实际绑定的端口
 #[tauri::command]
@@ -36,6 +39,104 @@ async fn select_directory(default_path: Option<String>) -> Result<Option<String>
     }
     let folder = dialog.set_title("选择模型存储目录").pick_folder().await;
     Ok(folder.map(|f| f.path().to_string_lossy().to_string()))
+}
+
+/// 显示并聚焦主窗口（托盘打开 / 双击 / open-ui 共用）
+fn show_main_window(app: &tauri::AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.unminimize();
+        let _ = window.show();
+        let _ = window.set_focus();
+    } else {
+        warn!("未找到主窗口，无法显示");
+    }
+}
+
+/// 给托盘图标挂载「打开 / 退出」菜单并绑定事件。
+///
+/// `tauri.conf.json` 的 `trayIcon` 只负责图标与 tooltip，菜单项必须在运行时组装，
+/// 否则托盘点开是空菜单。
+/// 同时绑定左键双击直接唤起主窗口（menuOnLeftClick=false，避免单击弹菜单抢走双击）。
+fn setup_tray_menu(app: &tauri::AppHandle) {
+    let open_item = match MenuItem::with_id(app, "open", "打开", true, None::<&str>) {
+        Ok(item) => item,
+        Err(e) => {
+            warn!("创建托盘菜单项「打开」失败: {}", e);
+            return;
+        }
+    };
+    let separator = match PredefinedMenuItem::separator(app) {
+        Ok(item) => item,
+        Err(e) => {
+            warn!("创建托盘菜单分隔线失败: {}", e);
+            return;
+        }
+    };
+    let quit_item = match MenuItem::with_id(app, "quit", "退出", true, None::<&str>) {
+        Ok(item) => item,
+        Err(e) => {
+            warn!("创建托盘菜单项「退出」失败: {}", e);
+            return;
+        }
+    };
+    let menu = match Menu::with_items(app, &[&open_item, &separator, &quit_item]) {
+        Ok(menu) => menu,
+        Err(e) => {
+            warn!("组装托盘菜单失败: {}", e);
+            return;
+        }
+    };
+
+    let Some(tray) = app.tray_by_id("firefly-ai-engine-tray") else {
+        warn!("未找到托盘图标（id=firefly-ai-engine-tray），跳过菜单挂载");
+        return;
+    };
+
+    if let Err(e) = tray.set_menu(Some(menu)) {
+        warn!("挂载托盘菜单失败: {}", e);
+        return;
+    }
+
+    // 菜单点击：打开主窗口 / 优雅退出
+    let app_handle = app.clone();
+    tray.on_menu_event(move |tray_app, event| {
+        match event.id().as_ref() {
+            "open" => {
+                show_main_window(tray_app);
+            }
+            "quit" => {
+                info!("收到托盘「退出」请求，准备优雅关闭...");
+                let handle = app_handle.clone();
+                tauri::async_runtime::spawn(async move {
+                    // 先停掉 llama-server 子进程，再退出（对齐 /api/engine/shutdown）
+                    if let Some(coordinator) = handle.try_state::<Arc<EngineCoordinator>>() {
+                        let _ = coordinator.guard.stop().await;
+                    }
+                    tokio::time::sleep(std::time::Duration::from_millis(300)).await;
+                    std::process::exit(0);
+                });
+            }
+            _ => {}
+        }
+    });
+
+    // 左键单击/双击托盘图标：均直接唤起主窗口（菜单仅右键弹出，见 menuOnLeftClick=false）
+    tray.on_tray_icon_event(|tray_app, event| {
+        let is_left_activate = matches!(
+            event,
+            TrayIconEvent::Click {
+                button: MouseButton::Left,
+                ..
+            } | TrayIconEvent::DoubleClick {
+                button: MouseButton::Left,
+                ..
+            }
+        );
+        if is_left_activate {
+            info!("托盘图标左键点击，显示主窗口");
+            show_main_window(tray_app.app_handle());
+        }
+    });
 }
 
 /// 构建并运行 Tauri 应用
@@ -183,6 +284,10 @@ pub fn run() {
                     info!("以静默模式启动（--silent），主窗口保持隐藏");
                 }
             }
+
+            // 托盘右键/左键菜单：打开主窗口 / 退出
+            // （tauri.conf.json 仅声明托盘图标，菜单项需在此挂载并绑定事件）
+            setup_tray_menu(app.handle());
 
             Ok(())
         })

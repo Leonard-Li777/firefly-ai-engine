@@ -27,7 +27,7 @@
       "id": "firefly-ai-engine-tray",
       "iconPath": "icons/icon.png",
       "iconAsTemplate": true,
-      "menuOnLeftClick": true,
+      "menuOnLeftClick": false,
       "tooltip": "Firefly AI Engine"
     }
   },

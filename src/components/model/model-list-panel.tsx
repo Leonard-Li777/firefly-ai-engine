@@ -184,6 +184,9 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isEx = false,
   const deleteModel = useEngineStore(s => s.deleteModel)
   const [isDeleteConfirm, setIsDeleteConfirm] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+
+  // 「高级」操作收纳：删除/移除/参数配置默认折叠为一个弱化按钮，点击后原位展开
+  const [isAdvancedOpen, setIsAdvancedOpen] = useState(false)
   const startDeleteConfirm = () => setIsDeleteConfirm(true)
   const cancelDelete = () => setIsDeleteConfirm(false)
   const handleDelete = async () => {
@@ -222,6 +225,12 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isEx = false,
   const isDsparkDownloaded = dsparkDl.status === 'completed'
   const intelligence = INTELLIGENCE_CONFIG(model.intelligenceLevel)
   const isDownloadingOrPaused = dl.isDownloading || dl.isPaused
+
+  // 高级操作可见性：移除（未下载的自定义模型）/ 删除（已下载且显存未超标）/ 参数配置（已下载且显存未超标）
+  const canRemoveCustom = !!model.custom && !isDownloaded
+  const canDeleteModel = isDownloaded && !isEx
+  const canOpenConfig = isDownloaded && !isEx
+  const hasAdvancedActions = canRemoveCustom || canDeleteModel || canOpenConfig
 
   // 格式化展示相对路径（不显示 base 存储路径）
   // 兜底：模型已判定为已下载但 localPath 缺失（如下载完成瞬间 fetchModels 尚未刷新、
@@ -427,20 +436,33 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isEx = false,
         )}
 
         <div className="flex items-center gap-1.5 shrink-0">
-          {/* 「移除」（仅未下载的自定义模型显示）：删除自定义配置条目，不触碰磁盘文件 */}
-          {model.custom && !isDownloaded && (
+          {/* 高级操作收纳区：默认仅显示弱化的「高级」按钮，点击后原位展开 删除/移除/参数配置 */}
+          {hasAdvancedActions && !isDownloadingOrPaused && dl.status !== 'error' && (
             isDeleteConfirm ? (
               <>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7.5 text-xs px-3 rounded-lg border-destructive/50 bg-destructive/10 text-destructive hover:bg-destructive/20 font-bold shrink-0"
-                  onClick={handleRemove}
-                  disabled={isDeleting}
-                >
-                  <Trash2 className="h-3.5 w-3.5 mr-1 shrink-0" />
-                  {isDeleting ? t('删除中...') : t('确认移除')}
-                </Button>
+                {canRemoveCustom ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7.5 text-xs px-3 rounded-lg border-destructive/50 bg-destructive/10 text-destructive hover:bg-destructive/20 font-bold shrink-0"
+                    onClick={handleRemove}
+                    disabled={isDeleting}
+                  >
+                    <Trash2 className="h-3.5 w-3.5 mr-1 shrink-0" />
+                    {isDeleting ? t('删除中...') : t('确认移除')}
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7.5 text-xs px-3 rounded-lg border-destructive/50 bg-destructive/10 text-destructive hover:bg-destructive/20 font-bold shrink-0"
+                    onClick={handleDelete}
+                    disabled={isDeleting}
+                  >
+                    <Trash2 className="h-3.5 w-3.5 mr-1 shrink-0" />
+                    {isDeleting ? t('删除中...') : t('确认删除')}
+                  </Button>
+                )}
                 <Button
                   size="sm"
                   variant="ghost"
@@ -451,16 +473,63 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isEx = false,
                   {t('取消')}
                 </Button>
               </>
+            ) : isAdvancedOpen ? (
+              <>
+                {/* 展开态：删除（已下载模型文件）/ 移除（自定义配置条目）/ 参数配置 */}
+                {canDeleteModel && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7.5 text-xs px-3 rounded-lg font-bold text-muted-foreground/70 hover:text-destructive hover:bg-destructive/10 shrink-0 opacity-70 hover:opacity-100"
+                    title={t('删除模型文件并移除相关配置，释放磁盘空间')}
+                    onClick={startDeleteConfirm}
+                  >
+                    <Trash2 className="h-3.5 w-3.5 mr-1 shrink-0" />
+                    {t('删除')}
+                  </Button>
+                )}
+                {canRemoveCustom && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7.5 text-xs px-3 rounded-lg font-bold text-muted-foreground/70 hover:text-destructive hover:bg-destructive/10 shrink-0 opacity-70 hover:opacity-100"
+                    title={t('删除该自定义模型记录，不再显示于列表')}
+                    onClick={startDeleteConfirm}
+                  >
+                    <Trash2 className="h-3.5 w-3.5 mr-1 shrink-0" />
+                    {t('移除')}
+                  </Button>
+                )}
+                {canOpenConfig && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7.5 text-xs px-3 rounded-lg border-border hover:border-primary/60 font-bold flex items-center gap-1 transition-all shrink-0"
+                    onClick={() => onOpenConfig(model)}
+                  >
+                    <Settings2 className="h-3.5 w-3.5 text-primary shrink-0" />
+                    <span>{t('参数配置')}</span>
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7.5 text-xs px-3 rounded-lg font-bold text-muted-foreground shrink-0"
+                  onClick={() => setIsAdvancedOpen(false)}
+                >
+                  {t('收起')}
+                </Button>
+              </>
             ) : (
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-7.5 text-xs px-3 rounded-lg font-bold text-muted-foreground/70 hover:text-destructive hover:bg-destructive/10 shrink-0 opacity-70 hover:opacity-100"
-                title={t('删除该自定义模型记录，不再显示于列表')}
-                onClick={startDeleteConfirm}
+                className="h-7.5 text-xs px-3 rounded-lg font-bold text-muted-foreground/60 hover:text-foreground shrink-0 opacity-70 hover:opacity-100"
+                title={t('删除、移除与参数配置等高级操作')}
+                onClick={() => setIsAdvancedOpen(true)}
               >
-                <Trash2 className="h-3.5 w-3.5 mr-1 shrink-0" />
-                {t('移除')}
+                <Settings2 className="h-3.5 w-3.5 mr-1 shrink-0" />
+                {t('高级')}
               </Button>
             )
           )}
@@ -489,41 +558,7 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isEx = false,
             </Button>
           ) : isDownloaded ? (
             <>
-              {/* 删除模型按钮（固定操作区第一位）：弱化样式，二次确认（首次点击进入确认态，再次点击才真正删除） */}
-              {!isEx && (isDeleteConfirm ? (
-                <>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-7.5 text-xs px-3 rounded-lg border-destructive/50 bg-destructive/10 text-destructive hover:bg-destructive/20 font-bold shrink-0"
-                    onClick={handleDelete}
-                    disabled={isDeleting}
-                  >
-                    <Trash2 className="h-3.5 w-3.5 mr-1 shrink-0" />
-                    {isDeleting ? t('删除中...') : t('确认删除')}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7.5 text-xs px-3 rounded-lg font-bold text-muted-foreground shrink-0"
-                    onClick={cancelDelete}
-                    disabled={isDeleting}
-                  >
-                    {t('取消')}
-                  </Button>
-                </>
-              ) : (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-7.5 text-xs px-3 rounded-lg font-bold text-muted-foreground/70 hover:text-destructive hover:bg-destructive/10 shrink-0 opacity-70 hover:opacity-100"
-                  title={t('删除模型文件并移除相关配置，释放磁盘空间')}
-                  onClick={startDeleteConfirm}
-                >
-                  <Trash2 className="h-3.5 w-3.5 mr-1 shrink-0" />
-                  {t('删除')}
-                </Button>
-              ))}
+              {/* 删除与参数配置已收纳进操作区首位的「高级」按钮 */}
 
               {/* 配置了 DSpark 加速模型且未下载时，展示【下载加速模型】按钮 */}
               {dsparkId && !isDsparkDownloaded && (
@@ -537,19 +572,6 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isEx = false,
                 >
                   <Zap className={`h-3 w-3 shrink-0 ${dsparkDl.isDownloading ? 'fill-current animate-pulse' : ''}`} />
                   <span>{dsparkDl.isDownloading ? t('加速模型下载中...') : t('下载加速模型')}</span>
-                </Button>
-              )}
-
-              {/* 参数配置按钮：仅已下载且显存未超标 (!isEx) 时才显示 */}
-              {!isEx && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7.5 text-xs px-3 rounded-lg border-border hover:border-primary/60 font-bold flex items-center gap-1 transition-all"
-                  onClick={() => onOpenConfig(model)}
-                >
-                  <Settings2 className="h-3.5 w-3.5 text-primary shrink-0" />
-                  <span>{t('参数配置')}</span>
                 </Button>
               )}
 
@@ -608,7 +630,7 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isEx = false,
             </>
           ) : (
             /* 未下载模型只显示下载按钮，若显存不足则显示禁用显存不足按钮，绝不显示任何参数配置按钮；
-               自由添加的自定义模型即便未下载，也提供「移除记录」按钮（删除后不再显示于列表） */
+               自由添加的自定义模型即便未下载，也可通过「高级」按钮展开「移除记录」（删除后不再显示于列表） */
             <>
               {isEx ? (
                 <Button
@@ -779,9 +801,19 @@ export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focu
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  const safeModels = Array.isArray(models) ? models : []
+
+  // 推荐源优先：初次进入或外部切换时切到可顺畅下载的源页签
+  useEffect(() => {
+    if (focusSource) {
+      setActiveSource(focusSource)
+    }
+  }, [focusSource])
+
   /**
    * Desktop 深链聚焦（Issue 0046 §3）：
-   * 命中关键词后自动切源、取消「只看推荐」过滤、滚动居中并呈现呼吸高亮光晕。
+   * 命中关键词后自动切源、滚动居中并呈现呼吸高亮光晕。
+   * 用户切换到任何一个安装源（ModelScope / HuggingFace）均可高亮匹配模型。
    * 关键词为空时不动作；高亮在 FOCUS_HIGHLIGHT_DURATION_MS 后自动消退。
    */
   useEffect(() => {
@@ -791,15 +823,9 @@ export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focu
       focusAppliedRef.current = null
       return
     }
-    // 同一关键词只应用一次，避免 models 刷新（下载完成等）触发重复滚动
-    if (focusAppliedRef.current === keyword) return
-
-    // 推荐源优先：先切到可顺畅下载的源页签
-    if (focusSource) {
-      setActiveSource(focusSource)
-    }
-    // WeMM 等嵌入模型通常非「推荐」条目，需放开过滤才能看到目标行
-    setShowRecommendedOnly(false)
+    const currentKey = `${keyword}@${activeSource}`
+    // 同一来源下的同一关键词只自动滚动定位一次，避免列表刷新重复滚动；切换来源后允许再次高亮
+    if (focusAppliedRef.current === currentKey) return
 
     let cancelled = false
     let clearTimer: ReturnType<typeof setTimeout> | null = null
@@ -813,7 +839,7 @@ export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focu
         const rows = Array.from(container.querySelectorAll<HTMLElement>('[data-model-key]'))
         const target = rows.find(el => (el.dataset.modelKey || '').toLowerCase().includes(keyword))
         if (!target) return
-        focusAppliedRef.current = keyword
+        focusAppliedRef.current = currentKey
         setHighlightedKey(target.dataset.modelKey || null)
         target.scrollIntoView({ behavior: 'smooth', block: 'center' })
         clearTimer = setTimeout(() => {
@@ -827,13 +853,12 @@ export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focu
       cancelAnimationFrame(raf)
       if (clearTimer) clearTimeout(clearTimer)
     }
-  }, [focusModel, focusSource, models])
-
-  const safeModels = Array.isArray(models) ? models : []
+  }, [focusModel, activeSource, safeModels, showRecommendedOnly])
   const userVramGB = engineStatus?.hardware?.total_vram_gb
 
   // 按渠道和推荐过滤，并执行超标计算与加权排序后，分为三组：
   // 已下载 / 待下载（未下载且显存够用）/ 显存不足不可下载
+  // 每组内再按 isEmbedding 拆分为「语言模型」与「Embedding 嵌入模型」两类
   const groupedModels = useMemo(() => {
     const matched = safeModels.filter(m => {
       if (!m) return false
@@ -843,15 +868,24 @@ export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focu
       return true
     })
     const sorted = sortModels(matched, userVramGB)
+
+    /** 按 isEmbedding 拆分为两类 */
+    const splitGroup = (list: typeof sorted) => ({
+      language: list.filter(m => !m.isEmbedding),
+      embedding: list.filter(m => !!m.isEmbedding)
+    })
+
     return {
-      downloaded: sorted.filter(m => m.isDownloaded),
-      notDownloaded: sorted.filter(m => !m.isDownloaded && !m.isEx),
-      vramLimited: sorted.filter(m => !m.isDownloaded && m.isEx)
+      downloaded: splitGroup(sorted.filter(m => m.isDownloaded)),
+      notDownloaded: splitGroup(sorted.filter(m => !m.isDownloaded && !m.isEx)),
+      vramLimited: splitGroup(sorted.filter(m => !m.isDownloaded && m.isEx))
     }
   }, [safeModels, activeSource, showRecommendedOnly, userVramGB])
 
   const totalCount =
-    groupedModels.downloaded.length + groupedModels.notDownloaded.length + groupedModels.vramLimited.length
+    groupedModels.downloaded.language.length + groupedModels.downloaded.embedding.length +
+    groupedModels.notDownloaded.language.length + groupedModels.notDownloaded.embedding.length +
+    groupedModels.vramLimited.language.length + groupedModels.vramLimited.embedding.length
 
   // 统计各来源数量
   const counts = useMemo(() => {
@@ -859,6 +893,15 @@ export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focu
     const hfCount = safeModels.filter(m => m && m.source === 'huggingface').length
     return { modelscope: scopeCount, huggingface: hfCount }
   }, [safeModels])
+
+  // 查找外部聚焦目标在当前来源下的模型信息（Issue 0046 §3：模型上方安装提示）
+  const targetFocusModel = useMemo(() => {
+    const kw = focusModel?.trim().toLowerCase()
+    if (!kw) return null
+    return safeModels.find(
+      m => m && m.source === activeSource && (m.id.toLowerCase().includes(kw) || m.name.toLowerCase().includes(kw))
+    ) || null
+  }, [focusModel, activeSource, safeModels])
 
   // 统一渲染单行模型条目
   const renderModelRow = (model: EnrichedModelItem) => {
@@ -928,6 +971,18 @@ export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focu
 
         {/* 列表内容区：表头 + 单行表格布局，按 已下载 / 待下载 / 显存不足 三组显示 */}
         <TabsContent value={activeSource} className="p-5 focus-visible:ring-0 m-0">
+          {/* 外部深链聚焦且目标模型尚未下载时，在模型上方显示明确安装引导提示（Issue 0046 §3） */}
+          {targetFocusModel && !targetFocusModel.isDownloaded && (
+            <div className="mb-4 flex items-center justify-between gap-3 p-3.5 rounded-xl border border-primary/30 bg-primary/10 text-primary shadow-2xs animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <Sparkles className="w-4 h-4 text-primary shrink-0" />
+                <span className="text-xs font-semibold leading-relaxed">
+                  {t('主程序已开启高维修正与视频检索，请先下载安装下方高亮的 {name} 嵌入模型。', { name: targetFocusModel.name })}
+                </span>
+              </div>
+            </div>
+          )}
+
           {/* 首次下载气泡引导（PRD-0043）：无任何已下载模型时激活 */}
           {isGuideActive && (
             <ModelBubbleGuide onSessionDismiss={() => setGuideSessionDismissed(true)} />
@@ -937,43 +992,128 @@ export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focu
               {showRecommendedOnly ? t('暂无官方推荐模型') : t('该来源暂无可用模型')}
             </div>
           ) : (
-            <div className="space-y-6" ref={listContainerRef}>
-              {/* 全列表共用一个表头，保证三组之间列宽一致对齐 */}
-              <div className="rounded-xl border border-border/60 overflow-hidden">
-                <ModelColumnHeader />
-              </div>
+            <div className="space-y-8" ref={listContainerRef}>
+              {/* ── 语言模型区块 ── */}
+              {(groupedModels.downloaded.language.length > 0 ||
+                groupedModels.notDownloaded.language.length > 0 ||
+                groupedModels.vramLimited.language.length > 0) && (
+                <div className="space-y-5">
+                  {/* 语言模型区块标题 + 说明 */}
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border border-primary/30 bg-primary/10 text-primary mt-0.5">
+                      <FileText className="h-3.5 w-3.5" />
+                    </div>
+                    <div className="min-w-0">
+                      <h2 className="text-sm font-extrabold text-foreground tracking-tight leading-snug">
+                        {t('语言模型')}
+                      </h2>
+                      <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
+                        {t('用于文件内容理解、标签生成与智能描述。激活后引擎将加载该模型进行 AI 分析。')}
+                      </p>
+                    </div>
+                  </div>
 
-              {groupedModels.downloaded.length > 0 && (
-                <ModelGroupSection
-                  icon={<FileCheck2 className="h-3 w-3" />}
-                  iconClass="border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10"
-                  title={t('已下载模型')}
-                  count={groupedModels.downloaded.length}
-                >
-                  {groupedModels.downloaded.map(renderModelRow)}
-                </ModelGroupSection>
+                  {/* 语言模型共用表头 */}
+                  <div className="rounded-xl border border-border/60 overflow-hidden">
+                    <ModelColumnHeader />
+                  </div>
+
+                  {groupedModels.downloaded.language.length > 0 && (
+                    <ModelGroupSection
+                      icon={<FileCheck2 className="h-3 w-3" />}
+                      iconClass="border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10"
+                      title={t('已下载模型')}
+                      count={groupedModels.downloaded.language.length}
+                    >
+                      {groupedModels.downloaded.language.map(renderModelRow)}
+                    </ModelGroupSection>
+                  )}
+
+                  {groupedModels.notDownloaded.language.length > 0 && (
+                    <ModelGroupSection
+                      icon={<Download className="h-3 w-3" />}
+                      iconClass="border-primary/30 text-primary bg-primary/10"
+                      title={t('待下载模型')}
+                      count={groupedModels.notDownloaded.language.length}
+                    >
+                      {groupedModels.notDownloaded.language.map(renderModelRow)}
+                    </ModelGroupSection>
+                  )}
+
+                  {groupedModels.vramLimited.language.length > 0 && (
+                    <ModelGroupSection
+                      icon={<AlertCircle className="h-3 w-3" />}
+                      iconClass="border-destructive/30 text-destructive bg-destructive/10"
+                      title={t('显存不足 · 不可下载')}
+                      count={groupedModels.vramLimited.language.length}
+                    >
+                      {groupedModels.vramLimited.language.map(renderModelRow)}
+                    </ModelGroupSection>
+                  )}
+                </div>
               )}
 
-              {groupedModels.notDownloaded.length > 0 && (
-                <ModelGroupSection
-                  icon={<Download className="h-3 w-3" />}
-                  iconClass="border-primary/30 text-primary bg-primary/10"
-                  title={t('待下载模型')}
-                  count={groupedModels.notDownloaded.length}
-                >
-                  {groupedModels.notDownloaded.map(renderModelRow)}
-                </ModelGroupSection>
-              )}
+              {/* ── Embedding 嵌入模型区块 ── */}
+              {(groupedModels.downloaded.embedding.length > 0 ||
+                groupedModels.notDownloaded.embedding.length > 0 ||
+                groupedModels.vramLimited.embedding.length > 0) && (
+                <div className="space-y-5">
+                  {/* 分隔线 */}
+                  <div className="h-px bg-border/50" />
 
-              {groupedModels.vramLimited.length > 0 && (
-                <ModelGroupSection
-                  icon={<AlertCircle className="h-3 w-3" />}
-                  iconClass="border-destructive/30 text-destructive bg-destructive/10"
-                  title={t('显存不足 · 不可下载')}
-                  count={groupedModels.vramLimited.length}
-                >
-                  {groupedModels.vramLimited.map(renderModelRow)}
-                </ModelGroupSection>
+                  {/* Embedding 模型区块标题 + 说明 */}
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border border-violet-500/30 bg-violet-500/10 text-violet-600 dark:text-violet-400 mt-0.5">
+                      <Sparkles className="h-3.5 w-3.5" />
+                    </div>
+                    <div className="min-w-0">
+                      <h2 className="text-sm font-extrabold text-foreground tracking-tight leading-snug">
+                        {t('Embedding 嵌入模型')}
+                      </h2>
+                      <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
+                        {t('用于高维向量修正与视频内容语义检索。安装后可大幅提升标签精准度，并支持自然语言搜索视频内容。不参与语言模型的激活与推理流程，独立静默运行。')}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Embedding 模型共用表头 */}
+                  <div className="rounded-xl border border-border/60 overflow-hidden">
+                    <ModelColumnHeader />
+                  </div>
+
+                  {groupedModels.downloaded.embedding.length > 0 && (
+                    <ModelGroupSection
+                      icon={<FileCheck2 className="h-3 w-3" />}
+                      iconClass="border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10"
+                      title={t('已下载模型')}
+                      count={groupedModels.downloaded.embedding.length}
+                    >
+                      {groupedModels.downloaded.embedding.map(renderModelRow)}
+                    </ModelGroupSection>
+                  )}
+
+                  {groupedModels.notDownloaded.embedding.length > 0 && (
+                    <ModelGroupSection
+                      icon={<Download className="h-3 w-3" />}
+                      iconClass="border-primary/30 text-primary bg-primary/10"
+                      title={t('待下载模型')}
+                      count={groupedModels.notDownloaded.embedding.length}
+                    >
+                      {groupedModels.notDownloaded.embedding.map(renderModelRow)}
+                    </ModelGroupSection>
+                  )}
+
+                  {groupedModels.vramLimited.embedding.length > 0 && (
+                    <ModelGroupSection
+                      icon={<AlertCircle className="h-3 w-3" />}
+                      iconClass="border-destructive/30 text-destructive bg-destructive/10"
+                      title={t('显存不足 · 不可下载')}
+                      count={groupedModels.vramLimited.embedding.length}
+                    >
+                      {groupedModels.vramLimited.embedding.map(renderModelRow)}
+                    </ModelGroupSection>
+                  )}
+                </div>
               )}
             </div>
           )}

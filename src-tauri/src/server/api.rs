@@ -547,56 +547,14 @@ async fn engine_list(State(state): State<AppState>) -> impl IntoResponse {
     // 异步拉取或从缓存获取最新 manifest.json，用于提取精确下载包体积
     let manifest = get_cached_manifest().await;
 
-    // 计算实际生效层级：从硬件最佳层级沿降级链（如 CUDA→Vulkan→CPU）找到第一个「已安装」的层级。
-    // 集成模式自带 Vulkan/CPU 引擎时，即使硬件最佳为 CUDA（未下载），推荐标记也应落在实际可运行的
-    // Vulkan 上，而不是把「推荐」标给一个尚未下载的引擎；仅当链上全部未安装时保持硬件最佳以引导下载。
-    let parse_backend_tier = |s: &str| crate::hardware::gpu_info::AccelerationTier::from_str(s);
-    let is_tier_installed = |tier: &crate::hardware::gpu_info::AccelerationTier| -> bool {
-        installed
-            .iter()
-            .any(|e| e.tier == *tier && (tier != &crate::hardware::gpu_info::AccelerationTier::Cpu || {
-                // CPU 层级必须指令集兼容才算可用
-                crate::engine::scheduler::EngineScheduler::is_cpu_engine_compatible(&e.dir_name, &crate::hardware::CpuInfo {
-                    model: "query".to_string(),
-                    cores: status.hardware.cpu_cores.unwrap_or(4) as u32,
-                    threads: status.hardware.cpu_threads.unwrap_or(4) as u32,
-                    speed_mhz: 3000,
-                    has_avx2: status.hardware.has_avx2.unwrap_or(false),
-                    has_avx: status.hardware.has_avx.unwrap_or(false),
-                    has_fma: false,
-                })
-            }))
-    };
-    let effective_tier = {
-        let mut tier = parse_backend_tier(&best_tier);
-        let mut all_missing = true;
-        loop {
-            if is_tier_installed(&tier) {
-                all_missing = false;
-                break;
-            }
-            match crate::hardware::driver_compliance::get_fallback_tier(&tier) {
-                Some(next) => tier = next,
-                None => break,
-            }
-        }
-        if all_missing {
-            // 全部未安装：保持硬件最佳层级，用于引导下载推荐方向
-            parse_backend_tier(&best_tier)
-        } else {
-            tier
-        }
-    };
-    let effective_str = effective_tier.as_str().to_string();
-
     let mut list = Vec::new();
 
     if is_darwin {
         // macOS 平台：输出 Metal (Apple Silicon) 与 CPU
         let metal_size = resolve_package_size_mb(manifest.as_ref(), "metal", 180.0);
         let cpu_size = resolve_package_size_mb(manifest.as_ref(), "cpu", 120.0);
-        // 推荐标记基于实际生效层级（已安装优先），而非仅硬件最佳
-        let metal_recommended = effective_str == "metal";
+        // 推荐与适配类型基于硬件最佳层级判定，与是否已下载无关
+        let metal_recommended = best_tier == "metal";
 
         list.push(json!({
             "id": "metal",
@@ -633,11 +591,11 @@ async fn engine_list(State(state): State<AppState>) -> impl IntoResponse {
             let cuda13_size = resolve_package_size_mb(manifest.as_ref(), "cuda134", 150.2);
             let cuda12_size = resolve_package_size_mb(manifest.as_ref(), "cuda", 254.7);
 
-            // 推荐标记基于实际生效层级（已安装优先），而非仅驱动合规：
-            // 驱动合规但 CUDA 未下载时，推荐应落在实际可运行的 Vulkan/CPU 上
-            let recommend_cuda13 = effective_str == "cuda" && cuda13_compliant;
-            let recommend_cuda12 = effective_str == "cuda" && !cuda13_compliant && cuda12_compliant;
-            let recommend_vulkan = effective_str == "vulkan";
+            // 推荐与适配类型基于驱动合规性判定，与是否已下载无关：
+            // 驱动合规的 CUDA 就是"最佳适配"，即使它尚未下载；Vulkan 仅在驱动不达标时推荐
+            let recommend_cuda13 = cuda13_compliant;
+            let recommend_cuda12 = !cuda13_compliant && cuda12_compliant;
+            let recommend_vulkan = !cuda13_compliant && !cuda12_compliant;
 
             // CUDA 13.4（最新驱动）
             list.push(json!({
@@ -699,8 +657,8 @@ async fn engine_list(State(state): State<AppState>) -> impl IntoResponse {
             }));
         } else if is_amd {
             let hip_size = resolve_package_size_mb(manifest.as_ref(), "hip", 252.6);
-            // 推荐标记基于实际生效层级（已安装优先），而非仅硬件最佳
-            let hip_recommended = effective_str == "hip" || effective_str == "rocm";
+            // 推荐与适配类型基于硬件最佳层级判定，与是否已下载无关
+            let hip_recommended = best_tier == "hip" || best_tier == "rocm";
 
             list.push(json!({
                 "id": "hip",
@@ -744,8 +702,8 @@ async fn engine_list(State(state): State<AppState>) -> impl IntoResponse {
             }));
         } else if is_intel {
             let sycl_size = resolve_package_size_mb(manifest.as_ref(), "sycl", 120.2);
-            // 推荐标记基于实际生效层级（已安装优先），而非仅硬件最佳
-            let sycl_recommended = effective_str == "sycl";
+            // 推荐与适配类型基于硬件最佳层级判定，与是否已下载无关
+            let sycl_recommended = best_tier == "sycl";
 
             list.push(json!({
                 "id": "sycl",
@@ -789,8 +747,10 @@ async fn engine_list(State(state): State<AppState>) -> impl IntoResponse {
             }));
         } else {
             // 通用/纯 CPU 情况：若检测到 Vulkan 则列出 Vulkan，否则 CPU 为最佳推荐
-            let recommend_vulkan = effective_str == "vulkan";
-            let recommend_cpu = effective_str == "cpu";
+            // 推荐与适配类型基于硬件最佳层级判定，与是否已下载无关
+            let has_gpu = !status.hardware.gpu_name.is_empty();
+            let recommend_vulkan = has_gpu;
+            let recommend_cpu = !has_gpu;
 
             list.push(json!({
                 "id": "vulkan",
@@ -1920,6 +1880,9 @@ async fn run_model_download(
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped());
 
+    // 抑制 llama-model-download 控制台窗口闪烁
+    crate::win_proc::apply_no_window(&mut cmd);
+
     info!("启动原生真实下载进程: {:?} 模型: {}", downloader_path, download_target_id);
 
     let mut child = match cmd.spawn() {
@@ -2196,9 +2159,11 @@ async fn cancel_model_download(
         info!("取消下载任务: {}，真实终止 PID: {}", task_id, pid);
         #[cfg(windows)]
         {
-            let _ = std::process::Command::new("taskkill")
-                .args(["/PID", &pid.to_string(), "/F", "/T"])
-                .output();
+            let mut kill_cmd = std::process::Command::new("taskkill");
+            kill_cmd.args(["/PID", &pid.to_string(), "/F", "/T"]);
+            // 抑制 taskkill 控制台窗口闪烁
+            crate::win_proc::apply_no_window_std(&mut kill_cmd);
+            let _ = kill_cmd.output();
         }
         #[cfg(not(windows))]
         {

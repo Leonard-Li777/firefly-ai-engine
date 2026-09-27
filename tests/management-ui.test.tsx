@@ -158,7 +158,10 @@ describe('Tier 2 管理视窗核心组件交互测试', () => {
     const matches = screen.getAllByText(relativePathRegex)
     expect(matches.length).toBeGreaterThan(0)
 
-    // 2. 存在【参数配置】按钮，绝不存在过时的【预设参数】按钮
+    // 2. 删除/参数配置收纳于「高级」按钮内：逐行点击「高级」展开后，出现【参数配置】按钮，绝不存在过时的【预设参数】按钮
+    const advancedButtons = screen.getAllByRole('button', { name: /高级/ })
+    expect(advancedButtons.length).toBeGreaterThan(0)
+    advancedButtons.forEach(btn => fireEvent.click(btn))
     const configButtons = screen.getAllByRole('button', { name: /参数配置/ })
     expect(configButtons.length).toBeGreaterThan(0)
     expect(screen.queryByRole('button', { name: /预设参数/ })).not.toBeInTheDocument()
@@ -176,6 +179,22 @@ describe('Tier 2 管理视窗核心组件交互测试', () => {
     await waitFor(() => {
       expect(useEngineStore.getState().activeModelKey).toBeDefined()
     })
+  })
+
+  it('ModelListPanel 能正确显示 WeMM-Embedding-2B 推荐模型，并在 focusModel 聚焦时高亮并展示安装引导提示', async () => {
+    await useEngineStore.getState().fetchModels()
+    const { unmount } = render(<ModelListPanel focusModel="WeMM-Embedding-2B" focusSource="modelscope" />)
+
+    // 默认开启「仅显示推荐」下，WeMM 依然可见（recommended: true）
+    expect(screen.getAllByText(/WeMM-Embedding 2B/i).length).toBeGreaterThan(0)
+    // 聚焦提示横幅显示
+    expect(screen.getByText(/主程序已开启高维修正与视频检索/)).toBeInTheDocument()
+
+    unmount()
+
+    // 切换到 huggingface 来源同样可见 WeMM
+    render(<ModelListPanel focusModel="WeMM-Embedding-2B" focusSource="huggingface" />)
+    expect(screen.getAllByText(/WeMM-Embedding 2B/i).length).toBeGreaterThan(0)
   })
 })
 

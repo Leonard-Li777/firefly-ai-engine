@@ -153,18 +153,18 @@ impl HardwareDetector {
     async fn run_fastfetch(&self) -> Result<Vec<Value>> {
         let fastfetch_path = self.get_fastfetch_path().await?;
 
-        let output = tokio::time::timeout(
-            Duration::from_secs(10),
-            Command::new(&fastfetch_path)
-                .args(&["--format", "json", "--logo", "none", "--pipe", "true"])
-                .env("NO_COLOR", "1")
-                .env("LANG", "en_US.UTF-8")
-                .env("LC_ALL", "en_US.UTF-8")
-                .output(),
-        )
-        .await
-        .context("fastfetch 执行超时（10秒）")?
-        .context("执行 fastfetch 失败")?;
+        let mut cmd = Command::new(&fastfetch_path);
+        cmd.args(&["--format", "json", "--logo", "none", "--pipe", "true"])
+            .env("NO_COLOR", "1")
+            .env("LANG", "en_US.UTF-8")
+            .env("LC_ALL", "en_US.UTF-8");
+        // 抑制 fastfetch 控制台窗口闪烁
+        crate::win_proc::apply_no_window(&mut cmd);
+
+        let output = tokio::time::timeout(Duration::from_secs(10), cmd.output())
+            .await
+            .context("fastfetch 执行超时（10秒）")?
+            .context("执行 fastfetch 失败")?;
 
         let stdout = String::from_utf8_lossy(&output.stdout);
 

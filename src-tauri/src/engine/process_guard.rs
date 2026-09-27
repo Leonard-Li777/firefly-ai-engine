@@ -169,6 +169,9 @@ impl ProcessGuard {
         cmd.stdout(std::process::Stdio::piped())
             .stderr(std::process::Stdio::piped());
 
+        // 抑制 llama-server 控制台窗口闪烁
+        crate::win_proc::apply_no_window(&mut cmd);
+
         let mut child = cmd.spawn().map_err(|e| anyhow!("启动 llama-server 失败: {}", e))?;
 
         // 异步监控 stdout

@@ -222,7 +222,10 @@ pub async fn detect_nvidia_driver_info() -> (Option<f64>, Option<f64>) {
     }
 
     // 1. 优先尝试通过 nvidia-smi 提取最精确的 Driver Version 与 CUDA Version
-    if let Ok(output) = tokio::process::Command::new("nvidia-smi").output().await {
+    let mut smi_cmd = tokio::process::Command::new("nvidia-smi");
+    // 抑制 nvidia-smi 控制台窗口闪烁
+    crate::win_proc::apply_no_window(&mut smi_cmd);
+    if let Ok(output) = smi_cmd.output().await {
         let text = String::from_utf8_lossy(&output.stdout).to_string();
         let driver_re = regex::Regex::new(r"Driver Version:\s*(\d+\.?\d*)").ok();
         let cuda_re = regex::Regex::new(r"CUDA Version:\s*(\d+\.?\d*)").ok();

@@ -48,6 +48,13 @@ pub struct HardwareSummary {
     pub has_avx: Option<bool>,
 }
 
+impl HardwareSummary {
+    /// 将 best_tier 字符串解析为层级枚举（无法识别时按 CPU 处理）
+    pub fn best_tier_parsed(&self) -> crate::hardware::gpu_info::AccelerationTier {
+        crate::hardware::gpu_info::AccelerationTier::from_str(&self.best_tier)
+    }
+}
+
 /// 核心引擎协调器（单例）
 pub struct EngineCoordinator {
     pub hardware: Arc<HardwareDetector>,
@@ -151,8 +158,10 @@ impl EngineCoordinator {
         // 当前引擎只反映真实状态：
         // 1. 引擎实际运行中 → 运行引擎的层级；
         // 2. 引擎未运行但用户显式选择过 → 仅当该引擎确实已安装时才上报（否则视为未选定）；
-        // 3. 其余情况（如开源独立模式从未下载任何引擎）→ 空串，UI 不得标记任何"当前引擎"。
-        // 注意：不再兜底到硬件最佳层级——未下载 ≠ 已选定。
+        // 3. 其余情况（如首次使用、无用户偏好）→ 默认选中「已下载引擎中的最佳引擎」：
+        //    从硬件最佳层级沿降级链（CUDA→Vulkan→CPU）找到第一个已安装的层级，
+        //    与调度器 select_engine 无偏好时的实际选择一致，UI 即可预标记即将生效的引擎。
+        // 4. 一个引擎都未下载 → 空串，UI 不得标记任何"当前引擎"。
         let active_engine = self.active_engine.lock().await.clone();
         let active_backend = if proc_status == ProcessStatus::Running || proc_status == ProcessStatus::Starting {
             active_engine
@@ -161,18 +170,33 @@ impl EngineCoordinator {
                 .unwrap_or_default()
         } else {
             let installed = self.scheduler.scan_installed_engines().await;
+            let tier_installed = |tier: &crate::hardware::gpu_info::AccelerationTier| -> bool {
+                installed.iter().any(|e| e.tier == *tier)
+            };
+
             let preferred_matches = preferred_backend
                 .as_deref()
                 .map(|pref| {
                     let tier = crate::hardware::gpu_info::AccelerationTier::from_str(pref);
                     // "cpu" 等未知变体一律解析为 Cpu，直接按层级比对已安装引擎
-                    installed.iter().any(|e| e.tier == tier)
+                    tier_installed(&tier)
                 })
                 .unwrap_or(false);
+
             if preferred_matches {
                 preferred_backend.unwrap_or_default()
             } else {
-                String::new()
+                // 无有效用户偏好：沿降级链默认选中已下载的最佳引擎
+                let mut tier = hardware.best_tier_parsed();
+                loop {
+                    if tier_installed(&tier) {
+                        break tier.as_str().to_string();
+                    }
+                    match crate::hardware::driver_compliance::get_fallback_tier(&tier) {
+                        Some(next) => tier = next,
+                        None => break String::new(), // 一个引擎都没下载
+                    }
+                }
             }
         };
 

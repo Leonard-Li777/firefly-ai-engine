@@ -129,6 +129,8 @@ export interface ModelItem {
   parameterSize?: string
   description: string
   isMultiModal?: boolean
+  /** 嵌入向量模型标记（如 WeMM-Embedding），与语言模型分组展示，不参与激活/启动流程 */
+  isEmbedding?: boolean
   mmprojFileName?: string
   isDownloaded: boolean
   localPath?: string
