@@ -92,6 +92,8 @@ pub struct AppState {
     pub active_child_pids: ChildPidStore,
     /// llama-model-download 可执行文件路径
     pub model_downloader_path: Arc<PathBuf>,
+    /// 模型元数据目录搜索路径（build/extraResources/model 等，generate:dims 权威落点）
+    pub model_meta_dirs: Arc<Vec<PathBuf>>,
     /// Tauri AppHandle：open-ui 显示主窗口并向前端 emit 导航意图（错误分析侧边栏等）
     pub app_handle: Option<tauri::AppHandle>,
     /// 待消费的 UI 导航意图（前端尚未挂载时的事件补偿，见 `UiIntentRecord`）
@@ -2280,6 +2282,78 @@ async fn list_models(
     Json(models)
 }
 
+/// GET /api/models/meta?lang=zh-CN
+/// 返回官方推荐模型元数据目录（model_{lang}.json 权威落点：engine build/extraResources/model）
+/// desktop / 外部消费方一律经本端点查询模型信息，不再读取 desktop 侧 model_*.json
+#[derive(Debug, Deserialize)]
+pub struct ModelMetaQuery {
+    pub lang: Option<String>,
+}
+
+fn resolve_model_meta_file(lang: &str, meta_dirs: &[PathBuf]) -> Option<PathBuf> {
+    let file_name = format!("model_{}.json", lang);
+    for dir in meta_dirs {
+        let candidate = dir.join(&file_name);
+        if candidate.is_file() {
+            return Some(candidate);
+        }
+    }
+    // 语言缺省回退 zh-CN，保证桌面端始终可取到目录
+    if lang != "zh-CN" {
+        for dir in meta_dirs {
+            let candidate = dir.join("model_zh-CN.json");
+            if candidate.is_file() {
+                return Some(candidate);
+            }
+        }
+    }
+    None
+}
+
+async fn get_model_meta(
+    State(state): State<AppState>,
+    Query(query): Query<ModelMetaQuery>,
+) -> impl IntoResponse {
+    let lang = query
+        .lang
+        .as_deref()
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+        .unwrap_or("zh-CN")
+        .to_string();
+
+    let Some(file_path) = resolve_model_meta_file(&lang, &state.model_meta_dirs) else {
+        warn!("[API] 未找到模型元数据文件: lang={}", lang);
+        return (
+            StatusCode::NOT_FOUND,
+            Json(json!({ "error": format!("model metadata not found: {}", lang) })),
+        )
+            .into_response();
+    };
+
+    match std::fs::read_to_string(&file_path) {
+        Ok(raw) => match serde_json::from_str::<serde_json::Value>(&raw) {
+            Ok(value) => Json(value).into_response(),
+            Err(e) => {
+                error!("[API] 模型元数据 JSON 解析失败: {:?} {}", file_path, e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(json!({ "error": "model metadata parse failed" })),
+                )
+                    .into_response()
+            }
+        },
+        Err(e) => {
+            error!("[API] 模型元数据读取失败: {:?} {}", file_path, e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "model metadata read failed" })),
+            )
+                .into_response()
+        }
+    }
+}
+
 /// POST /api/engine/models-dir
 /// 更新模型存放目录（含迁移逻辑：停引擎 → 移动文件 → 重启）
 async fn update_models_dir(
@@ -2907,7 +2981,11 @@ async fn start_engine_service(
         };
         let target = active_emb.or_else(|| {
             let ggufs = collect_all_ggufs(&models_dir);
-            ggufs.iter().find(|(_, name)| name.to_lowercase().contains("wemm")).map(|(p, _)| p.to_string_lossy().to_string())
+            // 排除 mmproj 投影器文件（即使文件名包含 "wemm"），只选主模型 GGUF
+            ggufs.iter().find(|(_, name)| {
+                let n = name.to_lowercase();
+                n.contains("wemm") && !n.starts_with("mmproj")
+            }).map(|(p, _)| p.to_string_lossy().to_string())
         });
         if let Some(target_emb) = target {
             *state.coordinator.active_model.lock().await = Some(target_emb);
@@ -2999,6 +3077,7 @@ pub fn management_routes() -> Router<AppState> {
         .route("/api/engine/download/status/{task_id}", get(get_download_status))
         .route("/api/engine/download/cancel/{task_id}", post(cancel_model_download))
         .route("/api/models", get(list_models))
+        .route("/api/models/meta", get(get_model_meta))
         .route("/api/models/switch", post(switch_model))
         .route("/api/engine/models-dir", post(update_models_dir))
         .route("/api/models/rescan", post(rescan_models))
