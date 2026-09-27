@@ -114,6 +114,31 @@ pub fn allowed_install_bin_dirs(resource_dir: Option<&Path>) -> Vec<PathBuf> {
     dirs
 }
 
+/// 安装目录下模型元数据子路径（model_*.json 权威落点，generate:dims 产物）
+///
+/// - `build/extraResources/model`：engine 工程内 generate:dims 产物
+/// - `_up_/build/extraResources/model`：Tauri 对 `../build/extraResources/**/*` 的归一化落点
+/// - `extraResources/model` / `model`：独立打包扁平布局兜底
+fn install_model_meta_subpaths(root: &Path) -> Vec<PathBuf> {
+    vec![
+        root.join("build").join("extraResources").join("model"),
+        root.join("_up_").join("build").join("extraResources").join("model"),
+        root.join("extraResources").join("model"),
+        root.join("model"),
+    ]
+}
+
+/// 允许的安装目录模型元数据搜索目录列表（与 bin 同一安装根白名单）
+pub fn allowed_install_model_meta_dirs(resource_dir: Option<&Path>) -> Vec<PathBuf> {
+    let mut dirs = Vec::new();
+    for root in allowed_install_roots(resource_dir) {
+        for dir in install_model_meta_subpaths(&root) {
+            push_unique(&mut dirs, dir);
+        }
+    }
+    dirs
+}
+
 /// 用户数据目录根（%APPDATA%/com.firefly.ai-engine）
 pub fn user_data_root() -> Option<PathBuf> {
     dirs::data_dir().map(|d| d.join(APP_DATA_DIR_NAME))

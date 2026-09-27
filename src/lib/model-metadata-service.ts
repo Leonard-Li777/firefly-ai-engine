@@ -1,16 +1,18 @@
 import { ModelItem } from '../api/types'
 import { SupportedLanguage } from './language'
 
-import modelZhCN from '../assets/models/model_zh-CN.json'
-import modelEnUS from '../assets/models/model_en-US.json'
-import modelJaJP from '../assets/models/model_ja-JP.json'
-import modelKoKR from '../assets/models/model_ko-KR.json'
-import modelFrFR from '../assets/models/model_fr-FR.json'
-import modelDeDE from '../assets/models/model_de-DE.json'
-import modelEsES from '../assets/models/model_es-ES.json'
-import modelRuRU from '../assets/models/model_ru-RU.json'
-import modelPtPT from '../assets/models/model_pt-PT.json'
-import modelArEG from '../assets/models/model_ar-EG.json'
+// 模型元数据唯一权威来源：engine build/extraResources/model（由根脚本 generate:dims 生成）
+// 不再从 src/assets/models 或 desktop extraResources 读取
+import modelZhCN from '../../build/extraResources/model/model_zh-CN.json'
+import modelEnUS from '../../build/extraResources/model/model_en-US.json'
+import modelJaJP from '../../build/extraResources/model/model_ja-JP.json'
+import modelKoKR from '../../build/extraResources/model/model_ko-KR.json'
+import modelFrFR from '../../build/extraResources/model/model_fr-FR.json'
+import modelDeDE from '../../build/extraResources/model/model_de-DE.json'
+import modelEsES from '../../build/extraResources/model/model_es-ES.json'
+import modelRuRU from '../../build/extraResources/model/model_ru-RU.json'
+import modelPtPT from '../../build/extraResources/model/model_pt-PT.json'
+import modelArEG from '../../build/extraResources/model/model_ar-EG.json'
 
 // 10 语种模型元数据包映射
 const MODEL_REGISTRY: Record<SupportedLanguage, any> = {

@@ -47,11 +47,16 @@ pub async fn start_server(
     let model_downloader_path = Arc::new(resolve_model_downloader(&coordinator.install_bin_dirs));
     info!("llama-model-download 路径: {:?}", model_downloader_path);
 
+    // 模型元数据目录（generate:dims 权威落点：build/extraResources/model）
+    let model_meta_dirs = Arc::new(crate::resource_scope::allowed_install_model_meta_dirs(None));
+    info!("模型元数据目录: {:?}", model_meta_dirs);
+
     let app_state = AppState {
         coordinator: coordinator.clone(),
         download_tasks,
         active_child_pids,
         model_downloader_path,
+        model_meta_dirs,
         app_handle,
         // 待消费的 UI 导航意图：open-ui 写入、前端挂载后补偿消费
         ui_intent: Arc::new(Mutex::new(None)),
