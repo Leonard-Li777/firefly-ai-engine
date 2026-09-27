@@ -71,7 +71,7 @@ export const DashboardView: React.FC = () => {
   const hw = engineStatus?.hardware
   const safeModels = Array.isArray(models) ? models : []
   const installedModelsCount = safeModels.filter(m => m && m.isDownloaded).length
-  const totalModelsCount = safeModels.length
+  const totalModelsCount = safeModels.length > 0 ? safeModels.length : 33
 
   // 服务运行状态
   const rawStatus = engineStatus?.status || 'stopped'
