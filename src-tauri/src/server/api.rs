@@ -2975,20 +2975,16 @@ async fn start_engine_service(
     if let Some(ref m) = req.model_id {
         *state.coordinator.active_model.lock().await = Some(m.clone());
     } else if req.mode.as_deref() == Some("embedding") {
-        let (active_emb, models_dir) = {
+        let active_emb = {
             let config = state.coordinator.config.lock().await;
-            (config.active_embedding_model.clone(), config.models_dir.clone())
+            config.active_embedding_model.clone()
         };
-        let target = active_emb.or_else(|| {
-            let ggufs = collect_all_ggufs(&models_dir);
-            // 排除 mmproj 投影器文件（即使文件名包含 "wemm"），只选主模型 GGUF
-            ggufs.iter().find(|(_, name)| {
-                let n = name.to_lowercase();
-                n.contains("wemm") && !n.starts_with("mmproj")
-            }).map(|(p, _)| p.to_string_lossy().to_string())
-        });
-        if let Some(target_emb) = target {
+        // active_embedding_model 为 null 说明用户从未通过 switch_model 配置过 embedding 模型，
+        // 此时不应扫目录猜测（若模型未安装则上游就不会发起此请求），直接跳过。
+        if let Some(target_emb) = active_emb {
             *state.coordinator.active_model.lock().await = Some(target_emb);
+        } else {
+            warn!("embedding 模式启动请求：active_embedding_model 未配置，跳过 active_model 设置");
         }
     } else if req.mode.as_deref() == Some("language") {
         let active_lang = {
