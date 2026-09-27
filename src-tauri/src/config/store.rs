@@ -271,6 +271,11 @@ impl ConfigStore {
         Ok(())
     }
 
+    /// 默认配置（数据目录下），供外部在 load 失败时获取带正确 data_dir 的默认值
+    pub fn default_config_pub(&self) -> EngineConfig {
+        self.default_config()
+    }
+
     /// 默认配置（数据目录下）
     fn default_config(&self) -> EngineConfig {
         let data_dir = self.config_path.parent().unwrap().to_path_buf();

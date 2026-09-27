@@ -162,9 +162,14 @@ pub fn run() {
 
             info!("Firefly AI Engine 数据目录: {:?}", data_dir);
 
-            // 加载配置
+            // 加载配置（失败时使用默认配置，但必须确保 data_dir 正确设置）
+            // 注意：不能用 unwrap_or_default()，EngineConfig::default() 的 data_dir 是空 PathBuf，
+            // 会导致后续 save_to_disk() 将配置写入相对路径 ./config.json 而非 AppData 目录
             let config_store = ConfigStore::new(data_dir.clone());
-            let loaded_config = config_store.load().unwrap_or_default();
+            let loaded_config = config_store.load().unwrap_or_else(|e| {
+                warn!("加载配置文件失败，使用默认配置: {}", e);
+                config_store.default_config_pub()
+            });
             let base_port = loaded_config.base_port;
             let models_dir = loaded_config.models_dir.clone();
 
