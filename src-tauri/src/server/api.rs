@@ -2017,6 +2017,19 @@ async fn start_model_download(
 
     info!("开始真实下载模型: {} 来源: {} 任务ID: {}", model_id, source, task_id);
 
+    // 防重复提交：若同一个模型已有正在下载中的任务，直接复用其 taskId
+    {
+        let tasks = state.download_tasks.lock().await;
+        if let Some(existing) = tasks.values().find(|t| t.model_id == payload.model_id && (t.status == DownloadStatus::Pending || t.status == DownloadStatus::Downloading)) {
+            info!("模型 {} 已有进行中的下载任务: {}，直接复用", payload.model_id, existing.task_id);
+            return Json(json!({
+                "taskId": existing.task_id,
+                "totalBytes": existing.total_bytes,
+                "status": "pending"
+            }));
+        }
+    }
+
     // 初始化任务条目
     {
         let mut tasks = state.download_tasks.lock().await;
@@ -2183,6 +2196,27 @@ async fn run_model_download(
         pids.insert(task_id.clone(), pid);
     }
 
+    use tokio::io::{AsyncBufReadExt, BufReader};
+
+    // 异步排空并收集 stderr 输出，防止 Windows 匿名管道缓冲区填满导致子进程死锁，同时保留错误诊断信息
+    let stderr_lines = Arc::new(tokio::sync::Mutex::new(Vec::<String>::new()));
+    if let Some(stderr) = child.stderr.take() {
+        let stderr_lines_clone = stderr_lines.clone();
+        tokio::spawn(async move {
+            let reader = BufReader::new(stderr);
+            let mut lines = reader.lines();
+            while let Ok(Some(line)) = lines.next_line().await {
+                let trimmed = line.trim().to_string();
+                if !trimmed.is_empty() {
+                    let mut lock = stderr_lines_clone.lock().await;
+                    if lock.len() < 50 {
+                        lock.push(trimmed);
+                    }
+                }
+            }
+        });
+    }
+
     // 状态统计闭包变量（用于跨文件累加和速度滑动平均）
     let mut completed_bytes: u64 = 0;
     let mut current_file: Option<String> = None;
@@ -2195,7 +2229,6 @@ async fn run_model_download(
         || model_id.to_lowercase().contains("omni");
 
     // 读取 stdout 解析 JSON 进度流
-    use tokio::io::{AsyncBufReadExt, BufReader};
     if let Some(stdout) = child.stdout.take() {
         let reader = BufReader::new(stdout);
         let mut lines = reader.lines();
@@ -2362,7 +2395,15 @@ async fn run_model_download(
             } else {
                 task.status = DownloadStatus::Error;
                 let code_str = exit_status.map(|s| format!("{:?}", s.code())).unwrap_or_else(|e| e.to_string());
-                task.error = Some(format!("下载异常退出 (代码: {})", code_str));
+                let stderr_summary = {
+                    let lock = stderr_lines.lock().await;
+                    if !lock.is_empty() {
+                        lock.join("; ")
+                    } else {
+                        format!("下载异常退出 (代码: {})", code_str)
+                    }
+                };
+                task.error = Some(stderr_summary);
                 error!("模型下载失败: {} 详情: {:?}", task.model_id, task.error);
             }
         }
@@ -2480,10 +2521,11 @@ async fn switch_model(
         config.models_dir.clone()
     };
 
-    // 1. 若前端显式传递了已就绪的 localPath 且文件真实存在，直接采用
+    // 1. 若前端显式传递了已就绪的 localPath 且文件真实存在，直接采用（排除投影文件 mmproj）
     let model_path = if let Some(ref lp) = payload.local_path {
         let p = PathBuf::from(lp);
-        if p.exists() {
+        let name_lower = p.file_name().and_then(|n| n.to_str()).unwrap_or("").to_lowercase();
+        if p.exists() && !name_lower.contains("mmproj") {
             Some(p.to_string_lossy().to_string())
         } else {
             None
@@ -2492,16 +2534,30 @@ async fn switch_model(
         None
     };
 
-    // 2. 否则在模型目录中深度查找最匹配的 .gguf 文件
+    // 2. 否则在模型目录中深度查找最匹配的 .gguf 文件（排除 mmproj）
     let model_path = model_path.or_else(|| {
         let found_ggufs = collect_all_ggufs(&models_dir);
         let model_id_lower = payload.model_id.to_lowercase();
-        let id_tail = model_id_lower.split('/').last().unwrap_or(&model_id_lower);
+        let id_clean_source = model_id_lower.split('@').next().unwrap_or(&model_id_lower);
+
+        // 优先检查是否有冒号指定确切的 .gguf 文件名
+        if let Some(exact_file) = id_clean_source.split(':').nth(1) {
+            if exact_file.ends_with(".gguf") {
+                if let Some((p, _)) = found_ggufs.iter().find(|(_, name)| {
+                    let nl = name.to_lowercase();
+                    !nl.contains("mmproj") && nl == exact_file
+                }) {
+                    return Some(p.to_string_lossy().to_string());
+                }
+            }
+        }
+
+        let id_tail = id_clean_source.split('/').last().unwrap_or(id_clean_source);
         let id_clean = id_tail.split(':').next().unwrap_or(id_tail).replace("-gguf", "");
 
         found_ggufs.iter().find(|(_, name)| {
             let name_lower = name.to_lowercase();
-            name_lower.contains(&id_clean) || id_clean.contains(&name_lower.replace(".gguf", ""))
+            !name_lower.contains("mmproj") && (name_lower.contains(&id_clean) || id_clean.contains(&name_lower.replace(".gguf", "")))
         }).map(|(p, _)| p.to_string_lossy().to_string())
     });
 
@@ -3296,6 +3352,47 @@ async fn reset_downgrade(State(state): State<AppState>) -> impl IntoResponse {
     Json(json!({ "status": "ok" }))
 }
 
+/// 判断目标意图模型与当前运行模型是否为同一模型（支持模型 ID、别名、包含文件名及物理绝对路径的比对）
+fn is_same_model(target: &str, running: &str) -> bool {
+    let t_clean = target.replace('\\', "/").to_lowercase();
+    let r_clean = running.replace('\\', "/").to_lowercase();
+    if t_clean == r_clean {
+        return true;
+    }
+    // 剥离 @source 后缀
+    let t_base = t_clean.split('@').next().unwrap_or(&t_clean);
+    let r_base = r_clean.split('@').next().unwrap_or(&r_clean);
+    if t_base == r_base {
+        return true;
+    }
+
+    // 提取核心文件名或关键标识
+    let extract_stem = |s: &str| -> String {
+        let part = if let Some(colon_part) = s.split(':').nth(1) {
+            colon_part
+        } else {
+            s.split('/').last().unwrap_or(s)
+        };
+        part.trim_end_matches(".gguf").replace("-gguf", "").to_string()
+    };
+
+    let t_stem = extract_stem(t_base);
+    let r_stem = extract_stem(r_base);
+
+    if !t_stem.is_empty() && !r_stem.is_empty() && t_stem == r_stem {
+        return true;
+    }
+
+    if !t_stem.is_empty() && r_clean.contains(&t_stem) {
+        return true;
+    }
+    if !r_stem.is_empty() && t_clean.contains(&r_stem) {
+        return true;
+    }
+
+    false
+}
+
 /// POST /api/engine/start
 /// 启动 llama.cpp 推理服务子进程（支持 mode: "language" | "embedding" 意图调度）
 async fn start_engine_service(
@@ -3309,49 +3406,44 @@ async fn start_engine_service(
     };
     info!("收到 start_engine_service 请求，mode: {:?}, model_id: {:?}", req.mode, req.model_id);
 
-    // 意图路由与目标模型预设
-    if let Some(ref m) = req.model_id {
-        *state.coordinator.active_model.lock().await = Some(m.clone());
+    // 1. 计算本次请求的目标意图模型 target_model
+    let target_model = if let Some(ref m) = req.model_id {
+        Some(m.clone())
     } else if req.mode.as_deref() == Some("embedding") {
-        let active_emb = {
-            let config = state.coordinator.config.lock().await;
-            config.active_embedding_model.clone()
-        };
-        // active_embedding_model 为 null 说明用户从未通过 switch_model 配置过 embedding 模型，
-        // 此时不应扫目录猜测（若模型未安装则上游就不会发起此请求），直接跳过。
-        if let Some(target_emb) = active_emb {
-            *state.coordinator.active_model.lock().await = Some(target_emb);
-        } else {
-            warn!("embedding 模式启动请求：active_embedding_model 未配置，跳过 active_model 设置");
-        }
+        let config = state.coordinator.config.lock().await;
+        config.active_embedding_model.clone()
     } else if req.mode.as_deref() == Some("language") {
-        let active_lang = {
-            let config = state.coordinator.config.lock().await;
-            config.active_language_model.clone()
-        };
-        if let Some(target_lang) = active_lang {
-            *state.coordinator.active_model.lock().await = Some(target_lang);
-        }
-    }
+        let config = state.coordinator.config.lock().await;
+        config.active_language_model.clone()
+    } else {
+        None
+    };
 
-    // 若当前正在运行，检查是否需要意图切换
+    // 2. 若当前正在运行，检查是否需要意图切换（平滑重启）
     let proc_status = state.coordinator.guard.status().await;
     if proc_status == crate::engine::process_guard::ProcessStatus::Running {
-        let target_model = state.coordinator.active_model.lock().await.clone();
-        let running_model = state.coordinator.get_status().await.current_model;
-        let need_restart = match (&target_model, &running_model) {
-            (Some(t), Some(r)) => {
-                let t_clean = t.replace('\\', "/").to_lowercase();
-                let r_clean = r.replace('\\', "/").to_lowercase();
-                !t_clean.contains(&r_clean) && !r_clean.contains(&t_clean)
+        let running_model = {
+            let rm = state.coordinator.running_model.lock().await.clone();
+            if rm.is_some() {
+                rm
+            } else {
+                state.coordinator.active_model.lock().await.clone()
             }
+        };
+        let need_restart = match (&target_model, &running_model) {
+            (Some(t), Some(r)) => !is_same_model(t, r),
             _ => false,
         };
 
         if need_restart {
-            info!("目标意图模型与当前运行模型不一致，执行平滑重启切换至: {:?}", target_model);
+            info!("目标意图模型与当前运行模型不一致 (target: {:?}, running: {:?})，执行平滑重启", target_model, running_model);
             let _ = state.coordinator.stop_service().await;
         }
+    }
+
+    // 3. 在判断并停止旧服务之后，更新 active_model 预选目标
+    if let Some(target) = target_model {
+        *state.coordinator.active_model.lock().await = Some(target);
     }
 
     match state.coordinator.start_service().await {
@@ -3792,4 +3884,27 @@ mod tests {
         let args_hf_file = build_downloader_args("-hf", "my-org/my-model:custom_weights.gguf", None);
         assert_eq!(args_hf_file, vec!["-hf", "my-org/my-model", "-hff", "custom_weights.gguf", "--json"]);
     }
+
+    /// 验证 is_same_model 正确识别相同/不同模型，防止平滑重启逻辑误判
+    #[test]
+    fn test_is_same_model() {
+        // 场景 1：完全不同模型（Bonsai vs Qwen）必须判定为不同模型（需要重启）
+        let target_bonsai = "prism-ml/Ternary-Bonsai-2-27B-gguf:Ternary-Bonsai-2-27B-PTQ1_0.gguf@modelscope";
+        let running_qwen = "C:\\Users\\test\\models\\hub\\models\\Qwen\\Qwen3.5-0.8B-GGUF\\Qwen3.5-0.8B-Q4_K_M.gguf";
+        assert!(!is_same_model(target_bonsai, running_qwen), "Bonsai 与 Qwen 绝不能视为同一模型");
+
+        // 场景 2：相同模型（ID 带文件名 vs 磁盘实际绝对路径）必须判定为同一模型（无需重启）
+        let running_bonsai = "C:\\Users\\test\\models\\hub\\models\\prism-ml\\Ternary-Bonsai-2-27B-gguf\\Ternary-Bonsai-2-27B-PTQ1_0.gguf";
+        assert!(is_same_model(target_bonsai, running_bonsai), "目标 Bonsai 与运行中的 Bonsai 绝对路径应判定为同一模型");
+
+        // 场景 3：相同模型（repo 形式带 @source vs 物理文件路径）
+        let target_qwen = "Qwen/Qwen3.5-0.8B-GGUF@modelscope";
+        assert!(is_same_model(target_qwen, running_qwen), "Qwen 目标 ID 与 Qwen 物理文件应判定为同一模型");
+
+        // 场景 4：同一绝对路径直接比对（路径分隔符规范化）
+        let p_slash = "C:/Users/test/model.gguf";
+        let p_backslash = "C:\\Users\\test\\model.gguf";
+        assert!(is_same_model(p_slash, p_backslash));
+    }
 }
+

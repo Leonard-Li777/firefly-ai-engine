@@ -186,4 +186,28 @@ describe('mergeScannedWithRecommended 推荐底表合并', () => {
     expect(paths.isMultiModal).toBe(false)
     expect(paths.mmprojFile).toBeUndefined()
   })
+
+  it('策略 D 与量化优先：Bonsai 2 模型 ID 为 repo:filename.gguf 格式且带 quantization 时，正确匹配本地扫描文件', () => {
+    const recommended = [
+      makeModel({
+        id: 'prism-ml/Ternary-Bonsai-2-27B-gguf:Ternary-Bonsai-2-27B-PTQ1_0.gguf',
+        name: 'Bonsai 2 ternary 27B（超级压缩）',
+        quant: 'PTQ1_0'
+      })
+    ]
+    const scanned = [
+      makeModel({
+        id: 'Ternary-Bonsai-2-27B-PTQ1_0',
+        name: 'Ternary-Bonsai-2-27B-PTQ1_0',
+        quant: 'PTQ1_0',
+        isDownloaded: true,
+        localPath: 'C:/Users/test/AppData/Roaming/com.firefly.ai-engine/models/hub/models/prism-ml/Ternary-Bonsai-2-27B-gguf/Ternary-Bonsai-2-27B-PTQ1_0.gguf'
+      })
+    ]
+
+    const merged = mergeScannedWithRecommended(recommended, scanned)
+
+    expect(merged[0].isDownloaded).toBe(true)
+    expect(merged[0].localPath).toBe('C:/Users/test/AppData/Roaming/com.firefly.ai-engine/models/hub/models/prism-ml/Ternary-Bonsai-2-27B-gguf/Ternary-Bonsai-2-27B-PTQ1_0.gguf')
+  })
 })

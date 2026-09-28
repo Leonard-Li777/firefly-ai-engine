@@ -477,7 +477,10 @@ export const useEngineStore = create<EngineStoreState>((set, get) => ({
     // 先切换/激活模型，再启动引擎服务
     const switched = await get().switchModel(modelId, source, localPath, modelName, isEmbedding)
     if (!switched) return false
-    return get().startEngine({ mode: isEmbedding ? 'embedding' : 'language' })
+    const models = get().models
+    const matched = models.find(m => m.id === modelId && (!source || m.source === source))
+    const effectiveIsEmbedding = isEmbedding !== undefined ? isEmbedding : (matched?.isEmbedding || modelId.toLowerCase().includes('wemm'))
+    return get().startEngine({ mode: effectiveIsEmbedding ? 'embedding' : 'language', modelId })
   },
 
   runRegionDetection: async (force?: boolean) => {

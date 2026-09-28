@@ -70,8 +70,10 @@ pub struct EngineCoordinator {
     pub proxy_state: ProxyState,
     /// 当前活跃引擎
     pub active_engine: Arc<Mutex<Option<InstalledEngine>>>,
-    /// 当前加载的模型路径
+    /// 当前预选或激活的模型路径/ID
     pub active_model: Arc<Mutex<Option<String>>>,
+    /// 当前实际在子进程中运行的模型绝对路径
+    pub running_model: Arc<Mutex<Option<String>>>,
     /// 当前加载的模型配置名（用于 --alias 等）
     pub active_model_name: Arc<Mutex<Option<String>>>,
     /// 安装目录下的 bin 搜索目录（资源查找白名单）
@@ -99,6 +101,7 @@ impl EngineCoordinator {
             proxy_state,
             active_engine: Arc::new(Mutex::new(None)),
             active_model: Arc::new(Mutex::new(None)),
+            running_model: Arc::new(Mutex::new(None)),
             active_model_name: Arc::new(Mutex::new(None)),
             install_bin_dirs: bin_dirs,
         })
@@ -215,7 +218,16 @@ impl EngineCoordinator {
         };
 
         let active_port = self.active_port.lock().await.unwrap_or(38400);
-        let active_model = self.active_model.lock().await.clone();
+        let current_model = if proc_status == ProcessStatus::Running {
+            let rm = self.running_model.lock().await.clone();
+            if rm.is_some() {
+                rm
+            } else {
+                self.active_model.lock().await.clone()
+            }
+        } else {
+            None
+        };
 
         let mut hardware = hardware;
         hardware.current_tier = active_backend.clone();
@@ -235,7 +247,7 @@ impl EngineCoordinator {
         EngineStatus {
             status: status_str.to_string(),
             active_backend,
-            current_model: active_model,
+            current_model,
             active_language_model,
             active_embedding_model,
             models_dir,
@@ -300,28 +312,49 @@ impl EngineCoordinator {
 
         let model_path = if let Some(ref m) = active_model_lock {
             let p = std::path::PathBuf::from(&m);
-            if p.is_absolute() && p.exists() {
+            let p_name = p.file_name().and_then(|n| n.to_str()).unwrap_or("").to_lowercase();
+            if p.is_absolute() && p.exists() && !p_name.contains("mmproj") {
                 p
-            } else if models_dir.join(&m).exists() {
+            } else if models_dir.join(&m).exists() && !m.to_lowercase().contains("mmproj") {
                 models_dir.join(&m)
             } else {
                 // 若 active_model 存储的是模型 ID 或相对名，在深度扫描列表中匹配
                 let m_lower = m.to_lowercase();
-                let m_tail = m_lower.split('/').last().unwrap_or(&m_lower);
-                let m_clean = m_tail.split(':').next().unwrap_or(m_tail).replace("-gguf", "");
+                let m_clean_source = m_lower.split('@').next().unwrap_or(&m_lower);
 
-                all_ggufs.iter().find(|(_, name)| {
-                    let name_lower = name.to_lowercase();
-                    !name_lower.contains("mmproj") && (name_lower.contains(&m_clean) || m_clean.contains(&name_lower.replace(".gguf", "")))
-                }).map(|(p, _)| p.clone())
-                .or_else(|| {
-                    // 降级为已下载的第一个非 mmproj、非 wemm 的主语言模型
+                // 优先检查是否有冒号指定确切的 .gguf 文件名
+                let exact_match = if let Some(exact_file) = m_clean_source.split(':').nth(1) {
+                    if exact_file.ends_with(".gguf") {
+                        all_ggufs.iter().find(|(_, name)| {
+                            let nl = name.to_lowercase();
+                            !nl.contains("mmproj") && nl == exact_file
+                        }).map(|(p, _)| p.clone())
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                };
+
+                if let Some(matched_p) = exact_match {
+                    matched_p
+                } else {
+                    let m_tail = m_clean_source.split('/').last().unwrap_or(m_clean_source);
+                    let m_clean = m_tail.split(':').next().unwrap_or(m_tail).replace("-gguf", "");
+
                     all_ggufs.iter().find(|(_, name)| {
-                        let nl = name.to_lowercase();
-                        !nl.contains("mmproj") && !nl.contains("wemm")
+                        let name_lower = name.to_lowercase();
+                        !name_lower.contains("mmproj") && (name_lower.contains(&m_clean) || m_clean.contains(&name_lower.replace(".gguf", "")))
                     }).map(|(p, _)| p.clone())
-                })
-                .ok_or_else(|| anyhow::anyhow!("未找到模型文件: {}，且当前存储目录中没有可用 GGUF 模型", m))?
+                    .or_else(|| {
+                        // 降级为已下载的第一个非 mmproj、非 wemm 的主语言模型
+                        all_ggufs.iter().find(|(_, name)| {
+                            let nl = name.to_lowercase();
+                            !nl.contains("mmproj") && !nl.contains("wemm")
+                        }).map(|(p, _)| p.clone())
+                    })
+                    .ok_or_else(|| anyhow::anyhow!("未找到模型文件: {}，且当前存储目录中没有可用 GGUF 模型", m))?
+                }
             }
         } else {
             // 没有指定激活模型时，从模型目录中挑选第一个已下载就绪的非 mmproj、非 wemm 的主语言模型
@@ -451,6 +484,7 @@ impl EngineCoordinator {
                 // 成功就绪：向反向代理注册内部目标端口，并标记进程状态为 Running
                 self.proxy_state.set_target_port(llama_internal_port).await;
                 self.guard.mark_running().await;
+                *self.running_model.lock().await = Some(model_str.clone());
                 tracing::info!("引擎服务启动并反代就绪: backend={}, internal_port={}, gateway_port={}", backend_str, llama_internal_port, gateway_port);
                 Ok(())
             }
@@ -459,6 +493,7 @@ impl EngineCoordinator {
                 tracing::error!("引擎就绪探测失败: {}", err_msg);
                 // 发生错误停止子进程
                 let _ = self.guard.stop().await;
+                *self.running_model.lock().await = None;
                 Err(anyhow::anyhow!("{}", err_msg))
             }
         }
@@ -467,6 +502,7 @@ impl EngineCoordinator {
     /// 停止引擎子进程服务
     pub async fn stop_service(&self) -> anyhow::Result<()> {
         self.guard.stop().await?;
+        *self.running_model.lock().await = None;
         tracing::info!("引擎服务已停止");
         Ok(())
     }

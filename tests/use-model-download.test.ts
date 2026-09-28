@@ -61,4 +61,22 @@ describe('useModelDownload Hook 状态机测试 (1:1 移植)', () => {
       await result.current.cancelDownload()
     })
   })
+
+  it('当收到 pending 状态时，isDownloading 保持为 true 避免 UI 坍缩', async () => {
+    const { result } = renderHook(() =>
+      useModelDownload('Qwen/Qwen2.5-3B-Instruct-GGUF', { source: 'modelscope' })
+    )
+
+    await act(async () => {
+      await result.current.startDownload()
+    })
+
+    // startDownload 后状态应为 isDownloading = true
+    expect(result.current.state.isDownloading).toBe(true)
+
+    // 取消测试任务
+    await act(async () => {
+      await result.current.cancelDownload()
+    })
+  })
 })

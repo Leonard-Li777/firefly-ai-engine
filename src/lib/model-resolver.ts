@@ -117,10 +117,16 @@ export class ModelResolver {
   }
 
   /**
-   * 从文件名中提取标准化的量化标签（如 q4_k_m, q4_k_xl, q5_k_xl, f16 等）
+   * 从文件名中提取标准化的量化标签（如 q4_k_m, q4_k_xl, q5_k_xl, ptq1_0, pq2_0, f16 等）
    */
   public static extractQuantTag(name: string): string | null {
     if (!name) return null
+    const clean = name.trim().replace(/\.gguf$/i, '')
+    // 纯量化标签直接匹配 (如 PTQ1_0, PQ2_0, Q4_K_M, IQ4_XS 等)
+    const directMatch = clean.match(/^(?:ud-)?([a-z0-9]+_[a-z0-9_]+|q[0-9]_[0-9a-z_]+|iq[0-9]_[0-9a-z_]+|f16|f32|bf16)$/i)
+    if (directMatch) {
+      return directMatch[1].toLowerCase()
+    }
     const match = name.match(/[-_.](?:ud-)?([a-z0-9]+_[a-z0-9_]+|q[0-9]_[0-9a-z_]+|iq[0-9]_[0-9a-z_]+|f16|f32|bf16)(?:\.gguf|$)/i)
     if (match) {
       return match[1].toLowerCase()
@@ -224,19 +230,51 @@ export function mergeScannedWithRecommended(recommendedList: ModelItem[], scanne
     const recIdClean = rec.id.split(':')[0].toLowerCase()
     const recTail = recIdClean.split('/').pop()?.replace(/-gguf$/i, '') || recIdClean
     // 推荐模型的量化 tag（标准化去除 UD- 前缀，大小写不敏感，转小写）
-    const recTag = (rec.id.includes(':')
-      ? rec.id.split(':')[1]
-      : rec.quant || ''
-    ).replace(/^ud-/i, '').toLowerCase()
+    // 优先级策略：
+    // 1. 优先使用模型列表的 quant / quantization 字段获取量化参数
+    // 2. 若无 quant 字段，从 rec.id 冒号后提取：若为 .gguf 文件名则从中提取标准量化 tag，否则直接作为 tag
+    // 3. Fallback：从 rec.id 全名中提取量化标识
+    let rawRecTag = rec.quant || (rec as any).quantization || ''
+    if (!rawRecTag && rec.id.includes(':')) {
+      const tagOrFile = rec.id.split(':')[1]
+      if (tagOrFile.toLowerCase().endsWith('.gguf')) {
+        rawRecTag = ModelResolver.extractQuantTag(tagOrFile) || ''
+      } else {
+        rawRecTag = tagOrFile
+      }
+    }
+    if (!rawRecTag) {
+      rawRecTag = ModelResolver.extractQuantTag(rec.id) || ''
+    }
+    const recTag = rawRecTag.replace(/^ud-/i, '').toLowerCase()
 
     const existing = scanned.find(m => {
       // 必须是已经确认下载就绪的扫描模型条目
       if (!m.isDownloaded && !m.localPath) return false
 
-      // 提取被扫描模型的量化 tag：优先从本地文件名提取，次之从 m.id/m.quant 提取
+      // 提取被扫描模型的量化 tag：以物理文件名实际量化为准，次之从 m.id / m.quant 提取
       const localFileName = m.localPath ? (m.localPath.split(/[\\/]/).pop() || '') : ''
       const fileQuant = localFileName ? ModelResolver.extractQuantTag(localFileName) : null
-      const mTag = fileQuant || (m.id.includes(':') ? m.id.split(':')[1] : m.quant || '').replace(/^ud-/i, '').toLowerCase()
+      let rawMTag = fileQuant || ''
+      if (!rawMTag) {
+        if (m.id.includes(':')) {
+          const mTagOrFile = m.id.split(':')[1]
+          rawMTag = mTagOrFile.toLowerCase().endsWith('.gguf')
+            ? (ModelResolver.extractQuantTag(mTagOrFile) || '')
+            : mTagOrFile
+        } else {
+          rawMTag = m.quant || (m as any).quantization || ''
+        }
+      }
+      const mTag = rawMTag.replace(/^ud-/i, '').toLowerCase()
+
+      // 策略 D: 推荐模型 ID 中直接指定了物理文件名（以 .gguf 结尾）且与本地文件名完全一致
+      if (rec.id.includes(':')) {
+        const expectedFile = rec.id.split(':')[1]
+        if (expectedFile.toLowerCase().endsWith('.gguf') && localFileName.toLowerCase() === expectedFile.toLowerCase()) {
+          return true
+        }
+      }
 
       // 若双方均指定了量化 tag，则量化 tag 必须严格一致，禁止跨量化串绑！
       if (recTag && mTag && recTag !== mTag) {

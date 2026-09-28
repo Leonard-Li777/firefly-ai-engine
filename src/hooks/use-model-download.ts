@@ -149,7 +149,7 @@ export function useModelDownload(
               currentFileName: progress.currentFileName,
               fileIndex: progress.fileIndex ?? 0,
               totalFiles: progress.totalFiles ?? 1,
-              isDownloading: progress.status === 'downloading'
+              isDownloading: progress.status === 'downloading' || progress.status === 'pending'
             }))
 
             optionsRef.current.onDownloadProgress?.(progress)

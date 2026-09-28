@@ -125,7 +125,7 @@ interface ModelRowProps {
   onActivate: (modelId: string, source?: string, localPath?: string, modelName?: string) => Promise<boolean | void>
   onOpenConfig: (model: ModelItem) => void
   /** 模型下载提交前的联动回调（PRD-0043：联动提交引擎包下载并提示双 tab 进度） */
-  onDownloadSubmit?: () => void
+  onDownloadSubmit?: (modelName?: string) => void
 }
 
 /**
@@ -178,7 +178,7 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isEx = false,
   const handleActivateAndStart = async () => {
     try {
       setIsStartLaunching(true)
-      await activateAndStart(model.id, model.source, model.localPath, model.name)
+      await activateAndStart(model.id, model.source, model.localPath, model.name, model.isEmbedding)
     } finally {
       setIsStartLaunching(false)
     }
@@ -430,7 +430,7 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isEx = false,
       <div className="flex items-center justify-between gap-3 px-4 pb-3">
         {isDownloadingOrPaused ? (
           <span className={`font-mono text-xs font-bold tabular-nums ${dl.isPaused ? 'text-amber-600 dark:text-amber-400' : 'text-primary'}`}>
-            {dl.isPaused ? t('已暂停') : t('正在下载')} {dl.progress}%
+            {dl.isPaused ? t('已暂停') : dl.status === 'pending' ? t('准备下载中...') : `${t('正在下载')} ${dl.progress}%`}
           </span>
         ) : dl.status === 'error' ? (
           <span className="text-xs font-semibold text-destructive truncate min-w-0" title={dl.error || undefined}>
@@ -663,7 +663,7 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isEx = false,
                     // 提交首次模型下载：标记引导完成（气泡此后永久消失，PRD-0043）
                     handleModelDownloadSubmitted()
                     // 联动下载（PRD-0043）：提交模型下载前联动提交引擎包下载并提示双 tab 进度
-                    onDownloadSubmit?.()
+                    onDownloadSubmit?.(model.name)
                     startDownload()
                   }}
                 >
@@ -684,8 +684,8 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isEx = false,
           <div className="flex items-center justify-between text-xs font-semibold">
             <span className={`truncate max-w-[360px] ${dl.isPaused ? 'text-amber-600 dark:text-amber-400' : 'text-primary'}`} title={dl.currentFileName}>
               {dl.totalFiles && dl.totalFiles > 1
-                ? `[${(dl.fileIndex || 0) + 1}/${dl.totalFiles}] ${dl.currentFileName}`
-                : dl.currentFileName || (dl.isPaused ? t('下载已暂停') : t('正在下载...'))}
+                ? `[${(dl.fileIndex || 0) + 1}/${dl.totalFiles}] ${dl.currentFileName || (dl.status === 'pending' ? t('正在连接源站...') : t('正在下载...'))}`
+                : dl.currentFileName || (dl.isPaused ? t('下载已暂停') : dl.status === 'pending' ? t('准备下载中...') : t('正在下载...'))}
             </span>
             <div className="flex items-center gap-2 font-mono text-[11px] text-muted-foreground">
               <span>
@@ -796,7 +796,7 @@ export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focu
    * - 硬件最佳适配引擎包（matchType === 'best'）未安装时，联动提交引擎包下载（用户无需感知选择）；
    * - 无论是否联动，均提示用户可在「模型」与「引擎」两个标签页查看各自下载进度。
    */
-  const handleModelDownloadSubmit = React.useCallback(() => {
+  const handleModelDownloadSubmit = React.useCallback((modelName?: string) => {
     const bestEngine = (engineList || []).find(e => e.matchType === 'best')
     if (bestEngine && !bestEngine.isInstalled) {
       // 联动提交引擎包下载：不 await，两个下载任务并行进行
@@ -806,8 +806,12 @@ export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focu
       toast.info(
         t('已为您自动匹配并开始下载最佳引擎包（{name}），可在「模型」与「引擎」标签页查看下载进度', { name: bestEngine.name })
       )
-    } else if (bestEngine) {
-      toast.info(t('已开始下载模型，可在「模型」与「引擎」标签页查看下载进度'))
+    } else {
+      if (modelName) {
+        toast.info(t('已开始下载模型「{name}」，可在「模型」标签页查看下载进度', { name: modelName }))
+      } else {
+        toast.info(t('已开始下载模型，可在「模型」标签页查看下载进度'))
+      }
     }
   }, [engineList, startEngineDownload])
 
