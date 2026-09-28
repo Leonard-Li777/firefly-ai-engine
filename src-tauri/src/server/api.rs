@@ -3410,14 +3410,59 @@ async fn start_engine_service(
     let target_model = if let Some(ref m) = req.model_id {
         Some(m.clone())
     } else if req.mode.as_deref() == Some("embedding") {
-        let config = state.coordinator.config.lock().await;
-        config.active_embedding_model.clone()
+        let mut config = state.coordinator.config.lock().await;
+        if let Some(ref m) = config.active_embedding_model {
+            Some(m.clone())
+        } else {
+            // 当未显式配置 active_embedding_model 时：从已下载模型中自动寻找 WeMM / embedding 模型
+            let all_ggufs = collect_all_ggufs(&config.models_dir);
+            let found_wemm = all_ggufs.iter().find(|(_, name)| {
+                let nl = name.to_lowercase();
+                !nl.contains("mmproj") && (nl.contains("wemm") || nl.contains("embedding"))
+            }).map(|(p, _)| p.to_string_lossy().to_string());
+
+            if let Some(ref wemm) = found_wemm {
+                info!("自动检测并绑定已安装的嵌入向量模型: {}", wemm);
+                config.active_embedding_model = Some(wemm.clone());
+                if let Err(e) = config.save_to_disk() {
+                    warn!("持久化 active_embedding_model 失败: {}", e);
+                }
+            }
+            found_wemm
+        }
     } else if req.mode.as_deref() == Some("language") {
-        let config = state.coordinator.config.lock().await;
-        config.active_language_model.clone()
+        let mut config = state.coordinator.config.lock().await;
+        if let Some(ref m) = config.active_language_model {
+            Some(m.clone())
+        } else {
+            let all_ggufs = collect_all_ggufs(&config.models_dir);
+            let found_lang = all_ggufs.iter().find(|(_, name)| {
+                let nl = name.to_lowercase();
+                !nl.contains("mmproj") && !nl.contains("wemm") && !nl.contains("embedding")
+            }).map(|(p, _)| p.to_string_lossy().to_string());
+
+            if let Some(ref lang) = found_lang {
+                info!("自动检测并绑定已安装的主语言模型: {}", lang);
+                config.active_language_model = Some(lang.clone());
+                if let Err(e) = config.save_to_disk() {
+                    warn!("持久化 active_language_model 失败: {}", e);
+                }
+            }
+            found_lang
+        }
     } else {
         None
     };
+
+    if req.mode.as_deref() == Some("embedding") && target_model.is_none() {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(json!({
+                "success": false,
+                "error": "未检测到已安装的 WeMM 嵌入向量模型，请先在模型管理中下载 WeMM 模型"
+            })),
+        );
+    }
 
     // 2. 若当前正在运行，检查是否需要意图切换（平滑重启）
     let proc_status = state.coordinator.guard.status().await;
@@ -3750,6 +3795,23 @@ mod tests {
 
         assert_eq!(config.active_language_model.as_deref(), Some("qwen2.5-7b@modelscope"), "主语言模型绝不能被 embedding 覆盖");
         assert_eq!(config.active_embedding_model.as_deref(), Some("wemm-2b@modelscope"));
+    }
+
+    /// 验证：未配置 active_embedding_model 时，扫描目录中包含 wemm 的模型能自动识别
+    #[test]
+    fn test_auto_detect_wemm_when_active_embedding_model_none() {
+        let temp_dir = tempfile::tempdir().expect("创建临时目录失败");
+        let wemm_file = temp_dir.path().join("WeMM-Embedding-2B-Q8_0.gguf");
+        std::fs::write(&wemm_file, b"dummy").expect("写入模型文件失败");
+
+        let all_ggufs = collect_all_ggufs(temp_dir.path());
+        let found_wemm = all_ggufs.iter().find(|(_, name)| {
+            let nl = name.to_lowercase();
+            !nl.contains("mmproj") && (nl.contains("wemm") || nl.contains("embedding"))
+        }).map(|(p, _)| p.to_string_lossy().to_string());
+
+        assert!(found_wemm.is_some(), "应自动匹配到已下载的 WeMM 模型");
+        assert!(found_wemm.unwrap().contains("WeMM-Embedding-2B-Q8_0.gguf"));
     }
 
     /// 状态端点验证：未启动（current_model 为 None）时依然稳定输出 dual slots
