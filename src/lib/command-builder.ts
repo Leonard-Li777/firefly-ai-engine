@@ -95,8 +95,10 @@ export class LlamaCommandBuilder {
       const modelCmdPath = resolveModelArgForCmd(effectiveModelPath, modelBaseDir, finalSource)
       modelArg = ['--model', modelCmdPath]
 
-      // 多模态投影器 --mmproj 参数
-      if (modelConfig?.isMultiModal && paths.mmprojFile) {
+      // 多模态投影器 --mmproj 参数：
+      // 若当前模型明确为非多模态（modelConfig.isMultiModal === false 或 !paths.isMultiModal），即使下载了投影模型也不能加载
+      const isMultiModal = modelConfig ? Boolean(modelConfig.isMultiModal) : Boolean(paths.isMultiModal)
+      if (isMultiModal && paths.mmprojFile) {
         const projCmdPath = resolveModelArgForCmd(paths.mmprojFile, modelBaseDir, finalSource)
         projectorArg = ['--mmproj', projCmdPath]
       }

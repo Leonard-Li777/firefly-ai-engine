@@ -139,6 +139,7 @@ pub struct StartModelDownloadReq {
     pub model_id: String,
     pub source: Option<String>,
     pub force_restart: Option<bool>,
+    pub quantization: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -201,14 +202,17 @@ fn new_task_id() -> String {
     format!("task_{}", ts)
 }
 
-/// 从文件名中提取标准化量化标识（如 q4_k_m, q4_k_xl, q5_k_xl 等，去除 ud- 前缀，纯小写）
+/// 从文件名中提取标准化量化标识（如 q4_k_m, ptq1_0, pq2_0 等，去除 ud- 前缀，纯小写）
 pub(crate) fn extract_quant_tag_from_name(name: &str) -> Option<String> {
     let lower = name.to_lowercase();
-    // 优先匹配包含下划线的标准量化（如 q4_k_m, ud-q4_k_xl, iq3_xxs）
+    // 优先匹配包含下划线的标准量化（按特异性从长到短排列，防止子串误匹配）
     let patterns = [
-        "q4_k_xl", "q5_k_xl", "q6_k_xl", "q4_k_m", "q4_k_s", "q5_k_m", "q5_k_s", "q6_k",
-        "q8_0", "q4_0", "q4_1", "q5_0", "q5_1", "q2_k", "q3_k_l", "q3_k_m", "q3_k_s",
-        "bf16", "f16", "f32"
+        "q4_k_xl", "q5_k_xl", "q6_k_xl",
+        "q4_k_m", "q4_k_s", "q5_k_m", "q5_k_s", "q6_k_m", "q6_k_s", "q3_k_l", "q3_k_m", "q3_k_s",
+        "ptq1_0", "ptq2_0", "pq2_0",
+        "iq4_nl", "iq4_xs", "iq3_xxs", "iq2_xxs", "iq2_xs", "iq1_s", "iq1_m", "iq3_s", "iq3_m", "iq2_s",
+        "q8_0", "q8_1", "q4_0", "q4_1", "q5_0", "q5_1", "q6_k", "q5_k", "q4_k", "q3_k", "q2_k",
+        "bf16", "fp16", "f16", "f32"
     ];
     for p in patterns {
         if lower.contains(p) {
@@ -216,6 +220,90 @@ pub(crate) fn extract_quant_tag_from_name(name: &str) -> Option<String> {
         }
     }
     None
+}
+
+/// 优先从模型列表（官方预设元数据 + 用户自定义模型）中按 model_id 查找 quantization 字段
+pub(crate) fn lookup_model_quantization(
+    model_id: &str,
+    meta_dirs: &[PathBuf],
+    custom_models: &[CustomModelEntry],
+) -> Option<String> {
+    let id_clean = model_id.split('@').next().unwrap_or(model_id).trim();
+
+    // 1. 优先查自定义模型中的 quant 字段
+    for custom in custom_models {
+        if custom.id.eq_ignore_ascii_case(id_clean) {
+            if let Some(ref q) = custom.quant {
+                let q_trim = q.trim();
+                if !q_trim.is_empty() {
+                    return Some(q_trim.to_string());
+                }
+            }
+        }
+    }
+
+    // 2. 查官方预设模型列表中的 quantization 字段
+    for dir in meta_dirs {
+        for entry in ["model_zh-CN.json", "model_zh.json", "model_en-US.json", "model_en.json"] {
+            let meta_file = dir.join(entry);
+            if let Ok(content) = std::fs::read_to_string(&meta_file) {
+                if let Ok(val) = serde_json::from_str::<serde_json::Value>(&content) {
+                    let list = val.get("models").and_then(|m| m.as_array())
+                        .or_else(|| val.as_array());
+                    if let Some(models) = list {
+                        for m in models {
+                            let mid = m.get("id").and_then(|v| v.as_str()).unwrap_or("");
+                            if mid.eq_ignore_ascii_case(id_clean) {
+                                if let Some(q) = m.get("quantization").and_then(|v| v.as_str()) {
+                                    let q_trim = q.trim();
+                                    if !q_trim.is_empty() {
+                                        return Some(q_trim.to_string());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    None
+}
+
+/// 为 llama-model-download 构造命令行参数
+/// 优先级策略：
+/// 1. 优先使用模型列表的 quantization 字段获取量化参数 (explicit_quant)
+/// 2. 从文件名提取标准化量化标识只是 fallback
+/// 3. 若均无法获取量化参数且以 .gguf 结尾，fallback 走 -msf / -hff 精确文件名参数
+/// 4. 其余情况直接传递 target_id
+pub(crate) fn build_downloader_args(
+    source_flag: &str,
+    target_id: &str,
+    explicit_quant: Option<&str>,
+) -> Vec<String> {
+    let file_flag = if source_flag == "-hf" { "-hff" } else { "-msf" };
+
+    if let Some((repo, tag_or_file)) = target_id.split_once(':') {
+        let tag_or_file_lower = tag_or_file.to_lowercase();
+        if tag_or_file_lower.ends_with(".gguf") {
+            // 优先：检查是否从模型列表获取到 quantization 字段
+            if let Some(quant) = explicit_quant.filter(|q| !q.trim().is_empty()) {
+                vec![source_flag.to_string(), format!("{}:{}", repo, quant.trim().to_uppercase()), "--json".to_string()]
+            } else if let Some(quant) = extract_quant_tag_from_name(&tag_or_file_lower) {
+                // Fallback：从文件名提取标准化量化标识
+                vec![source_flag.to_string(), format!("{}:{}", repo, quant.to_uppercase()), "--json".to_string()]
+            } else {
+                // Fallback：无法识别量化 tag，作为精确文件下载
+                vec![source_flag.to_string(), repo.to_string(), file_flag.to_string(), tag_or_file.to_string(), "--json".to_string()]
+            }
+        } else {
+            // 已经是 quant 标签 (如 Q4_K_M 或 PTQ1_0)
+            vec![source_flag.to_string(), format!("{}:{}", repo, tag_or_file), "--json".to_string()]
+        }
+    } else {
+        vec![source_flag.to_string(), target_id.to_string(), "--json".to_string()]
+    }
 }
 
 /// 扫描本地模型目录（支持 HuggingFace 和 ModelScope 两种目录结构）
@@ -282,7 +370,10 @@ fn scan_and_merge_models(
 
     if models_dir.exists() {
         for (file_path, file_name) in &found_ggufs {
-            if file_name.to_lowercase().starts_with("mmproj") {
+            let name_lower = file_name.to_lowercase();
+            // 投影模型（mmproj）永远只是辅助投影器，无论其文件名是以 mmproj 开头还是包含 mmproj，
+            // 绝不能作为独立的主模型被扫描、匹配或展示
+            if name_lower.contains("mmproj") {
                 continue;
             }
             let file_size = std::fs::metadata(file_path).map(|m| m.len()).unwrap_or(0);
@@ -1946,14 +2037,19 @@ async fn start_model_download(
     }
 
     // 获取模型目录和 downloader 路径
-    let models_dir = {
+    let (models_dir, custom_models) = {
         let config = state.coordinator.config.lock().await;
-        config.models_dir.clone()
+        (config.models_dir.clone(), config.custom_models.clone())
     };
     let downloader_path = state.model_downloader_path.as_ref().clone();
     let tasks_store = state.download_tasks.clone();
     let child_pids_store = state.active_child_pids.clone();
     let task_id_spawn = task_id.clone();
+
+    // 优先从客户端传入获取 quantization，未传入则从服务端模型列表（预设及自定义模型）查找
+    let quantization = payload.quantization.clone()
+        .filter(|q| !q.trim().is_empty())
+        .or_else(|| lookup_model_quantization(&model_id, &state.model_meta_dirs, &custom_models));
 
     // 后台 spawn 真实下载进程
     tokio::spawn(async move {
@@ -1961,6 +2057,7 @@ async fn start_model_download(
             task_id_spawn,
             model_id,
             source,
+            quantization,
             models_dir,
             downloader_path,
             tasks_store,
@@ -1980,6 +2077,7 @@ async fn run_model_download(
     task_id: String,
     model_id: String,
     source: String,
+    quantization: Option<String>,
     models_dir: PathBuf,
     downloader_path: PathBuf,
     tasks: DownloadTaskStore,
@@ -2031,9 +2129,10 @@ async fn run_model_download(
     }
 
     let mut cmd = tokio::process::Command::new(&downloader_path);
-    cmd.arg(source_flag)
-        .arg(&download_target_id)
-        .arg("--json");
+    let downloader_args = build_downloader_args(source_flag, &download_target_id, quantization.as_deref());
+    for arg in &downloader_args {
+        cmd.arg(arg);
+    }
 
     // 继承系统环境变量并设置 LLAMA_CACHE 模型存储位置
     cmd.env("LLAMA_CACHE", models_dir.to_string_lossy().as_ref());
@@ -2063,7 +2162,7 @@ async fn run_model_download(
     // 抑制 llama-model-download 控制台窗口闪烁
     crate::win_proc::apply_no_window(&mut cmd);
 
-    info!("启动原生真实下载进程: {:?} 模型: {}", downloader_path, download_target_id);
+    info!("启动原生真实下载进程: {:?} 参数: {:?}", downloader_path, downloader_args);
 
     let mut child = match cmd.spawn() {
         Ok(c) => c,
@@ -2090,7 +2189,10 @@ async fn run_model_download(
     let mut speed_prev_bytes: Option<u64> = None;
     let mut speed_prev_time = std::time::Instant::now();
     let mut last_speed_bps: f64 = 0.0;
-    let is_multimodal = model_id.to_lowercase().contains("vl") || model_id.to_lowercase().contains("multimodal");
+    let mut is_multimodal = model_id.to_lowercase().contains("vl")
+        || model_id.to_lowercase().contains("multimodal")
+        || model_id.to_lowercase().contains("bonsai")
+        || model_id.to_lowercase().contains("omni");
 
     // 读取 stdout 解析 JSON 进度流
     use tokio::io::{AsyncBufReadExt, BufReader};
@@ -2116,22 +2218,27 @@ async fn run_model_download(
                     // 1. 跟踪多文件流切换
                     if let Some(fname) = progress.get("file").and_then(|v| v.as_str()).or_else(|| progress.get("filename").and_then(|v| v.as_str())) {
                         let fname_str = fname.to_string();
-                        if let Some(ref cur) = current_file {
-                            if cur != &fname_str && task.total_bytes > 0 {
-                                // 文件切换，将上一个文件的接收累加到 completed_bytes
-                                completed_bytes = task.received_bytes;
-                            }
-                        }
-                        current_file = Some(fname_str.clone());
-                        task.current_file_name = Some(fname_str.clone());
-
-                        // 多模态阶段判定
-                        if is_multimodal {
-                            task.total_files = 2;
+                        if !fname_str.is_empty() {
                             if fname_str.to_lowercase().contains("mmproj") {
-                                task.file_index = 1;
-                            } else {
-                                task.file_index = 0;
+                                is_multimodal = true;
+                            }
+                            if let Some(ref cur) = current_file {
+                                if cur != &fname_str && task.total_bytes > 0 {
+                                    // 文件切换，将上一个文件的接收累加到 completed_bytes
+                                    completed_bytes = task.received_bytes;
+                                }
+                            }
+                            current_file = Some(fname_str.clone());
+                            task.current_file_name = Some(fname_str.clone());
+
+                            // 多模态阶段判定
+                            if is_multimodal {
+                                task.total_files = 2;
+                                if fname_str.to_lowercase().contains("mmproj") {
+                                    task.file_index = 1;
+                                } else {
+                                    task.file_index = 0;
+                                }
                             }
                         }
                     }
@@ -2183,12 +2290,9 @@ async fn run_model_download(
 
                     if let Some(status) = progress.get("status").and_then(|v| v.as_str()) {
                         match status {
-                            "completed" | "done" => {
-                                if !is_multimodal || task.file_index >= 1 {
-                                    task.status = DownloadStatus::Completed;
-                                    task.percent = 100.0;
-                                }
-                            }
+                            // 注意：单文件的 completed/done 绝不能在进程运行中提前把 task.status 置为 Completed，
+                            // 否则在多模态多文件下载流中，首个文件（如投影器）完成就会提前通知前端终止监听！
+                            // 整个下载的成功判定由 child.wait() 正常退出后统一置为 Completed。
                             "error" | "failed" => {
                                 task.status = DownloadStatus::Error;
                                 task.error = progress.get("error").and_then(|v| v.as_str()).map(|s| s.to_string());
@@ -2229,12 +2333,17 @@ async fn run_model_download(
             // 二次检测：即使退出码异常，检查目标目录是否已有合规的 GGUF 实体文件（对齐 desktop 补偿逻辑）
             let mut file_found = false;
             let repo_tag = model_id.split(':').last().unwrap_or(&model_id);
+            let quant_tag = extract_quant_tag_from_name(repo_tag);
             if let Ok(entries) = std::fs::read_dir(&models_dir) {
                 for entry in entries.flatten() {
                     let path = entry.path();
                     if path.is_file() {
                         let name = path.file_name().unwrap_or_default().to_string_lossy();
-                        if name.ends_with(".gguf") && name.contains(repo_tag) {
+                        let name_lower = name.to_lowercase();
+                        let is_mmproj = name_lower.contains("mmproj");
+                        let matched = name.contains(repo_tag)
+                            || quant_tag.as_ref().map(|q| name_lower.contains(q.as_str())).unwrap_or(false);
+                        if name_lower.ends_with(".gguf") && !is_mmproj && matched {
                             if let Ok(meta) = path.metadata() {
                                 if meta.len() > 10 * 1024 * 1024 { // > 10MB
                                     file_found = true;
@@ -2846,6 +2955,24 @@ async fn add_custom_model(
     )
 }
 
+/// 判断待删除/移除的模型 ID 是否命中了指定的激活槽位（支持带@来源后缀、不同大小写或 repo/quant 片段匹配）
+pub(crate) fn is_model_matching_active(model_id: &str, active_slot: Option<&str>) -> bool {
+    let Some(active) = active_slot else { return false; };
+    let target_id = model_id.to_lowercase();
+    let target_tail = target_id
+        .rsplit('/')
+        .next()
+        .unwrap_or("")
+        .split(':')
+        .next()
+        .unwrap_or("")
+        .replace("-gguf", "");
+
+    let act_lower = active.to_lowercase();
+    let act_id = act_lower.split('@').next().unwrap_or(&act_lower);
+    act_id == target_id || (!target_tail.is_empty() && act_id.contains(&target_tail))
+}
+
 /// POST /api/models/delete
 /// 删除指定模型所在目录（含 GGUF 文件与附属文件），并清理自定义模型条目与专属参数
 async fn delete_model(
@@ -2858,19 +2985,27 @@ async fn delete_model(
         let mut config = state.coordinator.config.lock().await;
         let models_dir = config.models_dir.clone();
         // 清理自定义模型条目与专属参数（普通模型无对应条目时为无操作）
-        let before = config.custom_models.len();
         config.custom_models.retain(|m| m.id != payload.model_id);
         config.model_custom_params.remove(&payload.model_id);
-        if config.custom_models.len() != before || config.model_custom_params.contains_key(&payload.model_id) == false {
-            let data_dir = config.data_dir.clone();
-            let store = crate::config::ConfigStore::new(data_dir);
-            if let Err(e) = store.save(&config) {
-                error!("持久化删除模型条目失败 [{}]: {}", payload.model_id, e);
-                return (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(json!({ "success": false, "error": e.to_string() })),
-                );
-            }
+
+        // 同步清空激活槽位（语言模型或嵌入模型槽位若指向被删除模型，同步置空）
+        if is_model_matching_active(&payload.model_id, config.active_language_model.as_deref()) {
+            info!("待删除模型处于 active_language_model 激活槽位，清空配置槽位");
+            config.active_language_model = None;
+        }
+        if is_model_matching_active(&payload.model_id, config.active_embedding_model.as_deref()) {
+            info!("待删除模型处于 active_embedding_model 激活槽位，清空配置槽位");
+            config.active_embedding_model = None;
+        }
+
+        let data_dir = config.data_dir.clone();
+        let store = crate::config::ConfigStore::new(data_dir);
+        if let Err(e) = store.save(&config) {
+            error!("持久化配置失败 [{}]: {}", payload.model_id, e);
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "success": false, "error": e.to_string() })),
+            );
         }
         models_dir
     };
@@ -2894,7 +3029,7 @@ async fn delete_model(
         });
 
     let Some(model_file) = model_file else {
-        warn!("未找到模型 [{}] 对应的文件，仅清理配置条目", payload.model_id);
+        warn!("未找到模型 [{}] 对应的文件，已清理配置条目", payload.model_id);
         return (StatusCode::OK, Json(json!({ "success": true })));
     };
 
@@ -2922,12 +3057,34 @@ async fn delete_model(
         );
     }
 
-    // 若删除的是当前激活模型，先清空激活状态（引擎下次启动自动回退到首个可用模型）
+    // 若删除的模型当前正在运行中，先停止引擎服务以释放 Windows 进程文件锁
+    let is_currently_running = {
+        let active_model = state.coordinator.active_model.lock().await;
+        if let Some(ref current) = *active_model {
+            current == &model_file.to_string_lossy().to_string()
+                || std::path::Path::new(current).starts_with(&model_dir)
+        } else {
+            false
+        }
+    };
+
+    if is_currently_running {
+        info!("被删除的模型当前正在运行中，先停止引擎服务以释放文件句柄: {}", model_dir.display());
+        if let Err(e) = state.coordinator.stop_service().await {
+            warn!("停止运行中引擎服务遇到错误（继续尝试删除）: {}", e);
+        }
+    }
+
+    // 重置内存中的 active_model
     {
         let mut active_model = state.coordinator.active_model.lock().await;
-        if active_model.as_deref() == Some(model_file.to_string_lossy().as_ref()) {
-            *active_model = None;
-            info!("已删除的模型为当前激活模型，已重置激活状态");
+        if let Some(ref current) = *active_model {
+            if current == &model_file.to_string_lossy().to_string()
+                || std::path::Path::new(current).starts_with(&model_dir)
+            {
+                *active_model = None;
+                info!("已重置运行态 active_model");
+            }
         }
     }
 
@@ -2957,6 +3114,17 @@ async fn remove_custom_model(
     let before = config.custom_models.len();
     config.custom_models.retain(|m| m.id != payload.model_id);
     config.model_custom_params.remove(&payload.model_id);
+
+    // 同步清空激活槽位
+    if is_model_matching_active(&payload.model_id, config.active_language_model.as_deref()) {
+        info!("移除的自定义模型处于 active_language_model 激活槽位，清空配置槽位");
+        config.active_language_model = None;
+    }
+    if is_model_matching_active(&payload.model_id, config.active_embedding_model.as_deref()) {
+        info!("移除的自定义模型处于 active_embedding_model 激活槽位，清空配置槽位");
+        config.active_embedding_model = None;
+    }
+
     if config.custom_models.len() == before {
         warn!("移除自定义模型条目未命中: {}", payload.model_id);
         return (
@@ -3529,5 +3697,99 @@ mod tests {
         assert_eq!(val["current_model"], serde_json::Value::Null);
         assert_eq!(val["active_language_model"], "qwen2.5-7b@modelscope");
         assert_eq!(val["active_embedding_model"], "wemm-2b@modelscope");
+    }
+
+    /// 验证：即使目录下存在带前缀的投影模型（如 Ternary-Bonsai-2-27B-mmproj-BF16.gguf），
+    /// scan_and_merge_models 绝不将其当成独立模型返回，也不会误将未下载主模型的预设标记为已下载！
+    #[test]
+    fn test_scan_and_merge_models_ignores_standalone_mmproj() {
+        let unique_suffix = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let temp_dir = std::env::temp_dir().join(format!("test_mmproj_scan_{}", unique_suffix));
+        let model_sub_dir = temp_dir.join("hub").join("models").join("prism-ml").join("Ternary-Bonsai-2-27B-gguf");
+        std::fs::create_dir_all(&model_sub_dir).unwrap();
+
+        // 仅创建投影模型文件，不创建主模型
+        let mmproj_file = model_sub_dir.join("Ternary-Bonsai-2-27B-mmproj-BF16.gguf");
+        std::fs::write(&mmproj_file, b"dummy mmproj content").unwrap();
+
+        let scanned = scan_and_merge_models(&temp_dir, None, &[]);
+
+        // 验证：绝对不能包含任何 mmproj 模型条目
+        assert!(!scanned.iter().any(|m| {
+            let id = m.get("id").and_then(|v| v.as_str()).unwrap_or("");
+            let name = m.get("name").and_then(|v| v.as_str()).unwrap_or("");
+            id.to_lowercase().contains("mmproj") || name.to_lowercase().contains("mmproj")
+        }), "包含 mmproj 的投影文件绝不能被作为独立模型返回");
+
+        // 清理临时目录
+        let _ = std::fs::remove_dir_all(&temp_dir);
+    }
+
+    /// 验证：is_model_matching_active 对各种模型 ID（含 tag、@来源后缀、大小写）均能精准识别激活槽位
+    #[test]
+    fn test_is_model_matching_active() {
+        // 1. 完全相同或带 @来源 后缀
+        assert!(is_model_matching_active(
+            "prism-ml/Ternary-Bonsai-2-27B-gguf:Ternary-Bonsai-2-27B-PTQ1_0.gguf",
+            Some("prism-ml/Ternary-Bonsai-2-27B-gguf:Ternary-Bonsai-2-27B-PTQ1_0.gguf@modelscope")
+        ));
+
+        // 2. 简略 ID 命中完整包含 tag 的槽位
+        assert!(is_model_matching_active(
+            "Ternary-Bonsai-2-27B-gguf",
+            Some("prism-ml/Ternary-Bonsai-2-27B-gguf:Ternary-Bonsai-2-27B-PTQ1_0.gguf@modelscope")
+        ));
+
+        // 3. 不同模型绝不误判
+        assert!(!is_model_matching_active(
+            "qwen2.5-7b-instruct",
+            Some("prism-ml/Ternary-Bonsai-2-27B-gguf:Ternary-Bonsai-2-27B-PTQ1_0.gguf@modelscope")
+        ));
+
+        // 4. 空槽位
+        assert!(!is_model_matching_active("some-model", None));
+    }
+
+    /// 验证：build_downloader_args 优先使用模型列表的 quantization 字段，文件名提取仅作为 fallback
+    #[test]
+    fn test_build_downloader_args() {
+        // 1. 优先：显式传入模型列表中的 quantization（如 "PTQ1_0"）
+        let args_explicit = build_downloader_args(
+            "-ms",
+            "prism-ml/Ternary-Bonsai-2-27B-gguf:Ternary-Bonsai-2-27B-PTQ1_0.gguf",
+            Some("PTQ1_0")
+        );
+        assert_eq!(args_explicit, vec!["-ms", "prism-ml/Ternary-Bonsai-2-27B-gguf:PTQ1_0", "--json"]);
+
+        // 2. 优先：自定义或非常规命名文件，但模型列表存在 quantization 字段时，优先按 quantization 构造
+        let args_non_standard = build_downloader_args(
+            "-ms",
+            "prism-ml/Ternary-Bonsai-2-27B-gguf:custom_arbitrary_name.gguf",
+            Some("PQ2_0")
+        );
+        assert_eq!(args_non_standard, vec!["-ms", "prism-ml/Ternary-Bonsai-2-27B-gguf:PQ2_0", "--json"]);
+
+        // 3. Fallback：未传入 explicit_quant 时，从文件名中提取标准量化标识
+        let args_fallback_filename = build_downloader_args(
+            "-ms",
+            "prism-ml/Ternary-Bonsai-2-27B-gguf:Ternary-Bonsai-2-27B-PTQ1_0.gguf",
+            None
+        );
+        assert_eq!(args_fallback_filename, vec!["-ms", "prism-ml/Ternary-Bonsai-2-27B-gguf:PTQ1_0", "--json"]);
+
+        // 4. 常规量化模型 (如 Q4_K_M)：直接保持 repo:quant 格式
+        let args_qwen = build_downloader_args("-ms", "Qwen/Qwen2.5-7B-Instruct-GGUF:Q4_K_M", None);
+        assert_eq!(args_qwen, vec!["-ms", "Qwen/Qwen2.5-7B-Instruct-GGUF:Q4_K_M", "--json"]);
+
+        // 5. Fallback：无模型列表 quantization 且文件名中提取不到量化 tag 时，拆分为精确文件参数 -ms repo -msf file
+        let args_custom = build_downloader_args("-ms", "my-org/my-model:custom_weights.gguf", None);
+        assert_eq!(args_custom, vec!["-ms", "my-org/my-model", "-msf", "custom_weights.gguf", "--json"]);
+
+        // 6. HuggingFace 来源精确文件名：应使用 -hff
+        let args_hf_file = build_downloader_args("-hf", "my-org/my-model:custom_weights.gguf", None);
+        assert_eq!(args_hf_file, vec!["-hf", "my-org/my-model", "-hff", "custom_weights.gguf", "--json"]);
     }
 }

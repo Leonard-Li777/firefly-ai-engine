@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { ModelResolver, mergeScannedWithRecommended } from '../src/lib/model-resolver'
+import { unifiedModelManager } from '../src/lib/unified-model-manager'
 import type { ModelItem } from '../src/api/types'
 
 describe('ModelResolver 路径探测算法 (1:1 移植)', () => {
@@ -175,5 +176,14 @@ describe('mergeScannedWithRecommended 推荐底表合并', () => {
     const merged = mergeScannedWithRecommended(recommended, scanned)
 
     expect(merged[0].sha256).toBe('scan-sha')
+  })
+
+  it('如果当前模型 isMultiModal: false，即使同目录探测到投影模型，resolveModelPaths 也不返回 mmprojFile 且 isMultiModal 保持 false', () => {
+    unifiedModelManager.setModelBaseDir('D:/AI_Models')
+
+    // unsloth/Qwen3.5-0.8B-GGUF:UD-Q4_K_XL 在配置中明确为 isMultiModal: false
+    const paths = unifiedModelManager.resolveModelPaths('unsloth/Qwen3.5-0.8B-GGUF:UD-Q4_K_XL')
+    expect(paths.isMultiModal).toBe(false)
+    expect(paths.mmprojFile).toBeUndefined()
   })
 })

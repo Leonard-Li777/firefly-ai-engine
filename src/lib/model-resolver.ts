@@ -275,6 +275,16 @@ export function mergeScannedWithRecommended(recommendedList: ModelItem[], scanne
   // 2. 填入扫描到的本地自定义/独有模型（保证本地模型不被丢弃）；
   //    此类条目不经过 normalizeRawModel，缺失 vramNeededGB 时按体积估算补齐，保证预估显存列可显示
   for (const item of scanned) {
+    const localFileName = item.localPath ? (item.localPath.split(/[\\/]/).pop() || '') : ''
+    // 严格过滤：投影模型（mmproj）永远只是辅助投影器，绝不能作为独立的主模型添加到模型列表
+    if (
+      item.id.toLowerCase().includes('mmproj') ||
+      item.name.toLowerCase().includes('mmproj') ||
+      localFileName.toLowerCase().includes('mmproj')
+    ) {
+      continue
+    }
+
     const enriched: ModelItem = {
       ...item,
       vramNeededGB:

@@ -381,10 +381,12 @@ impl ParamBuilder {
             model_path.to_string(),
         ];
 
-        // 多模态投影器 --mmproj
+        // 多模态投影器 --mmproj（仅当模型明确为多模态时加载）
         if let Some(info) = model_info {
-            if let Some(ref mmproj) = info.mmproj_path {
-                args.extend(["--mmproj".to_string(), mmproj.clone()]);
+            if info.is_multimodal {
+                if let Some(ref mmproj) = info.mmproj_path {
+                    args.extend(["--mmproj".to_string(), mmproj.clone()]);
+                }
             }
 
             // DSpark 投机采样
@@ -809,5 +811,25 @@ mod tests {
         let args = ParamBuilder::to_args(&params, 38400, "D:\\models\\wemm.gguf", "wemm-2b", Some(&model));
 
         assert!(args.contains(&"--embedding".to_string()), "应该注入 --embedding 参数");
+    }
+
+    #[test]
+    fn test_to_args_non_multimodal_ignores_mmproj() {
+        let resources = make_resources_with_dgpu(12 * 1024);
+        let mut model = make_model(7.0, 4.3);
+        // 关键条件：模型不是多模态，但设置了投影模型路径（例如磁盘上下载了投影模型）
+        model.is_multimodal = false;
+        model.mmproj_path = Some("D:\\models\\mmproj.gguf".to_string());
+
+        let params = ParamBuilder::compute(&resources, &model, "cuda");
+        let args = ParamBuilder::to_args(&params, 38400, "D:\\models\\text-only.gguf", "test-model", Some(&model));
+
+        // 验证绝对不能注入 --mmproj 参数
+        assert!(!args.contains(&"--mmproj".to_string()), "非多模态模型即使有投影文件也不应注入 --mmproj");
+
+        // 当多模态模型且有投影路径时，才应该注入
+        model.is_multimodal = true;
+        let args_mm = ParamBuilder::to_args(&params, 38400, "D:\\models\\vl-model.gguf", "vl-model", Some(&model));
+        assert!(args_mm.contains(&"--mmproj".to_string()), "多模态模型且存在投影文件时应注入 --mmproj");
     }
 }

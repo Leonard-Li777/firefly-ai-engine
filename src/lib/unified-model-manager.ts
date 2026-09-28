@@ -123,11 +123,16 @@ export class UnifiedModelManager {
       draftFile = draftRes?.modelPath
     }
 
+    // 核心规则：若模型元数据已定义，以 model.isMultiModal 为权威依据；
+    // 若当前模型 isMultiModal: false，即使它有下载投影模型，启动时也不能加载，mmprojFile 必须为 undefined
+    const isMultiModal = model ? Boolean(model.isMultiModal) : Boolean(resolution?.mmprojPath)
+    const mmprojFile = isMultiModal ? resolution?.mmprojPath : undefined
+
     return {
       modelFile: resolution?.modelPath,
-      mmprojFile: resolution?.mmprojPath,
+      mmprojFile,
       draftFile,
-      isMultiModal: Boolean(model?.isMultiModal || resolution?.mmprojPath),
+      isMultiModal,
       hasDSpark: Boolean(model?.dspark)
     }
   }
@@ -198,6 +203,20 @@ export class UnifiedModelManager {
     const finalSource = source || model?.source || 'huggingface'
     const sourceFlag = finalSource === 'modelscope' ? '-ms' : '-hf'
     const targetId = this.normalizeDownloadTargetId(model?.downloadId || modelId)
+    let downloadArgs: string[] = [sourceFlag, targetId, '--json']
+
+    if (targetId.includes(':')) {
+      const [repo, fileOrQuant] = targetId.split(':')
+      if (fileOrQuant.toLowerCase().endsWith('.gguf')) {
+        const quant = model?.quantization || fileOrQuant.replace(/\.gguf$/i, '').split(/[-_]/).pop()
+        if (quant && /^(?:Q[0-9]|PT?Q|IQ|BF16|FP?16)/i.test(quant)) {
+          downloadArgs = [sourceFlag, `${repo}:${quant.toUpperCase()}`, '--json']
+        } else {
+          const fileFlag = finalSource === 'modelscope' ? '-msf' : '-hff'
+          downloadArgs = [sourceFlag, repo, fileFlag, fileOrQuant, '--json']
+        }
+      }
+    }
 
     const env: Record<string, string> = {
       LLAMA_CACHE: toShortPathOnWindows(this.getModelBaseDir())
@@ -212,7 +231,7 @@ export class UnifiedModelManager {
 
     return {
       command: toShortPathOnWindows(downloadBinaryPath),
-      args: [sourceFlag, targetId, '--json'],
+      args: downloadArgs,
       env
     }
   }

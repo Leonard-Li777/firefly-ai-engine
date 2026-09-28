@@ -48,7 +48,7 @@ export interface IEngineApiClient {
    */
   startModelDownload(
     modelId: string,
-    options?: { source?: string; forceRestart?: boolean },
+    options?: { source?: string; forceRestart?: boolean; quantization?: string },
     onProgress?: (event: DownloadProgressEvent) => void
   ): Promise<DownloadTaskSummary>
 
@@ -277,7 +277,7 @@ export class HttpEngineApiClient implements IEngineApiClient {
 
   async startModelDownload(
     modelId: string,
-    options?: { source?: string; forceRestart?: boolean },
+    options?: { source?: string; forceRestart?: boolean; quantization?: string },
     onProgress?: (event: DownloadProgressEvent) => void
   ): Promise<DownloadTaskSummary> {
     await this.ensureReady()
@@ -288,7 +288,8 @@ export class HttpEngineApiClient implements IEngineApiClient {
       body: JSON.stringify({
         modelId,
         source: options?.source || 'modelscope',
-        forceRestart: options?.forceRestart || false
+        forceRestart: options?.forceRestart || false,
+        quantization: options?.quantization
       })
     })
     const taskId: string = task.taskId

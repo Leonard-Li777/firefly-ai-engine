@@ -281,9 +281,14 @@ impl EngineCoordinator {
         let resources = self.hardware.detect(false).await
             .map_err(|e| anyhow::anyhow!("硬件探测失败: {}", e))?;
 
-        let (models_dir, preferred_backend, active_lang_pref) = {
+        let (models_dir, preferred_backend, active_lang_pref, custom_models) = {
             let config = self.config.lock().await;
-            (config.models_dir.clone(), config.preferred_backend.clone(), config.active_language_model.clone())
+            (
+                config.models_dir.clone(),
+                config.preferred_backend.clone(),
+                config.active_language_model.clone(),
+                config.custom_models.clone(),
+            )
         };
 
         let selected_engine = self.scheduler.select_engine(&resources, preferred_backend.as_deref()).await?;
@@ -293,7 +298,7 @@ impl EngineCoordinator {
             .or(active_lang_pref);
         let all_ggufs = crate::server::api::collect_all_ggufs(&models_dir);
 
-        let model_path = if let Some(m) = active_model_lock {
+        let model_path = if let Some(ref m) = active_model_lock {
             let p = std::path::PathBuf::from(&m);
             if p.is_absolute() && p.exists() {
                 p
@@ -307,13 +312,13 @@ impl EngineCoordinator {
 
                 all_ggufs.iter().find(|(_, name)| {
                     let name_lower = name.to_lowercase();
-                    !name_lower.starts_with("mmproj") && (name_lower.contains(&m_clean) || m_clean.contains(&name_lower.replace(".gguf", "")))
+                    !name_lower.contains("mmproj") && (name_lower.contains(&m_clean) || m_clean.contains(&name_lower.replace(".gguf", "")))
                 }).map(|(p, _)| p.clone())
                 .or_else(|| {
                     // 降级为已下载的第一个非 mmproj、非 wemm 的主语言模型
                     all_ggufs.iter().find(|(_, name)| {
                         let nl = name.to_lowercase();
-                        !nl.starts_with("mmproj") && !nl.contains("wemm")
+                        !nl.contains("mmproj") && !nl.contains("wemm")
                     }).map(|(p, _)| p.clone())
                 })
                 .ok_or_else(|| anyhow::anyhow!("未找到模型文件: {}，且当前存储目录中没有可用 GGUF 模型", m))?
@@ -322,9 +327,9 @@ impl EngineCoordinator {
             // 没有指定激活模型时，从模型目录中挑选第一个已下载就绪的非 mmproj、非 wemm 的主语言模型
             all_ggufs.iter().find(|(_, name)| {
                 let nl = name.to_lowercase();
-                !nl.starts_with("mmproj") && !nl.contains("wemm")
+                !nl.contains("mmproj") && !nl.contains("wemm")
             })
-            .or_else(|| all_ggufs.iter().find(|(_, name)| !name.to_lowercase().starts_with("mmproj")))
+            .or_else(|| all_ggufs.iter().find(|(_, name)| !name.to_lowercase().contains("mmproj")))
             .map(|(p, _)| p.clone())
             .ok_or_else(|| anyhow::anyhow!("当前模型存储目录下未检测到任何 GGUF 模型文件，请先在模型管理中下载模型"))?
         };
@@ -336,20 +341,6 @@ impl EngineCoordinator {
         let model_str = model_path.to_string_lossy().to_string();
         *self.active_model.lock().await = Some(model_str.clone());
 
-        // 自动探测同级或 models_dir 目录下的多模态投影器 mmproj
-        let detected_mmproj = {
-            let parent_dir = model_path.parent();
-            all_ggufs.iter().find(|(p, name)| {
-                let n_lower = name.to_lowercase();
-                n_lower.starts_with("mmproj") && (p.parent() == parent_dir || p.parent() == Some(&models_dir))
-            }).map(|(p, _)| p.to_string_lossy().to_string())
-        };
-
-        let model_size_gb = std::fs::metadata(&model_path).map(|m| m.len() as f64 / (1024.0 * 1024.0 * 1024.0)).unwrap_or(1.0);
-        let model_lower = model_str.to_lowercase();
-        let is_minicpm5 = model_lower.contains("minicpm5");
-        let is_nanbeige4 = model_lower.contains("nanbeige4");
-
         // 提取模型专属参数（若用户在前端配置并保存）
         let active_name_lock = self.active_model_name.lock().await.clone();
         let fallback_stem = model_path
@@ -358,6 +349,34 @@ impl EngineCoordinator {
             .unwrap_or("default")
             .to_string();
         let model_alias = active_name_lock.clone().unwrap_or_else(|| fallback_stem.clone());
+
+        // 判定当前模型是否为多模态模型：
+        // 权威检查模型元数据/自定义模型配置，若 isMultiModal: false 则绝不挂载投影模型！
+        let model_meta_dirs = crate::resource_scope::allowed_install_model_meta_dirs(None);
+        let is_multimodal = detect_model_is_multimodal(
+            &model_path,
+            active_model_lock.as_deref(),
+            active_name_lock.as_deref(),
+            &custom_models,
+            &model_meta_dirs,
+        );
+
+        // 仅当模型为多模态模型时，才自动探测同级或 models_dir 目录下的多模态投影器 mmproj；
+        // 若当前模型 isMultiModal: false，即使同目录或存储目录存在投影模型，启动时也绝不加载
+        let detected_mmproj = if is_multimodal {
+            let parent_dir = model_path.parent();
+            all_ggufs.iter().find(|(p, name)| {
+                let n_lower = name.to_lowercase();
+                n_lower.contains("mmproj") && (p.parent() == parent_dir || p.parent() == Some(&models_dir))
+            }).map(|(p, _)| p.to_string_lossy().to_string())
+        } else {
+            None
+        };
+
+        let model_size_gb = std::fs::metadata(&model_path).map(|m| m.len() as f64 / (1024.0 * 1024.0 * 1024.0)).unwrap_or(1.0);
+        let model_lower = model_str.to_lowercase();
+        let is_minicpm5 = model_lower.contains("minicpm5");
+        let is_nanbeige4 = model_lower.contains("nanbeige4");
 
         let (user_model_params, custom_layers, custom_ctx) = {
             let config = self.config.lock().await;
@@ -378,7 +397,7 @@ impl EngineCoordinator {
             param_b: if model_size_gb < 1.0 { 0.8 } else if model_size_gb < 2.0 { 1.5 } else { 2.5 },
             size_gb: model_size_gb,
             quantization: "Q4_K_M".to_string(),
-            is_multimodal: detected_mmproj.is_some(),
+            is_multimodal: is_multimodal && detected_mmproj.is_some(),
             context_window,
             force_gpu_layers,
             force_batch_size,
@@ -450,5 +469,146 @@ impl EngineCoordinator {
         self.guard.stop().await?;
         tracing::info!("引擎服务已停止");
         Ok(())
+    }
+}
+
+/// 判断当前启动模型是否为多模态模型
+/// 1. 优先比对用户自定义模型列表（通过 ID 或文件名命中，以其 mmproj_file_name 判定）
+/// 2. 匹配预设模型元数据文件（model_{lang}.json），若命中则以预设的 isMultiModal 为权威依据
+/// 3. 若均未命中（未知本地模型），检查文件名是否具备明确多模态特征（如含 vl、vision）
+pub fn detect_model_is_multimodal(
+    model_path: &std::path::Path,
+    active_id: Option<&str>,
+    active_name: Option<&str>,
+    custom_models: &[crate::config::CustomModelEntry],
+    meta_dirs: &[std::path::PathBuf],
+) -> bool {
+    let file_name = model_path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("")
+        .to_string();
+    let name_lower = file_name.to_lowercase();
+
+    // 1. 检查自定义模型
+    for custom in custom_models {
+        if custom.file_name.eq_ignore_ascii_case(&file_name)
+            || active_id.map(|id| id.eq_ignore_ascii_case(&custom.id)).unwrap_or(false)
+        {
+            return custom.mmproj_file_name.is_some();
+        }
+    }
+
+    // 2. 检查预设模型元数据
+    let file_quant = crate::server::api::extract_quant_tag_from_name(&name_lower);
+    for dir in meta_dirs {
+        for entry in ["model_zh-CN.json", "model_zh.json", "model_en-US.json", "model_en.json"] {
+            let meta_file = dir.join(entry);
+            if let Ok(content) = std::fs::read_to_string(&meta_file) {
+                if let Ok(val) = serde_json::from_str::<serde_json::Value>(&content) {
+                    if let Some(models) = val.get("models").and_then(|m| m.as_array()) {
+                        for m in models {
+                            let id = m.get("id").and_then(|v| v.as_str()).unwrap_or("");
+                            let id_lower = id.to_lowercase();
+                            let expected_quant = m.get("quantization").and_then(|v| v.as_str());
+                            let tag_clean = expected_quant
+                                .map(|q| q.trim_start_matches("UD-").to_lowercase());
+
+                            let tag_ok = match (&tag_clean, &file_quant) {
+                                (Some(expected), Some(actual)) => expected == actual,
+                                (Some(expected), None) => name_lower.contains(expected.as_str()),
+                                (None, _) => true,
+                            };
+
+                            let id_tail = id_lower.split('/').last().unwrap_or(&id_lower);
+                            let id_matched = active_id
+                                .map(|aid| {
+                                    let aid_lower = aid.to_lowercase();
+                                    aid_lower == id_lower
+                                        || aid_lower.starts_with(&id_lower)
+                                        || id_lower.starts_with(&aid_lower)
+                                        || aid_lower.contains(id_tail)
+                                })
+                                .unwrap_or(false);
+
+                            let name_matched = active_name
+                                .and_then(|an| m.get("name").and_then(|v| v.as_str()).map(|mn| an.eq_ignore_ascii_case(mn)))
+                                .unwrap_or(false);
+
+                            if id_matched
+                                || name_matched
+                                || (tag_ok
+                                    && (name_lower.contains(id_tail)
+                                        || name_lower.replace(".gguf", "").contains(&id_tail.replace("-gguf", ""))))
+                            {
+                                return m.get("isMultiModal").and_then(|v| v.as_bool()).unwrap_or(false);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 3. 兜底：未匹配到任何预设或自定义模型，检查名称是否含明确多模态特征
+    name_lower.contains("-vl") || name_lower.contains("_vl") || name_lower.contains("vision")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::PathBuf;
+
+    #[test]
+    fn test_detect_model_is_multimodal_preset_text_only() {
+        // 测试预设文本模型（如 Qwen3.5-0.8B）：必须判定为 false
+        let model_path = PathBuf::from("D:\\models\\hub\\models\\unsloth\\Qwen3.5-0.8B-GGUF\\qwen3.5-0.8b-instruct-ud-q4_k_xl.gguf");
+        let active_id = "unsloth/Qwen3.5-0.8B-GGUF:UD-Q4_K_XL";
+        let meta_dirs = crate::resource_scope::allowed_install_model_meta_dirs(None);
+
+        let is_mm = detect_model_is_multimodal(&model_path, Some(active_id), None, &[], &meta_dirs);
+        assert!(!is_mm, "预设纯文本模型即使同目录有投影文件，也绝不能被判定为多模态");
+    }
+
+    #[test]
+    fn test_detect_model_is_multimodal_custom_text_only() {
+        let model_path = PathBuf::from("D:\\models\\my-text-model.gguf");
+        let custom = crate::config::CustomModelEntry {
+            id: "custom/my-text-model".to_string(),
+            name: "My Text Model".to_string(),
+            author: None,
+            source: "modelscope".to_string(),
+            quant: Some("Q4_K_M".to_string()),
+            file_name: "my-text-model.gguf".to_string(),
+            resolve_url: "https://example.com".to_string(),
+            main_file_size: Some(100),
+            mmproj_file_name: None, // 无投影
+            mmproj_file_size: None,
+            total_size: Some(100),
+        };
+
+        let is_mm = detect_model_is_multimodal(&model_path, Some("custom/my-text-model"), None, &[custom], &[]);
+        assert!(!is_mm, "自定义无投影模型必须判定为 false");
+    }
+
+    #[test]
+    fn test_detect_model_is_multimodal_custom_with_mmproj() {
+        let model_path = PathBuf::from("D:\\models\\my-vl-model.gguf");
+        let custom = crate::config::CustomModelEntry {
+            id: "custom/my-vl-model".to_string(),
+            name: "My VL Model".to_string(),
+            author: None,
+            source: "modelscope".to_string(),
+            quant: Some("Q4_K_M".to_string()),
+            file_name: "my-vl-model.gguf".to_string(),
+            resolve_url: "https://example.com".to_string(),
+            main_file_size: Some(100),
+            mmproj_file_name: Some("mmproj.gguf".to_string()), // 有投影
+            mmproj_file_size: Some(50),
+            total_size: Some(150),
+        };
+
+        let is_mm = detect_model_is_multimodal(&model_path, Some("custom/my-vl-model"), None, &[custom], &[]);
+        assert!(is_mm, "自定义多模态模型必须判定为 true");
     }
 }

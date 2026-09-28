@@ -20,6 +20,7 @@ import {
   Loader2,
   Settings2,
   AlertCircle,
+  ChevronDown,
   Power,
   Trash2,
   Tag
@@ -140,8 +141,10 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isEx = false,
 
   const dlOptions = React.useMemo(() => ({
     source: model.source,
+    quantization: model.quantization,
+    isDownloaded: model.isDownloaded,
     onDownloadComplete: handleDownloadComplete
-  }), [model.source, handleDownloadComplete])
+  }), [model.source, model.quantization, model.isDownloaded, handleDownloadComplete])
 
   const {
     state: dl,
@@ -149,7 +152,8 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isEx = false,
     pauseDownload,
     resumeDownload,
     cancelDownload,
-    retryDownload
+    retryDownload,
+    resetDownload
   } = useModelDownload(model.id, dlOptions)
 
   // 如果有投机采样加速模型 (dspark)，为其初始化下载控制
@@ -192,8 +196,12 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isEx = false,
   const handleDelete = async () => {
     try {
       setIsDeleting(true)
-      await deleteModel(model.id, model.localPath)
-      setIsDeleteConfirm(false)
+      const ok = await deleteModel(model.id, model.localPath)
+      if (ok) {
+        resetDownload()
+        setIsDeleteConfirm(false)
+        setIsAdvancedOpen(false)
+      }
     } finally {
       setIsDeleting(false)
     }
@@ -204,8 +212,12 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isEx = false,
   const handleRemove = async () => {
     try {
       setIsDeleting(true)
-      await removeCustomModel(model.id)
-      setIsDeleteConfirm(false)
+      const ok = await removeCustomModel(model.id)
+      if (ok) {
+        resetDownload()
+        setIsDeleteConfirm(false)
+        setIsAdvancedOpen(false)
+      }
     } finally {
       setIsDeleting(false)
     }
@@ -693,33 +705,53 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isEx = false,
 }
 
 /**
- * 分组区块：标题行（图标 + 标题 + 计数）+ 边框包裹的表格化行列表
+ * 分组区块：标题行（图标 + 标题 + 计数）+ 边框包裹的表格化行列表。
+ * `collapsible` 分组默认收起，标题右侧提供「展开/收起」开关（用于「显存不足 · 不可下载」）。
  */
 interface ModelGroupSectionProps {
   icon: React.ReactNode
   iconClass: string
   title: string
   count: number
+  /** 可折叠分组：默认收起，用户点击标题行开关后再渲染行列表 */
+  collapsible?: boolean
   children: React.ReactNode
 }
 
-const ModelGroupSection: React.FC<ModelGroupSectionProps> = ({ icon, iconClass, title, count, children }) => (
-  <section aria-label={title}>
-    <div className="mb-2 flex items-center gap-2">
-      <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${iconClass}`}>
-        {icon}
-      </span>
-      <h3 className="text-xs font-bold text-foreground/90 tracking-wide whitespace-nowrap">{title}</h3>
-      <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-muted border border-border/60 text-muted-foreground tabular-nums">
-        {count}
-      </span>
-      <div className="h-px flex-1 bg-border/50" />
-    </div>
-    <div className="rounded-xl border border-border/60 bg-card/60 divide-y divide-border/40">
-      {children}
-    </div>
-  </section>
-)
+const ModelGroupSection: React.FC<ModelGroupSectionProps> = ({ icon, iconClass, title, count, children, collapsible = false }) => {
+  const [isOpen, setIsOpen] = useState(!collapsible)
+
+  return (
+    <section aria-label={title}>
+      <div className="mb-2 flex items-center gap-2">
+        <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${iconClass}`}>
+          {icon}
+        </span>
+        <h3 className="text-xs font-bold text-foreground/90 tracking-wide whitespace-nowrap">{title}</h3>
+        <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-muted border border-border/60 text-muted-foreground tabular-nums">
+          {count}
+        </span>
+        <div className="h-px flex-1 bg-border/50" />
+        {collapsible && (
+          <button
+            type="button"
+            aria-expanded={isOpen}
+            onClick={() => setIsOpen(prev => !prev)}
+            className="flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-bold text-muted-foreground/70 transition-colors hover:text-foreground"
+          >
+            {isOpen ? t('收起') : t('展开')}
+            <ChevronDown className={`h-3.5 w-3.5 shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+          </button>
+        )}
+      </div>
+      {isOpen && (
+        <div className="rounded-xl border border-border/60 bg-card/60 divide-y divide-border/40">
+          {children}
+        </div>
+      )}
+    </section>
+  )
+}
 
 /** 单行下载提交时的引导标记回调：首次提交后气泡引导永久消失 */
 function handleModelDownloadSubmitted(): void {
@@ -909,9 +941,10 @@ export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focu
     // 双槽位解耦判定：
     // - 嵌入向量模型：对比 activeEmbeddingModelKey，未配置时已下载的 WeMM 默认视为就绪
     // - 语言模型：对比 activeLanguageModelKey，未启动或未配置时降级使用 activeModelKey
-    const isCurrent = model.isEmbedding
-      ? (activeEmbeddingModelKey === modelKey || (!activeEmbeddingModelKey && model.isDownloaded && (activeModelKey === modelKey || model.id.toLowerCase().includes('wemm'))))
-      : (activeLanguageModelKey === modelKey || (!activeLanguageModelKey && activeModelKey === modelKey))
+    // 强制守卫：未下载模型绝不可标记为已激活状态（isCurrent 必须以 isDownloaded 为前提）
+    const isCurrent = Boolean(model.isDownloaded) && (model.isEmbedding
+      ? (activeEmbeddingModelKey === modelKey || (!activeEmbeddingModelKey && (activeModelKey === modelKey || model.id.toLowerCase().includes('wemm'))))
+      : (activeLanguageModelKey === modelKey || (!activeLanguageModelKey && activeModelKey === modelKey)))
 
     return (
       <ModelRowItem
@@ -1052,6 +1085,7 @@ export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focu
                       iconClass="border-destructive/30 text-destructive bg-destructive/10"
                       title={t('显存不足 · 不可下载')}
                       count={groupedModels.vramLimited.language.length}
+                      collapsible
                     >
                       {groupedModels.vramLimited.language.map(renderModelRow)}
                     </ModelGroupSection>
@@ -1115,6 +1149,7 @@ export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focu
                       iconClass="border-destructive/30 text-destructive bg-destructive/10"
                       title={t('显存不足 · 不可下载')}
                       count={groupedModels.vramLimited.embedding.length}
+                      collapsible
                     >
                       {groupedModels.vramLimited.embedding.map(renderModelRow)}
                     </ModelGroupSection>

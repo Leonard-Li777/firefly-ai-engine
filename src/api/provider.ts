@@ -43,7 +43,7 @@ class FallbackEngineApiClient implements IEngineApiClient {
     return this.withFallback('listModels', () => this.inner.listModels(source), () => mockApiClient.listModels(source))
   }
 
-  startModelDownload(modelId: string, options?: { source?: string; forceRestart?: boolean }, onProgress?: (e: any) => void) {
+  startModelDownload(modelId: string, options?: { source?: string; forceRestart?: boolean; quantization?: string }, onProgress?: (e: any) => void) {
     return this.withFallback(
       'startModelDownload',
       () => this.inner.startModelDownload(modelId, options, onProgress),

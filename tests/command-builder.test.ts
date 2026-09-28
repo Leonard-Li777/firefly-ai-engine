@@ -209,4 +209,14 @@ describe('LlamaCommandBuilder & Execution Security Matrix', () => {
     expect(parallelIndices.length).toBe(1)
     expect(ctx.args[parallelIndices[0] + 1]).toBe('4')
   })
+
+  it('should NOT load --mmproj when model isMultiModal is false even if mmproj file exists', () => {
+    // 模拟纯文本模型，即使传入了包含 mmproj 的解析路径或同目录存在投影文件
+    const ctx = LlamaCommandBuilder.buildCommandContext({
+      modelId: 'unsloth/Qwen3.5-0.8B-GGUF:UD-Q4_K_XL', // 该模型在 model_zh-CN.json 中 isMultiModal: false
+      modelPath: 'D:\\AI_Models\\hub\\models\\unsloth\\Qwen3.5-0.8B-GGUF\\qwen3.5-0.8b-instruct-ud-q4_k_xl.gguf'
+    })
+
+    expect(ctx.args).not.toContain('--mmproj')
+  })
 })

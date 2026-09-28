@@ -24,6 +24,8 @@ export interface ModelDownloadState {
 
 export interface UseModelDownloadOptions {
   source?: ModelSource
+  quantization?: string
+  isDownloaded?: boolean
   onDownloadStart?: () => void
   onDownloadProgress?: (progress: DownloadProgressEvent) => void
   onDownloadComplete?: () => void
@@ -95,12 +97,13 @@ export function useModelDownload(
   const startDownload = useCallback(
     async (
       targetModelId?: string,
-      downloadOptions?: { forceRestart?: boolean; source?: ModelSource }
+      downloadOptions?: { forceRestart?: boolean; source?: ModelSource; quantization?: string }
     ) => {
       const finalModelId = targetModelId || modelIdRef.current
       if (!finalModelId) return
 
       const finalSource = downloadOptions?.source || optionsRef.current.source || 'modelscope'
+      const finalQuant = downloadOptions?.quantization || optionsRef.current.quantization
 
       isPausedRef.current = false
       setState(prev => ({
@@ -121,7 +124,8 @@ export function useModelDownload(
           finalModelId,
           {
             source: finalSource,
-            forceRestart: downloadOptions?.forceRestart
+            forceRestart: downloadOptions?.forceRestart,
+            quantization: finalQuant
           },
           (progress: DownloadProgressEvent) => {
             // 下载过程中若已通过 progress 回调拿到 taskId，立即挂载到 ref 与 state 中，供取消/暂停使用
@@ -275,6 +279,31 @@ export function useModelDownload(
     }
   }, [])
 
+  // 重置下载状态（用于模型被删除后重置回初始状态）
+  const resetDownload = useCallback(() => {
+    taskIdRef.current = undefined
+    isPausedRef.current = false
+    setState(prev => ({
+      ...prev,
+      status: 'pending',
+      progress: 0,
+      receivedBytes: 0,
+      totalBytes: 0,
+      speedBps: 0,
+      error: undefined,
+      taskId: undefined,
+      isDownloading: false,
+      isPaused: false
+    }))
+  }, [])
+
+  // 当外部模型数据变为未下载时，若当前内部状态仍为 completed 且未在下载，自动重置为 pending
+  useEffect(() => {
+    if (options.isDownloaded === false && state.status === 'completed' && !state.isDownloading) {
+      resetDownload()
+    }
+  }, [options.isDownloaded, state.status, state.isDownloading, resetDownload])
+
   // 重试下载
   const retryDownload = useCallback(async () => {
     setState(prev => ({
@@ -292,6 +321,7 @@ export function useModelDownload(
     resumeDownload,
     cancelDownload,
     checkDownloadStatus,
-    retryDownload
+    retryDownload,
+    resetDownload
   }
 }

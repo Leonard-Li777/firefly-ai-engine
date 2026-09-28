@@ -181,20 +181,30 @@ export const useEngineStore = create<EngineStoreState>((set, get) => ({
       let targetLangKey = get().activeLanguageModelKey
       if (engineStatus?.active_language_model) {
         const matched = langModels.find(m => m.id === engineStatus.active_language_model || `${m.id}@${m.source}` === engineStatus.active_language_model || matchCurrentModel(m, engineStatus.active_language_model!))
-        if (matched) targetLangKey = `${matched.id}@${matched.source}`
+        if (matched && matched.isDownloaded) {
+          targetLangKey = `${matched.id}@${matched.source}`
+        } else {
+          targetLangKey = null
+        }
       }
       if (!targetLangKey && langModels.length > 0) {
-        const initialLang = langModels.find(m => m.isDownloaded) || langModels.find(m => m.recommended) || langModels[0]
+        // 严格约束：只有已下载的模型才允许作为默认激活语言模型，未下载模型绝不可为已激活
+        const initialLang = langModels.find(m => m.isDownloaded)
         if (initialLang) targetLangKey = `${initialLang.id}@${initialLang.source}`
       }
 
       let targetEmbKey = get().activeEmbeddingModelKey
       if (engineStatus?.active_embedding_model) {
         const matched = embModels.find(m => m.id === engineStatus.active_embedding_model || `${m.id}@${m.source}` === engineStatus.active_embedding_model || matchCurrentModel(m, engineStatus.active_embedding_model!))
-        if (matched) targetEmbKey = `${matched.id}@${matched.source}`
+        if (matched && matched.isDownloaded) {
+          targetEmbKey = `${matched.id}@${matched.source}`
+        } else {
+          targetEmbKey = null
+        }
       }
       if (!targetEmbKey && embModels.length > 0) {
-        const initialEmb = embModels.find(m => m.isDownloaded) || embModels[0]
+        // 严格约束：只有已下载的模型才允许作为默认激活嵌入模型
+        const initialEmb = embModels.find(m => m.isDownloaded)
         if (initialEmb) targetEmbKey = `${initialEmb.id}@${initialEmb.source}`
       }
 
@@ -202,7 +212,11 @@ export const useEngineStore = create<EngineStoreState>((set, get) => ({
       let targetActiveKey = get().activeModelKey
       if (engineStatus?.current_model) {
         const activeItem = models.find(m => matchCurrentModel(m, engineStatus.current_model!))
-        if (activeItem) targetActiveKey = `${activeItem.id}@${activeItem.source}`
+        if (activeItem && activeItem.isDownloaded) {
+          targetActiveKey = `${activeItem.id}@${activeItem.source}`
+        } else {
+          targetActiveKey = null
+        }
       } else if (!targetActiveKey) {
         targetActiveKey = targetLangKey
       }
@@ -406,12 +420,20 @@ export const useEngineStore = create<EngineStoreState>((set, get) => ({
     try {
       const res = await engineApiClient.deleteModel(modelId, localPath)
       if (res.success) {
-        // 若删除的是当前激活模型，同步清空前端激活状态
+        // 若删除的是当前激活模型，同步清空前端所有激活槽位
         const removed = get().models.find(m => m.id === modelId)
-        if (removed && get().activeModelKey === `${removed.id}@${removed.source}`) {
+        const removedKey = removed ? `${removed.id}@${removed.source}` : modelId
+        if (get().activeModelKey === removedKey || get().activeModelKey?.startsWith(modelId)) {
           set({ activeModelKey: null })
         }
-        // 删除后刷新模型列表，保持 UI 与磁盘一致
+        if (get().activeLanguageModelKey === removedKey || get().activeLanguageModelKey?.startsWith(modelId)) {
+          set({ activeLanguageModelKey: null })
+        }
+        if (get().activeEmbeddingModelKey === removedKey || get().activeEmbeddingModelKey?.startsWith(modelId)) {
+          set({ activeEmbeddingModelKey: null })
+        }
+        // 删除后先刷新引擎状态（可能因正在运行被停止），再刷新模型列表保持 UI 与磁盘一致
+        await get().fetchEngineStatus(true)
         await get().fetchModels()
         return true
       }
@@ -429,9 +451,17 @@ export const useEngineStore = create<EngineStoreState>((set, get) => ({
       if (res.success) {
         // 若移除的是当前激活条目，同步清空前端激活状态并刷新列表
         const removed = get().models.find(m => m.id === modelId)
-        if (removed && get().activeModelKey === `${removed.id}@${removed.source}`) {
+        const removedKey = removed ? `${removed.id}@${removed.source}` : modelId
+        if (get().activeModelKey === removedKey || get().activeModelKey?.startsWith(modelId)) {
           set({ activeModelKey: null })
         }
+        if (get().activeLanguageModelKey === removedKey || get().activeLanguageModelKey?.startsWith(modelId)) {
+          set({ activeLanguageModelKey: null })
+        }
+        if (get().activeEmbeddingModelKey === removedKey || get().activeEmbeddingModelKey?.startsWith(modelId)) {
+          set({ activeEmbeddingModelKey: null })
+        }
+        await get().fetchEngineStatus(true)
         await get().fetchModels()
         return true
       }
