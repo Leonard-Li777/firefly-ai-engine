@@ -1237,6 +1237,60 @@ pub fn correct_cpu_backend(backend: &str, has_avx2: Option<bool>, has_avx: Optio
     }
 }
 
+/// 判断已安装引擎目录名是否属于指定的后端架构（用于版本升级淘汰旧目录，杜绝同类遗留与异类误删）
+pub fn is_engine_dir_matching_backend(dir_name: &str, backend: &str) -> bool {
+    let d_lower = dir_name.to_lowercase();
+    if !d_lower.starts_with("llama-") {
+        return false;
+    }
+    match backend {
+        "cuda13" | "cuda134" => d_lower.contains("cuda-13"),
+        "cuda" | "cuda12" => {
+            d_lower.contains("cuda-12") || (d_lower.contains("cuda") && !d_lower.contains("cuda-13"))
+        }
+        "vulkan" => d_lower.contains("vulkan") && !d_lower.contains("vulkan-compat"),
+        "vulkan-compat" => d_lower.contains("vulkan-compat"),
+        "rocm" | "hip" => d_lower.contains("rocm") || d_lower.contains("hip"),
+        "sycl" => d_lower.contains("sycl"),
+        "metal" => d_lower.contains("metal") || d_lower.contains("macos"),
+        "cpu-avx" => d_lower.contains("cpu-avx") && !d_lower.contains("cpu-avx2"),
+        "cpu-noavx" => d_lower.contains("cpu-noavx"),
+        "cpu" | "cpu-avx2" => {
+            (d_lower.contains("cpu") || d_lower.contains("ubuntu") || d_lower.contains("win-x64"))
+                && !d_lower.contains("cpu-avx")
+                && !d_lower.contains("cpu-noavx")
+                && !d_lower.contains("cuda")
+                && !d_lower.contains("vulkan")
+                && !d_lower.contains("rocm")
+                && !d_lower.contains("hip")
+                && !d_lower.contains("sycl")
+                && !d_lower.contains("metal")
+        }
+        _ => false,
+    }
+}
+
+/// 针对 Windows 下可能存在的短时文件句柄占用（进程退出延迟），带重试清理旧目录
+pub async fn remove_engine_dir_with_retry(dir: &std::path::Path) -> std::io::Result<()> {
+    let max_attempts = 5;
+    let mut last_err = None;
+    for attempt in 1..=max_attempts {
+        match std::fs::remove_dir_all(dir) {
+            Ok(_) => {
+                info!("[引擎更新] 成功清理旧版本引擎目录 (尝试 {}/{}): {:?}", attempt, max_attempts, dir);
+                return Ok(());
+            }
+            Err(e) => {
+                last_err = Some(e);
+                if attempt < max_attempts {
+                    tokio::time::sleep(std::time::Duration::from_millis(300)).await;
+                }
+            }
+        }
+    }
+    Err(last_err.unwrap())
+}
+
 /// 解析指定 backend 在当前平台的推荐文件名
 fn resolve_engine_target_package(backend: &str) -> Option<(&'static str, Vec<&'static str>)> {
     let is_win = cfg!(windows);
@@ -1920,22 +1974,7 @@ async fn run_engine_download(
                 continue;
             }
             let d_name = path.file_name().unwrap_or_default().to_string_lossy().to_string();
-            if !d_name.to_lowercase().starts_with("llama-") {
-                continue;
-            }
-            let belongs = match backend.as_str() {
-                "cuda13" | "cuda134" => d_name.contains("cuda-13"),
-                "cuda" | "cuda12" => d_name.contains("cuda-12"),
-                "vulkan" => d_name.contains("vulkan"),
-                "vulkan-compat" => d_name.contains("vulkan-compat"),
-                "rocm" | "hip" => d_name.contains("rocm"),
-                "sycl" => d_name.contains("sycl"),
-                "cpu-avx" => d_name.contains("cpu-avx"),
-                "cpu-noavx" => d_name.contains("cpu-noavx"),
-                "cpu" => d_name.contains("cpu") && !d_name.contains("cpu-avx") && !d_name.contains("cpu-noavx"),
-                _ => false,
-            };
-            if belongs {
+            if is_engine_dir_matching_backend(&d_name, &backend) {
                 old_dirs_to_clean.push(path);
             }
         }
@@ -1972,10 +2011,10 @@ async fn run_engine_download(
             info!("[引擎更新] 新版本引擎服务热重启成功！");
         }
 
-        // 旧引擎进程已完全退出，安全清理旧版本目录
+        // 旧引擎进程已完全退出，带重试安全清理旧版本目录（规避 Windows 短时文件句柄释放延迟）
         for old_dir in old_dirs_to_clean {
             info!("[引擎更新] 清理旧版本引擎目录: {:?}", old_dir);
-            if let Err(e) = std::fs::remove_dir_all(&old_dir) {
+            if let Err(e) = remove_engine_dir_with_retry(&old_dir).await {
                 warn!("[引擎更新] 清理旧引擎目录失败: {:?}", e);
             }
         }
@@ -1984,7 +2023,7 @@ async fn run_engine_download(
         info!("[引擎更新] 当前未运行后端 {}，清理历史旧版本目录", backend);
         for old_dir in old_dirs_to_clean {
             info!("[引擎更新] 清理旧版本引擎目录: {:?}", old_dir);
-            if let Err(e) = std::fs::remove_dir_all(&old_dir) {
+            if let Err(e) = remove_engine_dir_with_retry(&old_dir).await {
                 warn!("[引擎更新] 清理旧引擎目录失败: {:?}", e);
             }
         }
@@ -3967,6 +4006,42 @@ mod tests {
         let p_slash = "C:/Users/test/model.gguf";
         let p_backslash = "C:\\Users\\test\\model.gguf";
         assert!(is_same_model(p_slash, p_backslash));
+    }
+
+    /// 验证 is_engine_dir_matching_backend 精准匹配后端，避免淘汰旧版本时误伤或遗漏
+    #[test]
+    fn test_is_engine_dir_matching_backend() {
+        // Vulkan 与 Vulkan-Compat 严格隔离
+        assert!(is_engine_dir_matching_backend("llama-b11063-bin-win-vulkan-x64", "vulkan"));
+        assert!(!is_engine_dir_matching_backend("llama-b11095-bin-win-vulkan-compat-x64", "vulkan"), "vulkan 不应误伤 vulkan-compat");
+        assert!(is_engine_dir_matching_backend("llama-b11095-bin-win-vulkan-compat-x64", "vulkan-compat"));
+
+        // AMD ROCm 与 HIP 兼容匹配
+        assert!(is_engine_dir_matching_backend("llama-b11063-bin-win-rocm-10.0-x64", "rocm"));
+        assert!(is_engine_dir_matching_backend("llama-b10152-bin-win-hip-x64", "hip"));
+        assert!(is_engine_dir_matching_backend("llama-b10152-bin-win-hip-x64", "rocm"));
+        assert!(is_engine_dir_matching_backend("llama-b11063-bin-win-rocm-10.0-x64", "hip"));
+
+        // CUDA 12 与 13 隔离
+        assert!(is_engine_dir_matching_backend("llama-b11063-bin-win-cuda-12.4-x64", "cuda"));
+        assert!(is_engine_dir_matching_backend("llama-b11063-bin-win-cuda-12.4-x64", "cuda12"));
+        assert!(!is_engine_dir_matching_backend("llama-b11095-bin-win-cuda-13.4-x64", "cuda12"));
+        assert!(is_engine_dir_matching_backend("llama-b11095-bin-win-cuda-13.4-x64", "cuda134"));
+        assert!(!is_engine_dir_matching_backend("llama-b11063-bin-win-cuda-12.4-x64", "cuda134"));
+
+        // Metal (macOS)
+        assert!(is_engine_dir_matching_backend("llama-b11063-bin-macos-arm64", "metal"));
+
+        // CPU 指令集阶梯匹配与隔离
+        assert!(is_engine_dir_matching_backend("llama-b11011-bin-win-cpu-x64", "cpu"));
+        assert!(!is_engine_dir_matching_backend("llama-b11095-bin-win-cpu-avx-x64", "cpu"), "通用 cpu 不应误伤定制 cpu-avx");
+        assert!(!is_engine_dir_matching_backend("llama-b11095-bin-win-cpu-noavx-x64", "cpu"), "通用 cpu 不应误伤定制 cpu-noavx");
+        assert!(is_engine_dir_matching_backend("llama-b11095-bin-win-cpu-avx-x64", "cpu-avx"));
+        assert!(is_engine_dir_matching_backend("llama-b11095-bin-win-cpu-noavx-x64", "cpu-noavx"));
+
+        // 非 llama 目录绝不匹配
+        assert!(!is_engine_dir_matching_backend("fastfetch-2.62.0-win32-x64", "vulkan"));
+        assert!(!is_engine_dir_matching_backend("llama-model-download-1.0.0-win32-x64", "cpu"));
     }
 }
 
