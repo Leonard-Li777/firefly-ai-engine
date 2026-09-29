@@ -78,6 +78,8 @@ pub struct EngineCoordinator {
     pub active_model_name: Arc<Mutex<Option<String>>>,
     /// 安装目录下的 bin 搜索目录（资源查找白名单）
     pub install_bin_dirs: Vec<PathBuf>,
+    /// 操作互斥锁（防止并发启动、停止或模型热切换导致多进程竞态）
+    pub operation_lock: Arc<Mutex<()>>,
 }
 
 impl EngineCoordinator {
@@ -104,6 +106,7 @@ impl EngineCoordinator {
             running_model: Arc::new(Mutex::new(None)),
             active_model_name: Arc::new(Mutex::new(None)),
             install_bin_dirs: bin_dirs,
+            operation_lock: Arc::new(Mutex::new(())),
         })
     }
 
@@ -267,6 +270,7 @@ impl EngineCoordinator {
     /// 引擎二进制缺失、模型文件不存在等）在拉起子进程之前就已返回，不会进入
     /// 子进程监控循环，若不显式落库，前端将完全看不到失败原因。
     pub async fn start_service(&self) -> anyhow::Result<()> {
+        let _op_lock = self.operation_lock.lock().await;
         match self.start_service_inner().await {
             Ok(()) => Ok(()),
             Err(e) => {
@@ -501,6 +505,7 @@ impl EngineCoordinator {
 
     /// 停止引擎子进程服务
     pub async fn stop_service(&self) -> anyhow::Result<()> {
+        let _op_lock = self.operation_lock.lock().await;
         self.guard.stop().await?;
         *self.running_model.lock().await = None;
         tracing::info!("引擎服务已停止");
@@ -646,5 +651,27 @@ mod tests {
 
         let is_mm = detect_model_is_multimodal(&model_path, Some("custom/my-vl-model"), None, &[custom], &[]);
         assert!(is_mm, "自定义多模态模型必须判定为 true");
+    }
+
+    #[tokio::test]
+    async fn test_operation_lock_prevents_concurrent_operations() {
+        let detector = Arc::new(HardwareDetector::new(vec![]));
+        let compliance = DriverComplianceService::new();
+        let cfg = Arc::new(Mutex::new(EngineConfig::default()));
+        let proxy = ProxyState::new();
+        let coord = EngineCoordinator::new(detector, compliance, vec![], cfg, proxy);
+
+        // 验证并发互斥性
+        let lock_guard = coord.operation_lock.try_lock();
+        assert!(lock_guard.is_ok(), "首次应成功获取操作锁");
+
+        // 当一个操作在执行中，另一个并发尝试必须被阻断
+        let second_try = coord.operation_lock.try_lock();
+        assert!(second_try.is_err(), "操作锁生效中，并发操作必须被互斥阻断");
+        drop(lock_guard);
+
+        // 释放后可再次获取
+        let third_try = coord.operation_lock.try_lock();
+        assert!(third_try.is_ok(), "前一操作完成后，后续操作应能正常获取锁");
     }
 }

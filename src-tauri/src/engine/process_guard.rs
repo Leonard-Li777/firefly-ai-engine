@@ -109,6 +109,15 @@ impl ProcessGuard {
         args: &[String],
         env_extras: &[(&str, &str)],
     ) -> Result<()> {
+        // 1. 严格单例保障：如果内部已有托管的旧子进程，先执行彻底终止并等待
+        let _ = self.stop().await;
+
+        // 2. 系统级孤儿进程清场：终结因热更新、崩溃等遗留的任何 llama-server.exe
+        let cleaned = crate::win_proc::kill_stale_llama_servers(None);
+        if cleaned > 0 {
+            info!("启动前清理了 {} 个残留的 llama-server 孤儿进程", cleaned);
+        }
+
         // 更新状态
         {
             let mut status = self.status.lock().await;
@@ -132,6 +141,9 @@ impl ProcessGuard {
 
         let mut cmd = Command::new(&engine.binary_path);
         cmd.args(args);
+
+        // 句柄被 drop 时强制终止子进程，杜绝 panic 或异常时孤儿泄漏
+        cmd.kill_on_drop(true);
 
         // 记录完整的启动指令行到日志缓冲区，供前端日志查看器实时查看
         let full_launch_cmd = format!(
@@ -173,6 +185,11 @@ impl ProcessGuard {
         crate::win_proc::apply_no_window(&mut cmd);
 
         let mut child = cmd.spawn().map_err(|e| anyhow!("启动 llama-server 失败: {}", e))?;
+
+        // 关联到 Windows Job Object (确保宿主进程终止/崩溃/热更新重载时，内核自动连带强杀 llama-server.exe)
+        if let Some(pid) = child.id() {
+            crate::win_proc::assign_pid_to_job(pid);
+        }
 
         // 异步监控 stdout
         if let Some(stdout) = child.stdout.take() {
@@ -480,6 +497,9 @@ impl ProcessGuard {
             info!("llama-server 子进程已终止，GPU 显存已释放");
         }
 
+        // 终结任何可能遗漏的残留孤儿进程（确保显存彻底释放）
+        crate::win_proc::kill_stale_llama_servers(None);
+
         {
             let mut status = self.status.lock().await;
             *status = ProcessStatus::Stopped;
@@ -578,4 +598,27 @@ mod tests {
         assert!(guard.last_error().await.is_none());
         assert_eq!(guard.status().await, ProcessStatus::Failed);
     }
+
+    /// 孤儿清理函数必须幂等且不 panic（测试排除自身 PID 的正常调用）
+    #[test]
+    fn test_kill_stale_llama_servers_idempotent() {
+        let current_pid = std::process::id();
+        let killed = crate::win_proc::kill_stale_llama_servers(Some(current_pid));
+        // 不管当前是否有残留进程，函数应安全返回计数值而不崩溃
+        let _ = killed;
+    }
+
+    /// stop 方法连续调用多次应幂等且稳定为 Stopped
+    #[tokio::test]
+    async fn test_guard_stop_idempotent() {
+        let guard = make_guard();
+        assert_eq!(guard.status().await, ProcessStatus::Stopped);
+
+        assert!(guard.stop().await.is_ok());
+        assert_eq!(guard.status().await, ProcessStatus::Stopped);
+
+        assert!(guard.stop().await.is_ok());
+        assert_eq!(guard.status().await, ProcessStatus::Stopped);
+    }
 }
+

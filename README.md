@@ -39,6 +39,11 @@
 - **带版本号物理隔离部署**：引擎按独立版本目录解压（`llama-{version}-bin-...`），下载解压全流程旧服务零中断，彻底消除 Windows 文件锁占用冲突；
 - **热升级与旧版本安全清理**：更新正在运行的引擎时解压校验通过后自动优雅热重启至最新构建版，旧进程释放后安全回收同后端历史旧版本目录与临时压缩包。
 
+### 6. 🔒 进程生命周期严格单例与 Windows Job Object 守护
+- **Windows Job Object 内核级级联销毁**：通过 Windows 作业对象（Job Object）并配置 `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE` 限制，拉起 `llama-server.exe` 时自动挂载。当开发热更新重载、宿主进程重启或意外崩溃退出时，Windows 内核自动强杀所有子进程，从根本上解决孤儿死进程残留与显存泄漏问题；
+- **启动前系统级孤儿清场（Purge Stale Processes）**：在拉起新进程前，利用 ToolHelp32 系统进程快照自动扫描并终结系统遗留的 `llama-server.exe` 僵尸进程，彻底杜绝端口顺延自增导致多实例并存的隐患；
+- **操作互斥锁 (Operation Lock) 与 kill_on_drop 兜底**：核心协调器内置异步互斥锁，串行化处理“停止旧服务 → 等待退出 → 清场 → 启动新服务”，杜绝并发点击与模型切换竞态导致的重复拉起与句柄覆盖；同时在 `Command` 上启用 `kill_on_drop(true)` 防范异常泄漏。
+
 ---
 
 ## 🛠️ 技术栈 (Tech Stack)
