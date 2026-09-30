@@ -380,5 +380,10 @@ export default  {
     "818": "Click \"Browse\" on the right to select the model storage directory",
     "819": "Migrating...",
     "820": "Browse  ",
-    "821": "Rescan"
+    "821": "Rescan",
+    "1210": "Downloading",
+    "1211": "Model download and verification completed! Ready to use.",
+    "1212": "Downloading",
+    "1213": "Downloading model from {source} (progress {progress}%, speed {speed}), switch back to view the real-time card.",
+    "1214": "Switch back to view"
 }

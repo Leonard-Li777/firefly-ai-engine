@@ -1,97 +1,52 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { DownloadProgressEvent, ModelSource } from '../api/types'
+import { useRef, useCallback, useMemo } from 'react'
+import type { ModelSource } from '../api/types'
 import { engineApiClient } from '../api/provider'
-import { captureEvent } from '../lib/posthog'
-import { t } from '../languages'
+import {
+  useModelDownloadStore,
+  ModelDownloadState,
+  UseModelDownloadOptions
+} from '../stores/model-download-store'
 
-export interface ModelDownloadState {
-  isDownloading: boolean
-  isPaused: boolean
-  progress: number
-  receivedBytes: number
-  totalBytes: number
-  speedBps: number
-  currentFileName?: string
-  error?: string
-  taskId?: string
-  modelId: string
-  source?: ModelSource
-  retryCount: number
-  status: 'pending' | 'downloading' | 'retrying' | 'completed' | 'error' | 'canceled'
-  fileIndex?: number
-  totalFiles?: number
-}
-
-export interface UseModelDownloadOptions {
-  source?: ModelSource
-  quantization?: string
-  isDownloaded?: boolean
-  onDownloadStart?: () => void
-  onDownloadProgress?: (progress: DownloadProgressEvent) => void
-  onDownloadComplete?: () => void
-  onDownloadError?: (error: string) => void
-  onDownloadCancel?: () => void
-}
+export type { ModelDownloadState, UseModelDownloadOptions }
 
 /**
- * 1:1 对等移植桌面端成熟模型下载Hook
- * 支持断点续传、双轨多源切换、实时速率与剩余时间平滑计算、多模态投影器关联进度合并
+ * 模型下载 Hook（全局 Store 驱动版）
+ * 彻底解决 Tab 切换（ModelScope <-> HuggingFace、顶部各 Tab 之间切换）导致的下载状态丢失与重置问题
  */
 export function useModelDownload(
   initialModelId: string,
   options: UseModelDownloadOptions = {}
 ) {
-  const [state, setState] = useState<ModelDownloadState>({
-    isDownloading: false,
-    isPaused: false,
-    progress: 0,
-    receivedBytes: 0,
-    totalBytes: 0,
-    speedBps: 0,
-    error: undefined,
-    taskId: undefined,
-    modelId: initialModelId,
-    source: options.source,
-    retryCount: 0,
-    status: 'pending',
-    fileIndex: 0,
-    totalFiles: 1
-  })
-
-  const taskIdRef = useRef<string | undefined>(undefined)
   const optionsRef = useRef(options)
-  const modelIdRef = useRef(initialModelId)
-  const sourceRef = useRef(options.source)
-  const isPausedRef = useRef(false)
-
-  // 保持 options 和 source 的最新引用，无需触发无依赖的 useEffect
   optionsRef.current = options
-  sourceRef.current = options.source
 
-  useEffect(() => {
-    // 仅当 modelId 明确有效且发生变化时才重置状态，防止空 modelId（如无投机加速模型时）反复重置
-    if (initialModelId && (modelIdRef.current !== initialModelId || sourceRef.current !== options.source)) {
-      modelIdRef.current = initialModelId
-      sourceRef.current = options.source
-      setState(prev => {
-        if (prev.modelId === initialModelId && prev.source === options.source) return prev
-        return {
-          ...prev,
-          modelId: initialModelId,
-          source: options.source,
-          status: 'pending',
-          progress: 0,
-          receivedBytes: 0,
-          totalBytes: 0,
-          speedBps: 0,
-          error: undefined,
-          taskId: undefined,
-          isDownloading: false,
-          isPaused: false
-        }
-      })
+  // 从全局 Store 中直接订阅该模型的实时下载状态（即使组件卸载重挂载，数据完全常驻）
+  const storeTask = useModelDownloadStore(state =>
+    state.getDownloadState(initialModelId, options.source)
+  )
+
+  // 默认兜底状态
+  const state: ModelDownloadState = useMemo(() => {
+    if (storeTask) {
+      return storeTask
     }
-  }, [initialModelId, options.source])
+    return {
+      isDownloading: false,
+      isPaused: false,
+      progress: options.isDownloaded ? 100 : 0,
+      receivedBytes: 0,
+      totalBytes: 0,
+      speedBps: 0,
+      error: undefined,
+      taskId: undefined,
+      modelId: initialModelId,
+      source: options.source,
+      retryCount: 0,
+      status: options.isDownloaded ? 'completed' : 'pending',
+      fileIndex: 0,
+      totalFiles: 1
+    }
+  }, [storeTask, initialModelId, options.source, options.isDownloaded])
 
   // 开始下载
   const startDownload = useCallback(
@@ -99,220 +54,81 @@ export function useModelDownload(
       targetModelId?: string,
       downloadOptions?: { forceRestart?: boolean; source?: ModelSource; quantization?: string }
     ) => {
-      const finalModelId = targetModelId || modelIdRef.current
+      const finalModelId = targetModelId || initialModelId
       if (!finalModelId) return
 
       const finalSource = downloadOptions?.source || optionsRef.current.source || 'modelscope'
       const finalQuant = downloadOptions?.quantization || optionsRef.current.quantization
 
-      isPausedRef.current = false
-      setState(prev => ({
-        ...prev,
-        modelId: finalModelId,
+      await useModelDownloadStore.getState().startDownload(finalModelId, {
         source: finalSource,
-        isDownloading: true,
-        isPaused: false,
-        status: 'downloading',
-        error: undefined
-      }))
-
-      optionsRef.current.onDownloadStart?.()
-      captureEvent('开始下载模型', { modelId: finalModelId, source: finalSource })
-
-      try {
-        const taskSummary = await engineApiClient.startModelDownload(
-          finalModelId,
-          {
-            source: finalSource,
-            forceRestart: downloadOptions?.forceRestart,
-            quantization: finalQuant
-          },
-          (progress: DownloadProgressEvent) => {
-            // 下载过程中若已通过 progress 回调拿到 taskId，立即挂载到 ref 与 state 中，供取消/暂停使用
-            if (progress.taskId && !taskIdRef.current) {
-              taskIdRef.current = progress.taskId
-            }
-
-            // 如果用户已经点击暂停，忽略后续到达的 downloading 进度更新，防止状态被冲掉
-            if (isPausedRef.current) {
-              return
-            }
-
-            setState(prev => ({
-              ...prev,
-              taskId: progress.taskId || prev.taskId,
-              progress: progress.percent,
-              receivedBytes: progress.receivedBytes,
-              totalBytes: progress.totalBytes,
-              speedBps: progress.speedBps,
-              status: progress.status,
-              currentFileName: progress.currentFileName,
-              fileIndex: progress.fileIndex ?? 0,
-              totalFiles: progress.totalFiles ?? 1,
-              isDownloading: progress.status === 'downloading' || progress.status === 'pending'
-            }))
-
-            optionsRef.current.onDownloadProgress?.(progress)
-
-            if (progress.status === 'completed') {
-              captureEvent('模型下载完成', { modelId: finalModelId, source: finalSource })
-              optionsRef.current.onDownloadComplete?.()
-            } else if (progress.status === 'canceled') {
-              optionsRef.current.onDownloadCancel?.()
-            } else if (progress.status === 'error') {
-              captureEvent('模型下载失败', { modelId: finalModelId, source: finalSource })
-              optionsRef.current.onDownloadError?.(progress.error || t('下载失败'))
-            }
-          }
-        )
-
-        taskIdRef.current = taskSummary.taskId
-        setState(prev => ({
-          ...prev,
-          taskId: taskSummary.taskId,
-          totalBytes: taskSummary.totalBytes
-        }))
-      } catch (err: any) {
-        // 如果是因为处于暂停状态而导致的异常中断，保持暂停状态，不误报错误
-        if (isPausedRef.current) {
-          return
-        }
-
-        const errMsg = err?.message || t('发起模型下载失败')
-        // 如果是由于用户主动取消抛出的异常，状态转为 canceled 而非 error
-        if (errMsg.includes('取消') || errMsg.toLowerCase().includes('cancel')) {
-          taskIdRef.current = undefined
-          setState(prev => ({
-            ...prev,
-            isDownloading: false,
-            isPaused: false,
-            status: 'canceled',
-            error: undefined
-          }))
-          optionsRef.current.onDownloadCancel?.()
-          return
-        }
-
-        setState(prev => ({
-          ...prev,
-          isDownloading: false,
-          status: 'error',
-          error: errMsg
-        }))
-        optionsRef.current.onDownloadError?.(errMsg)
-      }
+        quantization: finalQuant,
+        forceRestart: downloadOptions?.forceRestart,
+        onDownloadStart: () => optionsRef.current.onDownloadStart?.(),
+        onDownloadProgress: (p) => optionsRef.current.onDownloadProgress?.(p),
+        onDownloadComplete: () => optionsRef.current.onDownloadComplete?.(),
+        onDownloadError: (err) => optionsRef.current.onDownloadError?.(err),
+        onDownloadCancel: () => optionsRef.current.onDownloadCancel?.()
+      })
     },
-    []
+    [initialModelId]
   )
 
   // 暂停下载
   const pauseDownload = useCallback(async () => {
-    if (!taskIdRef.current) return
-    isPausedRef.current = true
-    setState(prev => ({
-      ...prev,
-      isDownloading: false,
-      isPaused: true,
-      status: 'pending'
-    }))
-    try {
-      await engineApiClient.pauseModelDownload(taskIdRef.current)
-    } catch (e) {
-      console.error('暂停下载失败:', e)
-    }
-  }, [])
+    if (!initialModelId) return
+    await useModelDownloadStore.getState().pauseDownload(initialModelId)
+  }, [initialModelId])
 
-  // 恢复下载：后端不支持断点恢复（resumeModelDownload 为明确不支持契约），
-  // 通过重新发起 startModelDownload 实现恢复（已下载部分由后端断点续传跳过）
+  // 恢复下载
   const resumeDownload = useCallback(async () => {
-    const modelId = modelIdRef.current
-    if (!modelId) return
-    isPausedRef.current = false
-    try {
-      await startDownload(modelId, { source: sourceRef.current as ModelSource })
-    } catch (e) {
-      console.error('恢复下载失败:', e)
-    }
-  }, [startDownload])
+    if (!initialModelId) return
+    await useModelDownloadStore.getState().resumeDownload(initialModelId)
+  }, [initialModelId])
 
   // 取消下载
   const cancelDownload = useCallback(async () => {
-    if (!taskIdRef.current) return
-    const id = taskIdRef.current
-    try {
-      await engineApiClient.cancelModelDownload(id)
-      taskIdRef.current = undefined
-      setState(prev => ({
-        ...prev,
-        isDownloading: false,
-        isPaused: false,
-        status: 'canceled',
-        error: undefined,
-        taskId: undefined
-      }))
-      optionsRef.current.onDownloadCancel?.()
-    } catch (e) {
-      console.error('取消下载失败:', e)
-    }
-  }, [])
+    if (!initialModelId) return
+    await useModelDownloadStore.getState().cancelDownload(initialModelId)
+  }, [initialModelId])
 
-  // 检查下载状态 (对齐桌面端成熟体系)
+  // 检查下载状态
   const checkDownloadStatus = useCallback(async () => {
     try {
       const models = await engineApiClient.listModels(optionsRef.current.source)
-      const current = models.find(m => m.id === modelIdRef.current)
+      const current = models.find(m => m.id === initialModelId)
       return {
         isDownloaded: !!current?.isDownloaded,
         hasPartialFiles: false,
         downloadProgress: current?.isDownloaded ? 100 : 0,
-        missingFiles: current?.isDownloaded ? [] : [modelIdRef.current],
-        existingFiles: current?.isDownloaded && current.localPath ? [{ name: current.localPath, size: current.fileSize, expectedSize: current.fileSize }] : []
+        missingFiles: current?.isDownloaded ? [] : [initialModelId],
+        existingFiles:
+          current?.isDownloaded && current.localPath
+            ? [{ name: current.localPath, size: current.fileSize, expectedSize: current.fileSize }]
+            : []
       }
     } catch {
       return {
         isDownloaded: false,
         hasPartialFiles: false,
         downloadProgress: 0,
-        missingFiles: [modelIdRef.current],
+        missingFiles: [initialModelId],
         existingFiles: []
       }
     }
-  }, [])
+  }, [initialModelId])
 
-  // 重置下载状态（用于模型被删除后重置回初始状态）
+  // 重置下载状态
   const resetDownload = useCallback(() => {
-    taskIdRef.current = undefined
-    isPausedRef.current = false
-    setState(prev => ({
-      ...prev,
-      status: 'pending',
-      progress: 0,
-      receivedBytes: 0,
-      totalBytes: 0,
-      speedBps: 0,
-      error: undefined,
-      taskId: undefined,
-      isDownloading: false,
-      isPaused: false
-    }))
-  }, [])
-
-  // 当外部模型数据变为未下载时，若当前内部状态仍为 completed 且未在下载，自动重置为 pending
-  useEffect(() => {
-    if (options.isDownloaded === false && state.status === 'completed' && !state.isDownloading) {
-      resetDownload()
-    }
-  }, [options.isDownloaded, state.status, state.isDownloading, resetDownload])
+    if (!initialModelId) return
+    useModelDownloadStore.getState().resetDownload(initialModelId)
+  }, [initialModelId])
 
   // 重试下载
   const retryDownload = useCallback(async () => {
-    setState(prev => ({
-      ...prev,
-      retryCount: prev.retryCount + 1,
-      error: undefined
-    }))
-    await startDownload(undefined, { forceRestart: true })
-  }, [startDownload])
+    if (!initialModelId) return
+    await useModelDownloadStore.getState().retryDownload(initialModelId)
+  }, [initialModelId])
 
   return {
     state,

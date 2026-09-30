@@ -380,5 +380,10 @@ export default  {
     "818": "Cliquez sur \"Parcourir\" à droite pour sélectionner le répertoire de stockage du modèle",
     "819": "Migration...",
     "820": "Parcourir",
-    "821": "Nouvelle analyse"
+    "821": "Nouvelle analyse",
+    "1210": "Téléchargement",
+    "1211": "Téléchargement du modèle et vérification terminée ! Prêt à l'emploi.",
+    "1212": "Téléchargement",
+    "1213": "En téléchargeant le modèle depuis {source} (progression {progress} %, vitesse {speed}), revenez pour afficher la carte en temps réel.",
+    "1214": "Revenir à la vue"
 }

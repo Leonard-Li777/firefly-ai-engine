@@ -380,5 +380,10 @@ export default  {
     "818": "Klicken Sie rechts auf „Durchsuchen“, um das Modellspeicherverzeichnis auszuwählen",
     "819": "Migration...",
     "820": "Durchsuchen",
-    "821": "Erneut scannen"
+    "821": "Erneut scannen",
+    "1210": "Herunterladen",
+    "1211": "Modell-Download und Verifizierung abgeschlossen! Gebrauchsfertig.",
+    "1212": "Herunterladen",
+    "1213": "Modell wird von {source} heruntergeladen (Fortschritt {progress} %, Geschwindigkeit {speed}). Wechseln Sie zurück, um die Echtzeitkarte anzuzeigen.",
+    "1214": "Wechseln Sie zurück zur Ansicht"
 }

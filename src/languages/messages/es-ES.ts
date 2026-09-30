@@ -380,5 +380,10 @@ export default  {
     "818": "Haga clic en \"Examinar\" a la derecha para seleccionar el directorio de almacenamiento del modelo.",
     "819": "Migrando...",
     "820": "Examinar",
-    "821": "Volver a escanear"
+    "821": "Volver a escanear",
+    "1210": "Descargando",
+    "1211": "¡Descarga y verificación del modelo completadas! Preparado para usar.",
+    "1212": "Descargando",
+    "1213": "Descargando el modelo desde {source} (progreso {progress}%, velocidad {speed}), regrese para ver la tarjeta en tiempo real.",
+    "1214": "Volver a ver"
 }

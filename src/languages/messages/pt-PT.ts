@@ -380,5 +380,10 @@ export default  {
     "818": "Clique em \"Procurar\" à direita para selecionar o diretório de armazenamento do modelo",
     "819": "Migrando...",
     "820": "Procurar",
-    "821": "Digitalizar novamente"
+    "821": "Digitalizar novamente",
+    "1210": "Baixando",
+    "1211": "Download e verificação do modelo concluídos! Pronto para usar.",
+    "1212": "Baixando",
+    "1213": "Fazendo download do modelo de {source} (progresso {progress}%, velocidade {speed}), volte para visualizar o cartão em tempo real.",
+    "1214": "Voltar para visualizar"
 }

@@ -37,12 +37,14 @@ import {
   parseUiPanel
 } from './lib/engine-ui-intent'
 import { useEngineStore } from './stores/engine-store'
+import { useModelDownloadStore } from './stores/model-download-store'
 import { i18nScope, t } from './languages'
 import { getEngineApiClient, isMockMode } from './api/provider'
 
 export const App: React.FC = () => {
   // 阿拉伯语为 RTL 书写方向，其余语言均为 LTR
   const dir: 'ltr' | 'rtl' = i18nScope.activeLanguage === 'ar-EG' ? 'rtl' : 'ltr'
+  const activeDownloadsCount = useModelDownloadStore(s => s.activeDownloadsCount)
   const {
     engineStatus,
     error: storeError,
@@ -122,7 +124,8 @@ export const App: React.FC = () => {
         fetchEngineStatus(),
         fetchEngineList(),
         fetchModels(),
-        runRegionDetection()
+        runRegionDetection(),
+        useModelDownloadStore.getState().syncActiveTasks()
       ])
     }
 
@@ -316,6 +319,11 @@ export const App: React.FC = () => {
               >
                 <Boxes className="h-4 w-4 text-inherit" />
                 <span>{t('模型管理')}</span>
+                {activeDownloadsCount > 0 && (
+                  <Badge variant="default" className="text-[10px] h-4.5 px-1.5 font-bold animate-pulse bg-primary text-primary-foreground">
+                    {t('下载中')} ({activeDownloadsCount})
+                  </Badge>
+                )}
               </TabsTrigger>
 
               {/* Tab 3: 引擎与硬件 */}

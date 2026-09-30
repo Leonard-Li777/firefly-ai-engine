@@ -35,6 +35,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '../ui/tabs'
 import { useEngineStore } from '../../stores/engine-store'
 import { useEngineDownload } from '../../hooks/use-engine-download'
 import { useModelDownload } from '../../hooks/use-model-download'
+import { useModelDownloadStore } from '../../stores/model-download-store'
 import { ModelItem, ModelSource } from '../../api/types'
 import { formatFileSize, formatSpeed, calculateRemainingTime } from '../../lib/utils'
 import { t } from '../../languages'
@@ -788,6 +789,32 @@ export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focu
   /** 已成功应用过聚焦的关键词：避免列表刷新时重复滚动/高亮 */
   const focusAppliedRef = React.useRef<string | null>(null)
 
+  // 全局下载任务订阅与各源活跃下载计数统计
+  const downloadTasks = useModelDownloadStore(s => s.tasks)
+  const downloadingBySource = useMemo(() => {
+    let ms = 0
+    let hf = 0
+    let activeTaskDesc: { modelId: string; source: ModelSource; progress: number; speedBps: number } | null = null
+    for (const t of Object.values(downloadTasks)) {
+      if (t.isDownloading) {
+        if (t.source === 'huggingface') {
+          hf++
+        } else {
+          ms++
+        }
+        if (!activeTaskDesc) {
+          activeTaskDesc = {
+            modelId: t.modelId,
+            source: (t.source || 'modelscope') as ModelSource,
+            progress: Math.round(t.progress),
+            speedBps: t.speedBps
+          }
+        }
+      }
+    }
+    return { modelscope: ms, huggingface: hf, activeTask: activeTaskDesc }
+  }, [downloadTasks])
+
   // 引擎包联动下载（PRD-0043）：实例化引擎下载 hook，提交模型下载时若最佳引擎包未安装则自动同时下载
   const { startDownload: startEngineDownload } = useEngineDownload()
 
@@ -982,6 +1009,9 @@ export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focu
               <span className="ml-1.5 text-[10px] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground bg-muted/80 px-2 py-0.5 rounded-full text-muted-foreground font-mono border border-border/40 transition-colors">
                 {counts.modelscope}
               </span>
+              {downloadingBySource.modelscope > 0 && (
+                <span className="ml-1 flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" title={t('正在下载中')} />
+              )}
             </TabsTrigger>
 
             <TabsTrigger
@@ -993,6 +1023,9 @@ export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focu
               <span className="ml-1.5 text-[10px] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground bg-muted/80 px-2 py-0.5 rounded-full text-muted-foreground font-mono border border-border/40 transition-colors">
                 {counts.huggingface}
               </span>
+              {downloadingBySource.huggingface > 0 && (
+                <span className="ml-1 flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" title={t('正在下载中')} />
+              )}
             </TabsTrigger>
           </TabsList>
 
@@ -1014,6 +1047,29 @@ export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focu
 
         {/* 列表内容区：表头 + 单行表格布局，按 已下载 / 待下载 / 显存不足 三组显示 */}
         <TabsContent value={activeSource} className="p-5 focus-visible:ring-0 m-0">
+          {/* 跨源下载进行中提示条：当用户切到另一源时，明确告知后台正在下载并允许一键切回 */}
+          {downloadingBySource.activeTask && downloadingBySource.activeTask.source !== activeSource && (
+            <div className="mb-4 flex items-center justify-between gap-3 p-3 rounded-xl border border-primary/30 bg-primary/10 text-primary shadow-2xs animate-in fade-in duration-200">
+              <div className="flex items-center gap-2 text-xs font-semibold">
+                <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />
+                <span>
+                  {t('正在从 {source} 下载模型（进度 {progress}%，速度 {speed}），切回即可查看实时卡片。', {
+                    source: downloadingBySource.activeTask.source === 'modelscope' ? 'ModelScope' : 'HuggingFace',
+                    progress: downloadingBySource.activeTask.progress,
+                    speed: formatSpeed(downloadingBySource.activeTask.speedBps)
+                  })}
+                </span>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs px-2.5 rounded-lg border-primary/40 bg-background/80 hover:bg-background font-bold text-primary shrink-0"
+                onClick={() => setActiveSource(downloadingBySource.activeTask!.source)}
+              >
+                {t('切回查看')}
+              </Button>
+            </div>
+          )}
           {/* 外部深链聚焦且目标模型尚未下载时，在模型上方显示明确安装引导提示（Issue 0046 §3） */}
           {targetFocusModel && !targetFocusModel.isDownloaded && (
             <div className="mb-4 flex items-center justify-between gap-3 p-3.5 rounded-xl border border-primary/30 bg-primary/10 text-primary shadow-2xs animate-in fade-in slide-in-from-top-2 duration-300">
