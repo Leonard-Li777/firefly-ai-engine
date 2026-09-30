@@ -18,6 +18,10 @@ pub struct EngineConfig {
     #[serde(default)]
     pub force_cpu: bool,
 
+    /// 是否启用模型思考模式（关闭时启动参数注入推理抑制；开启时注入思考推荐参数）
+    #[serde(default)]
+    pub enable_thinking: bool,
+
     /// 服务基准端口（38400~38419 滑动探测）
     #[serde(default = "default_port")]
     pub base_port: u16,
@@ -197,6 +201,7 @@ impl Default for EngineConfig {
         EngineConfig {
             models_dir: default_models_dir(),
             force_cpu: false,
+            enable_thinking: false,
             base_port: default_port(),
             silent: false,
             background_persist: false,

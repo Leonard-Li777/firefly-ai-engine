@@ -415,14 +415,14 @@ impl EngineCoordinator {
         let is_minicpm5 = model_lower.contains("minicpm5");
         let is_nanbeige4 = model_lower.contains("nanbeige4");
 
-        let (user_model_params, custom_layers, custom_ctx) = {
+        let (user_model_params, custom_layers, custom_ctx, enable_thinking) = {
             let config = self.config.lock().await;
             // 尝试通过活跃模型名、别名、文件名 stem 或原始 key 查找配置
             let found = config.model_custom_params.get(&model_str)
                 .or_else(|| active_name_lock.as_ref().and_then(|n| config.model_custom_params.get(n)))
                 .or_else(|| config.model_custom_params.get(&fallback_stem))
                 .cloned();
-            (found, config.custom_gpu_layers, config.custom_context_window)
+            (found, config.custom_gpu_layers, config.custom_context_window, config.enable_thinking)
         };
 
         let force_gpu_layers = user_model_params.as_ref().map(|p| p.n_gpu_layers).or(custom_layers);
@@ -440,7 +440,7 @@ impl EngineCoordinator {
             force_batch_size,
             force_ubatch_size,
             force_cpu: selected_engine.tier == crate::hardware::gpu_info::AccelerationTier::Cpu,
-            enable_thinking: false,
+            enable_thinking,
             is_minicpm5,
             is_nanbeige4,
             mmproj_path: detected_mmproj,

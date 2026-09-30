@@ -802,6 +802,25 @@ mod tests {
     }
 
     #[test]
+    fn test_to_args_with_thinking_enabled() {
+        let resources = make_resources_with_dgpu(12 * 1024);
+        let mut model = make_model(7.0, 4.3);
+        model.enable_thinking = true;
+
+        let params = ParamBuilder::compute(&resources, &model, "cuda");
+        let args = ParamBuilder::to_args(&params, 38400, "D:\\models\\main.gguf", "test-model", Some(&model));
+
+        // 思考模式开启：不得注入推理抑制参数
+        assert!(!args.contains(&"--reasoning".to_string()), "思考模式开启时不应注入 --reasoning off");
+        assert!(!args.contains(&"--reasoning-format".to_string()), "思考模式开启时不应注入 --reasoning-format none");
+
+        // 应注入思考预算（开启分支专属）
+        assert!(args.contains(&"--reasoning-budget".to_string()));
+        let rb_idx = args.iter().position(|r| r == "--reasoning-budget").unwrap();
+        assert_eq!(args[rb_idx + 1], "1024");
+    }
+
+    #[test]
     fn test_to_args_with_embedding() {
         let resources = make_resources_with_dgpu(12 * 1024);
         let mut model = make_model(2.0, 1.8);

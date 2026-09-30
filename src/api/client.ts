@@ -68,6 +68,11 @@ export interface IEngineApiClient {
   cancelModelDownload(taskId: string): Promise<void>
 
   /**
+   * 获取所有活跃或近期的模型下载任务列表
+   */
+  getDownloadTasks(): Promise<DownloadProgressEvent[]>
+
+  /**
    * 更新模型存储目录并重新扫描
    */
   updateModelStoragePath(newPath: string): Promise<{ success: boolean; scannedModelsCount: number }>
@@ -81,6 +86,16 @@ export interface IEngineApiClient {
    * 更新运行时调优参数（GPU 卸载层数、线程数、上下文等）
    */
   updateRuntimeParams(params: Partial<RuntimeParams>): Promise<{ success: boolean }>
+
+  /**
+   * 读取全局模型思考模式开关（持久化于后端 config.json）
+   */
+  getThinkingMode(): Promise<{ enableThinking: boolean }>
+
+  /**
+   * 设置全局模型思考模式开关并持久化（下次启动引擎时生效）
+   */
+  setThinkingMode(enableThinking: boolean): Promise<{ success: boolean; enableThinking: boolean }>
 
   /**
    * 持久化保存模型专属启动参数到后端 config.json
@@ -330,6 +345,26 @@ export class HttpEngineApiClient implements IEngineApiClient {
     await this.requestJson<void>(`/api/models/download/cancel/${taskId}`, { method: 'POST' })
   }
 
+  async getDownloadTasks(): Promise<DownloadProgressEvent[]> {
+    await this.ensureReady()
+    const raw = await this.requestJson<any[]>('/api/models/download/tasks')
+    if (!Array.isArray(raw)) return []
+    return raw.map(t => ({
+      taskId: t.task_id || t.taskId,
+      modelId: t.model_id || t.modelId,
+      source: t.source,
+      percent: t.percent ?? 0,
+      receivedBytes: t.received_bytes ?? t.receivedBytes ?? 0,
+      totalBytes: t.total_bytes ?? t.totalBytes ?? 0,
+      speedBps: t.speed_bps ?? t.speedBps ?? 0,
+      status: (typeof t.status === 'string' ? t.status.toLowerCase() : 'pending') as any,
+      error: t.error,
+      currentFileName: t.current_file_name || t.currentFileName,
+      fileIndex: t.file_index ?? t.fileIndex,
+      totalFiles: t.total_files ?? t.totalFiles
+    }))
+  }
+
   async updateModelStoragePath(newPath: string): Promise<{ success: boolean; scannedModelsCount: number }> {
     await this.ensureReady()
     return this.requestJson('/api/engine/models-dir', {
@@ -352,6 +387,20 @@ export class HttpEngineApiClient implements IEngineApiClient {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(params)
+    })
+  }
+
+  async getThinkingMode(): Promise<{ enableThinking: boolean }> {
+    await this.ensureReady()
+    return this.requestJson('/api/engine/thinking')
+  }
+
+  async setThinkingMode(enableThinking: boolean): Promise<{ success: boolean; enableThinking: boolean }> {
+    await this.ensureReady()
+    return this.requestJson('/api/engine/thinking', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enableThinking })
     })
   }
 

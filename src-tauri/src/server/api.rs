@@ -126,6 +126,13 @@ pub struct UpdateParamsReq {
     pub ubatch_size: Option<u32>,
 }
 
+/// 设置全局思考模式请求体
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SetThinkingReq {
+    pub enable_thinking: bool,
+}
+
 #[derive(Debug, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct StartEngineReq {
@@ -507,6 +514,113 @@ fn collect_ggufs_recursive(
                 }
             }
         }
+    }
+}
+
+/// 检查指定模型的主模型与多模态投影文件是否真实落盘就绪
+/// 返回元组: (主模型是否存在且大小有效, 多模态投影文件是否存在且大小有效)
+pub(crate) fn verify_model_artifacts(
+    models_dir: &std::path::Path,
+    model_id: &str,
+    is_multimodal: bool,
+) -> (bool, bool) {
+    if !models_dir.exists() {
+        return (false, false);
+    }
+    let found_ggufs = collect_all_ggufs(models_dir);
+    let model_id_lower = model_id.to_lowercase();
+    let id_clean_source = model_id_lower.split('@').next().unwrap_or(&model_id_lower);
+
+    let (repo_part, tag_part) = match id_clean_source.split_once(':') {
+        Some((r, t)) => (r, Some(t)),
+        None => (id_clean_source, None),
+    };
+    let id_tail = repo_part.split('/').last().unwrap_or(repo_part);
+    let id_clean = id_tail.replace("-gguf", "");
+
+    let tag_clean = tag_part.map(|t| t.trim_start_matches("ud-").to_string());
+
+    let mut main_model_path: Option<PathBuf> = None;
+
+    // 1. 查找主模型（必须大于 10MB 且不包含 mmproj）
+    for (p, name) in &found_ggufs {
+        let nl = name.to_lowercase();
+        if nl.contains("mmproj") || !nl.ends_with(".gguf") {
+            continue;
+        }
+
+        let file_size = std::fs::metadata(p).map(|m| m.len()).unwrap_or(0);
+        if file_size < 10 * 1024 * 1024 {
+            continue;
+        }
+
+        // 匹配确切文件名
+        if let Some(ref exact_file) = tag_part {
+            if exact_file.ends_with(".gguf") && nl == *exact_file {
+                main_model_path = Some(p.clone());
+                break;
+            }
+        }
+
+        // 检查 quant tag
+        let file_quant = extract_quant_tag_from_name(&nl);
+        let tag_ok = match (&tag_clean, &file_quant) {
+            (Some(expected), Some(actual)) => expected == actual,
+            (Some(expected), None) => nl.contains(expected),
+            (None, _) => true,
+        };
+
+        if tag_ok && (nl.contains(&id_clean) || id_clean.contains(&nl.replace(".gguf", ""))) {
+            main_model_path = Some(p.clone());
+            break;
+        }
+    }
+
+    let main_exists = main_model_path.is_some();
+    if !main_exists {
+        return (false, false);
+    }
+
+    // 2. 若非多模态模型，无需检测 mmproj
+    if !is_multimodal {
+        return (true, true);
+    }
+
+    // 3. 多模态模型：检测同目录或 models_dir 下是否存在有效的 mmproj 投影文件
+    let parent_dir = main_model_path.as_ref().and_then(|p| p.parent());
+    let mmproj_exists = found_ggufs.iter().any(|(p, name)| {
+        let nl = name.to_lowercase();
+        if !nl.contains("mmproj") || !nl.ends_with(".gguf") {
+            return false;
+        }
+        let size = std::fs::metadata(p).map(|m| m.len()).unwrap_or(0);
+        if size < 1024 * 1024 {
+            return false;
+        }
+        if let Some(dir) = parent_dir {
+            if p.parent() == Some(dir) {
+                return true;
+            }
+        }
+        nl.contains(&id_clean) || (id_clean.contains("bonsai") && nl.contains("bonsai"))
+    });
+
+    (main_exists, mmproj_exists)
+}
+
+/// 解析多模态模型所配套的视觉投影器文件名（mmproj）
+pub(crate) fn resolve_mmproj_filename(model_id: &str, source_flag: &str) -> Option<String> {
+    let lower = model_id.to_lowercase();
+    if lower.contains("bonsai") {
+        if source_flag == "-ms" {
+            Some("Ternary-Bonsai-2-27B-mmproj-Q8_0.gguf".to_string())
+        } else {
+            Some("mmproj-Q8_0.gguf".to_string())
+        }
+    } else if lower.contains("wemm") {
+        Some("mmproj-WeMM-Embedding-2B-BF16.gguf".to_string())
+    } else {
+        None
     }
 }
 
@@ -2388,63 +2502,161 @@ async fn run_model_download(
         pids.remove(&task_id);
     }
 
-    let mut lock = tasks.lock().await;
-    if let Some(task) = lock.get_mut(&task_id) {
-        // 如果已被用户主动取消，保持取消状态
-        if task.status == DownloadStatus::Canceled {
-            return;
+    // 1. 检查阶段 1 完成后物理文件状态
+    let (mut main_exists, mut mmproj_exists) = verify_model_artifacts(&models_dir, &model_id, is_multimodal);
+
+    // 检查是否已被用户主动取消
+    {
+        let lock = tasks.lock().await;
+        if let Some(task) = lock.get(&task_id) {
+            if task.status == DownloadStatus::Canceled {
+                return;
+            }
         }
+    }
 
-        let is_success = exit_status.as_ref().map(|s| s.success()).unwrap_or(false);
+    // 2. 如果是多模态模型，且主模型已成功落盘，但缺少配套的 mmproj 投影文件：
+    // 自动触发阶段 2 下载配套 mmproj 投影文件（常见于 ModelScope 等源）
+    if is_multimodal && main_exists && !mmproj_exists {
+        if let Some(mmproj_name) = resolve_mmproj_filename(&model_id, source_flag) {
+            let repo = model_id.split(':').next().unwrap_or(&model_id);
+            let mmproj_args = if source_flag == "-ms" {
+                vec![
+                    "-ms".to_string(),
+                    repo.to_string(),
+                    "-msf".to_string(),
+                    mmproj_name.clone(),
+                    "--json".to_string(),
+                ]
+            } else {
+                vec![
+                    "-hf".to_string(),
+                    repo.to_string(),
+                    "-hff".to_string(),
+                    mmproj_name.clone(),
+                    "--json".to_string(),
+                ]
+            };
 
-        if is_success {
-            task.status = DownloadStatus::Completed;
-            task.percent = 100.0;
-            info!("模型真实下载成功: {}", task.model_id);
-        } else {
-            // 二次检测：即使退出码异常，检查目标目录是否已有合规的 GGUF 实体文件（对齐 desktop 补偿逻辑）
-            let mut file_found = false;
-            let repo_tag = model_id.split(':').last().unwrap_or(&model_id);
-            let quant_tag = extract_quant_tag_from_name(repo_tag);
-            if let Ok(entries) = std::fs::read_dir(&models_dir) {
-                for entry in entries.flatten() {
-                    let path = entry.path();
-                    if path.is_file() {
-                        let name = path.file_name().unwrap_or_default().to_string_lossy();
-                        let name_lower = name.to_lowercase();
-                        let is_mmproj = name_lower.contains("mmproj");
-                        let matched = name.contains(repo_tag)
-                            || quant_tag.as_ref().map(|q| name_lower.contains(q.as_str())).unwrap_or(false);
-                        if name_lower.ends_with(".gguf") && !is_mmproj && matched {
-                            if let Ok(meta) = path.metadata() {
-                                if meta.len() > 10 * 1024 * 1024 { // > 10MB
-                                    file_found = true;
+            info!("多模态主模型就绪，自动启动阶段 2 下载配套投影器: {:?} 参数: {:?}", downloader_path, mmproj_args);
+
+            // 更新任务状态为第 2 阶段
+            {
+                let mut lock = tasks.lock().await;
+                if let Some(task) = lock.get_mut(&task_id) {
+                    task.file_index = 1;
+                    task.total_files = 2;
+                    task.current_file_name = Some(mmproj_name.clone());
+                    task.percent = 80.0;
+                }
+            }
+
+            let mut cmd2 = tokio::process::Command::new(&downloader_path);
+            for arg in &mmproj_args {
+                cmd2.arg(arg);
+            }
+            cmd2.env("LLAMA_CACHE", models_dir.to_string_lossy().as_ref());
+            cmd2.env("PYTHONUNBUFFERED", "1")
+                .env("CLICOLOR_FORCE", "1")
+                .env("FORCE_COLOR", "1")
+                .env("TERM", "cygwin")
+                .env("DEBIAN_FRONTEND", "noninteractive")
+                .env("STDBUF_OUT", "0")
+                .env("STDBUF_ERR", "0");
+
+            if is_modelscope {
+                let domains = "modelscope.cn,*.modelscope.cn,aliyun.com,*.aliyun.com,aliyuncs.com,*.aliyuncs.com,hf-mirror.com";
+                cmd2.env("no_proxy", domains);
+                cmd2.env("NO_PROXY", domains);
+            }
+
+            cmd2.stdin(std::process::Stdio::null())
+                .stdout(std::process::Stdio::piped())
+                .stderr(std::process::Stdio::piped());
+            crate::win_proc::apply_no_window(&mut cmd2);
+
+            if let Ok(mut child2) = cmd2.spawn() {
+                if let Some(pid) = child2.id() {
+                    let mut pids = child_pids.lock().await;
+                    pids.insert(task_id.clone(), pid);
+                }
+
+                if let Some(stdout2) = child2.stdout.take() {
+                    let reader2 = BufReader::new(stdout2);
+                    let mut lines2 = reader2.lines();
+                    while let Ok(Some(line)) = lines2.next_line().await {
+                        let line = line.trim().to_string();
+                        if line.is_empty() {
+                            continue;
+                        }
+                        if let Ok(progress) = serde_json::from_str::<serde_json::Value>(&line) {
+                            let mut lock = tasks.lock().await;
+                            if let Some(task) = lock.get_mut(&task_id) {
+                                if task.status == DownloadStatus::Canceled {
                                     break;
+                                }
+                                let raw_pct = progress.get("percent").and_then(|v| v.as_f64())
+                                    .or_else(|| progress.get("progress").and_then(|v| v.as_f64()).map(|p| p * 100.0));
+                                if let Some(pct) = raw_pct {
+                                    task.percent = ((80.0 + pct * 0.2) * 10.0).round() / 10.0;
+                                }
+                                if let Some(downloaded) = progress.get("downloaded").and_then(|v| v.as_u64()) {
+                                    task.received_bytes = completed_bytes + downloaded;
+                                }
+                                if let Some(total) = progress.get("total").and_then(|v| v.as_u64()) {
+                                    task.total_bytes = completed_bytes + total;
                                 }
                             }
                         }
                     }
                 }
+
+                let _ = child2.wait().await;
+                {
+                    let mut pids = child_pids.lock().await;
+                    pids.remove(&task_id);
+                }
             }
 
-            if file_found {
-                task.status = DownloadStatus::Completed;
-                task.percent = 100.0;
-                info!("模型下载进程退出码异常，但检测到完整模型文件，判定成功: {}", task.model_id);
-            } else {
-                task.status = DownloadStatus::Error;
-                let code_str = exit_status.map(|s| format!("{:?}", s.code())).unwrap_or_else(|e| e.to_string());
-                let stderr_summary = {
-                    let lock = stderr_lines.lock().await;
-                    if !lock.is_empty() {
-                        lock.join("; ")
-                    } else {
-                        format!("下载异常退出 (代码: {})", code_str)
-                    }
-                };
-                task.error = Some(stderr_summary);
-                error!("模型下载失败: {} 详情: {:?}", task.model_id, task.error);
-            }
+            // 阶段 2 执行完毕后，重新检测完整性
+            let (m2, mm2) = verify_model_artifacts(&models_dir, &model_id, is_multimodal);
+            main_exists = m2;
+            mmproj_exists = mm2;
+        }
+    }
+
+    // 3. 严格落盘校验：仅当物理实体文件真实完备时才标记为 Completed
+    let mut lock = tasks.lock().await;
+    if let Some(task) = lock.get_mut(&task_id) {
+        if task.status == DownloadStatus::Canceled {
+            return;
+        }
+
+        let fully_ready = if is_multimodal {
+            main_exists && mmproj_exists
+        } else {
+            main_exists
+        };
+
+        if fully_ready {
+            task.status = DownloadStatus::Completed;
+            task.percent = 100.0;
+            info!("模型真实下载成功并校验完整: {}", task.model_id);
+        } else {
+            task.status = DownloadStatus::Error;
+            let code_str = exit_status.map(|s| format!("{:?}", s.code())).unwrap_or_else(|e| e.to_string());
+            let stderr_summary = {
+                let lock = stderr_lines.lock().await;
+                if !lock.is_empty() {
+                    lock.join("; ")
+                } else if !main_exists {
+                    format!("主模型文件未完整写入或下载提前中断 (退出码: {})", code_str)
+                } else {
+                    "多模态视觉投影文件缺失或校验失败".to_string()
+                }
+            };
+            task.error = Some(stderr_summary);
+            error!("模型下载未完全就绪: {} 详情: {:?}", task.model_id, task.error);
         }
     }
 }
@@ -2503,6 +2715,17 @@ async fn get_download_status(
         (StatusCode::NOT_FOUND, Json(json!({ "error": "任务不存在" })))
     }
 }
+
+/// GET /api/models/download/tasks
+/// 获取所有下载任务列表（供前端跨 Tab 保持与状态自愈恢复）
+async fn get_all_download_tasks(
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    let tasks = state.download_tasks.lock().await;
+    let list: Vec<DownloadTask> = tasks.values().cloned().collect();
+    (StatusCode::OK, Json(serde_json::to_value(list).unwrap()))
+}
+
 
 /// POST /api/models/download/cancel/:task_id
 /// 取消下载任务（真实杀死系统级子进程）
@@ -2923,6 +3146,33 @@ async fn rescan_models(State(state): State<AppState>) -> impl IntoResponse {
     let models = scan_and_merge_models(&config.models_dir, None, &config.custom_models);
     info!("重新扫描模型目录，发现 {} 个模型", models.len());
     Json(models)
+}
+
+/// GET /api/engine/thinking
+/// 读取全局模型思考模式开关（持久化于 config.json）
+async fn get_thinking_mode(
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    let config = state.coordinator.config.lock().await;
+    Json(json!({ "enableThinking": config.enable_thinking }))
+}
+
+/// POST /api/engine/thinking
+/// 设置全局模型思考模式开关并持久化（下次启动 llama-server 时生效）
+async fn set_thinking_mode(
+    State(state): State<AppState>,
+    Json(payload): Json<SetThinkingReq>,
+) -> impl IntoResponse {
+    let mut config = state.coordinator.config.lock().await;
+    config.enable_thinking = payload.enable_thinking;
+    let data_dir = config.data_dir.clone();
+    let store = crate::config::ConfigStore::new(data_dir);
+    if let Err(e) = store.save(&config) {
+        error!("持久化思考模式开关失败: {}", e);
+        return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "success": false, "error": e.to_string() })));
+    }
+    info!("已持久化模型思考模式开关: enable_thinking={}", payload.enable_thinking);
+    (StatusCode::OK, Json(json!({ "success": true, "enableThinking": config.enable_thinking })))
 }
 
 /// POST /api/engine/params
@@ -3596,9 +3846,11 @@ pub fn management_routes() -> Router<AppState> {
         .route("/api/models/custom/remove", post(remove_custom_model))
         .route("/api/models/delete", post(delete_model))
         .route("/api/models/download/start", post(start_model_download))
+        .route("/api/models/download/tasks", get(get_all_download_tasks))
         .route("/api/models/download/status/{task_id}", get(get_download_status))
         .route("/api/models/download/cancel/{task_id}", post(cancel_model_download))
         .route("/api/engine/params", post(update_params))
+        .route("/api/engine/thinking", get(get_thinking_mode).post(set_thinking_mode))
         .route("/api/engine/hardware", get(hardware_info))
         .route("/api/engine/open-ui", post(open_ui))
         .route("/api/engine/ui-intent/consume", post(consume_ui_intent))

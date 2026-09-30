@@ -64,6 +64,10 @@ class FallbackEngineApiClient implements IEngineApiClient {
     return this.withFallback('cancelModelDownload', () => this.inner.cancelModelDownload(taskId), () => mockApiClient.cancelModelDownload(taskId))
   }
 
+  getDownloadTasks() {
+    return this.withFallback('getDownloadTasks', () => this.inner.getDownloadTasks(), () => mockApiClient.getDownloadTasks())
+  }
+
   updateModelStoragePath(newPath: string) {
     return this.withFallback('updateModelStoragePath', () => this.inner.updateModelStoragePath(newPath), () => mockApiClient.updateModelStoragePath(newPath))
   }
@@ -74,6 +78,15 @@ class FallbackEngineApiClient implements IEngineApiClient {
 
   updateRuntimeParams(params: any) {
     return this.withFallback('updateRuntimeParams', () => this.inner.updateRuntimeParams(params), () => mockApiClient.updateRuntimeParams(params))
+  }
+
+  getThinkingMode() {
+    return this.withFallback('getThinkingMode', () => this.inner.getThinkingMode(), () => mockApiClient.getThinkingMode())
+  }
+
+  setThinkingMode(enableThinking: boolean) {
+    // 写操作不走 mock 回退：持久化失败必须显式透出，避免静默伪装成功导致启动参数与开关不一致
+    return this.inner.setThinkingMode(enableThinking)
   }
 
   saveModelParams(modelId: string, params: any) {

@@ -372,6 +372,10 @@ export class MockApiClient implements IEngineApiClient {
     }
   }
 
+  async getDownloadTasks(): Promise<DownloadProgressEvent[]> {
+    return []
+  }
+
   async updateModelStoragePath(newPath: string): Promise<{ success: boolean; scannedModelsCount: number }> {
     this.modelsDir = resolveToAbsolutePath(newPath)
     return {
@@ -387,6 +391,22 @@ export class MockApiClient implements IEngineApiClient {
   async updateRuntimeParams(params: Partial<RuntimeParams>): Promise<{ success: boolean }> {
     this.runtimeParams = { ...this.runtimeParams, ...params }
     return { success: true }
+  }
+
+  private enableThinking = (() => {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      return localStorage.getItem('firefly_enable_thinking_mode') === 'true'
+    }
+    return false
+  })()
+
+  async getThinkingMode(): Promise<{ enableThinking: boolean }> {
+    return { enableThinking: this.enableThinking }
+  }
+
+  async setThinkingMode(enableThinking: boolean): Promise<{ success: boolean; enableThinking: boolean }> {
+    this.enableThinking = enableThinking
+    return { success: true, enableThinking }
   }
 
   private mockModelCustomParams = new Map<string, RuntimeParams>()
@@ -510,6 +530,7 @@ export class MockApiClient implements IEngineApiClient {
       ubatchSize: this.runtimeParams.ubatch_size,
       gpuLayers: this.runtimeParams.n_gpu_layers,
       threads: this.runtimeParams.threads,
+      enableThinking: this.enableThinking,
       backend: this.currentBackend,
       hardware: {
         vramGB: 12.0,

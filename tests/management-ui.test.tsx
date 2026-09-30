@@ -125,7 +125,7 @@ describe('Tier 2 管理视窗核心组件交互测试', () => {
     }
   })
 
-  it('ThinkingModeCard 能够正确渲染思考模式配置项、文案与开关切换', () => {
+  it('ThinkingModeCard 能够正确渲染思考模式配置项、文案与开关切换', async () => {
     render(<ThinkingModeCard />)
 
     expect(screen.getByText('模型思考模式')).toBeInTheDocument()
@@ -134,10 +134,19 @@ describe('Tier 2 管理视窗核心组件交互测试', () => {
 
     const switchEl = screen.getByRole('switch', { name: '模型思考模式' })
     expect(switchEl).toBeInTheDocument()
-    expect(switchEl).toHaveAttribute('aria-checked', 'false')
+
+    // 等待挂载时从后端同步权威值完成，再切换开关
+    await waitFor(() => {
+      expect(switchEl).toHaveAttribute('aria-checked', 'false')
+    })
 
     fireEvent.click(switchEl)
     expect(switchEl).toHaveAttribute('aria-checked', 'true')
+
+    // 开关变更后应持久化到 mock 客户端（与后端 config.json 同构）
+    await waitFor(() => {
+      expect(screen.getByRole('switch', { name: '模型思考模式' })).toHaveAttribute('aria-checked', 'true')
+    })
   })
 
   it('LocalChatView 在服务就绪时渲染 iframe，未就绪时呈现友好的启动引导', async () => {
