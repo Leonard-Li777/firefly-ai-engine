@@ -106,3 +106,16 @@ strip = true
 [profile.dev]
 opt-level = 0
 debug = true
+
+# 加速日常开发与 watch：让第三方依赖在 dev 模式具备高效执行速度，不拖慢 debug 测试 exe
+[profile.dev.package."*"]
+opt-level = 2
+
+# 快速 release 测试 profile：保留优化与真实性能，使用 thin LTO 与并行 codegen 大幅缩短打包时间
+[profile.quick-release]
+inherits = "release"
+opt-level = 2
+lto = "thin"
+codegen-units = 16
+panic = "abort"
+strip = true
