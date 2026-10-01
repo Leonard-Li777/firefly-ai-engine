@@ -10,6 +10,8 @@
     "fr-FR": "Moteur AI Firefly",
     "ko-KR": "Firefly AI Folder 엔진",
     "$files": [
+      "src/App.tsx(7807-7817)",
+      "src/App.tsx(8128-8138)",
       "src/App.tsx(7592-7602)",
       "src/App.tsx(7913-7923)"
     ],
@@ -26,6 +28,7 @@
     "fr-FR": "Moteur d'inférence d'IA end-side indépendant à haute disponibilité et plateforme de gestion de modèles",
     "ko-KR": "독립적인 고가용성 최종 AI 추론 엔진 및 모델 관리 플랫폼",
     "$files": [
+      "src/App.tsx(8346-8372)",
       "src/App.tsx(8131-8157)"
     ],
     "$id": 441
@@ -41,6 +44,7 @@
     "fr-FR": "Maquette de bac à sable",
     "ko-KR": "샌드박스 모의",
     "$files": [
+      "src/App.tsx(8604-8615)",
       "src/App.tsx(8389-8400)"
     ],
     "$id": 442
@@ -56,8 +60,9 @@
     "fr-FR": "Prêt",
     "ko-KR": "준비가 된",
     "$files": [
-      "src/App.tsx(9664-9670)",
-      "src/components/dashboard/dashboard-view.tsx(17145-17151)"
+      "src/App.tsx(9879-9885)",
+      "src/components/dashboard/dashboard-view.tsx(17145-17151)",
+      "src/App.tsx(9664-9670)"
     ],
     "$id": 443
   },
@@ -72,8 +77,9 @@
     "fr-FR": "Le démarrage a échoué",
     "ko-KR": "시작 실패",
     "$files": [
-      "src/App.tsx(9751-9759)",
-      "src/components/dashboard/dashboard-view.tsx(3837-3845)"
+      "src/App.tsx(9966-9974)",
+      "src/components/dashboard/dashboard-view.tsx(3837-3845)",
+      "src/App.tsx(9751-9759)"
     ],
     "$id": 444
   },
@@ -88,6 +94,7 @@
     "fr-FR": "Pas commencé",
     "ko-KR": "시작되지 않음",
     "$files": [
+      "src/App.tsx(10026-10033)",
       "src/App.tsx(9811-9818)"
     ],
     "$id": 445
@@ -103,9 +110,12 @@
     "fr-FR": "Démarrage en cours...",
     "ko-KR": "시작 중...",
     "$files": [
-      "src/App.tsx(9841-9851)",
+      "src/App.tsx(10056-10066)",
       "src/components/chat/local-chat-view.tsx(4899-4909)",
       "src/components/dashboard/dashboard-view.tsx(8636-8646)",
+      "src/components/model/model-list-panel.tsx(25622-25632)",
+      "src/components/model/model-list-panel.tsx(26103-26113)",
+      "src/App.tsx(9841-9851)",
       "src/components/model/model-list-panel.tsx(25547-25557)",
       "src/components/model/model-list-panel.tsx(26028-26038)"
     ],
@@ -122,6 +132,7 @@
     "fr-FR": "Passer en mode lumineux",
     "ko-KR": "밝은 모드로 전환",
     "$files": [
+      "src/App.tsx(11498-11509)",
       "src/App.tsx(11283-11294)"
     ],
     "$id": 447
@@ -137,6 +148,7 @@
     "fr-FR": "Passer en mode sombre",
     "ko-KR": "어두운 모드로 전환",
     "$files": [
+      "src/App.tsx(11513-11524)",
       "src/App.tsx(11298-11309)"
     ],
     "$id": 448
@@ -147,11 +159,12 @@
     "ar-EG": "اللون الداكن",
     "pt-PT": "Cor escura",
     "ru-RU": "темный цвет",
-    "ja-JP": "暗色",
+    "ja-JP": "ダーク",
     "de-DE": "Dunkle Farbe",
     "fr-FR": "Couleur foncée",
     "ko-KR": "어두운 색",
     "$files": [
+      "src/App.tsx(11867-11873)",
       "src/App.tsx(11652-11658)"
     ],
     "$id": 449
@@ -167,6 +180,7 @@
     "fr-FR": "Brillant",
     "ko-KR": "밝은",
     "$files": [
+      "src/App.tsx(11877-11883)",
       "src/App.tsx(11662-11668)"
     ],
     "$id": 450
@@ -182,6 +196,7 @@
     "fr-FR": "Basculer entre les thèmes clairs et sombres",
     "ko-KR": "밝은 테마와 어두운 테마 간 전환",
     "$files": [
+      "src/App.tsx(12042-12052)",
       "src/App.tsx(11827-11837)"
     ],
     "$id": 451
@@ -197,6 +212,7 @@
     "fr-FR": "Tableau de bord",
     "ko-KR": "계기판",
     "$files": [
+      "src/App.tsx(13335-13342)",
       "src/App.tsx(13120-13127)"
     ],
     "$id": 452
@@ -212,9 +228,25 @@
     "fr-FR": "Gestion des modèles",
     "ko-KR": "모델 관리",
     "$files": [
+      "src/App.tsx(13979-13987)",
       "src/App.tsx(13764-13772)"
     ],
     "$id": 453
+  },
+  "下载中": {
+    "en-US": "Downloading",
+    "es-ES": "Descargando",
+    "ar-EG": "جارٍ التنزيل",
+    "pt-PT": "Baixando",
+    "ru-RU": "Загрузка",
+    "ja-JP": "ダウンロード中",
+    "de-DE": "Herunterladen",
+    "fr-FR": "Téléchargement",
+    "ko-KR": "다운로드 중",
+    "$files": [
+      "src/App.tsx(14208-14215)"
+    ],
+    "$id": 1210
   },
   "引擎与硬件": {
     "en-US": "Engine and Hardware",
@@ -227,6 +259,7 @@
     "fr-FR": "Moteur et matériel",
     "ko-KR": "엔진 및 하드웨어",
     "$files": [
+      "src/App.tsx(14918-14927)",
       "src/App.tsx(14409-14418)"
     ],
     "$id": 454
@@ -242,8 +275,9 @@
     "fr-FR": "Discutez en privé avec l'IA locale",
     "ko-KR": "로컬 AI와 비공개 채팅",
     "$files": [
-      "src/App.tsx(15103-15116)",
-      "src/components/chat/local-chat-view.tsx(1783-1796)"
+      "src/App.tsx(15612-15625)",
+      "src/components/chat/local-chat-view.tsx(1783-1796)",
+      "src/App.tsx(15103-15116)"
     ],
     "$id": 455
   },
@@ -258,8 +292,9 @@
     "fr-FR": "Journal d'exécution",
     "ko-KR": "로그 실행",
     "$files": [
-      "src/App.tsx(15751-15759)",
-      "src/components/logs/engine-logs-view.tsx(10151-10159)"
+      "src/App.tsx(16260-16268)",
+      "src/components/logs/engine-logs-view.tsx(10151-10159)",
+      "src/App.tsx(15751-15759)"
     ],
     "$id": 456
   },
@@ -274,6 +309,7 @@
     "fr-FR": "Station d'accueil tierce",
     "ko-KR": "타사 도킹",
     "$files": [
+      "src/App.tsx(16921-16930)",
       "src/App.tsx(16412-16421)"
     ],
     "$id": 457
@@ -289,6 +325,7 @@
     "fr-FR": "Bienvenue sur le moteur Firefly AI ! Pour une première utilisation, veuillez télécharger un modèle avant de démarrer le service d'inférence d'IA local.",
     "ko-KR": "Firefly AI ​​엔진에 오신 것을 환영합니다! 처음 사용하시는 경우, 로컬 AI 추론 서비스를 시작하기 전에 모델을 다운로드하시기 바랍니다.",
     "$files": [
+      "src/App.tsx(17552-17593)",
       "src/App.tsx(17043-17084)"
     ],
     "$id": 458
@@ -304,6 +341,7 @@
     "fr-FR": "Aller au téléchargement du modèle",
     "ko-KR": "모델 다운로드하러 가기",
     "$files": [
+      "src/App.tsx(18142-18152)",
       "src/App.tsx(17633-17643)"
     ],
     "$id": 459
@@ -319,6 +357,7 @@
     "fr-FR": "Pas encore de conseils",
     "ko-KR": "아직 안내가 없습니다.",
     "$files": [
+      "src/App.tsx(18449-18457)",
       "src/App.tsx(17940-17948)"
     ],
     "$id": 460
@@ -368,37 +407,6 @@
     ],
     "$id": 463
   },
-  "下载失败": {
-    "en-US": "Download failed",
-    "es-ES": "Error al descargar",
-    "ar-EG": "فشل التنزيل",
-    "pt-PT": "Falha na transferência",
-    "ru-RU": "Ошибка загрузки",
-    "ja-JP": "ダウンロードに失敗しました",
-    "de-DE": "Download fehlgeschlagen",
-    "fr-FR": "Échec du téléchargement",
-    "ko-KR": "다운로드 실패",
-    "$files": [
-      "src/hooks/use-model-download.ts(5533-5541)",
-      "src/components/model/model-list-panel.tsx(16352-16360)"
-    ],
-    "$id": 464
-  },
-  "发起模型下载失败": {
-    "en-US": "Failed to initiate model download",
-    "es-ES": "No se pudo iniciar la descarga del modelo",
-    "ar-EG": "فشل بدء تنزيل النموذج",
-    "pt-PT": "Falha ao iniciar o download do modelo",
-    "ru-RU": "Не удалось начать загрузку модели.",
-    "ja-JP": "モデルのダウンロードを開始できませんでした",
-    "de-DE": "Modell-Download konnte nicht gestartet werden",
-    "fr-FR": "Échec du lancement du téléchargement du modèle",
-    "ko-KR": "모델 다운로드를 시작하지 못했습니다.",
-    "$files": [
-      "src/hooks/use-model-download.ts(5960-5972)"
-    ],
-    "$id": 465
-  },
   "显存不足": {
     "en-US": "Insufficient VRAM",
     "es-ES": "Memoria de video insuficiente",
@@ -411,6 +419,8 @@
     "ko-KR": "비디오 메모리가 부족합니다.",
     "$files": [
       "src/lib/error-analyzer.ts(4988-4996)",
+      "src/components/model/model-list-panel.tsx(24292-24300)",
+      "src/components/model/model-list-panel.tsx(26790-26798)",
       "src/components/model/model-list-panel.tsx(24217-24225)",
       "src/components/model/model-list-panel.tsx(26715-26723)"
     ],
@@ -1328,6 +1338,55 @@
     ],
     "$id": 526
   },
+  "模型下载并校验完成！已就绪使用。": {
+    "en-US": "Model download and verification completed! Ready to use.",
+    "es-ES": "¡Descarga y verificación del modelo completadas! Preparado para usar.",
+    "ar-EG": "تم الانتهاء من تنزيل النموذج والتحقق منه! جاهز للاستخدام.",
+    "pt-PT": "Download e verificação do modelo concluídos! Pronto para usar.",
+    "ru-RU": "Загрузка и проверка модели завершены! Готов к использованию.",
+    "ja-JP": "モデルのダウンロードと検証が完了しました。すぐに使用できます。",
+    "de-DE": "Modell-Download und Verifizierung abgeschlossen! Gebrauchsfertig.",
+    "fr-FR": "Téléchargement du modèle et vérification terminée ! Prêt à l'emploi.",
+    "ko-KR": "모델 다운로드 및 검증 완료! 사용할 준비가 되었습니다.",
+    "$files": [
+      "src/stores/model-download-store.ts(6436-6456)"
+    ],
+    "$id": 1211
+  },
+  "下载失败": {
+    "en-US": "Download failed",
+    "es-ES": "Error al descargar",
+    "ar-EG": "فشل التنزيل",
+    "pt-PT": "Falha na transferência",
+    "ru-RU": "Ошибка загрузки",
+    "ja-JP": "ダウンロードに失敗しました",
+    "de-DE": "Download fehlgeschlagen",
+    "fr-FR": "Échec du téléchargement",
+    "ko-KR": "다운로드 실패",
+    "$files": [
+      "src/stores/model-download-store.ts(6708-6716)",
+      "src/components/model/model-list-panel.tsx(16427-16435)",
+      "src/hooks/use-model-download.ts(5533-5541)",
+      "src/components/model/model-list-panel.tsx(16352-16360)"
+    ],
+    "$id": 464
+  },
+  "发起模型下载失败": {
+    "en-US": "Failed to initiate model download",
+    "es-ES": "No se pudo iniciar la descarga del modelo",
+    "ar-EG": "فشل بدء تنزيل النموذج",
+    "pt-PT": "Falha ao iniciar o download do modelo",
+    "ru-RU": "Не удалось начать загрузку модели.",
+    "ja-JP": "モデルのダウンロードを開始できませんでした",
+    "de-DE": "Modell-Download konnte nicht gestartet werden",
+    "fr-FR": "Échec du lancement du téléchargement du modèle",
+    "ko-KR": "모델 다운로드를 시작하지 못했습니다.",
+    "$files": [
+      "src/stores/model-download-store.ts(7416-7428)",
+      "src/hooks/use-model-download.ts(5960-5972)"
+    ],
+    "$id": 465
+  },
   "极致推理性能": {
     "en-US": "Ultimate reasoning performance",
     "es-ES": "Rendimiento de razonamiento definitivo",
@@ -1666,126 +1725,6 @@
     ],
     "$id": 548
   },
-  "服务未就绪": {
-    "en-US": "Service not ready",
-    "es-ES": "Servicio no listo",
-    "ar-EG": "الخدمة غير جاهزة",
-    "pt-PT": "Serviço não está pronto",
-    "ru-RU": "Сервис не готов",
-    "ja-JP": "サービスの準備ができていません",
-    "de-DE": "Dienst nicht bereit",
-    "fr-FR": "Service pas prêt",
-    "ko-KR": "서비스가 준비되지 않았습니다.",
-    "$files": [
-      "src/components/chat/local-chat-view.tsx(2213-2222)"
-    ],
-    "$id": 549
-  },
-  "刷新页面": {
-    "en-US": "Refresh page",
-    "es-ES": "Actualizar página",
-    "ar-EG": "تحديث الصفحة",
-    "pt-PT": "Atualizar página",
-    "ru-RU": "Обновить страницу",
-    "ja-JP": "ページを更新する",
-    "de-DE": "Seite aktualisieren",
-    "fr-FR": "Actualiser la page",
-    "ko-KR": "페이지 새로고침",
-    "$files": [
-      "src/components/chat/local-chat-view.tsx(2563-2571)"
-    ],
-    "$id": 550
-  },
-  "刷新": {
-    "en-US": "Refresh",
-    "es-ES": "Refrescar",
-    "ar-EG": "ينعش",
-    "pt-PT": "Atualizar",
-    "ru-RU": "обновить",
-    "ja-JP": "リフレッシュする",
-    "de-DE": "Auffrischen",
-    "fr-FR": "Rafraîchir",
-    "ko-KR": "새로 고치다",
-    "$files": [
-      "src/components/chat/local-chat-view.tsx(2692-2698)"
-    ],
-    "$id": 551
-  },
-  "外部浏览器打开": {
-    "en-US": "Open external browser",
-    "es-ES": "Abrir navegador externo",
-    "ar-EG": "افتح المتصفح الخارجي",
-    "pt-PT": "Abra o navegador externo",
-    "ru-RU": "Открыть внешний браузер",
-    "ja-JP": "外部ブラウザを開く",
-    "de-DE": "Externen Browser öffnen",
-    "fr-FR": "Ouvrir un navigateur externe",
-    "ko-KR": "외부 브라우저 열기",
-    "$files": [
-      "src/components/chat/local-chat-view.tsx(2977-2988)"
-    ],
-    "$id": 552
-  },
-  "浏览器打开": {
-    "en-US": "Browser opens",
-    "es-ES": "Se abre el navegador",
-    "ar-EG": "يفتح المتصفح",
-    "pt-PT": "O navegador abre",
-    "ru-RU": "Браузер открывается",
-    "ja-JP": "ブラウザが開きます",
-    "de-DE": "Der Browser wird geöffnet",
-    "fr-FR": "Le navigateur s'ouvre",
-    "ko-KR": "브라우저가 열립니다",
-    "$files": [
-      "src/components/chat/local-chat-view.tsx(3112-3121)"
-    ],
-    "$id": 553
-  },
-  "本地推理服务未就绪": {
-    "en-US": "The local inference service is not ready",
-    "es-ES": "El servicio de inferencia local no está listo.",
-    "ar-EG": "خدمة الاستدلال المحلية ليست جاهزة",
-    "pt-PT": "O serviço de inferência local não está pronto",
-    "ru-RU": "Локальная служба вывода не готова",
-    "ja-JP": "ローカル推論サービスの準備ができていません",
-    "de-DE": "Der lokale Inferenzdienst ist nicht bereit",
-    "fr-FR": "Le service d'inférence local n'est pas prêt",
-    "ko-KR": "로컬 추론 서비스가 준비되지 않았습니다.",
-    "$files": [
-      "src/components/chat/local-chat-view.tsx(4170-4183)"
-    ],
-    "$id": 554
-  },
-  "请先在仪表盘启动本地 AI 引擎服务，或等待模型加载完成。": {
-    "en-US": "Please start the local AI engine service on the dashboard first, or wait until the model is loaded.",
-    "es-ES": "Primero inicie el servicio del motor de IA local en el tablero o espere hasta que se cargue el modelo.",
-    "ar-EG": "يرجى بدء تشغيل خدمة محرك الذكاء الاصطناعي المحلي على لوحة المعلومات أولاً، أو الانتظار حتى يتم تحميل النموذج.",
-    "pt-PT": "Inicie primeiro o serviço do mecanismo de IA local no painel ou espere até que o modelo seja carregado.",
-    "ru-RU": "Сначала запустите локальную службу AI Engine на панели управления или подождите, пока модель загрузится.",
-    "ja-JP": "まずダッシュボードでローカル AI エンジン サービスを開始するか、モデルが読み込まれるまで待ってください。",
-    "de-DE": "Bitte starten Sie zuerst den lokalen AI-Engine-Dienst im Dashboard oder warten Sie, bis das Modell geladen ist.",
-    "fr-FR": "Veuillez d'abord démarrer le service du moteur d'IA local sur le tableau de bord ou attendre que le modèle soit chargé.",
-    "ko-KR": "먼저 대시보드에서 로컬 AI 엔진 서비스를 시작하거나 모델이 로드될 때까지 기다려 주세요.",
-    "$files": [
-      "src/components/chat/local-chat-view.tsx(4308-4341)"
-    ],
-    "$id": 555
-  },
-  "立即启动服务": {
-    "en-US": "Start service now",
-    "es-ES": "Iniciar servicio ahora",
-    "ar-EG": "ابدأ الخدمة الآن",
-    "pt-PT": "Iniciar o serviço agora",
-    "ru-RU": "Начать обслуживание сейчас",
-    "ja-JP": "今すぐサービスを開始する",
-    "de-DE": "Jetzt Service starten",
-    "fr-FR": "Démarrer le service maintenant",
-    "ko-KR": "지금 서비스 시작하기",
-    "$files": [
-      "src/components/chat/local-chat-view.tsx(4913-4923)"
-    ],
-    "$id": 556
-  },
   "{modelInfo} 启动中...": {
     "en-US": "{modelInfo} Starting...",
     "es-ES": "{modelInfo} A partir de...",
@@ -2012,110 +1951,125 @@
     ],
     "$id": 614
   },
-  "错误分析与解决建议": {
-    "en-US": "Error analysis and solution suggestions",
-    "es-ES": "Análisis de errores y sugerencias de solución.",
-    "ar-EG": "تحليل الأخطاء واقتراحات الحلول",
-    "pt-PT": "Análise de erros e sugestões de soluções",
-    "ru-RU": "Анализ ошибок и предложения по решению",
-    "ja-JP": "エラー分析と解決策の提案",
-    "de-DE": "Fehleranalyse und Lösungsvorschläge",
-    "fr-FR": "Analyse des erreurs et suggestions de solutions",
-    "ko-KR": "오류 분석 및 해결 방법 제안",
+  "服务未就绪": {
+    "en-US": "Service not ready",
+    "es-ES": "Servicio no listo",
+    "ar-EG": "الخدمة غير جاهزة",
+    "pt-PT": "Serviço não está pronto",
+    "ru-RU": "Сервис не готов",
+    "ja-JP": "サービスの準備ができていません",
+    "de-DE": "Dienst nicht bereit",
+    "fr-FR": "Service pas prêt",
+    "ko-KR": "서비스가 준비되지 않았습니다.",
     "$files": [
-      "src/components/errors/error-analysis-sidebar.tsx(2807-2820)"
+      "src/components/chat/local-chat-view.tsx(2213-2222)"
     ],
-    "$id": 637
+    "$id": 549
   },
-  "面向普通用户的引擎错误解读": {
-    "en-US": "Interpretation of engine errors for ordinary users",
-    "es-ES": "Interpretación de errores del motor para usuarios comunes.",
-    "ar-EG": "تفسير أخطاء المحرك للمستخدمين العاديين",
-    "pt-PT": "Interpretação de erros do motor para usuários comuns",
-    "ru-RU": "Расшифровка ошибок двигателя для обычных пользователей",
-    "ja-JP": "一般ユーザー向けのエンジンエラーの解釈",
-    "de-DE": "Interpretation von Motorfehlern für normale Benutzer",
-    "fr-FR": "Interprétation des erreurs du moteur pour les utilisateurs ordinaires",
-    "ko-KR": "일반 사용자를 위한 엔진 오류 해석",
+  "刷新页面": {
+    "en-US": "Refresh page",
+    "es-ES": "Actualizar página",
+    "ar-EG": "تحديث الصفحة",
+    "pt-PT": "Atualizar página",
+    "ru-RU": "Обновить страницу",
+    "ja-JP": "ページを更新する",
+    "de-DE": "Seite aktualisieren",
+    "fr-FR": "Actualiser la page",
+    "ko-KR": "페이지 새로고침",
     "$files": [
-      "src/components/errors/error-analysis-sidebar.tsx(2954-2971)"
+      "src/components/chat/local-chat-view.tsx(2563-2571)"
     ],
-    "$id": 638
+    "$id": 550
   },
-  "关闭": {
-    "en-US": "Closure",
-    "es-ES": "Cierre",
-    "ar-EG": "إنهاء",
-    "pt-PT": "Encerramento",
-    "ru-RU": "закрытие",
-    "ja-JP": "閉鎖",
-    "de-DE": "Schließung",
-    "fr-FR": "Fermeture",
-    "ko-KR": "폐쇄",
+  "刷新": {
+    "en-US": "Refresh",
+    "es-ES": "Refrescar",
+    "ar-EG": "ينعش",
+    "pt-PT": "Atualizar",
+    "ru-RU": "обновить",
+    "ja-JP": "リフレッシュする",
+    "de-DE": "Auffrischen",
+    "fr-FR": "Rafraîchir",
+    "ko-KR": "새로 고치다",
     "$files": [
-      "src/components/errors/error-analysis-sidebar.tsx(3300-3306)"
+      "src/components/chat/local-chat-view.tsx(2692-2698)"
     ],
-    "$id": 639
+    "$id": 551
   },
-  "严重级别": {
-    "en-US": "Severity level",
-    "es-ES": "Nivel de gravedad",
-    "ar-EG": "مستوى الخطورة",
-    "pt-PT": "Nível de gravidade",
-    "ru-RU": "Уровень серьезности",
-    "ja-JP": "重大度レベル",
-    "de-DE": "Schweregrad",
-    "fr-FR": "Niveau de gravité",
-    "ko-KR": "심각도 수준",
+  "外部浏览器打开": {
+    "en-US": "Open external browser",
+    "es-ES": "Abrir navegador externo",
+    "ar-EG": "افتح المتصفح الخارجي",
+    "pt-PT": "Abra o navegador externo",
+    "ru-RU": "Открыть внешний браузер",
+    "ja-JP": "外部ブラウザを開く",
+    "de-DE": "Externen Browser öffnen",
+    "fr-FR": "Ouvrir un navigateur externe",
+    "ko-KR": "외부 브라우저 열기",
     "$files": [
-      "src/components/errors/error-analysis-sidebar.tsx(3644-3652)"
+      "src/components/chat/local-chat-view.tsx(2977-2988)"
     ],
-    "$id": 640
+    "$id": 552
   },
-  "建议解决方案": {
-    "en-US": "Suggested solution",
-    "es-ES": "Solución recomendada",
-    "ar-EG": "الحلول المقترحة",
-    "pt-PT": "Solução recomendada",
-    "ru-RU": "Рекомендуемое решение",
-    "ja-JP": "提案される解決策",
-    "de-DE": "Empfohlene Lösung",
-    "fr-FR": "Solution recommandée",
-    "ko-KR": "권장 해결 방안",
+  "浏览器打开": {
+    "en-US": "Browser opens",
+    "es-ES": "Se abre el navegador",
+    "ar-EG": "يفتح المتصفح",
+    "pt-PT": "O navegador abre",
+    "ru-RU": "Браузер открывается",
+    "ja-JP": "ブラウザが開きます",
+    "de-DE": "Der Browser wird geöffnet",
+    "fr-FR": "Le navigateur s'ouvre",
+    "ko-KR": "브라우저가 열립니다",
     "$files": [
-      "src/components/errors/error-analysis-sidebar.tsx(4932-4942)"
+      "src/components/chat/local-chat-view.tsx(3112-3121)"
     ],
-    "$id": 641
+    "$id": 553
   },
-  "原始错误详情": {
-    "en-US": "Original error details",
-    "es-ES": "Detalles del error original",
-    "ar-EG": "تفاصيل الخطأ الأصلي",
-    "pt-PT": "Detalhes do erro original",
-    "ru-RU": "Подробности исходной ошибки",
-    "ja-JP": "元のエラーの詳細",
-    "de-DE": "Ursprüngliche Fehlerdetails",
-    "fr-FR": "Détails de l'erreur d'origine",
-    "ko-KR": "원래 오류 세부정보",
+  "本地推理服务未就绪": {
+    "en-US": "The local inference service is not ready",
+    "es-ES": "El servicio de inferencia local no está listo.",
+    "ar-EG": "خدمة الاستدلال المحلية ليست جاهزة",
+    "pt-PT": "O serviço de inferência local não está pronto",
+    "ru-RU": "Локальная служба вывода не готова",
+    "ja-JP": "ローカル推論サービスの準備ができていません",
+    "de-DE": "Der lokale Inferenzdienst ist nicht bereit",
+    "fr-FR": "Le service d'inférence local n'est pas prêt",
+    "ko-KR": "로컬 추론 서비스가 준비되지 않았습니다.",
     "$files": [
-      "src/components/errors/error-analysis-sidebar.tsx(6002-6012)"
+      "src/components/chat/local-chat-view.tsx(4170-4183)"
     ],
-    "$id": 642
+    "$id": 554
   },
-  "查看运行日志": {
-    "en-US": "View running log",
-    "es-ES": "Ver registro de ejecución",
-    "ar-EG": "عرض سجل التشغيل",
-    "pt-PT": "Ver registro de execução",
-    "ru-RU": "Посмотреть журнал бега",
-    "ja-JP": "実行ログを表示する",
-    "de-DE": "Laufprotokoll ansehen",
-    "fr-FR": "Afficher le journal d'exécution",
-    "ko-KR": "실행 로그 보기",
+  "请先在仪表盘启动本地 AI 引擎服务，或等待模型加载完成。": {
+    "en-US": "Please start the local AI engine service on the dashboard first, or wait until the model is loaded.",
+    "es-ES": "Primero inicie el servicio del motor de IA local en el tablero o espere hasta que se cargue el modelo.",
+    "ar-EG": "يرجى بدء تشغيل خدمة محرك الذكاء الاصطناعي المحلي على لوحة المعلومات أولاً، أو الانتظار حتى يتم تحميل النموذج.",
+    "pt-PT": "Inicie primeiro o serviço do mecanismo de IA local no painel ou espere até que o modelo seja carregado.",
+    "ru-RU": "Сначала запустите локальную службу AI Engine на панели управления или подождите, пока модель загрузится.",
+    "ja-JP": "まずダッシュボードでローカル AI エンジン サービスを開始するか、モデルが読み込まれるまで待ってください。",
+    "de-DE": "Bitte starten Sie zuerst den lokalen AI-Engine-Dienst im Dashboard oder warten Sie, bis das Modell geladen ist.",
+    "fr-FR": "Veuillez d'abord démarrer le service du moteur d'IA local sur le tableau de bord ou attendre que le modèle soit chargé.",
+    "ko-KR": "먼저 대시보드에서 로컬 AI 엔진 서비스를 시작하거나 모델이 로드될 때까지 기다려 주세요.",
     "$files": [
-      "src/components/errors/error-analysis-sidebar.tsx(7404-7414)"
+      "src/components/chat/local-chat-view.tsx(4308-4341)"
     ],
-    "$id": 643
+    "$id": 555
+  },
+  "立即启动服务": {
+    "en-US": "Start service now",
+    "es-ES": "Iniciar servicio ahora",
+    "ar-EG": "ابدأ الخدمة الآن",
+    "pt-PT": "Iniciar o serviço agora",
+    "ru-RU": "Начать обслуживание сейчас",
+    "ja-JP": "今すぐサービスを開始する",
+    "de-DE": "Jetzt Service starten",
+    "fr-FR": "Démarrer le service maintenant",
+    "ko-KR": "지금 서비스 시작하기",
+    "$files": [
+      "src/components/chat/local-chat-view.tsx(4913-4923)"
+    ],
+    "$id": 556
   },
   "未选定": {
     "en-US": "Not selected",
@@ -2405,11 +2359,11 @@
   },
   "-b (Batch Size)": {
     "en-US": "-b (Batch Size)",
-    "es-ES": "-b (Batch Size)",
-    "ar-EG": "-b (Batch Size)",
-    "pt-PT": "-b (Batch Size)",
-    "ru-RU": "-b (Batch Size)",
-    "ja-JP": "-b (Batch Size)",
+    "es-ES": "-b (Tamaño de lote)",
+    "ar-EG": "- b (حجم الدفعة)",
+    "pt-PT": "-b (Tamanho do Lote)",
+    "ru-RU": "-b (Размер батча)",
+    "ja-JP": "-b (バッチサイズ)",
     "de-DE": "-b (Batch Size)",
     "fr-FR": "-b (Batch Size)",
     "ko-KR": "-b (Batch Size)",
@@ -2420,11 +2374,11 @@
   },
   "-ub (uBatch Size)": {
     "en-US": "-ub (uBatch Size)",
-    "es-ES": "-ub (uBatch Size)",
-    "ar-EG": "-ub (uBatch Size)",
-    "pt-PT": "-ub (uBatch Size)",
-    "ru-RU": "-ub (uBatch Size)",
-    "ja-JP": "-ub (uBatch Size)",
+    "es-ES": "-ub (Tamaño de uLote)",
+    "ar-EG": "- ub (حجم الدفعة الوحيدة)",
+    "pt-PT": "-ub (Tamanho do uLote)",
+    "ru-RU": "-ub (Размер uBatch)",
+    "ja-JP": "-ub (uバッチサイズ)",
     "de-DE": "-ub (uBatch Size)",
     "fr-FR": "-ub (uBatch Size)",
     "ko-KR": "-ub (uBatch Size)",
@@ -2822,6 +2776,8 @@
     "$files": [
       "src/components/engine/engine-table.tsx(3510-3516)",
       "src/components/engine/engine-table.tsx(7098-7104)",
+      "src/components/model/model-list-panel.tsx(3259-3265)",
+      "src/components/model/model-list-panel.tsx(11853-11859)",
       "src/components/model/model-list-panel.tsx(3184-3190)",
       "src/components/model/model-list-panel.tsx(11778-11784)"
     ],
@@ -2991,6 +2947,7 @@
     "ko-KR": "전환 중...",
     "$files": [
       "src/components/engine/engine-table.tsx(15118-15128)",
+      "src/components/model/model-list-panel.tsx(24777-24787)",
       "src/components/model/model-list-panel.tsx(24702-24712)"
     ],
     "$id": 629
@@ -3036,6 +2993,8 @@
     "fr-FR": "Mode de pensée modèle",
     "ko-KR": "모델 사고 모드",
     "$files": [
+      "src/components/engine/thinking-mode-card.tsx(3877-3887)",
+      "src/components/engine/thinking-mode-card.tsx(4963-4973)",
       "src/components/engine/thinking-mode-card.tsx(1577-1587)",
       "src/components/engine/thinking-mode-card.tsx(2642-2652)"
     ],
@@ -3052,6 +3011,7 @@
     "fr-FR": "Augmentera la consommation de temps",
     "ko-KR": "시간 소모가 늘어나게 됩니다",
     "$files": [
+      "src/components/engine/thinking-mode-card.tsx(4091-4100)",
       "src/components/engine/thinking-mode-card.tsx(1794-1803)"
     ],
     "$id": 633
@@ -3067,6 +3027,7 @@
     "fr-FR": "Après l'avoir activé, les modèles locaux et cloud sont autorisés à passer en mode réflexion, ce qui peut améliorer la qualité de l'analyse de l'IA, mais augmentera considérablement le temps de réponse.",
     "ko-KR": "이 기능을 켜면 로컬 및 클라우드 모델이 사고 모드를 시작할 수 있어 AI 분석 품질이 향상될 수 있지만 응답 시간이 크게 늘어납니다.",
     "$files": [
+      "src/components/engine/thinking-mode-card.tsx(4278-4323)",
       "src/components/engine/thinking-mode-card.tsx(1986-2031)"
     ],
     "$id": 634
@@ -3082,6 +3043,7 @@
     "fr-FR": "Il est recommandé de l'activer uniquement lorsque vous avez besoin de discuter avec l'IA.",
     "ko-KR": "AI와 채팅이 필요할 때만 켜는 것을 권장합니다.",
     "$files": [
+      "src/components/engine/thinking-mode-card.tsx(4456-4479)",
       "src/components/engine/thinking-mode-card.tsx(2167-2190)"
     ],
     "$id": 635
@@ -3097,9 +3059,195 @@
     "fr-FR": "Les modèles étiquetés Instruct ne sont pas pris en charge.",
     "ko-KR": "Instruct 태그가 지정된 모델은 지원되지 않습니다.",
     "$files": [
+      "src/components/engine/thinking-mode-card.tsx(4614-4637)",
       "src/components/engine/thinking-mode-card.tsx(2329-2352)"
     ],
     "$id": 636
+  },
+  "参数已保存，需重启引擎后生效": {
+    "en-US": "The parameters have been saved and will take effect after restarting the engine.",
+    "es-ES": "Los parámetros se han guardado y entrarán en vigor después de reiniciar el motor.",
+    "ar-EG": "تم حفظ المعلمات وستدخل حيز التنفيذ بعد إعادة تشغيل المحرك.",
+    "pt-PT": "Os parâmetros foram salvos e entrarão em vigor após a reinicialização do motor.",
+    "ru-RU": "Параметры сохранены и вступят в силу после перезапуска двигателя.",
+    "ja-JP": "パラメータは保存されており、エンジンの再起動後に有効になります。",
+    "de-DE": "Die Parameter wurden gespeichert und werden nach einem Neustart des Motors wirksam.",
+    "fr-FR": "Les paramètres ont été enregistrés et prendront effet après le redémarrage du moteur.",
+    "ko-KR": "매개변수는 저장되었으며 엔진을 다시 시작한 후에 적용됩니다.",
+    "$files": [
+      "src/components/engine/thinking-mode-card.tsx(5390-5408)",
+      "src/components/model/model-param-drawer.tsx(20273-20291)"
+    ],
+    "$id": 803
+  },
+  "当前模型正在运行中，新启动参数需在服务重新拉起时生效。": {
+    "en-US": "The current model is running, and the new startup parameters need to take effect when the service is restarted.",
+    "es-ES": "El modelo actual se está ejecutando y los nuevos parámetros de inicio deben entrar en vigor cuando se reinicia el servicio.",
+    "ar-EG": "النموذج الحالي قيد التشغيل، ويجب أن تدخل معلمات بدء التشغيل الجديدة حيز التنفيذ عند إعادة تشغيل الخدمة.",
+    "pt-PT": "O modelo atual está em execução e os novos parâmetros de inicialização precisam entrar em vigor quando o serviço for reiniciado.",
+    "ru-RU": "Текущая модель работает, и новые параметры запуска должны вступить в силу при перезапуске службы.",
+    "ja-JP": "現在のモデルは実行中であり、サービスの再起動時に新しい起動パラメータが有効になる必要があります。",
+    "de-DE": "Das aktuelle Modell wird ausgeführt und die neuen Startparameter müssen wirksam werden, wenn der Dienst neu gestartet wird.",
+    "fr-FR": "Le modèle actuel est en cours d'exécution et les nouveaux paramètres de démarrage doivent prendre effet au redémarrage du service.",
+    "ko-KR": "현재 모델이 실행 중이며 서비스가 다시 시작되면 새 시작 매개변수가 적용되어야 합니다.",
+    "$files": [
+      "src/components/engine/thinking-mode-card.tsx(5502-5533)",
+      "src/components/model/model-param-drawer.tsx(20395-20426)"
+    ],
+    "$id": 804
+  },
+  "正在重启...": {
+    "en-US": "Restarting...",
+    "es-ES": "Reiniciando...",
+    "ar-EG": "جارٍ إعادة التشغيل...",
+    "pt-PT": "Reiniciando...",
+    "ru-RU": "Перезапуск...",
+    "ja-JP": "再起動中...",
+    "de-DE": "Neustart...",
+    "fr-FR": "Redémarrage...",
+    "ko-KR": "다시 시작하는 중...",
+    "$files": [
+      "src/components/engine/thinking-mode-card.tsx(6057-6068)",
+      "src/components/model/model-param-drawer.tsx(20993-21004)"
+    ],
+    "$id": 805
+  },
+  "立即重启生效": {
+    "en-US": "Restart immediately to take effect",
+    "es-ES": "Reinicie inmediatamente para que surta efecto",
+    "ar-EG": "أعد التشغيل فورًا ليصبح ساري المفعول",
+    "pt-PT": "Reinicie imediatamente para entrar em vigor",
+    "ru-RU": "Немедленно перезапустите, чтобы изменения вступили в силу.",
+    "ja-JP": "すぐに再起動して有効にします",
+    "de-DE": "Starten Sie sofort neu, damit es wirksam wird",
+    "fr-FR": "Redémarrez immédiatement pour prendre effet",
+    "ko-KR": "적용하려면 즉시 다시 시작하세요.",
+    "$files": [
+      "src/components/engine/thinking-mode-card.tsx(6072-6082)",
+      "src/components/model/model-param-drawer.tsx(21008-21018)"
+    ],
+    "$id": 806
+  },
+  "稍后重启": {
+    "en-US": "Restart later",
+    "es-ES": "Reiniciar más tarde",
+    "ar-EG": "أعد التشغيل لاحقًا",
+    "pt-PT": "Reinicie mais tarde",
+    "ru-RU": "Перезагрузить позже",
+    "ja-JP": "後で再起動する",
+    "de-DE": "Später neu starten",
+    "fr-FR": "Redémarrer plus tard",
+    "ko-KR": "나중에 다시 시작",
+    "$files": [
+      "src/components/engine/thinking-mode-card.tsx(6409-6417)",
+      "src/components/model/model-param-drawer.tsx(21430-21438)"
+    ],
+    "$id": 807
+  },
+  "错误分析与解决建议": {
+    "en-US": "Error analysis and solution suggestions",
+    "es-ES": "Análisis de errores y sugerencias de solución.",
+    "ar-EG": "تحليل الأخطاء واقتراحات الحلول",
+    "pt-PT": "Análise de erros e sugestões de soluções",
+    "ru-RU": "Анализ ошибок и предложения по решению",
+    "ja-JP": "エラー分析と解決策の提案",
+    "de-DE": "Fehleranalyse und Lösungsvorschläge",
+    "fr-FR": "Analyse des erreurs et suggestions de solutions",
+    "ko-KR": "오류 분석 및 해결 방법 제안",
+    "$files": [
+      "src/components/errors/error-analysis-sidebar.tsx(2807-2820)"
+    ],
+    "$id": 637
+  },
+  "面向普通用户的引擎错误解读": {
+    "en-US": "Interpretation of engine errors for ordinary users",
+    "es-ES": "Interpretación de errores del motor para usuarios comunes.",
+    "ar-EG": "تفسير أخطاء المحرك للمستخدمين العاديين",
+    "pt-PT": "Interpretação de erros do motor para usuários comuns",
+    "ru-RU": "Расшифровка ошибок двигателя для обычных пользователей",
+    "ja-JP": "一般ユーザー向けのエンジンエラーの解釈",
+    "de-DE": "Interpretation von Motorfehlern für normale Benutzer",
+    "fr-FR": "Interprétation des erreurs du moteur pour les utilisateurs ordinaires",
+    "ko-KR": "일반 사용자를 위한 엔진 오류 해석",
+    "$files": [
+      "src/components/errors/error-analysis-sidebar.tsx(2954-2971)"
+    ],
+    "$id": 638
+  },
+  "关闭": {
+    "en-US": "Closure",
+    "es-ES": "Cierre",
+    "ar-EG": "إنهاء",
+    "pt-PT": "Encerramento",
+    "ru-RU": "закрытие",
+    "ja-JP": "閉鎖",
+    "de-DE": "Schließung",
+    "fr-FR": "Fermeture",
+    "ko-KR": "폐쇄",
+    "$files": [
+      "src/components/errors/error-analysis-sidebar.tsx(3300-3306)"
+    ],
+    "$id": 639
+  },
+  "严重级别": {
+    "en-US": "Severity level",
+    "es-ES": "Nivel de gravedad",
+    "ar-EG": "مستوى الخطورة",
+    "pt-PT": "Nível de gravidade",
+    "ru-RU": "Уровень серьезности",
+    "ja-JP": "重大度レベル",
+    "de-DE": "Schweregrad",
+    "fr-FR": "Niveau de gravité",
+    "ko-KR": "심각도 수준",
+    "$files": [
+      "src/components/errors/error-analysis-sidebar.tsx(3644-3652)"
+    ],
+    "$id": 640
+  },
+  "建议解决方案": {
+    "en-US": "Suggested solution",
+    "es-ES": "Solución recomendada",
+    "ar-EG": "الحلول المقترحة",
+    "pt-PT": "Solução recomendada",
+    "ru-RU": "Рекомендуемое решение",
+    "ja-JP": "提案される解決策",
+    "de-DE": "Empfohlene Lösung",
+    "fr-FR": "Solution recommandée",
+    "ko-KR": "권장 해결 방안",
+    "$files": [
+      "src/components/errors/error-analysis-sidebar.tsx(4932-4942)"
+    ],
+    "$id": 641
+  },
+  "原始错误详情": {
+    "en-US": "Original error details",
+    "es-ES": "Detalles del error original",
+    "ar-EG": "تفاصيل الخطأ الأصلي",
+    "pt-PT": "Detalhes do erro original",
+    "ru-RU": "Подробности исходной ошибки",
+    "ja-JP": "元のエラーの詳細",
+    "de-DE": "Ursprüngliche Fehlerdetails",
+    "fr-FR": "Détails de l'erreur d'origine",
+    "ko-KR": "원래 오류 세부정보",
+    "$files": [
+      "src/components/errors/error-analysis-sidebar.tsx(6002-6012)"
+    ],
+    "$id": 642
+  },
+  "查看运行日志": {
+    "en-US": "View running log",
+    "es-ES": "Ver registro de ejecución",
+    "ar-EG": "عرض سجل التشغيل",
+    "pt-PT": "Ver registro de execução",
+    "ru-RU": "Посмотреть журнал бега",
+    "ja-JP": "実行ログを表示する",
+    "de-DE": "Laufprotokoll ansehen",
+    "fr-FR": "Afficher le journal d'exécution",
+    "ko-KR": "실행 로그 보기",
+    "$files": [
+      "src/components/errors/error-analysis-sidebar.tsx(7404-7414)"
+    ],
+    "$id": 643
   },
   "目前使用兼容模式，能发挥您显卡70% AI算力，显卡驱动需要升级，才能发挥满血性能": {
     "en-US": "Currently using compatibility mode, 70% of the AI ​​computing power of your graphics card can be used. The graphics card driver needs to be upgraded to achieve full performance.",
@@ -3909,9 +4057,11 @@
     "ko-KR": "취소",
     "$files": [
       "src/components/model/custom-model-add-card.tsx(5146-5152)",
+      "src/components/model/model-list-panel.tsx(18596-18602)",
+      "src/components/model/model-list-panel.tsx(22205-22211)",
+      "src/components/model/model-param-drawer.tsx(22686-22692)",
       "src/components/model/model-list-panel.tsx(18521-18527)",
-      "src/components/model/model-list-panel.tsx(22130-22136)",
-      "src/components/model/model-param-drawer.tsx(22686-22692)"
+      "src/components/model/model-list-panel.tsx(22130-22136)"
     ],
     "$id": 697
   },
@@ -4032,6 +4182,8 @@
     "ko-KR": "지능",
     "$files": [
       "src/components/model/model-bubble-guide.tsx(2508-2516)",
+      "src/components/model/model-list-panel.tsx(3289-3297)",
+      "src/components/model/model-list-panel.tsx(12253-12261)",
       "src/components/model/model-list-panel.tsx(3214-3222)",
       "src/components/model/model-list-panel.tsx(12178-12186)"
     ],
@@ -4064,6 +4216,8 @@
     "ko-KR": "예상 비디오 메모리",
     "$files": [
       "src/components/model/model-bubble-guide.tsx(2841-2849)",
+      "src/components/model/model-list-panel.tsx(3492-3500)",
+      "src/components/model/model-list-panel.tsx(14967-14975)",
       "src/components/model/model-list-panel.tsx(3417-3425)",
       "src/components/model/model-list-panel.tsx(14892-14900)"
     ],
@@ -4110,6 +4264,7 @@
     "fr-FR": "élève du primaire",
     "ko-KR": "초등학생",
     "$files": [
+      "src/components/model/model-list-panel.tsx(2018-2025)",
       "src/components/model/model-list-panel.tsx(1943-1950)"
     ],
     "$id": 710
@@ -4125,6 +4280,7 @@
     "fr-FR": "Lycéen",
     "ko-KR": "중학생",
     "$files": [
+      "src/components/model/model-list-panel.tsx(2160-2167)",
       "src/components/model/model-list-panel.tsx(2085-2092)"
     ],
     "$id": 711
@@ -4140,6 +4296,7 @@
     "fr-FR": "Lycéen",
     "ko-KR": "고등학생",
     "$files": [
+      "src/components/model/model-list-panel.tsx(2290-2297)",
       "src/components/model/model-list-panel.tsx(2215-2222)"
     ],
     "$id": 712
@@ -4155,6 +4312,7 @@
     "fr-FR": "étudiant",
     "ko-KR": "대학생",
     "$files": [
+      "src/components/model/model-list-panel.tsx(2424-2431)",
       "src/components/model/model-list-panel.tsx(2349-2356)"
     ],
     "$id": 713
@@ -4170,6 +4328,7 @@
     "fr-FR": "Nom du modèle",
     "ko-KR": "모델명",
     "$files": [
+      "src/components/model/model-list-panel.tsx(3227-3235)",
       "src/components/model/model-list-panel.tsx(3152-3160)"
     ],
     "$id": 714
@@ -4185,6 +4344,7 @@
     "fr-FR": "Capacité",
     "ko-KR": "능력",
     "$files": [
+      "src/components/model/model-list-panel.tsx(3321-3327)",
       "src/components/model/model-list-panel.tsx(3246-3252)"
     ],
     "$id": 715
@@ -4200,6 +4360,7 @@
     "fr-FR": "Quantité de paramètres",
     "ko-KR": "매개변수 수량",
     "$files": [
+      "src/components/model/model-list-panel.tsx(3351-3358)",
       "src/components/model/model-list-panel.tsx(3276-3283)"
     ],
     "$id": 716
@@ -4215,6 +4376,7 @@
     "fr-FR": "Précision de quantification",
     "ko-KR": "양자화 정확도",
     "$files": [
+      "src/components/model/model-list-panel.tsx(3382-3390)",
       "src/components/model/model-list-panel.tsx(3307-3315)"
     ],
     "$id": 717
@@ -4230,6 +4392,7 @@
     "fr-FR": "Taille du modèle",
     "ko-KR": "모델 크기",
     "$files": [
+      "src/components/model/model-list-panel.tsx(3437-3445)",
       "src/components/model/model-list-panel.tsx(3362-3370)"
     ],
     "$id": 718
@@ -4245,6 +4408,7 @@
     "fr-FR": "Environ {value} secondes restantes",
     "ko-KR": "약 {value}초 남음",
     "$files": [
+      "src/components/model/model-list-panel.tsx(7373-7390)",
       "src/components/model/model-list-panel.tsx(7298-7315)"
     ],
     "$id": 719
@@ -4260,6 +4424,7 @@
     "fr-FR": "Environ {value} minutes {seconds} secondes restantes",
     "ko-KR": "약 {value}분 {seconds}초 남음",
     "$files": [
+      "src/components/model/model-list-panel.tsx(7496-7525)",
       "src/components/model/model-list-panel.tsx(7421-7450)"
     ],
     "$id": 720
@@ -4275,6 +4440,7 @@
     "fr-FR": "Environ {value} heures restantes",
     "ko-KR": "약 {value}시간 남음",
     "$files": [
+      "src/components/model/model-list-panel.tsx(7666-7684)",
       "src/components/model/model-list-panel.tsx(7591-7609)"
     ],
     "$id": 721
@@ -4290,6 +4456,7 @@
     "fr-FR": "Une maintenance élevée nécessite ce modèle, veuillez le télécharger et l'activer",
     "ko-KR": "이 모델은 높은 유지 관리가 필요합니다. 다운로드하여 활성화하십시오.",
     "$files": [
+      "src/components/model/model-list-panel.tsx(10786-10806)",
       "src/components/model/model-list-panel.tsx(10711-10731)"
     ],
     "$id": 722
@@ -4305,6 +4472,7 @@
     "fr-FR": "Personnalisé",
     "ko-KR": "사용자 지정",
     "$files": [
+      "src/components/model/model-list-panel.tsx(11481-11488)",
       "src/components/model/model-list-panel.tsx(11406-11413)"
     ],
     "$id": 723
@@ -4320,6 +4488,7 @@
     "fr-FR": "Compréhension du texte",
     "ko-KR": "텍스트 이해",
     "$files": [
+      "src/components/model/model-list-panel.tsx(13749-13757)",
       "src/components/model/model-list-panel.tsx(13674-13682)"
     ],
     "$id": 724
@@ -4335,6 +4504,7 @@
     "fr-FR": "Reconnaissance d'images",
     "ko-KR": "이미지 인식",
     "$files": [
+      "src/components/model/model-list-panel.tsx(13771-13779)",
       "src/components/model/model-list-panel.tsx(13696-13704)"
     ],
     "$id": 725
@@ -4350,6 +4520,7 @@
     "fr-FR": "En pause",
     "ko-KR": "일시 중지됨",
     "$files": [
+      "src/components/model/model-list-panel.tsx(16142-16149)",
       "src/components/model/model-list-panel.tsx(16067-16074)"
     ],
     "$id": 726
@@ -4365,6 +4536,8 @@
     "fr-FR": "Prêt à télécharger...",
     "ko-KR": "다운로드 준비 완료...",
     "$files": [
+      "src/components/model/model-list-panel.tsx(16179-16191)",
+      "src/components/model/model-list-panel.tsx(28286-28298)",
       "src/components/model/model-list-panel.tsx(16104-16116)",
       "src/components/model/model-list-panel.tsx(28211-28223)"
     ],
@@ -4381,6 +4554,7 @@
     "fr-FR": "Téléchargement",
     "ko-KR": "다운로드 중",
     "$files": [
+      "src/components/model/model-list-panel.tsx(16198-16206)",
       "src/components/model/model-list-panel.tsx(16123-16131)"
     ],
     "$id": 728
@@ -4396,6 +4570,7 @@
     "fr-FR": "Prêt",
     "ko-KR": "준비가 된",
     "$files": [
+      "src/components/model/model-list-panel.tsx(16680-16687)",
       "src/components/model/model-list-panel.tsx(16605-16612)"
     ],
     "$id": 729
@@ -4411,6 +4586,7 @@
     "fr-FR": "Limite de mémoire vidéo dépassée",
     "ko-KR": "비디오 메모리 한도를 초과했습니다.",
     "$files": [
+      "src/components/model/model-list-panel.tsx(16826-16836)",
       "src/components/model/model-list-panel.tsx(16751-16761)"
     ],
     "$id": 730
@@ -4426,6 +4602,7 @@
     "fr-FR": "Pas encore téléchargé en local",
     "ko-KR": "아직 로컬에 다운로드되지 않았습니다.",
     "$files": [
+      "src/components/model/model-list-panel.tsx(16840-16851)",
       "src/components/model/model-list-panel.tsx(16765-16776)"
     ],
     "$id": 731
@@ -4441,6 +4618,8 @@
     "fr-FR": "Suppression...",
     "ko-KR": "삭제 중...",
     "$files": [
+      "src/components/model/model-list-panel.tsx(17659-17669)",
+      "src/components/model/model-list-panel.tsx(18209-18219)",
       "src/components/model/model-list-panel.tsx(17584-17594)",
       "src/components/model/model-list-panel.tsx(18134-18144)"
     ],
@@ -4457,6 +4636,7 @@
     "fr-FR": "Confirmer la suppression",
     "ko-KR": "제거 확인",
     "$files": [
+      "src/components/model/model-list-panel.tsx(17673-17681)",
       "src/components/model/model-list-panel.tsx(17598-17606)"
     ],
     "$id": 733
@@ -4472,6 +4652,7 @@
     "fr-FR": "Confirmer la suppression  ",
     "ko-KR": "삭제 확인",
     "$files": [
+      "src/components/model/model-list-panel.tsx(18223-18231)",
       "src/components/model/model-list-panel.tsx(18148-18156)"
     ],
     "$id": 734
@@ -4487,6 +4668,7 @@
     "fr-FR": "Supprimez les fichiers de modèle et supprimez les configurations associées pour libérer de l'espace disque",
     "ko-KR": "모델 파일을 삭제하고 관련 구성을 제거하여 디스크 공간을 확보합니다.",
     "$files": [
+      "src/components/model/model-list-panel.tsx(19109-19133)",
       "src/components/model/model-list-panel.tsx(19034-19058)"
     ],
     "$id": 735
@@ -4502,6 +4684,7 @@
     "fr-FR": "Supprimer",
     "ko-KR": "삭제",
     "$files": [
+      "src/components/model/model-list-panel.tsx(19299-19305)",
       "src/components/model/model-list-panel.tsx(19224-19230)"
     ],
     "$id": 736
@@ -4517,6 +4700,7 @@
     "fr-FR": "Supprimez l'enregistrement du modèle personnalisé et ne l'affichez plus dans la liste",
     "ko-KR": "사용자 정의 모델 레코드를 삭제하고 더 이상 목록에 표시하지 않습니다.",
     "$files": [
+      "src/components/model/model-list-panel.tsx(19702-19724)",
       "src/components/model/model-list-panel.tsx(19627-19649)"
     ],
     "$id": 737
@@ -4532,6 +4716,7 @@
     "fr-FR": "Retirer",
     "ko-KR": "제거하다",
     "$files": [
+      "src/components/model/model-list-panel.tsx(19890-19896)",
       "src/components/model/model-list-panel.tsx(19815-19821)"
     ],
     "$id": 738
@@ -4547,6 +4732,7 @@
     "fr-FR": "Configuration des paramètres",
     "ko-KR": "매개변수 구성",
     "$files": [
+      "src/components/model/model-list-panel.tsx(20428-20436)",
       "src/components/model/model-list-panel.tsx(20353-20361)"
     ],
     "$id": 739
@@ -4562,6 +4748,8 @@
     "fr-FR": "Replier",
     "ko-KR": "접기",
     "$files": [
+      "src/components/model/model-list-panel.tsx(20785-20791)",
+      "src/components/model/model-list-panel.tsx(30575-30581)",
       "src/components/model/model-list-panel.tsx(20710-20716)",
       "src/components/model/model-list-panel.tsx(30500-30506)"
     ],
@@ -4578,6 +4766,7 @@
     "fr-FR": "Opérations avancées telles que la suppression, la suppression et la configuration des paramètres",
     "ko-KR": "삭제, 제거, 매개변수 구성 등의 고급 작업",
     "$files": [
+      "src/components/model/model-list-panel.tsx(21120-21139)",
       "src/components/model/model-list-panel.tsx(21045-21064)"
     ],
     "$id": 741
@@ -4593,6 +4782,7 @@
     "fr-FR": "Avancé",
     "ko-KR": "고급의",
     "$files": [
+      "src/components/model/model-list-panel.tsx(21303-21309)",
       "src/components/model/model-list-panel.tsx(21228-21234)"
     ],
     "$id": 742
@@ -4608,6 +4798,7 @@
     "fr-FR": "Reprendre",
     "ko-KR": "계속",
     "$files": [
+      "src/components/model/model-list-panel.tsx(21656-21662)",
       "src/components/model/model-list-panel.tsx(21581-21587)"
     ],
     "$id": 743
@@ -4623,6 +4814,7 @@
     "fr-FR": "Suspendre",
     "ko-KR": "일시 중지",
     "$files": [
+      "src/components/model/model-list-panel.tsx(21917-21923)",
       "src/components/model/model-list-panel.tsx(21842-21848)"
     ],
     "$id": 744
@@ -4638,6 +4830,7 @@
     "fr-FR": "Réessayer",
     "ko-KR": "재시도",
     "$files": [
+      "src/components/model/model-list-panel.tsx(22506-22512)",
       "src/components/model/model-list-panel.tsx(22431-22437)"
     ],
     "$id": 745
@@ -4653,6 +4846,7 @@
     "fr-FR": "Téléchargez le modèle d'accélération de l'échantillonnage spéculatif pour améliorer considérablement la vitesse d'inférence",
     "ko-KR": "추론 속도를 크게 향상하려면 추측 샘플링 가속화 모델을 다운로드하세요.",
     "$files": [
+      "src/components/model/model-list-panel.tsx(22972-22995)",
       "src/components/model/model-list-panel.tsx(22897-22920)"
     ],
     "$id": 746
@@ -4668,6 +4862,7 @@
     "fr-FR": "Téléchargement du modèle accéléré...",
     "ko-KR": "모델 다운로드 가속화 중...",
     "$files": [
+      "src/components/model/model-list-panel.tsx(23383-23397)",
       "src/components/model/model-list-panel.tsx(23308-23322)"
     ],
     "$id": 747
@@ -4683,6 +4878,7 @@
     "fr-FR": "Télécharger le modèle d'accélération",
     "ko-KR": "가속 모델 다운로드",
     "$files": [
+      "src/components/model/model-list-panel.tsx(23401-23411)",
       "src/components/model/model-list-panel.tsx(23326-23336)"
     ],
     "$id": 748
@@ -4698,6 +4894,7 @@
     "fr-FR": "Activé",
     "ko-KR": "활성화됨",
     "$files": [
+      "src/components/model/model-list-panel.tsx(23813-23820)",
       "src/components/model/model-list-panel.tsx(23738-23745)"
     ],
     "$id": 749
@@ -4713,6 +4910,7 @@
     "fr-FR": "Activer",
     "ko-KR": "활성화",
     "$files": [
+      "src/components/model/model-list-panel.tsx(24791-24797)",
       "src/components/model/model-list-panel.tsx(24716-24722)"
     ],
     "$id": 750
@@ -4728,6 +4926,7 @@
     "fr-FR": "Démarré",
     "ko-KR": "시작됨",
     "$files": [
+      "src/components/model/model-list-panel.tsx(25259-25266)",
       "src/components/model/model-list-panel.tsx(25184-25191)"
     ],
     "$id": 751
@@ -4743,6 +4942,7 @@
     "fr-FR": "Activer et démarrer",
     "ko-KR": "활성화 및 시작",
     "$files": [
+      "src/components/model/model-list-panel.tsx(26117-26126)",
       "src/components/model/model-list-panel.tsx(26042-26051)"
     ],
     "$id": 752
@@ -4758,6 +4958,7 @@
     "fr-FR": "Télécharger le modèle",
     "ko-KR": "모델 다운로드",
     "$files": [
+      "src/components/model/model-list-panel.tsx(27492-27500)",
       "src/components/model/model-list-panel.tsx(27417-27425)"
     ],
     "$id": 753
@@ -4773,6 +4974,7 @@
     "fr-FR": "Connexion à l'origine...",
     "ko-KR": "원본에 연결 중...",
     "$files": [
+      "src/components/model/model-list-panel.tsx(28158-28171)",
       "src/components/model/model-list-panel.tsx(28083-28096)"
     ],
     "$id": 754
@@ -4788,6 +4990,8 @@
     "fr-FR": "Téléchargement en cours...",
     "ko-KR": "다운로드 중...",
     "$files": [
+      "src/components/model/model-list-panel.tsx(28175-28186)",
+      "src/components/model/model-list-panel.tsx(28302-28313)",
       "src/components/model/model-list-panel.tsx(28100-28111)",
       "src/components/model/model-list-panel.tsx(28227-28238)"
     ],
@@ -4804,6 +5008,7 @@
     "fr-FR": "Téléchargement interrompu",
     "ko-KR": "다운로드가 일시중지됨",
     "$files": [
+      "src/components/model/model-list-panel.tsx(28247-28256)",
       "src/components/model/model-list-panel.tsx(28172-28181)"
     ],
     "$id": 756
@@ -4819,6 +5024,7 @@
     "fr-FR": "Attendez pour continuer",
     "ko-KR": "계속하려면 기다려 주세요.",
     "$files": [
+      "src/components/model/model-list-panel.tsx(28890-28898)",
       "src/components/model/model-list-panel.tsx(28815-28823)"
     ],
     "$id": 757
@@ -4834,6 +5040,7 @@
     "fr-FR": "Développer",
     "ko-KR": "확장하다",
     "$files": [
+      "src/components/model/model-list-panel.tsx(30585-30591)",
       "src/components/model/model-list-panel.tsx(30510-30516)"
     ],
     "$id": 758
@@ -4849,6 +5056,7 @@
     "fr-FR": "Le meilleur package de moteur ({name}) a été automatiquement sélectionné et téléchargé pour vous. Vous pouvez vérifier la progression du téléchargement dans les onglets « Modèle » et « Moteur ».",
     "ko-KR": "최고의 엔진 패키지({name})가 자동으로 일치되어 다운로드되었습니다. \"모델\" 및 \"엔진\" 탭에서 다운로드 진행 상황을 확인할 수 있습니다.",
     "$files": [
+      "src/components/model/model-list-panel.tsx(33969-34019)",
       "src/components/model/model-list-panel.tsx(33044-33094)"
     ],
     "$id": 759
@@ -4864,6 +5072,7 @@
     "fr-FR": "Le téléchargement du modèle \"{name}\" a commencé. Vous pouvez vérifier la progression du téléchargement dans l'onglet \"Modèle\".",
     "ko-KR": "모델 \"{name}\" 다운로드가 시작되었습니다. \"모델\" 탭에서 다운로드 진행 상황을 확인할 수 있습니다.",
     "$files": [
+      "src/components/model/model-list-panel.tsx(34115-34150)",
       "src/components/model/model-list-panel.tsx(33190-33225)"
     ],
     "$id": 760
@@ -4879,6 +5088,7 @@
     "fr-FR": "Le téléchargement du modèle a commencé. Vous pouvez vérifier la progression du téléchargement dans l'onglet \"Modèle\".",
     "ko-KR": "모델 다운로드가 시작되었습니다. \"모델\" 탭에서 다운로드 진행 상황을 확인할 수 있습니다.",
     "$files": [
+      "src/components/model/model-list-panel.tsx(34210-34237)",
       "src/components/model/model-list-panel.tsx(33285-33312)"
     ],
     "$id": 761
@@ -4894,9 +5104,26 @@
     "fr-FR": "Autoroute de la Chine",
     "ko-KR": "중국 고속도로",
     "$files": [
+      "src/components/model/model-list-panel.tsx(41268-41276)",
       "src/components/model/model-list-panel.tsx(40343-40351)"
     ],
     "$id": 762
+  },
+  "正在下载中": {
+    "en-US": "Downloading",
+    "es-ES": "Descargando",
+    "ar-EG": "جارٍ التنزيل",
+    "pt-PT": "Baixando",
+    "ru-RU": "Загрузка",
+    "ja-JP": "ダウンロード中",
+    "de-DE": "Herunterladen",
+    "fr-FR": "Téléchargement",
+    "ko-KR": "다운로드 중",
+    "$files": [
+      "src/components/model/model-list-panel.tsx(41744-41753)",
+      "src/components/model/model-list-panel.tsx(42848-42857)"
+    ],
+    "$id": 1212
   },
   "国际官方": {
     "en-US": "International official",
@@ -4909,6 +5136,7 @@
     "fr-FR": "Officiel international",
     "ko-KR": "국제공무원",
     "$files": [
+      "src/components/model/model-list-panel.tsx(42370-42378)",
       "src/components/model/model-list-panel.tsx(41254-41262)"
     ],
     "$id": 763
@@ -4924,9 +5152,40 @@
     "fr-FR": "Afficher uniquement les recommandations",
     "ko-KR": "권장 사항 만 표시",
     "$files": [
+      "src/components/model/model-list-panel.tsx(43413-43422)",
       "src/components/model/model-list-panel.tsx(42105-42114)"
     ],
     "$id": 764
+  },
+  "正在从 {source} 下载模型（进度 {progress}%，速度 {speed}），切回即可查看实时卡片。": {
+    "en-US": "Downloading model from {source} (progress {progress}%, speed {speed}), switch back to view the real-time card.",
+    "es-ES": "Descargando el modelo desde {source} (progreso {progress}%, velocidad {speed}), regrese para ver la tarjeta en tiempo real.",
+    "ar-EG": "تنزيل النموذج من {source} (التقدم {progress}%، السرعة {speed})، قم بالتبديل مرة أخرى لعرض بطاقة الوقت الفعلي.",
+    "pt-PT": "Fazendo download do modelo de {source} (progresso {progress}%, velocidade {speed}), volte para visualizar o cartão em tempo real.",
+    "ru-RU": "Загрузив модель из {source} (прогресс {progress}%, скорость {speed}), переключитесь обратно для просмотра карты в реальном времени.",
+    "ja-JP": "{source} からモデルをダウンロードしています (進行状況 {progress}%、速度 {speed})。切り替えてリアルタイム カードを表示します。",
+    "de-DE": "Modell wird von {source} heruntergeladen (Fortschritt {progress} %, Geschwindigkeit {speed}). Wechseln Sie zurück, um die Echtzeitkarte anzuzeigen.",
+    "fr-FR": "En téléchargeant le modèle depuis {source} (progression {progress} %, vitesse {speed}), revenez pour afficher la carte en temps réel.",
+    "ko-KR": "{source}에서 모델을 다운로드하는 중입니다(진행률 {progress}%, 속도 {speed}). 실시간 카드를 보려면 다시 전환하세요.",
+    "$files": [
+      "src/components/model/model-list-panel.tsx(44175-44235)"
+    ],
+    "$id": 1213
+  },
+  "切回查看": {
+    "en-US": "Switch back to view",
+    "es-ES": "Volver a ver",
+    "ar-EG": "التبديل مرة أخرى للعرض",
+    "pt-PT": "Voltar para visualizar",
+    "ru-RU": "Вернуться к просмотру",
+    "ja-JP": "表示に戻ります",
+    "de-DE": "Wechseln Sie zurück zur Ansicht",
+    "fr-FR": "Revenir à la vue",
+    "ko-KR": "다시 보기로 전환",
+    "$files": [
+      "src/components/model/model-list-panel.tsx(44933-44941)"
+    ],
+    "$id": 1214
   },
   "主程序已开启高维修正与视频检索，请先下载安装下方高亮的 {name} 嵌入模型。": {
     "en-US": "The main program has enabled high-maintenance correction and video retrieval. Please download and install the {name} embedded model highlighted below.",
@@ -4939,6 +5198,7 @@
     "fr-FR": "Le programme principal a permis une correction et une récupération vidéo nécessitant beaucoup de maintenance. Veuillez télécharger et installer le modèle intégré {name} mis en évidence ci-dessous.",
     "ko-KR": "메인 프로그램을 통해 유지 관리가 많이 필요한 수정 및 비디오 검색이 가능해졌습니다. 아래에 강조 표시된 {name} 임베디드 모델을 다운로드하여 설치하세요.",
     "$files": [
+      "src/components/model/model-list-panel.tsx(45579-45623)",
       "src/components/model/model-list-panel.tsx(42895-42939)"
     ],
     "$id": 765
@@ -4954,6 +5214,7 @@
     "fr-FR": "Il n'y a pas encore de modèle officiel recommandé",
     "ko-KR": "아직 공식 추천 모델은 없습니다.",
     "$files": [
+      "src/components/model/model-list-panel.tsx(46090-46102)",
       "src/components/model/model-list-panel.tsx(43406-43418)"
     ],
     "$id": 766
@@ -4969,6 +5230,7 @@
     "fr-FR": "Aucun modèle disponible pour cette source  ",
     "ko-KR": "이 소스에서는 사용 가능한 모델이 없습니다.",
     "$files": [
+      "src/components/model/model-list-panel.tsx(46106-46119)",
       "src/components/model/model-list-panel.tsx(43422-43435)"
     ],
     "$id": 767
@@ -4984,6 +5246,7 @@
     "fr-FR": "Modèle de langage",
     "ko-KR": "언어 모델",
     "$files": [
+      "src/components/model/model-list-panel.tsx(47034-47042)",
       "src/components/model/model-list-panel.tsx(44350-44358)"
     ],
     "$id": 768
@@ -4999,6 +5262,7 @@
     "fr-FR": "Utilisé pour la compréhension du contenu des fichiers, la génération de balises et la description intelligente. Après l'activation, le moteur chargera le modèle pour l'analyse de l'IA.",
     "ko-KR": "파일 내용 이해, 태그 생성 및 지능형 설명에 사용됩니다. 활성화 후 엔진은 AI 분석을 위한 모델을 로드합니다.",
     "$files": [
+      "src/components/model/model-list-panel.tsx(47196-47239)",
       "src/components/model/model-list-panel.tsx(44512-44555)"
     ],
     "$id": 769
@@ -5014,6 +5278,8 @@
     "fr-FR": "Modèle téléchargé",
     "ko-KR": "다운로드된 모델",
     "$files": [
+      "src/components/model/model-list-panel.tsx(47840-47849)",
+      "src/components/model/model-list-panel.tsx(51079-51088)",
       "src/components/model/model-list-panel.tsx(45156-45165)",
       "src/components/model/model-list-panel.tsx(48395-48404)"
     ],
@@ -5030,6 +5296,8 @@
     "fr-FR": "Modèle à télécharger",
     "ko-KR": "다운로드할 모델",
     "$files": [
+      "src/components/model/model-list-panel.tsx(48378-48387)",
+      "src/components/model/model-list-panel.tsx(51620-51629)",
       "src/components/model/model-list-panel.tsx(45694-45703)",
       "src/components/model/model-list-panel.tsx(48936-48945)"
     ],
@@ -5046,6 +5314,8 @@
     "fr-FR": "Mémoire vidéo insuffisante · Téléchargement impossible",
     "ko-KR": "비디오 메모리 부족 · 다운로드할 수 없음",
     "$files": [
+      "src/components/model/model-list-panel.tsx(48935-48950)",
+      "src/components/model/model-list-panel.tsx(52180-52195)",
       "src/components/model/model-list-panel.tsx(46251-46266)",
       "src/components/model/model-list-panel.tsx(49496-49511)"
     ],
@@ -5062,6 +5332,7 @@
     "fr-FR": "Modèle d'intégration d'intégration",
     "ko-KR": "임베딩 모델 임베딩",
     "$files": [
+      "src/components/model/model-list-panel.tsx(50224-50242)",
       "src/components/model/model-list-panel.tsx(47540-47558)"
     ],
     "$id": 773
@@ -5077,6 +5348,7 @@
     "fr-FR": "Utilisé pour la correction vectorielle haute dimension et la récupération sémantique du contenu vidéo. Après l'installation, il peut considérablement améliorer la précision des balises et prendre en charge la recherche en langage naturel du contenu vidéo. Il ne participe pas au processus d’activation et de raisonnement du modèle de langage et s’exécute de manière indépendante et silencieuse.",
     "ko-KR": "비디오 콘텐츠의 고차원 벡터 수정 및 의미 검색에 사용됩니다. 설치 후 태그의 정확성을 크게 향상시키고 비디오 콘텐츠에 대한 자연어 검색을 지원할 수 있습니다. 언어 모델의 활성화 및 추론 프로세스에 참여하지 않으며 독립적으로 자동으로 실행됩니다.",
     "$files": [
+      "src/components/model/model-list-panel.tsx(50396-50469)",
       "src/components/model/model-list-panel.tsx(47712-47785)"
     ],
     "$id": 774
@@ -5500,81 +5772,6 @@
       "src/components/model/model-param-drawer.tsx(19688-19714)"
     ],
     "$id": 802
-  },
-  "参数已保存，需重启引擎后生效": {
-    "en-US": "The parameters have been saved and will take effect after restarting the engine.",
-    "es-ES": "Los parámetros se han guardado y entrarán en vigor después de reiniciar el motor.",
-    "ar-EG": "تم حفظ المعلمات وستدخل حيز التنفيذ بعد إعادة تشغيل المحرك.",
-    "pt-PT": "Os parâmetros foram salvos e entrarão em vigor após a reinicialização do motor.",
-    "ru-RU": "Параметры сохранены и вступят в силу после перезапуска двигателя.",
-    "ja-JP": "パラメータは保存されており、エンジンの再起動後に有効になります。",
-    "de-DE": "Die Parameter wurden gespeichert und werden nach einem Neustart des Motors wirksam.",
-    "fr-FR": "Les paramètres ont été enregistrés et prendront effet après le redémarrage du moteur.",
-    "ko-KR": "매개변수는 저장되었으며 엔진을 다시 시작한 후에 적용됩니다.",
-    "$files": [
-      "src/components/model/model-param-drawer.tsx(20273-20291)"
-    ],
-    "$id": 803
-  },
-  "当前模型正在运行中，新启动参数需在服务重新拉起时生效。": {
-    "en-US": "The current model is running, and the new startup parameters need to take effect when the service is restarted.",
-    "es-ES": "El modelo actual se está ejecutando y los nuevos parámetros de inicio deben entrar en vigor cuando se reinicia el servicio.",
-    "ar-EG": "النموذج الحالي قيد التشغيل، ويجب أن تدخل معلمات بدء التشغيل الجديدة حيز التنفيذ عند إعادة تشغيل الخدمة.",
-    "pt-PT": "O modelo atual está em execução e os novos parâmetros de inicialização precisam entrar em vigor quando o serviço for reiniciado.",
-    "ru-RU": "Текущая модель работает, и новые параметры запуска должны вступить в силу при перезапуске службы.",
-    "ja-JP": "現在のモデルは実行中であり、サービスの再起動時に新しい起動パラメータが有効になる必要があります。",
-    "de-DE": "Das aktuelle Modell wird ausgeführt und die neuen Startparameter müssen wirksam werden, wenn der Dienst neu gestartet wird.",
-    "fr-FR": "Le modèle actuel est en cours d'exécution et les nouveaux paramètres de démarrage doivent prendre effet au redémarrage du service.",
-    "ko-KR": "현재 모델이 실행 중이며 서비스가 다시 시작되면 새 시작 매개변수가 적용되어야 합니다.",
-    "$files": [
-      "src/components/model/model-param-drawer.tsx(20395-20426)"
-    ],
-    "$id": 804
-  },
-  "正在重启...": {
-    "en-US": "Restarting...",
-    "es-ES": "Reiniciando...",
-    "ar-EG": "جارٍ إعادة التشغيل...",
-    "pt-PT": "Reiniciando...",
-    "ru-RU": "Перезапуск...",
-    "ja-JP": "再起動中...",
-    "de-DE": "Neustart...",
-    "fr-FR": "Redémarrage...",
-    "ko-KR": "다시 시작하는 중...",
-    "$files": [
-      "src/components/model/model-param-drawer.tsx(20993-21004)"
-    ],
-    "$id": 805
-  },
-  "立即重启生效": {
-    "en-US": "Restart immediately to take effect",
-    "es-ES": "Reinicie inmediatamente para que surta efecto",
-    "ar-EG": "أعد التشغيل فورًا ليصبح ساري المفعول",
-    "pt-PT": "Reinicie imediatamente para entrar em vigor",
-    "ru-RU": "Немедленно перезапустите, чтобы изменения вступили в силу.",
-    "ja-JP": "すぐに再起動して有効にします",
-    "de-DE": "Starten Sie sofort neu, damit es wirksam wird",
-    "fr-FR": "Redémarrez immédiatement pour prendre effet",
-    "ko-KR": "적용하려면 즉시 다시 시작하세요.",
-    "$files": [
-      "src/components/model/model-param-drawer.tsx(21008-21018)"
-    ],
-    "$id": 806
-  },
-  "稍后重启": {
-    "en-US": "Restart later",
-    "es-ES": "Reiniciar más tarde",
-    "ar-EG": "أعد التشغيل لاحقًا",
-    "pt-PT": "Reinicie mais tarde",
-    "ru-RU": "Перезагрузить позже",
-    "ja-JP": "後で再起動する",
-    "de-DE": "Später neu starten",
-    "fr-FR": "Redémarrer plus tard",
-    "ko-KR": "나중에 다시 시작",
-    "$files": [
-      "src/components/model/model-param-drawer.tsx(21430-21438)"
-    ],
-    "$id": 807
   },
   "恢复默认": {
     "en-US": "Restore default",

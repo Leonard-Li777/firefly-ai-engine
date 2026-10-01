@@ -64,6 +64,8 @@
     "!**/*test*",
     "!**/*example*",
     "!pro/**",
+    "!target/**",
+    "!target*",
     "!**/*.wraper.*"
   ],
   "defaultNamespace": "default",
