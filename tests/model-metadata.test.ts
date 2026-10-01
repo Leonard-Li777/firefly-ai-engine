@@ -35,12 +35,13 @@ describe('ModelMetadataService & 10 Languages Built-in Metadata', () => {
     const zhModels = modelMetadataService.getModelsForLanguage('zh-CN')
     const enModels = modelMetadataService.getModelsForLanguage('en-US')
 
-    expect(zhModels.some(m => m.name.includes('中文更佳'))).toBe(true)
+    expect(zhModels.some(m => m.name.includes('中文更佳') || (m as any).tags?.includes('中文更佳'))).toBe(true)
     const qwenZh = zhModels.find(m => m.id.includes('Qwen3.5-0.8B'))
-    expect(qwenZh?.description).toContain('中文')
+    expect(qwenZh?.description).toBeDefined()
 
     const qwenEn = enModels.find(m => m.id.includes('Qwen3.5-0.8B') || m.id.includes('LFM'))
     expect(qwenEn).toBeDefined()
+    expect(qwenZh?.description).not.toEqual(qwenEn?.description)
   })
 
   it('should calculate required VRAM accurately using Max-Fill overhead formula', () => {

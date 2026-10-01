@@ -479,8 +479,9 @@ export const useEngineStore = create<EngineStoreState>((set, get) => ({
     if (!switched) return false
     const models = get().models
     const matched = models.find(m => m.id === modelId && (!source || m.source === source))
+    const effectivePath = localPath || matched?.localPath
     const effectiveIsEmbedding = isEmbedding !== undefined ? isEmbedding : (matched?.isEmbedding || modelId.toLowerCase().includes('wemm'))
-    return get().startEngine({ mode: effectiveIsEmbedding ? 'embedding' : 'language', modelId })
+    return get().startEngine({ mode: effectiveIsEmbedding ? 'embedding' : 'language', modelId: effectivePath || modelId })
   },
 
   runRegionDetection: async (force?: boolean) => {

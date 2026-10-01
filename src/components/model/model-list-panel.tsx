@@ -179,7 +179,7 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isEx = false,
   const handleActivateAndStart = async () => {
     try {
       setIsStartLaunching(true)
-      await activateAndStart(model.id, model.source, model.localPath, model.name, model.isEmbedding)
+      await activateAndStart(model.id, model.source, resolvedLocalPath, model.name, model.isEmbedding)
     } finally {
       setIsStartLaunching(false)
     }
@@ -197,7 +197,7 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isEx = false,
   const handleDelete = async () => {
     try {
       setIsDeleting(true)
-      const ok = await deleteModel(model.id, model.localPath)
+      const ok = await deleteModel(model.id, resolvedLocalPath || model.localPath)
       if (ok) {
         resetDownload()
         setIsDeleteConfirm(false)
@@ -239,6 +239,16 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isEx = false,
   const intelligence = INTELLIGENCE_CONFIG(model.intelligenceLevel)
   const isDownloadingOrPaused = dl.isDownloading || dl.isPaused
 
+  // 确保无论 model.localPath 是否由后端提前填入，都能从 modelsDir 解析得到有效物理路径
+  const resolvedLocalPath = React.useMemo(() => {
+    let lp = model.localPath
+    if (!lp && isDownloaded && modelsDir) {
+      const resolution = ModelResolver.resolve(model.id, modelsDir, undefined, model.source)
+      if (resolution?.modelPath) lp = resolution.modelPath
+    }
+    return lp
+  }, [model.localPath, isDownloaded, modelsDir, model.id, model.source])
+
   // 高级操作可见性：移除（未下载的自定义模型）/ 删除（已下载且显存未超标）/ 参数配置（已下载且显存未超标）
   const canRemoveCustom = !!model.custom && !isDownloaded
   const canDeleteModel = isDownloaded && !isEx
@@ -250,16 +260,8 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isEx = false,
   // 或合并匹配失配）时，用 ModelResolver 从当前 modelsDir 主动推导物理路径，
   // 避免"已就绪却无路径"的悬空状态。
   const displayRelativePath = React.useMemo(() => {
-    let localPath = model.localPath
-    if (!localPath && isDownloaded) {
-      const baseDir = modelsDir
-      if (baseDir) {
-        const resolution = ModelResolver.resolve(model.id, baseDir, undefined, model.source)
-        if (resolution?.modelPath) localPath = resolution.modelPath
-      }
-    }
-    return getDisplayRelativeModelPath(localPath, modelsDir)
-  }, [model.localPath, model.id, model.source, modelsDir, isDownloaded])
+    return getDisplayRelativeModelPath(resolvedLocalPath, modelsDir)
+  }, [resolvedLocalPath, modelsDir])
 
   // 自动修复：已下载但 localPath 持续缺失（推导也失败）时，触发一次后端重扫描刷新列表，
   // 让磁盘上已存在的物理文件条目（含 localPath）合并进推荐底表。组件生命周期内仅触发一次。
@@ -288,7 +290,7 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isEx = false,
   const handleActivate = async () => {
     try {
       setIsActivating(true)
-      await onActivate(model.id, model.source, model.localPath, model.name)
+      await onActivate(model.id, model.source, resolvedLocalPath, model.name)
     } finally {
       setIsActivating(false)
     }

@@ -209,13 +209,14 @@ fn new_task_id() -> String {
     format!("task_{}", ts)
 }
 
-/// 从文件名中提取标准化量化标识（如 q4_k_m, ptq1_0, pq2_0 等，去除 ud- 前缀，纯小写）
+/// 从文件名中提取标准化量化标识（如 q4_k_m, q4km, ptq1_0, pq2_0 等，去除 ud- 前缀，纯小写）
 pub(crate) fn extract_quant_tag_from_name(name: &str) -> Option<String> {
     let lower = name.to_lowercase();
     // 优先匹配包含下划线的标准量化（按特异性从长到短排列，防止子串误匹配）
     let patterns = [
         "q4_k_xl", "q5_k_xl", "q6_k_xl",
         "q4_k_m", "q4_k_s", "q5_k_m", "q5_k_s", "q6_k_m", "q6_k_s", "q3_k_l", "q3_k_m", "q3_k_s",
+        "q4km", "q4ks", "q5km", "q5ks", "q6km", "q6ks", "q3kl", "q3km", "q3ks", "q2k",
         "ptq1_0", "ptq2_0", "pq2_0",
         "iq4_nl", "iq4_xs", "iq3_xxs", "iq2_xxs", "iq2_xs", "iq1_s", "iq1_m", "iq3_s", "iq3_m", "iq2_s",
         "q8_0", "q8_1", "q4_0", "q4_1", "q5_0", "q5_1", "q6_k", "q5_k", "q4_k", "q3_k", "q2_k",
@@ -227,6 +228,166 @@ pub(crate) fn extract_quant_tag_from_name(name: &str) -> Option<String> {
         }
     }
     None
+}
+
+/// 统一深度查找模型物理文件（支持绝对路径、相对路径、ModelScope/HuggingFace 仓库目录与量化标签精准匹配）
+pub(crate) fn find_model_file(
+    model_identifier: &str,
+    models_dir: &std::path::Path,
+    found_ggufs: &[(PathBuf, String)],
+) -> Option<PathBuf> {
+    let trimmed = model_identifier.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+
+    // 1. 若已经是存在且非 mmproj 的物理绝对路径或相对路径，直接采用
+    let p = PathBuf::from(trimmed);
+    if p.is_absolute() && p.exists() {
+        let nl = p.file_name().and_then(|n| n.to_str()).unwrap_or("").to_lowercase();
+        if !nl.contains("mmproj") {
+            return Some(p);
+        }
+    }
+    let joined = models_dir.join(trimmed);
+    if joined.exists() {
+        let nl = joined.file_name().and_then(|n| n.to_str()).unwrap_or("").to_lowercase();
+        if !nl.contains("mmproj") {
+            return Some(joined);
+        }
+    }
+
+    // 若在已扫描的 found_ggufs 列表中已包含此路径（适配 Windows/Linux 路径分隔符与大小写规范化）
+    let trimmed_norm = trimmed.replace('\\', "/").to_lowercase();
+    if let Some((matched, _)) = found_ggufs.iter().find(|(path, _)| {
+        let path_norm = path.to_string_lossy().replace('\\', "/").to_lowercase();
+        path_norm == trimmed_norm
+    }) {
+        let nl = matched.file_name().and_then(|n| n.to_str()).unwrap_or("").to_lowercase();
+        if !nl.contains("mmproj") {
+            return Some(matched.clone());
+        }
+    }
+
+    // 2. 清理 @source 后缀
+    let id_clean_source = trimmed.split('@').next().unwrap_or(trimmed).trim();
+    let is_windows_drive = id_clean_source.len() >= 2
+        && id_clean_source.chars().nth(1) == Some(':')
+        && id_clean_source.chars().next().map(|c| c.is_ascii_alphabetic()).unwrap_or(false);
+
+    let (repo_part, tag_part) = if is_windows_drive {
+        (id_clean_source, None)
+    } else {
+        match id_clean_source.split_once(':') {
+            Some((r, t)) => (r, Some(t)),
+            None => (id_clean_source, None),
+        }
+    };
+
+    // 3. 优先检查冒号后是否直接指定了物理文件名（以 .gguf 结尾）
+    if let Some(exact_file) = tag_part {
+        if exact_file.ends_with(".gguf") {
+            if let Some((p, _)) = found_ggufs.iter().find(|(_, name)| {
+                !name.to_lowercase().contains("mmproj") && name.eq_ignore_ascii_case(exact_file)
+            }) {
+                return Some(p.clone());
+            }
+        }
+    }
+
+    let clean_tag = tag_part.map(|t| {
+        t.trim_start_matches("ud-")
+            .trim_start_matches("UD-")
+            .to_lowercase()
+            .replace('_', "")
+    });
+
+    // 4. 按仓库目录路径结构深度匹配（涵盖 ModelScope 与 HuggingFace 现代/传统规范）
+    let repo_norm = repo_part.replace('\\', "/").to_lowercase();
+    let ms_norm = format!("hub/models/{}", repo_norm);
+    let hf_norm = format!("models--{}", repo_norm.replace('/', "--"));
+    let repo_nogguf = repo_norm.replace("-gguf", "");
+
+    let matched_by_dir = found_ggufs.iter().find(|(p, name)| {
+        let nl = name.to_lowercase();
+        if nl.contains("mmproj") {
+            return false;
+        }
+
+        let p_norm = p.to_string_lossy().replace('\\', "/").to_lowercase();
+        let in_repo = p_norm.contains(&ms_norm)
+            || p_norm.contains(&hf_norm)
+            || p_norm.contains(&repo_norm)
+            || (!repo_nogguf.is_empty() && p_norm.contains(&repo_nogguf));
+
+        if !in_repo {
+            return false;
+        }
+
+        match &clean_tag {
+            Some(tag) => {
+                let name_clean = nl.replace('_', "");
+                if name_clean.contains(tag) {
+                    return true;
+                }
+                if let Some(fq) = extract_quant_tag_from_name(&nl) {
+                    return fq.replace('_', "") == *tag;
+                }
+                false
+            }
+            None => true,
+        }
+    });
+
+    if let Some((p, _)) = matched_by_dir {
+        return Some(p.clone());
+    }
+
+    // 5. 宽松匹配：文件名或路径中包含仓库短名（tail）并量化标签一致
+    let repo_tail = repo_part.split('/').last().unwrap_or(repo_part);
+    let repo_tail_clean = repo_tail.replace("-gguf", "").replace("-GGUF", "").to_lowercase();
+    let repo_tail_nounder = repo_tail_clean.replace('_', "-");
+
+    let matched_by_tail = found_ggufs.iter().find(|(p, name)| {
+        let nl = name.to_lowercase();
+        if nl.contains("mmproj") {
+            return false;
+        }
+
+        let p_norm = p.to_string_lossy().replace('\\', "/").to_lowercase();
+        let hit_tail = p_norm.contains(&repo_tail_clean)
+            || p_norm.contains(&repo_tail_nounder)
+            || nl.contains(&repo_tail_clean)
+            || nl.contains(&repo_tail_nounder);
+
+        if !hit_tail {
+            return false;
+        }
+
+        match &clean_tag {
+            Some(tag) => {
+                let name_clean = nl.replace('_', "");
+                if name_clean.contains(tag) {
+                    return true;
+                }
+                if let Some(fq) = extract_quant_tag_from_name(&nl) {
+                    return fq.replace('_', "") == *tag;
+                }
+                false
+            }
+            None => true,
+        }
+    });
+
+    if let Some((p, _)) = matched_by_tail {
+        return Some(p.clone());
+    }
+
+    // 6. 精确文件名（不含 .gguf）匹配
+    found_ggufs.iter().find(|(_, name)| {
+        !name.to_lowercase().contains("mmproj")
+            && name.trim_end_matches(".gguf").eq_ignore_ascii_case(id_clean_source)
+    }).map(|(p, _)| p.clone())
 }
 
 /// 优先从模型列表（官方预设元数据 + 用户自定义模型）中按 model_id 查找 quantization 字段
@@ -2799,28 +2960,8 @@ async fn switch_model(
     // 2. 否则在模型目录中深度查找最匹配的 .gguf 文件（排除 mmproj）
     let model_path = model_path.or_else(|| {
         let found_ggufs = collect_all_ggufs(&models_dir);
-        let model_id_lower = payload.model_id.to_lowercase();
-        let id_clean_source = model_id_lower.split('@').next().unwrap_or(&model_id_lower);
-
-        // 优先检查是否有冒号指定确切的 .gguf 文件名
-        if let Some(exact_file) = id_clean_source.split(':').nth(1) {
-            if exact_file.ends_with(".gguf") {
-                if let Some((p, _)) = found_ggufs.iter().find(|(_, name)| {
-                    let nl = name.to_lowercase();
-                    !nl.contains("mmproj") && nl == exact_file
-                }) {
-                    return Some(p.to_string_lossy().to_string());
-                }
-            }
-        }
-
-        let id_tail = id_clean_source.split('/').last().unwrap_or(id_clean_source);
-        let id_clean = id_tail.split(':').next().unwrap_or(id_tail).replace("-gguf", "");
-
-        found_ggufs.iter().find(|(_, name)| {
-            let name_lower = name.to_lowercase();
-            !name_lower.contains("mmproj") && (name_lower.contains(&id_clean) || id_clean.contains(&name_lower.replace(".gguf", "")))
-        }).map(|(p, _)| p.to_string_lossy().to_string())
+        find_model_file(&payload.model_id, &models_dir, &found_ggufs)
+            .map(|p| p.to_string_lossy().to_string())
     });
 
     let current_model = model_path.clone().unwrap_or_else(|| payload.model_id.clone());
@@ -3697,7 +3838,12 @@ async fn start_engine_service(
 
     // 1. 计算本次请求的目标意图模型 target_model
     let target_model = if let Some(ref m) = req.model_id {
-        Some(m.clone())
+        let config = state.coordinator.config.lock().await;
+        let all_ggufs = collect_all_ggufs(&config.models_dir);
+        let resolved = find_model_file(m, &config.models_dir, &all_ggufs)
+            .map(|p| p.to_string_lossy().to_string())
+            .unwrap_or_else(|| m.clone());
+        Some(resolved)
     } else if req.mode.as_deref() == Some("embedding") {
         let mut config = state.coordinator.config.lock().await;
         if let Some(ref m) = config.active_embedding_model {
@@ -4112,6 +4258,7 @@ mod tests {
             status: "stopped".to_string(),
             active_backend: "cuda".to_string(),
             current_model: None,
+            current_model_name: None,
             active_language_model: Some("qwen2.5-7b@modelscope".to_string()),
             active_embedding_model: Some("wemm-2b@modelscope".to_string()),
             models_dir: "C:\\models".to_string(),
@@ -4294,6 +4441,56 @@ mod tests {
         // 非 llama 目录绝不匹配
         assert!(!is_engine_dir_matching_backend("fastfetch-2.62.0-win32-x64", "vulkan"));
         assert!(!is_engine_dir_matching_backend("llama-model-download-1.0.0-win32-x64", "cpu"));
+    }
+
+    /// 验证 compact 量化类型（如 q4km）与标准量化类型（如 q4_k_m）的正确提取及规范化等价
+    #[test]
+    fn test_extract_quant_tag_compact() {
+        let raw_cpm = extract_quant_tag_from_name("minicpm5_1b_heretic_q4km.gguf");
+        assert_eq!(raw_cpm, Some("q4km".to_string()));
+        assert_eq!(extract_quant_tag_from_name("Q4KM"), Some("q4km".to_string()));
+        assert_eq!(extract_quant_tag_from_name("Q4_K_M"), Some("q4_k_m".to_string()));
+        assert_eq!(extract_quant_tag_from_name("q4ks"), Some("q4ks".to_string()));
+        assert_eq!(extract_quant_tag_from_name("q5km"), Some("q5km".to_string()));
+        assert_eq!(extract_quant_tag_from_name("q8_0"), Some("q8_0".to_string()));
+
+        // 验证去下划线后 compact 与标准格式判定完全等价
+        assert_eq!(
+            raw_cpm.as_deref().unwrap().replace('_', ""),
+            "q4_k_m".replace('_', "")
+        );
+    }
+
+    /// 验证 find_model_file 精准匹配 MiniCPM5，杜绝误匹配到 Bonsai 等其他模型
+    #[test]
+    fn test_find_model_file_minicpm5() {
+        let models_dir = std::path::PathBuf::from("C:\\Users\\test\\AppData\\Roaming\\com.firefly.ai-engine\\models");
+        let minicpm5_path = models_dir.join("hub\\models\\zensignGG\\MiniCPM5-1B-Claude-Opus-Fable5-V2-Thinking-heretic-GGUF\\minicpm5_1b_heretic_q4km.gguf");
+        let bonsai_path = models_dir.join("hub\\models\\prism-ml\\Ternary-Bonsai-2-27B-gguf\\Ternary-Bonsai-2-27B-PQ2_0.gguf");
+
+        let all_ggufs = vec![
+            (bonsai_path.clone(), "Ternary-Bonsai-2-27B-PQ2_0.gguf".to_string()),
+            (minicpm5_path.clone(), "minicpm5_1b_heretic_q4km.gguf".to_string()),
+        ];
+
+        // 场景 1：使用标准 ModelScope ID 带量化后缀:Q4KM@modelscope
+        let model_id_with_source = "zensignGG/MiniCPM5-1B-Claude-Opus-Fable5-V2-Thinking-heretic-GGUF:Q4KM@modelscope";
+        let found = find_model_file(model_id_with_source, &models_dir, &all_ggufs);
+        assert_eq!(found, Some(minicpm5_path.clone()), "必须精准匹配到 MiniCPM5，绝不可落到 Bonsai");
+
+        // 场景 2：使用标准 ModelScope ID 带量化后缀:Q4KM
+        let model_id = "zensignGG/MiniCPM5-1B-Claude-Opus-Fable5-V2-Thinking-heretic-GGUF:Q4KM";
+        let found2 = find_model_file(model_id, &models_dir, &all_ggufs);
+        assert_eq!(found2, Some(minicpm5_path.clone()), "无源后缀 ID 也必须精准匹配 MiniCPM5");
+
+        // 场景 3：直接传物理文件绝对路径
+        let found_abs = find_model_file(minicpm5_path.to_str().unwrap(), &models_dir, &all_ggufs);
+        assert_eq!(found_abs, Some(minicpm5_path.clone()));
+
+        // 场景 4：不存在的模型 ID 必须返回 None，不能误匹配到任何其它模型
+        let not_exist = "non-existent-author/NonExistentModel-GGUF:Q4KM";
+        let found_none = find_model_file(not_exist, &models_dir, &all_ggufs);
+        assert_eq!(found_none, None, "未下载的模型必须返回 None");
     }
 }
 

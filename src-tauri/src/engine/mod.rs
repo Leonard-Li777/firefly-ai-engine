@@ -21,6 +21,7 @@ pub struct EngineStatus {
     pub status: String,         // "starting" | "ready" | "error" | "stopped"
     pub active_backend: String, // "cuda" | "vulkan" | "cpu" | ...
     pub current_model: Option<String>,
+    pub current_model_name: Option<String>,
     pub active_language_model: Option<String>,
     pub active_embedding_model: Option<String>,
     pub models_dir: String,
@@ -232,6 +233,22 @@ impl EngineCoordinator {
             None
         };
 
+        let current_model_name = if proc_status == ProcessStatus::Running {
+            let active_name = self.active_model_name.lock().await.clone();
+            if active_name.is_some() {
+                active_name
+            } else if let Some(ref m_path_str) = current_model {
+                let m_path = std::path::PathBuf::from(m_path_str);
+                let meta_dirs = crate::resource_scope::allowed_install_model_meta_dirs(None);
+                let custom_models = self.config.lock().await.custom_models.clone();
+                resolve_model_name_by_path(&m_path, None, &custom_models, &meta_dirs)
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
         let mut hardware = hardware;
         hardware.current_tier = active_backend.clone();
 
@@ -251,6 +268,7 @@ impl EngineCoordinator {
             status: status_str.to_string(),
             active_backend,
             current_model,
+            current_model_name,
             active_language_model,
             active_embedding_model,
             models_dir,
@@ -315,50 +333,10 @@ impl EngineCoordinator {
         let all_ggufs = crate::server::api::collect_all_ggufs(&models_dir);
 
         let model_path = if let Some(ref m) = active_model_lock {
-            let p = std::path::PathBuf::from(&m);
-            let p_name = p.file_name().and_then(|n| n.to_str()).unwrap_or("").to_lowercase();
-            if p.is_absolute() && p.exists() && !p_name.contains("mmproj") {
-                p
-            } else if models_dir.join(&m).exists() && !m.to_lowercase().contains("mmproj") {
-                models_dir.join(&m)
+            if let Some(matched_p) = crate::server::api::find_model_file(m, &models_dir, &all_ggufs) {
+                matched_p
             } else {
-                // 若 active_model 存储的是模型 ID 或相对名，在深度扫描列表中匹配
-                let m_lower = m.to_lowercase();
-                let m_clean_source = m_lower.split('@').next().unwrap_or(&m_lower);
-
-                // 优先检查是否有冒号指定确切的 .gguf 文件名
-                let exact_match = if let Some(exact_file) = m_clean_source.split(':').nth(1) {
-                    if exact_file.ends_with(".gguf") {
-                        all_ggufs.iter().find(|(_, name)| {
-                            let nl = name.to_lowercase();
-                            !nl.contains("mmproj") && nl == exact_file
-                        }).map(|(p, _)| p.clone())
-                    } else {
-                        None
-                    }
-                } else {
-                    None
-                };
-
-                if let Some(matched_p) = exact_match {
-                    matched_p
-                } else {
-                    let m_tail = m_clean_source.split('/').last().unwrap_or(m_clean_source);
-                    let m_clean = m_tail.split(':').next().unwrap_or(m_tail).replace("-gguf", "");
-
-                    all_ggufs.iter().find(|(_, name)| {
-                        let name_lower = name.to_lowercase();
-                        !name_lower.contains("mmproj") && (name_lower.contains(&m_clean) || m_clean.contains(&name_lower.replace(".gguf", "")))
-                    }).map(|(p, _)| p.clone())
-                    .or_else(|| {
-                        // 降级为已下载的第一个非 mmproj、非 wemm 的主语言模型
-                        all_ggufs.iter().find(|(_, name)| {
-                            let nl = name.to_lowercase();
-                            !nl.contains("mmproj") && !nl.contains("wemm")
-                        }).map(|(p, _)| p.clone())
-                    })
-                    .ok_or_else(|| anyhow::anyhow!("未找到模型文件: {}，且当前存储目录中没有可用 GGUF 模型", m))?
-                }
+                return Err(anyhow::anyhow!("未找到模型【{}】对应的物理文件，请确认是否已下载", m));
             }
         } else {
             // 没有指定激活模型时，从模型目录中挑选第一个已下载就绪的非 mmproj、非 wemm 的主语言模型
@@ -385,15 +363,28 @@ impl EngineCoordinator {
             .and_then(|s| s.to_str())
             .unwrap_or("default")
             .to_string();
-        let model_alias = active_name_lock.clone().unwrap_or_else(|| fallback_stem.clone());
+
+        let model_meta_dirs = crate::resource_scope::allowed_install_model_meta_dirs(None);
+        let resolved_model_name = resolve_model_name_by_path(
+            &model_path,
+            active_name_lock.as_deref(),
+            &custom_models,
+            &model_meta_dirs,
+        );
+        let model_alias = resolved_model_name
+            .clone()
+            .unwrap_or_else(|| active_name_lock.clone().unwrap_or_else(|| fallback_stem.clone()));
+
+        if resolved_model_name.is_some() && active_name_lock.is_none() {
+            *self.active_model_name.lock().await = resolved_model_name.clone();
+        }
 
         // 判定当前模型是否为多模态模型：
         // 权威检查模型元数据/自定义模型配置，若 isMultiModal: false 则绝不挂载投影模型！
-        let model_meta_dirs = crate::resource_scope::allowed_install_model_meta_dirs(None);
         let is_multimodal = detect_model_is_multimodal(
             &model_path,
             active_model_lock.as_deref(),
-            active_name_lock.as_deref(),
+            resolved_model_name.as_deref().or(active_name_lock.as_deref()),
             &custom_models,
             &model_meta_dirs,
         );
@@ -412,8 +403,12 @@ impl EngineCoordinator {
 
         let model_size_gb = std::fs::metadata(&model_path).map(|m| m.len() as f64 / (1024.0 * 1024.0 * 1024.0)).unwrap_or(1.0);
         let model_lower = model_str.to_lowercase();
-        let is_minicpm5 = model_lower.contains("minicpm5");
-        let is_nanbeige4 = model_lower.contains("nanbeige4");
+        let is_minicpm5 = model_lower.contains("minicpm5")
+            || model_alias.to_lowercase().contains("minicpm5")
+            || active_model_lock.as_deref().unwrap_or("").to_lowercase().contains("minicpm5");
+        let is_nanbeige4 = model_lower.contains("nanbeige4")
+            || model_alias.to_lowercase().contains("nanbeige4")
+            || active_model_lock.as_deref().unwrap_or("").to_lowercase().contains("nanbeige4");
 
         let (user_model_params, custom_layers, custom_ctx, enable_thinking) = {
             let config = self.config.lock().await;
@@ -595,6 +590,107 @@ pub fn detect_model_is_multimodal(
     name_lower.contains("-vl") || name_lower.contains("_vl") || name_lower.contains("vision")
 }
 
+/// 根据模型物理路径反查规范的模型中文/展示名称（优先从自定义模型和预设模型元数据中检索）
+pub fn resolve_model_name_by_path(
+    model_path: &std::path::Path,
+    active_name: Option<&str>,
+    custom_models: &[crate::config::CustomModelEntry],
+    meta_dirs: &[std::path::PathBuf],
+) -> Option<String> {
+    if let Some(name) = active_name {
+        if !name.trim().is_empty() {
+            return Some(name.to_string());
+        }
+    }
+    let file_name = model_path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("")
+        .to_string();
+    let name_lower = file_name.to_lowercase();
+    let path_str_lower = model_path.to_string_lossy().to_lowercase();
+
+    // 1. 检查自定义模型
+    for custom in custom_models {
+        if custom.file_name.eq_ignore_ascii_case(&file_name) {
+            return Some(custom.name.clone());
+        }
+    }
+
+    // 2. 检查预设模型元数据
+    let file_quant = crate::server::api::extract_quant_tag_from_name(&name_lower);
+    for dir in meta_dirs {
+        for entry in ["model_zh-CN.json", "model_zh.json", "model_en-US.json", "model_en.json"] {
+            let meta_file = dir.join(entry);
+            if let Ok(content) = std::fs::read_to_string(&meta_file) {
+                if let Ok(val) = serde_json::from_str::<serde_json::Value>(&content) {
+                    if let Some(models) = val.get("models").and_then(|m| m.as_array()) {
+                        for m in models {
+                            let id = m.get("id").and_then(|v| v.as_str()).unwrap_or("");
+                            let id_lower = id.to_lowercase();
+                            let model_name = m.get("name").and_then(|v| v.as_str());
+
+                            // 检查文件路径是否包含 repo id 片段（例如 zensignGG/MiniCPM5-1B...）
+                            let id_tail = id_lower.split('/').last().unwrap_or(&id_lower);
+                            let id_tail_clean = id_tail.replace("-gguf", "");
+                            let repo_match = path_str_lower.contains(&id_lower)
+                                || path_str_lower.contains(id_tail)
+                                || path_str_lower.contains(&id_lower.replace('/', "\\"))
+                                || path_str_lower.contains(&id_lower.replace('/', "--"));
+
+                            let expected_quant = m.get("quantization").and_then(|v| v.as_str());
+                            let tag_clean = expected_quant
+                                .map(|q| q.trim_start_matches("UD-").to_lowercase());
+
+                            let tag_ok = match (&tag_clean, &file_quant) {
+                                (Some(expected), Some(actual)) => expected == actual,
+                                (Some(expected), None) => name_lower.contains(expected.as_str()),
+                                (None, _) => true,
+                            };
+
+                            let file_match = name_lower.contains(id_tail)
+                                || name_lower.contains(&id_tail_clean)
+                                || (tag_ok && (
+                                    (name_lower.contains("minicpm5") && id_lower.contains("minicpm5") && (name_lower.contains("1b") == id_lower.contains("1b")))
+                                    || (name_lower.contains("qwen") && id_lower.contains("qwen"))
+                                    || (name_lower.contains("nanbeige") && id_lower.contains("nanbeige"))
+                                ));
+
+                            if (repo_match || file_match) && tag_ok {
+                                if let Some(nm) = model_name {
+                                    return Some(nm.to_string());
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 3. 核心模型语义兜底映射（严禁向用户直接透传冰冷的物理文件名）
+    if name_lower.contains("minicpm5") {
+        if name_lower.contains("1b") {
+            return Some("MiniCPM5 1B（较好•越狱）".to_string());
+        }
+        if name_lower.contains("2b") {
+            return Some("MiniCPM5 2B（高质量•高速）".to_string());
+        }
+    }
+    if name_lower.contains("qwen3.5") || name_lower.contains("qwen3_5") {
+        if name_lower.contains("0.8b") || name_lower.contains("0_8b") {
+            return Some("Qwen 3.5 0.8B (中文更佳)".to_string());
+        }
+    }
+    if name_lower.contains("lfm2.5") || name_lower.contains("lfm2_5") {
+        if name_lower.contains("1.2b") || name_lower.contains("1_2b") {
+            return Some("LFM2.5 1.2B Instruct（英文更佳•高速）".to_string());
+        }
+    }
+
+    None
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -673,5 +769,18 @@ mod tests {
         // 释放后可再次获取
         let third_try = coord.operation_lock.try_lock();
         assert!(third_try.is_ok(), "前一操作完成后，后续操作应能正常获取锁");
+    }
+
+    #[test]
+    fn test_resolve_model_name_by_path_matches_preset() {
+        let model_path = PathBuf::from("C:\\Users\\lilun\\AppData\\Roaming\\com.firefly.ai-engine\\models\\hub\\models\\zensignGG\\MiniCPM5-1B-Claude-Opus-Fable5-V2-Thinking-heretic-GGUF\\minicpm5_1b_heretic_q4km.gguf");
+        let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let meta_dirs = vec![manifest_dir.join("../build/extraResources/model")];
+        let resolved = resolve_model_name_by_path(&model_path, None, &[], &meta_dirs);
+        assert_eq!(resolved, Some("MiniCPM5 1B（较好•越狱）".to_string()), "必须正确解析出 MiniCPM5 1B 的友好中文展示名");
+
+        // 验证即使 meta_dirs 为空，兜底逻辑也能正确识别
+        let fallback_resolved = resolve_model_name_by_path(&model_path, None, &[], &[]);
+        assert_eq!(fallback_resolved, Some("MiniCPM5 1B（较好•越狱）".to_string()), "必须由语义兜底识别出 MiniCPM5 1B");
     }
 }

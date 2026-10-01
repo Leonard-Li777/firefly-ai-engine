@@ -117,22 +117,22 @@ export class ModelResolver {
   }
 
   /**
-   * 从文件名中提取标准化的量化标签（如 q4_k_m, q4_k_xl, q5_k_xl, ptq1_0, pq2_0, f16 等）
+   * 从文件名中提取标准化的量化标签（如 q4_k_m, q4km, q4_k_xl, q5_k_xl, ptq1_0, pq2_0, f16 等）
    */
   public static extractQuantTag(name: string): string | null {
     if (!name) return null
     const clean = name.trim().replace(/\.gguf$/i, '')
-    // 纯量化标签直接匹配 (如 PTQ1_0, PQ2_0, Q4_K_M, IQ4_XS 等)
-    const directMatch = clean.match(/^(?:ud-)?([a-z0-9]+_[a-z0-9_]+|q[0-9]_[0-9a-z_]+|iq[0-9]_[0-9a-z_]+|f16|f32|bf16)$/i)
+    // 纯量化标签直接匹配 (如 PTQ1_0, PQ2_0, Q4_K_M, Q4KM, IQ4_XS 等)
+    const directMatch = clean.match(/^(?:ud-)?(q[0-9](?:_?k)?(?:_?[smlx0-9]+)?|ptq[0-9]_[0-9]+|pq[0-9]_[0-9]+|iq[0-9]_[0-9a-z_]+|bf16|fp16|f16|f32)$/i)
     if (directMatch) {
       return directMatch[1].toLowerCase()
     }
-    const match = name.match(/[-_.](?:ud-)?([a-z0-9]+_[a-z0-9_]+|q[0-9]_[0-9a-z_]+|iq[0-9]_[0-9a-z_]+|f16|f32|bf16)(?:\.gguf|$)/i)
+    const match = name.match(/[-_.](?:ud-)?(q[0-9](?:_?k)?(?:_?[smlx0-9]+)?|ptq[0-9]_[0-9]+|pq[0-9]_[0-9]+|iq[0-9]_[0-9a-z_]+|bf16|fp16|f16|f32)(?:\.gguf|$)/i)
     if (match) {
       return match[1].toLowerCase()
     }
-    // 兼容其他形式量化标记如 Q4_K_M
-    const fallbackMatch = name.match(/(q[0-9]_[a-z0-9_]+|iq[0-9]_[a-z0-9_]+|f16|f32|bf16)/i)
+    // 兼容其他形式量化标记如 Q4_K_M, Q4KM
+    const fallbackMatch = name.match(/(q[0-9](?:_?k)?(?:_?[smlx0-9]+)?|iq[0-9]_[0-9a-z_]+|bf16|fp16|f16|f32)/i)
     return fallbackMatch ? fallbackMatch[1].toLowerCase() : null
   }
 
@@ -146,7 +146,7 @@ export class ModelResolver {
   ): Omit<ModelResolution, 'dirType'> | null {
     if (!filePaths || filePaths.length === 0) return null
 
-    const targetTag = cleanTag ? cleanTag.replace(/^ud-/, '').toLowerCase() : ''
+    const targetNorm = normalizeQuantTag(cleanTag)
 
     // 寻找主模型文件 (.gguf, 非 mmproj, 严格匹配量化 tag)
     const mainModelPath = filePaths.find(p => {
@@ -154,16 +154,16 @@ export class ModelResolver {
       if (!fileName.endsWith('.gguf') || fileName.includes('mmproj')) {
         return false
       }
-      if (!targetTag) {
+      if (!targetNorm) {
         return true
       }
       // 提取文件中的量化 tag 严格比对
       const fileQuant = this.extractQuantTag(fileName)
       if (fileQuant) {
-        return fileQuant === targetTag
+        return normalizeQuantTag(fileQuant) === targetNorm
       }
       // 若未能正则匹配出 quant，则要求完整包含 targetTag 且不与其他常见量化冲突
-      return fileName.includes(targetTag)
+      return normalizeQuantTag(fileName).includes(targetNorm)
     })
 
     if (!mainModelPath) return null
@@ -214,9 +214,17 @@ export class ModelResolver {
 }
 
 /**
+ * 标准化量化标签（剥离 ud- 前缀，全部小写并去除所有下划线，使得 Q4_K_M 与 Q4KM 互相等价）
+ */
+export function normalizeQuantTag(tag?: string | null): string {
+  if (!tag) return ''
+  return tag.replace(/^ud-/i, '').toLowerCase().replace(/_/g, '')
+}
+
+/**
  * 将扫描到的物理模型（或已下载标记）合并至推荐模型底表，确保列表永不丢失。
- * 多策略模糊匹配：量化 tag 归一化（UD- 前缀剥离）、ID 完全相同 / 清除量化后缀的
- * repo ID 相同 / 物理文件名包含核心仓库名，且双方量化 tag 齐备时严格一致（禁止跨量化串绑）。
+ * 多策略模糊匹配：量化 tag 归一化（UD- 前缀剥离、下划线归一）、ID 完全相同 / 清除量化后缀的
+ * repo ID 相同 / 物理文件路径与文件名包含核心仓库名，且双方量化 tag 齐备时严格一致（禁止跨量化串绑）。
  * 纯函数：推荐底表（语言相关）与扫描结果均由调用方注入，不读取任何全局状态。
  *
  * @param recommendedList 当前语言的官方推荐模型底表
@@ -277,7 +285,9 @@ export function mergeScannedWithRecommended(recommendedList: ModelItem[], scanne
       }
 
       // 若双方均指定了量化 tag，则量化 tag 必须严格一致，禁止跨量化串绑！
-      if (recTag && mTag && recTag !== mTag) {
+      const recTagNorm = normalizeQuantTag(recTag)
+      const mTagNorm = normalizeQuantTag(mTag)
+      if (recTagNorm && mTagNorm && recTagNorm !== mTagNorm) {
         return false
       }
 
@@ -287,15 +297,26 @@ export function mergeScannedWithRecommended(recommendedList: ModelItem[], scanne
       // 策略 B: 清除量化后缀后 repo ID 相同且量化 tag 吻合
       const mIdClean = m.id.split(':')[0].toLowerCase()
       if (mIdClean === recIdClean) {
-        return recTag ? recTag === mTag : true
+        return recTagNorm ? recTagNorm === mTagNorm : true
       }
 
-      // 策略 C: 物理文件路径包含模型核心仓库名且量化 tag 吻合
-      if (localFileName) {
-        const localLower = localFileName.toLowerCase()
-        if (localLower.includes(recTail) || localLower.replace(/\.gguf$/, '').includes(recTail.replace(/-gguf$/, ''))) {
-          return recTag ? recTag === mTag : true
-        }
+      // 策略 C: 物理文件路径（或文件名）包含模型核心仓库名且量化 tag 吻合
+      const localPathNorm = (m.localPath || '').replace(/\\/g, '/').toLowerCase()
+      const localFileNameLower = localFileName.toLowerCase()
+      const recTailClean = recTail.replace(/_/g, '-')
+      const recTailUnder = recTail.replace(/-/g, '_')
+      const matchesRepo =
+        (localPathNorm && (
+          localPathNorm.includes(recTail) ||
+          localPathNorm.includes(recTailClean) ||
+          localPathNorm.includes(recTailUnder) ||
+          localPathNorm.includes(recIdClean)
+        )) ||
+        localFileNameLower.includes(recTail) ||
+        localFileNameLower.replace(/\.gguf$/, '').includes(recTail.replace(/-gguf$/, ''))
+
+      if (matchesRepo) {
+        return recTagNorm ? recTagNorm === mTagNorm : true
       }
 
       return false
@@ -331,7 +352,13 @@ export function mergeScannedWithRecommended(recommendedList: ModelItem[], scanne
     }
     const isAlreadyMapped = Array.from(map.values()).some(m => {
       if (m.id === enriched.id) return true
-      if (enriched.localPath && m.localPath === enriched.localPath) return true
+      if (
+        enriched.localPath &&
+        m.localPath &&
+        m.localPath.replace(/\\/g, '/').toLowerCase() === enriched.localPath.replace(/\\/g, '/').toLowerCase()
+      ) {
+        return true
+      }
       return false
     })
     if (!isAlreadyMapped) {

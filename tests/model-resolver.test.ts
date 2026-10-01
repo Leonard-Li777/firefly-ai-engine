@@ -210,4 +210,30 @@ describe('mergeScannedWithRecommended 推荐底表合并', () => {
     expect(merged[0].isDownloaded).toBe(true)
     expect(merged[0].localPath).toBe('C:/Users/test/AppData/Roaming/com.firefly.ai-engine/models/hub/models/prism-ml/Ternary-Bonsai-2-27B-gguf/Ternary-Bonsai-2-27B-PTQ1_0.gguf')
   })
+
+  it('策略 C 与紧凑量化（Q4KM vs Q4_K_M）：MiniCPM5 1B 越狱模型根据磁盘真实目录与量化归一化正确识别已下载状态', () => {
+    const recommended = [
+      makeModel({
+        id: 'zensignGG/MiniCPM5-1B-Claude-Opus-Fable5-V2-Thinking-heretic-GGUF:Q4KM',
+        name: 'MiniCPM5 1B（较好•越狱）',
+        quant: 'Q4KM'
+      })
+    ]
+    const scanned = [
+      makeModel({
+        id: 'minicpm5_1b_heretic_q4km',
+        name: 'minicpm5_1b_heretic_q4km',
+        quant: 'Q4_K_M',
+        isDownloaded: true,
+        localPath: 'C:/Users/lilun/AppData/Roaming/com.firefly.ai-engine/models/hub/models/zensignGG/MiniCPM5-1B-Claude-Opus-Fable5-V2-Thinking-heretic-GGUF/minicpm5_1b_heretic_q4km.gguf'
+      })
+    ]
+
+    const merged = mergeScannedWithRecommended(recommended, scanned)
+
+    expect(merged.length).toBe(1)
+    expect(merged[0].id).toBe('zensignGG/MiniCPM5-1B-Claude-Opus-Fable5-V2-Thinking-heretic-GGUF:Q4KM')
+    expect(merged[0].isDownloaded).toBe(true)
+    expect(merged[0].localPath).toBe('C:/Users/lilun/AppData/Roaming/com.firefly.ai-engine/models/hub/models/zensignGG/MiniCPM5-1B-Claude-Opus-Fable5-V2-Thinking-heretic-GGUF/minicpm5_1b_heretic_q4km.gguf')
+  })
 })
