@@ -1,4 +1,4 @@
-import { ModelItem, ModelResolution } from '../api/types'
+import { ModelItem, ModelResolution, EngineStatusResponse } from '../api/types'
 import { estimateRequiredVRAM } from './model-metadata-service'
 
 /**
@@ -377,4 +377,139 @@ function formatFileSizeToSizeStr(bytes: number): string {
     return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)}GB`
   }
   return `${Math.round(bytes / (1024 * 1024))}MB`
+}
+
+export interface DisplayModelResolutionOptions {
+  engineStatus?: EngineStatusResponse | null
+  models?: ModelItem[]
+  activeModelKey?: string | null
+  activeLanguageModelKey?: string | null
+  activeEmbeddingModelKey?: string | null
+}
+
+export interface DisplayModelResult {
+  modelItem: ModelItem | null
+  modelName: string | null
+  sourceType: 'running' | 'active_language' | 'active_embedding' | 'fallback' | 'none'
+}
+
+/**
+ * 解析当前界面应展示的模型与友好名称
+ * 严格遵循优先级规则：
+ * 启动模型 (Running Model, 仅实际运行态) > 激活模型 (Active Models: 语言模型 > Embedding模型) > 兜底可用模型
+ */
+export function resolveDisplayModel(options: DisplayModelResolutionOptions): DisplayModelResult {
+  const {
+    engineStatus,
+    models = [],
+    activeModelKey,
+    activeLanguageModelKey,
+    activeEmbeddingModelKey
+  } = options
+
+  const safeModels = Array.isArray(models) ? models : []
+  const rawStatus = engineStatus?.status || 'stopped'
+  const isRunningOrStarting = rawStatus === 'ready' || rawStatus === 'starting'
+
+  const matchModel = (model: ModelItem, target: string): boolean => {
+    if (!target) return false
+    if (model.name === target || model.id === target) return true
+    if (`${model.id}@${model.source}` === target) return true
+
+    // 兼容忽略组织前缀（如 LiquidAI/LFM2.5-1.2B... 与 LFM2.5-1.2B... 互相匹配）
+    const targetBase = target.replace(/\\/g, '/').split('/').pop()?.toLowerCase() || ''
+    const idBase = model.id.replace(/\\/g, '/').split('/').pop()?.toLowerCase() || ''
+    if (targetBase && idBase && (targetBase === idBase || targetBase.includes(idBase) || idBase.includes(targetBase))) {
+      return true
+    }
+
+    if (model.localPath) {
+      const a = model.localPath.toLowerCase()
+      const b = target.toLowerCase()
+      if (a === b || a.includes(b) || b.includes(a)) return true
+      const fileName = model.localPath.replace(/\\/g, '/').split('/').pop()?.replace(/\.gguf$/i, '').toLowerCase()
+      if (fileName && (b.includes(fileName) || fileName.includes(b))) return true
+    }
+    return false
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // 优先级 1：启动模型（Running Model）
+  // 严格约束：仅在引擎服务处于实际运行态 (ready/starting) 且有明确运行中模型时生效，
+  // 服务停止态绝不使用残留的 current_model 或 activeModelKey。
+  // ──────────────────────────────────────────────────────────
+  if (isRunningOrStarting) {
+    if (engineStatus?.current_model) {
+      const matched = safeModels.find(m => matchModel(m, engineStatus.current_model!))
+      if (matched) {
+        return { modelItem: matched, modelName: matched.name, sourceType: 'running' }
+      }
+      const displayName =
+        engineStatus.current_model_name ||
+        engineStatus.current_model.replace(/\\/g, '/').split('/').pop()?.replace(/\.gguf$/i, '')
+      return { modelItem: null, modelName: displayName || null, sourceType: 'running' }
+    }
+    if (activeModelKey) {
+      const matched = safeModels.find(m => `${m.id}@${m.source}` === activeModelKey || m.id === activeModelKey)
+      if (matched) {
+        return { modelItem: matched, modelName: matched.name, sourceType: 'running' }
+      }
+    }
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // 优先级 2：激活模型 - 主语言模型 (Active Language Model)
+  // ──────────────────────────────────────────────────────────
+  if (activeLanguageModelKey) {
+    const matched = safeModels.find(
+      m => !m.isEmbedding && (`${m.id}@${m.source}` === activeLanguageModelKey || m.id === activeLanguageModelKey)
+    )
+    if (matched) {
+      return { modelItem: matched, modelName: matched.name, sourceType: 'active_language' }
+    }
+  }
+  if (engineStatus?.active_language_model) {
+    const target = engineStatus.active_language_model
+    const matched = safeModels.find(
+      m => !m.isEmbedding && (`${m.id}@${m.source}` === target || m.id === target || matchModel(m, target))
+    )
+    if (matched) {
+      return { modelItem: matched, modelName: matched.name, sourceType: 'active_language' }
+    }
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // 优先级 3：激活模型 - 嵌入向量模型 (Active Embedding Model)
+  // ──────────────────────────────────────────────────────────
+  if (activeEmbeddingModelKey) {
+    const matched = safeModels.find(
+      m => m.isEmbedding && (`${m.id}@${m.source}` === activeEmbeddingModelKey || m.id === activeEmbeddingModelKey)
+    )
+    if (matched) {
+      return { modelItem: matched, modelName: matched.name, sourceType: 'active_embedding' }
+    }
+  }
+  if (engineStatus?.active_embedding_model) {
+    const target = engineStatus.active_embedding_model
+    const matched = safeModels.find(
+      m => m.isEmbedding && (`${m.id}@${m.source}` === target || m.id === target || matchModel(m, target))
+    )
+    if (matched) {
+      return { modelItem: matched, modelName: matched.name, sourceType: 'active_embedding' }
+    }
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // 优先级 4：兜底已下载可用模型 (语言模型 > 嵌入模型)
+  // ──────────────────────────────────────────────────────────
+  const downloadedLang = safeModels.find(m => m.isDownloaded && !m.isEmbedding)
+  if (downloadedLang) {
+    return { modelItem: downloadedLang, modelName: downloadedLang.name, sourceType: 'fallback' }
+  }
+  const downloadedEmb = safeModels.find(m => m.isDownloaded && m.isEmbedding)
+  if (downloadedEmb) {
+    return { modelItem: downloadedEmb, modelName: downloadedEmb.name, sourceType: 'fallback' }
+  }
+
+  return { modelItem: null, modelName: null, sourceType: 'none' }
 }

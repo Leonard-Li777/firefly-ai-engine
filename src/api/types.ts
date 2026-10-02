@@ -78,6 +78,7 @@ export interface EngineStatusResponse {
   status: EngineRunStatus
   active_backend: EngineBackend
   current_model: string | null
+  current_model_name?: string | null
   active_language_model?: string | null
   active_embedding_model?: string | null
   models_dir: string

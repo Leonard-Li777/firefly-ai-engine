@@ -26,6 +26,7 @@ import { toast } from '../common/Toast'
 import { useEngineStore } from '../../stores/engine-store'
 import { t } from '../../languages'
 import { getModelCustomParams } from '../../lib/model-param-storage'
+import { resolveDisplayModel } from '../../lib/model-resolver'
 
 export const DashboardView: React.FC = () => {
   const {
@@ -34,6 +35,7 @@ export const DashboardView: React.FC = () => {
     runtimeParams,
     activeModelKey,
     activeLanguageModelKey,
+    activeEmbeddingModelKey,
     startEngine,
     stopEngine,
     logs,
@@ -82,41 +84,20 @@ export const DashboardView: React.FC = () => {
   // 当前引擎：后端未上报（如从未下载任何引擎）时显示占位符，不硬编码兜底
   const activeBackend = engineStatus?.active_backend || t('未选定')
 
-  // 根据 activeModelKey 精确获取当前模型对象，并融合专属启动参数
-  const currentModelItem = safeModels.find(m => `${m.id}@${m.source}` === activeModelKey)
-  const customParams = currentModelItem ? getModelCustomParams(currentModelItem.id) : undefined
-  const effectiveParams = { ...runtimeParams, ...customParams }
+  // 解析当前界面展示模型与专属启动参数
+  // 严格优先级：启动模型 (实际运行态) > 激活模型 (语言模型 > embedding模型) > 兜底可用模型
+  const { modelItem: effectiveModelItem, modelName: currentModelName } = React.useMemo(() => {
+    return resolveDisplayModel({
+      engineStatus,
+      models: safeModels,
+      activeModelKey,
+      activeLanguageModelKey,
+      activeEmbeddingModelKey
+    })
+  }, [engineStatus, safeModels, activeModelKey, activeLanguageModelKey, activeEmbeddingModelKey])
 
-  // 当前模型名称：优先运行态活跃模型名，其次语言模型槽位，再兜底后端上报或首个可用模型
-  const currentModelName = React.useMemo(() => {
-    if (currentModelItem?.name) return currentModelItem.name
-    if (activeLanguageModelKey) {
-      const langModel = safeModels.find(
-        m => `${m.id}@${m.source}` === activeLanguageModelKey || m.id === activeLanguageModelKey
-      )
-      if (langModel?.name) return langModel.name
-    }
-    if (engineStatus?.current_model) {
-      const matched = safeModels.find(
-        m =>
-          m.name === engineStatus.current_model ||
-          m.id === engineStatus.current_model ||
-          (m.localPath &&
-            (m.localPath.toLowerCase().includes(engineStatus.current_model!.toLowerCase()) ||
-              engineStatus.current_model!.toLowerCase().includes(m.localPath.toLowerCase())))
-      )
-      if (matched?.name) return matched.name
-      const cleanName = engineStatus.current_model
-        .replace(/\\/g, '/')
-        .split('/')
-        .pop()
-        ?.replace(/\.gguf$/i, '')
-      if (cleanName) return cleanName
-    }
-    const downloadedModel = safeModels.find(m => m.isDownloaded && !m.isEmbedding)
-    if (downloadedModel?.name) return downloadedModel.name
-    return null
-  }, [currentModelItem, activeLanguageModelKey, safeModels, engineStatus?.current_model])
+  const customParams = effectiveModelItem ? getModelCustomParams(effectiveModelItem.id) : undefined
+  const effectiveParams = { ...runtimeParams, ...customParams }
 
   // 显存负载统计
   const totalVramMb = (hw?.total_vram_gb || 8) * 1024

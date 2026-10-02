@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { useEngineStore } from '../../stores/engine-store'
 import { t } from '../../languages'
+import { resolveDisplayModel } from '../../lib/model-resolver'
 import pkg from '../../../package.json'
 
 const THINKING_MODE_STORAGE_KEY = 'firefly_enable_thinking_mode'
@@ -24,10 +25,12 @@ interface FooterProps {
 }
 
 export const Footer: React.FC<FooterProps> = ({ onNavigateTab, onOpenErrorPanel }) => {
-    const {
+  const {
     engineStatus,
     models,
     activeModelKey,
+    activeLanguageModelKey,
+    activeEmbeddingModelKey,
     error: storeError
   } = useEngineStore()
 
@@ -65,11 +68,19 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateTab, onOpenErrorPanel 
     return () => clearInterval(interval)
   }, [fetchEngineStatus])
 
-  // 当前模型信息解析
+  // 当前模型信息解析（严格遵循优先级：启动模型 > 激活语言模型 > 激活嵌入模型 > 兜底）
   const safeModels = Array.isArray(models) ? models : []
-  const currentModelItem = safeModels.find(m => `${m.id}@${m.source}` === activeModelKey)
-  const currentModelName =
-    currentModelItem?.name || engineStatus?.current_model || 'Qwen 3.5 0.8B (内置快速)'
+  const { modelItem: currentModelItem, modelName: resolvedModelName } = useMemo(() => {
+    return resolveDisplayModel({
+      engineStatus,
+      models: safeModels,
+      activeModelKey,
+      activeLanguageModelKey,
+      activeEmbeddingModelKey
+    })
+  }, [engineStatus, safeModels, activeModelKey, activeLanguageModelKey, activeEmbeddingModelKey])
+
+  const currentModelName = resolvedModelName || 'Qwen 3.5 0.8B (内置快速)'
 
   const rawStatus = engineStatus?.status || 'stopped'
   // 当前引擎：后端未上报（如从未下载任何引擎）时为空串，不硬编码兜底

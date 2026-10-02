@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { ModelResolver, mergeScannedWithRecommended } from '../src/lib/model-resolver'
+import { ModelResolver, mergeScannedWithRecommended, resolveDisplayModel } from '../src/lib/model-resolver'
 import { unifiedModelManager } from '../src/lib/unified-model-manager'
 import type { ModelItem } from '../src/api/types'
 
@@ -235,5 +235,99 @@ describe('mergeScannedWithRecommended 推荐底表合并', () => {
     expect(merged[0].id).toBe('zensignGG/MiniCPM5-1B-Claude-Opus-Fable5-V2-Thinking-heretic-GGUF:Q4KM')
     expect(merged[0].isDownloaded).toBe(true)
     expect(merged[0].localPath).toBe('C:/Users/lilun/AppData/Roaming/com.firefly.ai-engine/models/hub/models/zensignGG/MiniCPM5-1B-Claude-Opus-Fable5-V2-Thinking-heretic-GGUF/minicpm5_1b_heretic_q4km.gguf')
+  })
+})
+
+describe('resolveDisplayModel 界面模型优先级算法', () => {
+  const qwenModel = makeModel({
+    id: 'unsloth/Qwen3.5-0.8B-GGUF:UD-Q4_K_XL',
+    name: 'Qwen 3.5 0.8B (轻量识图)',
+    source: 'modelscope',
+    isDownloaded: true
+  })
+
+  const miniCpmModel = makeModel({
+    id: 'zensignGG/MiniCPM5-1B-Claude-Opus-Fable5-V2-Thinking-heretic-GGUF:Q4KM',
+    name: 'MiniCPM5 1B（较好•越狱）',
+    source: 'modelscope',
+    isDownloaded: true
+  })
+
+  const wemmModel = makeModel({
+    id: 'Tongyi/WeMM-Embedding-2B-gguf:Q4_K_M',
+    name: 'WeMM-Embedding 2B',
+    source: 'modelscope',
+    isEmbedding: true,
+    isDownloaded: true
+  })
+
+  const allModels = [qwenModel, miniCpmModel, wemmModel]
+
+  it('服务未运行 (stopped) 且激活了 MiniCPM5 时，即使残留 activeModelKey 为 Qwen，也必须优先展示激活语言模型 MiniCPM5 1B（较好•越狱）', () => {
+    const res = resolveDisplayModel({
+      engineStatus: {
+        status: 'stopped',
+        active_backend: 'vulkan',
+        current_model: null,
+        active_language_model: 'zensignGG/MiniCPM5-1B-Claude-Opus-Fable5-V2-Thinking-heretic-GGUF:Q4KM@modelscope',
+        models_dir: 'D:/AI_Models',
+        vram_usage_mb: 0,
+        port: 38400,
+        hardware: {} as any
+      },
+      models: allModels,
+      activeModelKey: 'unsloth/Qwen3.5-0.8B-GGUF:UD-Q4_K_XL@modelscope', // 之前残留的旧值
+      activeLanguageModelKey: 'zensignGG/MiniCPM5-1B-Claude-Opus-Fable5-V2-Thinking-heretic-GGUF:Q4KM@modelscope',
+      activeEmbeddingModelKey: null
+    })
+
+    expect(res.modelName).toBe('MiniCPM5 1B（较好•越狱）')
+    expect(res.sourceType).toBe('active_language')
+    expect(res.modelItem?.id).toBe('zensignGG/MiniCPM5-1B-Claude-Opus-Fable5-V2-Thinking-heretic-GGUF:Q4KM')
+  })
+
+  it('服务处于运行态 (ready) 且跑的是 Qwen 时，必须优先展示启动模型 (Running Model)', () => {
+    const res = resolveDisplayModel({
+      engineStatus: {
+        status: 'ready',
+        active_backend: 'cuda',
+        current_model: 'unsloth/Qwen3.5-0.8B-GGUF:UD-Q4_K_XL',
+        current_model_name: 'Qwen 3.5 0.8B (轻量识图)',
+        active_language_model: 'zensignGG/MiniCPM5-1B-Claude-Opus-Fable5-V2-Thinking-heretic-GGUF:Q4KM@modelscope',
+        models_dir: 'D:/AI_Models',
+        vram_usage_mb: 1000,
+        port: 38400,
+        hardware: {} as any
+      },
+      models: allModels,
+      activeModelKey: 'unsloth/Qwen3.5-0.8B-GGUF:UD-Q4_K_XL@modelscope',
+      activeLanguageModelKey: 'zensignGG/MiniCPM5-1B-Claude-Opus-Fable5-V2-Thinking-heretic-GGUF:Q4KM@modelscope'
+    })
+
+    expect(res.modelName).toBe('Qwen 3.5 0.8B (轻量识图)')
+    expect(res.sourceType).toBe('running')
+  })
+
+  it('未运行且无激活语言模型，但有激活嵌入模型时，展示嵌入模型', () => {
+    const res = resolveDisplayModel({
+      engineStatus: {
+        status: 'stopped',
+        active_backend: 'vulkan',
+        current_model: null,
+        active_language_model: null,
+        active_embedding_model: 'Tongyi/WeMM-Embedding-2B-gguf:Q4_K_M@modelscope',
+        models_dir: 'D:/AI_Models',
+        vram_usage_mb: 0,
+        port: 38400,
+        hardware: {} as any
+      },
+      models: allModels,
+      activeModelKey: null,
+      activeLanguageModelKey: null,
+      activeEmbeddingModelKey: 'Tongyi/WeMM-Embedding-2B-gguf:Q4_K_M@modelscope'
+    })
+
+    expect(res.modelName).toBe('WeMM-Embedding 2B')
+    expect(res.sourceType).toBe('active_embedding')
   })
 })
