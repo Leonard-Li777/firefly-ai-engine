@@ -135,8 +135,8 @@ export default  {
     "573": "-ngl (GPU-Layer-Nummer)",
     "574": "-c (Kontextfenster)",
     "575": "-t (Anzahl der Threads)",
-    "576": "-b (Batch Size)",
-    "577": "-ub (uBatch Size)",
+    "576": "-b (Batch-Größe)",
+    "577": "-ub (uBatch-Größe)",
     "578": "Vollständiger Startbefehl",
     "579": "Es gibt noch keinen Startdatensatz. Die vollständige Befehlszeile wird nach dem Start des Dienstes angezeigt.",
     "580": "Installierte Modelle",
@@ -385,5 +385,6 @@ export default  {
     "1211": "Modell-Download und Verifizierung abgeschlossen! Gebrauchsfertig.",
     "1212": "Herunterladen",
     "1213": "Modell wird von {source} heruntergeladen (Fortschritt {progress} %, Geschwindigkeit {speed}). Wechseln Sie zurück, um die Echtzeitkarte anzuzeigen.",
-    "1214": "Wechseln Sie zurück zur Ansicht"
+    "1214": "Wechseln Sie zurück zur Ansicht",
+    "1227": "Wird bearbeitet..."
 }

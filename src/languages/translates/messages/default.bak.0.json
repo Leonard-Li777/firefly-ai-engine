@@ -1725,232 +1725,6 @@
     ],
     "$id": 548
   },
-  "{modelInfo} 启动中...": {
-    "en-US": "{modelInfo} Starting...",
-    "es-ES": "{modelInfo} A partir de...",
-    "ar-EG": "{modelInfo} البداية...",
-    "pt-PT": "{modelInfo} Iniciando...",
-    "ru-RU": "{modelInfo} Начинаем...",
-    "ja-JP": "{modelInfo} 開始しています...",
-    "de-DE": "{modelInfo} Beginnt...",
-    "fr-FR": "{modelInfo} Démarrage...",
-    "ko-KR": "{modelInfo} 시작 중...",
-    "$files": [
-      "src/components/common/Footer.tsx(2881-2903)"
-    ],
-    "$id": 600
-  },
-  "{modelInfo} 处理中...": {
-    "en-US": "{modelInfo} Processing...",
-    "es-ES": "{modelInfo} Procesando...",
-    "ar-EG": "{modelInfo} يعالج...",
-    "pt-PT": "{modelInfo} Processando...",
-    "ru-RU": "{modelInfo} Обработка...",
-    "ja-JP": "{modelInfo} 処理中...",
-    "de-DE": "{modelInfo} Wird bearbeitet...",
-    "fr-FR": "{modelInfo} Traitement...",
-    "ko-KR": "{modelInfo} 처리 중...",
-    "$files": [
-      "src/components/common/Footer.tsx(3127-3149)"
-    ],
-    "$id": 601
-  },
-  "{modelInfo} 已就绪": {
-    "en-US": "{modelInfo} is ready",
-    "es-ES": "{modelInfo} está listo",
-    "ar-EG": "{modelInfo} جاهز",
-    "pt-PT": "{modelInfo} está pronto",
-    "ru-RU": "{modelInfo} готов",
-    "ja-JP": "{modelInfo} の準備ができました",
-    "de-DE": "{modelInfo} ist bereit",
-    "fr-FR": "{modelInfo} est prêt",
-    "ko-KR": "{modelInfo}가 준비되었습니다",
-    "$files": [
-      "src/components/common/Footer.tsx(3342-3361)"
-    ],
-    "$id": 602
-  },
-  "{modelInfo} 异常": {
-    "en-US": "{modelInfo} exception",
-    "es-ES": "{modelInfo} excepción",
-    "ar-EG": "{modelInfo} استثناء",
-    "pt-PT": "{modelInfo} exceção",
-    "ru-RU": "{modelInfo} исключение",
-    "ja-JP": "{modelInfo} 例外",
-    "de-DE": "{modelInfo} Ausnahme",
-    "fr-FR": "{modelInfo} exception",
-    "ko-KR": "{modelInfo} 예외",
-    "$files": [
-      "src/components/common/Footer.tsx(3593-3611)"
-    ],
-    "$id": 603
-  },
-  "{modelInfo} 已停止": {
-    "en-US": "{modelInfo} has stopped",
-    "es-ES": "{modelInfo} se ha detenido",
-    "ar-EG": "{modelInfo} توقف",
-    "pt-PT": "{modelInfo} parou",
-    "ru-RU": "{modelInfo} остановлен",
-    "ja-JP": "{modelInfo} が停止しました",
-    "de-DE": "{modelInfo} wurde gestoppt",
-    "fr-FR": "{modelInfo} s'est arrêté",
-    "ko-KR": "{modelInfo}이 중지되었습니다",
-    "$files": [
-      "src/components/common/Footer.tsx(3793-3812)"
-    ],
-    "$id": 604
-  },
-  "{modelInfo} 状态未知": {
-    "en-US": "{modelInfo} status unknown",
-    "es-ES": "{modelInfo} estado desconocido",
-    "ar-EG": "{modelInfo} الحالة غير معروفة",
-    "pt-PT": "{modelInfo} status desconhecido",
-    "ru-RU": "{modelInfo} статус неизвестен",
-    "ja-JP": "{modelInfo} ステータスが不明",
-    "de-DE": "{modelInfo} Status unbekannt",
-    "fr-FR": "{modelInfo} statut inconnu",
-    "ko-KR": "{modelInfo} 상태를 알 수 없음",
-    "$files": [
-      "src/components/common/Footer.tsx(3996-4016)"
-    ],
-    "$id": 605
-  },
-  "点击查看错误分析与解决建议": {
-    "en-US": "Click to view error analysis and solution suggestions",
-    "es-ES": "Haga clic para ver el análisis de errores y las sugerencias de soluciones.",
-    "ar-EG": "انقر لعرض تحليل الأخطاء واقتراحات الحلول",
-    "pt-PT": "Clique para ver análises de erros e sugestões de soluções",
-    "ru-RU": "Нажмите, чтобы просмотреть анализ ошибок и предложения по их устранению.",
-    "ja-JP": "クリックするとエラー分析と解決策の提案が表示されます",
-    "de-DE": "Klicken Sie hier, um eine Fehleranalyse und Lösungsvorschläge anzuzeigen",
-    "fr-FR": "Cliquez pour afficher l'analyse des erreurs et les suggestions de solutions",
-    "ko-KR": "오류 분석 및 솔루션 제안을 보려면 클릭하세요.",
-    "$files": [
-      "src/components/common/Footer.tsx(6906-6923)"
-    ],
-    "$id": 606
-  },
-  "服务异常": {
-    "en-US": "Service exception",
-    "es-ES": "Excepción de servicio",
-    "ar-EG": "استثناء الخدمة",
-    "pt-PT": "Exceção de serviço",
-    "ru-RU": "Исключение службы",
-    "ja-JP": "サービス例外",
-    "de-DE": "Dienstausnahme",
-    "fr-FR": "Exception de service",
-    "ko-KR": "서비스 예외",
-    "$files": [
-      "src/components/common/Footer.tsx(7118-7126)"
-    ],
-    "$id": 607
-  },
-  "点击查看原因与建议": {
-    "en-US": "Click to view reasons and suggestions",
-    "es-ES": "Haga clic para ver razones y sugerencias.",
-    "ar-EG": "انقر لعرض الأسباب والاقتراحات",
-    "pt-PT": "Clique para ver motivos e sugestões",
-    "ru-RU": "Нажмите, чтобы просмотреть причины и предложения",
-    "ja-JP": "クリックして理由と提案を表示します",
-    "de-DE": "Klicken Sie hier, um Gründe und Vorschläge anzuzeigen",
-    "fr-FR": "Cliquez pour voir les raisons et les suggestions",
-    "ko-KR": "이유와 제안을 보려면 클릭하세요.",
-    "$files": [
-      "src/components/common/Footer.tsx(7130-7143)"
-    ],
-    "$id": 608
-  },
-  "警告：{current}非最佳可用引擎，请点击切换{best}！": {
-    "en-US": "Warning: {current} is not the best available engine, please click to switch to {best}!",
-    "es-ES": "Advertencia: {current} no es el motor disponible más óptimo, ¡haga clic para cambiar a {best}!",
-    "ar-EG": "تحذير: {current} ليس المحرك الأفضل المتاح، انقر للتبديل إلى {best}!",
-    "pt-PT": "Aviso: {current} não é o melhor mecanismo disponível. Clique para trocar de {best}!",
-    "ru-RU": "Внимание: {current} не является лучшим доступным двигателем, пожалуйста, нажмите для переключения на {best}!",
-    "ja-JP": "警告: {current} は利用可能な最良のエンジンではありません。クリックして {best} に切り替えてください。",
-    "de-DE": "Warnung: {current} ist nicht der beste verfügbare Motor, klicken Sie zum Wechseln zu {best}!",
-    "fr-FR": "Avertissement : {current} n'est pas le moteur optimal disponible, veuillez cliquer pour basculer vers {best} !",
-    "ko-KR": "경고: {current}는 사용 가능한 최고의 엔진이 아닙니다. {best}를 전환하려면 클릭하세요!",
-    "$files": [
-      "src/components/common/Footer.tsx(7632-7668)",
-      "src/components/common/Footer.tsx(7933-7969)"
-    ],
-    "$id": 609
-  },
-  "检测到您有高性能独立显卡，请切换更聪明的AI模型，立即设置": {
-    "en-US": "Detected that you have a high-performance discrete graphics card, please switch to a smarter AI model and set it up now",
-    "es-ES": "Se detectó que tiene una tarjeta gráfica discreta de alto rendimiento. Cambie a un modelo de IA más inteligente y configúrelo ahora.",
-    "ar-EG": "تم اكتشاف أن لديك بطاقة رسوميات منفصلة عالية الأداء، يرجى التبديل إلى طراز أكثر ذكاءً يعمل بالذكاء الاصطناعي وإعداده الآن",
-    "pt-PT": "Detectado que você tem uma placa gráfica discreta de alto desempenho, mude para um modelo de IA mais inteligente e configure-o agora",
-    "ru-RU": "Обнаружено, что у вас высокопроизводительная дискретная видеокарта. Переключитесь на более интеллектуальную модель искусственного интеллекта и настройте ее сейчас.",
-    "ja-JP": "高性能の個別グラフィックス カードが搭載されていることが検出されました。よりスマートな AI モデルに切り替えて、今すぐセットアップしてください。",
-    "de-DE": "Es wurde festgestellt, dass Sie über eine leistungsstarke separate Grafikkarte verfügen. Wechseln Sie bitte zu einem intelligenteren KI-Modell und richten Sie es jetzt ein",
-    "fr-FR": "Vous avez détecté que vous disposez d'une carte graphique discrète hautes performances. Veuillez passer à un modèle d'IA plus intelligent et le configurer maintenant.",
-    "ko-KR": "고성능 개별 그래픽 카드가 있는 것으로 감지되었습니다. 지금 더 스마트한 AI 모델로 전환하여 설정하세요.",
-    "$files": [
-      "src/components/common/Footer.tsx(8653-8686)"
-    ],
-    "$id": 610
-  },
-  "检测到您有高性能显卡，请切换更聪明的AI模型，立即设置": {
-    "en-US": "Detected that you have a high-performance graphics card, please switch to a smarter AI model and set it up now",
-    "es-ES": "Se detectó que tiene una tarjeta gráfica de alto rendimiento. Cambie a un modelo de IA más inteligente y configúrelo ahora.",
-    "ar-EG": "تم اكتشاف أن لديك بطاقة رسومات عالية الأداء، يرجى التبديل إلى نموذج الذكاء الاصطناعي الأكثر ذكاءً وإعداده الآن",
-    "pt-PT": "Detectado que você tem uma placa gráfica de alto desempenho, mude para um modelo de IA mais inteligente e configure-o agora",
-    "ru-RU": "Обнаружено, что у вас высокопроизводительная видеокарта. Переключитесь на более интеллектуальную модель искусственного интеллекта и настройте ее сейчас.",
-    "ja-JP": "高性能のグラフィックス カードが搭載されていることが検出されました。よりスマートな AI モデルに切り替えて、今すぐセットアップしてください。",
-    "de-DE": "Es wurde festgestellt, dass Sie über eine leistungsstarke Grafikkarte verfügen. Wechseln Sie bitte zu einem intelligenteren KI-Modell und richten Sie es jetzt ein",
-    "fr-FR": "Vous avez détecté que vous disposez d'une carte graphique hautes performances, veuillez passer à un modèle d'IA plus intelligent et le configurer maintenant",
-    "ko-KR": "고성능 그래픽 카드가 있는 것으로 감지되었습니다. 지금 더 스마트한 AI 모델로 전환하여 설정하세요.",
-    "$files": [
-      "src/components/common/Footer.tsx(8854-8885)"
-    ],
-    "$id": 611
-  },
-  "点击前往引擎配置页面调整模型思考模式": {
-    "en-US": "Click to go to the engine configuration page to adjust the model thinking mode",
-    "es-ES": "Haga clic para ir a la página de configuración del motor y ajustar el modo de pensamiento del modelo.",
-    "ar-EG": "انقر للانتقال إلى صفحة تكوين المحرك لضبط وضع التفكير النموذجي",
-    "pt-PT": "Clique para ir para a página de configuração do mecanismo para ajustar o modo de pensamento do modelo",
-    "ru-RU": "Нажмите, чтобы перейти на страницу конфигурации движка и настроить режим мышления модели.",
-    "ja-JP": "クリックしてエンジン構成ページに移動し、モデル思考モードを調整します。",
-    "de-DE": "Klicken Sie hier, um zur Engine-Konfigurationsseite zu gelangen und den Modell-Denkmodus anzupassen",
-    "fr-FR": "Cliquez pour accéder à la page de configuration du moteur pour ajuster le mode de réflexion du modèle",
-    "ko-KR": "모델 사고 모드를 조정하려면 클릭하여 엔진 구성 페이지로 이동하세요.",
-    "$files": [
-      "src/components/common/Footer.tsx(9457-9479)"
-    ],
-    "$id": 612
-  },
-  "思考": {
-    "en-US": "Think",
-    "es-ES": "Pensar",
-    "ar-EG": "يفكر",
-    "pt-PT": "Pensar",
-    "ru-RU": "думать",
-    "ja-JP": "考える",
-    "de-DE": "Denken",
-    "fr-FR": "Pense",
-    "ko-KR": "생각하다",
-    "$files": [
-      "src/components/common/Footer.tsx(9635-9641)"
-    ],
-    "$id": 613
-  },
-  "选择界面语言 (Switch Language)": {
-    "en-US": "Select interface language (Switch Language)",
-    "es-ES": "Seleccionar idioma de la interfaz (Cambiar idioma)",
-    "ar-EG": "تحديد لغة الواجهة (تبديل اللغة)",
-    "pt-PT": "Selecione o idioma da interface (Alternar idioma)",
-    "ru-RU": "Выбор языка интерфейса (Переключить язык)",
-    "ja-JP": "インターフェース言語の選択 (言語切り替え)",
-    "de-DE": "Wählen Sie die Sprache der Benutzeroberfläche aus (Sprache wechseln)",
-    "fr-FR": "Sélectionnez la langue de l'interface (Changer la langue)",
-    "ko-KR": "인터페이스 언어 선택(언어 전환)",
-    "$files": [
-      "src/components/common/language-selector.tsx(1125-1153)"
-    ],
-    "$id": 614
-  },
   "服务未就绪": {
     "en-US": "Service not ready",
     "es-ES": "Servicio no listo",
@@ -3144,110 +2918,231 @@
     ],
     "$id": 807
   },
-  "错误分析与解决建议": {
-    "en-US": "Error analysis and solution suggestions",
-    "es-ES": "Análisis de errores y sugerencias de solución.",
-    "ar-EG": "تحليل الأخطاء واقتراحات الحلول",
-    "pt-PT": "Análise de erros e sugestões de soluções",
-    "ru-RU": "Анализ ошибок и предложения по решению",
-    "ja-JP": "エラー分析と解決策の提案",
-    "de-DE": "Fehleranalyse und Lösungsvorschläge",
-    "fr-FR": "Analyse des erreurs et suggestions de solutions",
-    "ko-KR": "오류 분석 및 해결 방법 제안",
+  "{modelInfo} 启动中...": {
+    "en-US": "{modelInfo} Starting...",
+    "es-ES": "{modelInfo} A partir de...",
+    "ar-EG": "{modelInfo} البداية...",
+    "pt-PT": "{modelInfo} Iniciando...",
+    "ru-RU": "{modelInfo} Начинаем...",
+    "ja-JP": "{modelInfo} 開始しています...",
+    "de-DE": "{modelInfo} Beginnt...",
+    "fr-FR": "{modelInfo} Démarrage...",
+    "ko-KR": "{modelInfo} 시작 중...",
     "$files": [
-      "src/components/errors/error-analysis-sidebar.tsx(2807-2820)"
+      "src/components/common/Footer.tsx(2881-2903)"
     ],
-    "$id": 637
+    "$id": 600
   },
-  "面向普通用户的引擎错误解读": {
-    "en-US": "Interpretation of engine errors for ordinary users",
-    "es-ES": "Interpretación de errores del motor para usuarios comunes.",
-    "ar-EG": "تفسير أخطاء المحرك للمستخدمين العاديين",
-    "pt-PT": "Interpretação de erros do motor para usuários comuns",
-    "ru-RU": "Расшифровка ошибок двигателя для обычных пользователей",
-    "ja-JP": "一般ユーザー向けのエンジンエラーの解釈",
-    "de-DE": "Interpretation von Motorfehlern für normale Benutzer",
-    "fr-FR": "Interprétation des erreurs du moteur pour les utilisateurs ordinaires",
-    "ko-KR": "일반 사용자를 위한 엔진 오류 해석",
+  "{modelInfo} 处理中...": {
+    "en-US": "{modelInfo} Processing...",
+    "es-ES": "{modelInfo} Procesando...",
+    "ar-EG": "{modelInfo} يعالج...",
+    "pt-PT": "{modelInfo} Processando...",
+    "ru-RU": "{modelInfo} Обработка...",
+    "ja-JP": "{modelInfo} 処理中...",
+    "de-DE": "{modelInfo} Wird bearbeitet...",
+    "fr-FR": "{modelInfo} Traitement...",
+    "ko-KR": "{modelInfo} 처리 중...",
     "$files": [
-      "src/components/errors/error-analysis-sidebar.tsx(2954-2971)"
+      "src/components/common/Footer.tsx(3127-3149)"
     ],
-    "$id": 638
+    "$id": 601
   },
-  "关闭": {
-    "en-US": "Closure",
-    "es-ES": "Cierre",
-    "ar-EG": "إنهاء",
-    "pt-PT": "Encerramento",
-    "ru-RU": "закрытие",
-    "ja-JP": "閉鎖",
-    "de-DE": "Schließung",
-    "fr-FR": "Fermeture",
-    "ko-KR": "폐쇄",
+  "{modelInfo} 已就绪": {
+    "en-US": "{modelInfo} is ready",
+    "es-ES": "{modelInfo} está listo",
+    "ar-EG": "{modelInfo} جاهز",
+    "pt-PT": "{modelInfo} está pronto",
+    "ru-RU": "{modelInfo} готов",
+    "ja-JP": "{modelInfo} の準備ができました",
+    "de-DE": "{modelInfo} ist bereit",
+    "fr-FR": "{modelInfo} est prêt",
+    "ko-KR": "{modelInfo}가 준비되었습니다",
     "$files": [
-      "src/components/errors/error-analysis-sidebar.tsx(3300-3306)"
+      "src/components/common/Footer.tsx(3342-3361)"
     ],
-    "$id": 639
+    "$id": 602
   },
-  "严重级别": {
-    "en-US": "Severity level",
-    "es-ES": "Nivel de gravedad",
-    "ar-EG": "مستوى الخطورة",
-    "pt-PT": "Nível de gravidade",
-    "ru-RU": "Уровень серьезности",
-    "ja-JP": "重大度レベル",
-    "de-DE": "Schweregrad",
-    "fr-FR": "Niveau de gravité",
-    "ko-KR": "심각도 수준",
+  "{modelInfo} 异常": {
+    "en-US": "{modelInfo} exception",
+    "es-ES": "{modelInfo} excepción",
+    "ar-EG": "{modelInfo} استثناء",
+    "pt-PT": "{modelInfo} exceção",
+    "ru-RU": "{modelInfo} исключение",
+    "ja-JP": "{modelInfo} 例外",
+    "de-DE": "{modelInfo} Ausnahme",
+    "fr-FR": "{modelInfo} exception",
+    "ko-KR": "{modelInfo} 예외",
     "$files": [
-      "src/components/errors/error-analysis-sidebar.tsx(3644-3652)"
+      "src/components/common/Footer.tsx(3593-3611)"
     ],
-    "$id": 640
+    "$id": 603
   },
-  "建议解决方案": {
-    "en-US": "Suggested solution",
-    "es-ES": "Solución recomendada",
-    "ar-EG": "الحلول المقترحة",
-    "pt-PT": "Solução recomendada",
-    "ru-RU": "Рекомендуемое решение",
-    "ja-JP": "提案される解決策",
-    "de-DE": "Empfohlene Lösung",
-    "fr-FR": "Solution recommandée",
-    "ko-KR": "권장 해결 방안",
+  "{modelInfo} 已停止": {
+    "en-US": "{modelInfo} has stopped",
+    "es-ES": "{modelInfo} se ha detenido",
+    "ar-EG": "{modelInfo} توقف",
+    "pt-PT": "{modelInfo} parou",
+    "ru-RU": "{modelInfo} остановлен",
+    "ja-JP": "{modelInfo} が停止しました",
+    "de-DE": "{modelInfo} wurde gestoppt",
+    "fr-FR": "{modelInfo} s'est arrêté",
+    "ko-KR": "{modelInfo}이 중지되었습니다",
     "$files": [
-      "src/components/errors/error-analysis-sidebar.tsx(4932-4942)"
+      "src/components/common/Footer.tsx(3793-3812)"
     ],
-    "$id": 641
+    "$id": 604
   },
-  "原始错误详情": {
-    "en-US": "Original error details",
-    "es-ES": "Detalles del error original",
-    "ar-EG": "تفاصيل الخطأ الأصلي",
-    "pt-PT": "Detalhes do erro original",
-    "ru-RU": "Подробности исходной ошибки",
-    "ja-JP": "元のエラーの詳細",
-    "de-DE": "Ursprüngliche Fehlerdetails",
-    "fr-FR": "Détails de l'erreur d'origine",
-    "ko-KR": "원래 오류 세부정보",
+  "{modelInfo} 状态未知": {
+    "en-US": "{modelInfo} status unknown",
+    "es-ES": "{modelInfo} estado desconocido",
+    "ar-EG": "{modelInfo} الحالة غير معروفة",
+    "pt-PT": "{modelInfo} status desconhecido",
+    "ru-RU": "{modelInfo} статус неизвестен",
+    "ja-JP": "{modelInfo} ステータスが不明",
+    "de-DE": "{modelInfo} Status unbekannt",
+    "fr-FR": "{modelInfo} statut inconnu",
+    "ko-KR": "{modelInfo} 상태를 알 수 없음",
     "$files": [
-      "src/components/errors/error-analysis-sidebar.tsx(6002-6012)"
+      "src/components/common/Footer.tsx(3996-4016)"
     ],
-    "$id": 642
+    "$id": 605
   },
-  "查看运行日志": {
-    "en-US": "View running log",
-    "es-ES": "Ver registro de ejecución",
-    "ar-EG": "عرض سجل التشغيل",
-    "pt-PT": "Ver registro de execução",
-    "ru-RU": "Посмотреть журнал бега",
-    "ja-JP": "実行ログを表示する",
-    "de-DE": "Laufprotokoll ansehen",
-    "fr-FR": "Afficher le journal d'exécution",
-    "ko-KR": "실행 로그 보기",
+  "点击查看错误分析与解决建议": {
+    "en-US": "Click to view error analysis and solution suggestions",
+    "es-ES": "Haga clic para ver el análisis de errores y las sugerencias de soluciones.",
+    "ar-EG": "انقر لعرض تحليل الأخطاء واقتراحات الحلول",
+    "pt-PT": "Clique para ver análises de erros e sugestões de soluções",
+    "ru-RU": "Нажмите, чтобы просмотреть анализ ошибок и предложения по их устранению.",
+    "ja-JP": "クリックするとエラー分析と解決策の提案が表示されます",
+    "de-DE": "Klicken Sie hier, um eine Fehleranalyse und Lösungsvorschläge anzuzeigen",
+    "fr-FR": "Cliquez pour afficher l'analyse des erreurs et les suggestions de solutions",
+    "ko-KR": "오류 분석 및 솔루션 제안을 보려면 클릭하세요.",
     "$files": [
-      "src/components/errors/error-analysis-sidebar.tsx(7404-7414)"
+      "src/components/common/Footer.tsx(6906-6923)"
     ],
-    "$id": 643
+    "$id": 606
+  },
+  "服务异常": {
+    "en-US": "Service exception",
+    "es-ES": "Excepción de servicio",
+    "ar-EG": "استثناء الخدمة",
+    "pt-PT": "Exceção de serviço",
+    "ru-RU": "Исключение службы",
+    "ja-JP": "サービス例外",
+    "de-DE": "Dienstausnahme",
+    "fr-FR": "Exception de service",
+    "ko-KR": "서비스 예외",
+    "$files": [
+      "src/components/common/Footer.tsx(7118-7126)"
+    ],
+    "$id": 607
+  },
+  "点击查看原因与建议": {
+    "en-US": "Click to view reasons and suggestions",
+    "es-ES": "Haga clic para ver razones y sugerencias.",
+    "ar-EG": "انقر لعرض الأسباب والاقتراحات",
+    "pt-PT": "Clique para ver motivos e sugestões",
+    "ru-RU": "Нажмите, чтобы просмотреть причины и предложения",
+    "ja-JP": "クリックして理由と提案を表示します",
+    "de-DE": "Klicken Sie hier, um Gründe und Vorschläge anzuzeigen",
+    "fr-FR": "Cliquez pour voir les raisons et les suggestions",
+    "ko-KR": "이유와 제안을 보려면 클릭하세요.",
+    "$files": [
+      "src/components/common/Footer.tsx(7130-7143)"
+    ],
+    "$id": 608
+  },
+  "警告：{current}非最佳可用引擎，请点击切换{best}！": {
+    "en-US": "Warning: {current} is not the best available engine, please click to switch to {best}!",
+    "es-ES": "Advertencia: {current} no es el motor disponible más óptimo, ¡haga clic para cambiar a {best}!",
+    "ar-EG": "تحذير: {current} ليس المحرك الأفضل المتاح، انقر للتبديل إلى {best}!",
+    "pt-PT": "Aviso: {current} não é o melhor mecanismo disponível. Clique para trocar de {best}!",
+    "ru-RU": "Внимание: {current} не является лучшим доступным двигателем, пожалуйста, нажмите для переключения на {best}!",
+    "ja-JP": "警告: {current} は利用可能な最良のエンジンではありません。クリックして {best} に切り替えてください。",
+    "de-DE": "Warnung: {current} ist nicht der beste verfügbare Motor, klicken Sie zum Wechseln zu {best}!",
+    "fr-FR": "Avertissement : {current} n'est pas le moteur optimal disponible, veuillez cliquer pour basculer vers {best} !",
+    "ko-KR": "경고: {current}는 사용 가능한 최고의 엔진이 아닙니다. {best}를 전환하려면 클릭하세요!",
+    "$files": [
+      "src/components/common/Footer.tsx(7632-7668)",
+      "src/components/common/Footer.tsx(7933-7969)"
+    ],
+    "$id": 609
+  },
+  "检测到您有高性能独立显卡，请切换更聪明的AI模型，立即设置": {
+    "en-US": "Detected that you have a high-performance discrete graphics card, please switch to a smarter AI model and set it up now",
+    "es-ES": "Se detectó que tiene una tarjeta gráfica discreta de alto rendimiento. Cambie a un modelo de IA más inteligente y configúrelo ahora.",
+    "ar-EG": "تم اكتشاف أن لديك بطاقة رسوميات منفصلة عالية الأداء، يرجى التبديل إلى طراز أكثر ذكاءً يعمل بالذكاء الاصطناعي وإعداده الآن",
+    "pt-PT": "Detectado que você tem uma placa gráfica discreta de alto desempenho, mude para um modelo de IA mais inteligente e configure-o agora",
+    "ru-RU": "Обнаружено, что у вас высокопроизводительная дискретная видеокарта. Переключитесь на более интеллектуальную модель искусственного интеллекта и настройте ее сейчас.",
+    "ja-JP": "高性能の個別グラフィックス カードが搭載されていることが検出されました。よりスマートな AI モデルに切り替えて、今すぐセットアップしてください。",
+    "de-DE": "Es wurde festgestellt, dass Sie über eine leistungsstarke separate Grafikkarte verfügen. Wechseln Sie bitte zu einem intelligenteren KI-Modell und richten Sie es jetzt ein",
+    "fr-FR": "Vous avez détecté que vous disposez d'une carte graphique discrète hautes performances. Veuillez passer à un modèle d'IA plus intelligent et le configurer maintenant.",
+    "ko-KR": "고성능 개별 그래픽 카드가 있는 것으로 감지되었습니다. 지금 더 스마트한 AI 모델로 전환하여 설정하세요.",
+    "$files": [
+      "src/components/common/Footer.tsx(8653-8686)"
+    ],
+    "$id": 610
+  },
+  "检测到您有高性能显卡，请切换更聪明的AI模型，立即设置": {
+    "en-US": "Detected that you have a high-performance graphics card, please switch to a smarter AI model and set it up now",
+    "es-ES": "Se detectó que tiene una tarjeta gráfica de alto rendimiento. Cambie a un modelo de IA más inteligente y configúrelo ahora.",
+    "ar-EG": "تم اكتشاف أن لديك بطاقة رسومات عالية الأداء، يرجى التبديل إلى نموذج الذكاء الاصطناعي الأكثر ذكاءً وإعداده الآن",
+    "pt-PT": "Detectado que você tem uma placa gráfica de alto desempenho, mude para um modelo de IA mais inteligente e configure-o agora",
+    "ru-RU": "Обнаружено, что у вас высокопроизводительная видеокарта. Переключитесь на более интеллектуальную модель искусственного интеллекта и настройте ее сейчас.",
+    "ja-JP": "高性能のグラフィックス カードが搭載されていることが検出されました。よりスマートな AI モデルに切り替えて、今すぐセットアップしてください。",
+    "de-DE": "Es wurde festgestellt, dass Sie über eine leistungsstarke Grafikkarte verfügen. Wechseln Sie bitte zu einem intelligenteren KI-Modell und richten Sie es jetzt ein",
+    "fr-FR": "Vous avez détecté que vous disposez d'une carte graphique hautes performances, veuillez passer à un modèle d'IA plus intelligent et le configurer maintenant",
+    "ko-KR": "고성능 그래픽 카드가 있는 것으로 감지되었습니다. 지금 더 스마트한 AI 모델로 전환하여 설정하세요.",
+    "$files": [
+      "src/components/common/Footer.tsx(8854-8885)"
+    ],
+    "$id": 611
+  },
+  "点击前往引擎配置页面调整模型思考模式": {
+    "en-US": "Click to go to the engine configuration page to adjust the model thinking mode",
+    "es-ES": "Haga clic para ir a la página de configuración del motor y ajustar el modo de pensamiento del modelo.",
+    "ar-EG": "انقر للانتقال إلى صفحة تكوين المحرك لضبط وضع التفكير النموذجي",
+    "pt-PT": "Clique para ir para a página de configuração do mecanismo para ajustar o modo de pensamento do modelo",
+    "ru-RU": "Нажмите, чтобы перейти на страницу конфигурации движка и настроить режим мышления модели.",
+    "ja-JP": "クリックしてエンジン構成ページに移動し、モデル思考モードを調整します。",
+    "de-DE": "Klicken Sie hier, um zur Engine-Konfigurationsseite zu gelangen und den Modell-Denkmodus anzupassen",
+    "fr-FR": "Cliquez pour accéder à la page de configuration du moteur pour ajuster le mode de réflexion du modèle",
+    "ko-KR": "모델 사고 모드를 조정하려면 클릭하여 엔진 구성 페이지로 이동하세요.",
+    "$files": [
+      "src/components/common/Footer.tsx(9457-9479)"
+    ],
+    "$id": 612
+  },
+  "思考": {
+    "en-US": "Think",
+    "es-ES": "Pensar",
+    "ar-EG": "يفكر",
+    "pt-PT": "Pensar",
+    "ru-RU": "думать",
+    "ja-JP": "考える",
+    "de-DE": "Denken",
+    "fr-FR": "Pense",
+    "ko-KR": "생각하다",
+    "$files": [
+      "src/components/common/Footer.tsx(9635-9641)"
+    ],
+    "$id": 613
+  },
+  "选择界面语言 (Switch Language)": {
+    "en-US": "Select interface language (Switch Language)",
+    "es-ES": "Seleccionar idioma de la interfaz (Cambiar idioma)",
+    "ar-EG": "تحديد لغة الواجهة (تبديل اللغة)",
+    "pt-PT": "Selecione o idioma da interface (Alternar idioma)",
+    "ru-RU": "Выбор языка интерфейса (Переключить язык)",
+    "ja-JP": "インターフェース言語の選択 (言語切り替え)",
+    "de-DE": "Wählen Sie die Sprache der Benutzeroberfläche aus (Sprache wechseln)",
+    "fr-FR": "Sélectionnez la langue de l'interface (Changer la langue)",
+    "ko-KR": "인터페이스 언어 선택(언어 전환)",
+    "$files": [
+      "src/components/common/language-selector.tsx(1125-1153)"
+    ],
+    "$id": 614
   },
   "目前使用兼容模式，能发挥您显卡70% AI算力，显卡驱动需要升级，才能发挥满血性能": {
     "en-US": "Currently using compatibility mode, 70% of the AI ​​computing power of your graphics card can be used. The graphics card driver needs to be upgraded to achieve full performance.",
@@ -3473,6 +3368,111 @@
       "src/components/hardware/hardware-card.tsx(7515-7521)"
     ],
     "$id": 658
+  },
+  "错误分析与解决建议": {
+    "en-US": "Error analysis and solution suggestions",
+    "es-ES": "Análisis de errores y sugerencias de solución.",
+    "ar-EG": "تحليل الأخطاء واقتراحات الحلول",
+    "pt-PT": "Análise de erros e sugestões de soluções",
+    "ru-RU": "Анализ ошибок и предложения по решению",
+    "ja-JP": "エラー分析と解決策の提案",
+    "de-DE": "Fehleranalyse und Lösungsvorschläge",
+    "fr-FR": "Analyse des erreurs et suggestions de solutions",
+    "ko-KR": "오류 분석 및 해결 방법 제안",
+    "$files": [
+      "src/components/errors/error-analysis-sidebar.tsx(2807-2820)"
+    ],
+    "$id": 637
+  },
+  "面向普通用户的引擎错误解读": {
+    "en-US": "Interpretation of engine errors for ordinary users",
+    "es-ES": "Interpretación de errores del motor para usuarios comunes.",
+    "ar-EG": "تفسير أخطاء المحرك للمستخدمين العاديين",
+    "pt-PT": "Interpretação de erros do motor para usuários comuns",
+    "ru-RU": "Расшифровка ошибок двигателя для обычных пользователей",
+    "ja-JP": "一般ユーザー向けのエンジンエラーの解釈",
+    "de-DE": "Interpretation von Motorfehlern für normale Benutzer",
+    "fr-FR": "Interprétation des erreurs du moteur pour les utilisateurs ordinaires",
+    "ko-KR": "일반 사용자를 위한 엔진 오류 해석",
+    "$files": [
+      "src/components/errors/error-analysis-sidebar.tsx(2954-2971)"
+    ],
+    "$id": 638
+  },
+  "关闭": {
+    "en-US": "Closure",
+    "es-ES": "Cierre",
+    "ar-EG": "إنهاء",
+    "pt-PT": "Encerramento",
+    "ru-RU": "закрытие",
+    "ja-JP": "閉鎖",
+    "de-DE": "Schließung",
+    "fr-FR": "Fermeture",
+    "ko-KR": "폐쇄",
+    "$files": [
+      "src/components/errors/error-analysis-sidebar.tsx(3300-3306)"
+    ],
+    "$id": 639
+  },
+  "严重级别": {
+    "en-US": "Severity level",
+    "es-ES": "Nivel de gravedad",
+    "ar-EG": "مستوى الخطورة",
+    "pt-PT": "Nível de gravidade",
+    "ru-RU": "Уровень серьезности",
+    "ja-JP": "重大度レベル",
+    "de-DE": "Schweregrad",
+    "fr-FR": "Niveau de gravité",
+    "ko-KR": "심각도 수준",
+    "$files": [
+      "src/components/errors/error-analysis-sidebar.tsx(3644-3652)"
+    ],
+    "$id": 640
+  },
+  "建议解决方案": {
+    "en-US": "Suggested solution",
+    "es-ES": "Solución recomendada",
+    "ar-EG": "الحلول المقترحة",
+    "pt-PT": "Solução recomendada",
+    "ru-RU": "Рекомендуемое решение",
+    "ja-JP": "提案される解決策",
+    "de-DE": "Empfohlene Lösung",
+    "fr-FR": "Solution recommandée",
+    "ko-KR": "권장 해결 방안",
+    "$files": [
+      "src/components/errors/error-analysis-sidebar.tsx(4932-4942)"
+    ],
+    "$id": 641
+  },
+  "原始错误详情": {
+    "en-US": "Original error details",
+    "es-ES": "Detalles del error original",
+    "ar-EG": "تفاصيل الخطأ الأصلي",
+    "pt-PT": "Detalhes do erro original",
+    "ru-RU": "Подробности исходной ошибки",
+    "ja-JP": "元のエラーの詳細",
+    "de-DE": "Ursprüngliche Fehlerdetails",
+    "fr-FR": "Détails de l'erreur d'origine",
+    "ko-KR": "원래 오류 세부정보",
+    "$files": [
+      "src/components/errors/error-analysis-sidebar.tsx(6002-6012)"
+    ],
+    "$id": 642
+  },
+  "查看运行日志": {
+    "en-US": "View running log",
+    "es-ES": "Ver registro de ejecución",
+    "ar-EG": "عرض سجل التشغيل",
+    "pt-PT": "Ver registro de execução",
+    "ru-RU": "Посмотреть журнал бега",
+    "ja-JP": "実行ログを表示する",
+    "de-DE": "Laufprotokoll ansehen",
+    "fr-FR": "Afficher le journal d'exécution",
+    "ko-KR": "실행 로그 보기",
+    "$files": [
+      "src/components/errors/error-analysis-sidebar.tsx(7404-7414)"
+    ],
+    "$id": 643
   },
   "条": {
     "en-US": "Strip",

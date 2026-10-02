@@ -385,5 +385,6 @@ export default  {
     "1211": "Model download and verification completed! Ready to use.",
     "1212": "Downloading",
     "1213": "Downloading model from {source} (progress {progress}%, speed {speed}), switch back to view the real-time card.",
-    "1214": "Switch back to view"
+    "1214": "Switch back to view",
+    "1227": "处理中..."
 }

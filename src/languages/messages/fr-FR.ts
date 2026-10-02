@@ -135,8 +135,8 @@ export default  {
     "573": "-ngl (numéro de couche GPU)",
     "574": "-c (fenêtre contextuelle)",
     "575": "-t (nombre de threads)",
-    "576": "-b (Batch Size)",
-    "577": "-ub (uBatch Size)",
+    "576": "-b (Taille du lot)",
+    "577": "-ub (Taille du uLot)",
     "578": "Commande de démarrage complète",
     "579": "Il n'y a pas encore d'enregistrement de démarrage. La ligne de commande complète sera affichée après le démarrage du service.",
     "580": "Modèles installés",
@@ -385,5 +385,6 @@ export default  {
     "1211": "Téléchargement du modèle et vérification terminée ! Prêt à l'emploi.",
     "1212": "Téléchargement",
     "1213": "En téléchargeant le modèle depuis {source} (progression {progress} %, vitesse {speed}), revenez pour afficher la carte en temps réel.",
-    "1214": "Revenir à la vue"
+    "1214": "Revenir à la vue",
+    "1227": "Traitement en cours..."
 }

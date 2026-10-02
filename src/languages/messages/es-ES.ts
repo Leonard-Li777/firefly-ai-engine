@@ -385,5 +385,6 @@ export default  {
     "1211": "¡Descarga y verificación del modelo completadas! Preparado para usar.",
     "1212": "Descargando",
     "1213": "Descargando el modelo desde {source} (progreso {progress}%, velocidad {speed}), regrese para ver la tarjeta en tiempo real.",
-    "1214": "Volver a ver"
+    "1214": "Volver a ver",
+    "1227": "Procesando..."
 }
