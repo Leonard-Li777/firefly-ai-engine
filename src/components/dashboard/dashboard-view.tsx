@@ -33,6 +33,7 @@ export const DashboardView: React.FC = () => {
     models,
     runtimeParams,
     activeModelKey,
+    activeLanguageModelKey,
     startEngine,
     stopEngine,
     logs,
@@ -85,6 +86,37 @@ export const DashboardView: React.FC = () => {
   const currentModelItem = safeModels.find(m => `${m.id}@${m.source}` === activeModelKey)
   const customParams = currentModelItem ? getModelCustomParams(currentModelItem.id) : undefined
   const effectiveParams = { ...runtimeParams, ...customParams }
+
+  // 当前模型名称：优先运行态活跃模型名，其次语言模型槽位，再兜底后端上报或首个可用模型
+  const currentModelName = React.useMemo(() => {
+    if (currentModelItem?.name) return currentModelItem.name
+    if (activeLanguageModelKey) {
+      const langModel = safeModels.find(
+        m => `${m.id}@${m.source}` === activeLanguageModelKey || m.id === activeLanguageModelKey
+      )
+      if (langModel?.name) return langModel.name
+    }
+    if (engineStatus?.current_model) {
+      const matched = safeModels.find(
+        m =>
+          m.name === engineStatus.current_model ||
+          m.id === engineStatus.current_model ||
+          (m.localPath &&
+            (m.localPath.toLowerCase().includes(engineStatus.current_model!.toLowerCase()) ||
+              engineStatus.current_model!.toLowerCase().includes(m.localPath.toLowerCase())))
+      )
+      if (matched?.name) return matched.name
+      const cleanName = engineStatus.current_model
+        .replace(/\\/g, '/')
+        .split('/')
+        .pop()
+        ?.replace(/\.gguf$/i, '')
+      if (cleanName) return cleanName
+    }
+    const downloadedModel = safeModels.find(m => m.isDownloaded && !m.isEmbedding)
+    if (downloadedModel?.name) return downloadedModel.name
+    return null
+  }, [currentModelItem, activeLanguageModelKey, safeModels, engineStatus?.current_model])
 
   // 显存负载统计
   const totalVramMb = (hw?.total_vram_gb || 8) * 1024
@@ -172,10 +204,19 @@ export const DashboardView: React.FC = () => {
               <Zap className="h-6 w-6" />
             </div>
             <div>
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-2.5 flex-wrap">
                 <h2 className="text-lg font-black tracking-tight text-foreground">
                   {t('推理引擎后台服务')}
                 </h2>
+                {currentModelName && (
+                  <Badge
+                    variant="outline"
+                    className="text-xs font-semibold px-2.5 py-0.5 border-border/80 bg-muted/40 text-foreground/85 max-w-[260px] truncate"
+                    title={currentModelName}
+                  >
+                    {currentModelName}
+                  </Badge>
+                )}
                 <Badge
                   variant="outline"
                   className={`text-xs font-bold px-2 py-0.5 uppercase flex items-center gap-1.5 ${

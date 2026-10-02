@@ -6,6 +6,7 @@ import { ModelStorageConfig } from '../src/components/storage/model-storage-conf
 import { ThinkingModeCard } from '../src/components/engine/thinking-mode-card'
 import { LocalChatView } from '../src/components/chat/local-chat-view'
 import { ModelListPanel } from '../src/components/model/model-list-panel'
+import { DashboardView } from '../src/components/dashboard/dashboard-view'
 import { useEngineStore } from '../src/stores/engine-store'
 import { isAbsolutePath } from '../src/lib/path-utils'
 
@@ -220,6 +221,26 @@ describe('Tier 2 管理视窗核心组件交互测试', () => {
     // 切换到 huggingface 来源同样可见 WeMM
     render(<ModelListPanel focusModel="WeMM-Embedding-2B" focusSource="huggingface" />)
     expect(screen.getAllByText(/WeMM-Embedding 2B/i).length).toBeGreaterThan(0)
+  })
+
+  it('DashboardView 能够在【推理引擎后台服务】与状态徽标之间正确渲染当前模型名称', async () => {
+    await useEngineStore.getState().fetchModels()
+    render(<DashboardView />)
+
+    // 校验【推理引擎后台服务】标题存在
+    const title = screen.getByText('推理引擎后台服务')
+    expect(title).toBeInTheDocument()
+
+    // 校验服务运行状态徽标存在（mock 默认状态为运行中 (就绪)）
+    expect(screen.getByText(/运行中 \(就绪\)|已停止/)).toBeInTheDocument()
+
+    // 校验当前模型名称正常显示
+    const activeModelKey = useEngineStore.getState().activeModelKey || useEngineStore.getState().activeLanguageModelKey
+    const models = useEngineStore.getState().models
+    const currentModel = models.find(m => `${m.id}@${m.source}` === activeModelKey || m.id === activeModelKey)
+    if (currentModel) {
+      expect(screen.getByText(currentModel.name)).toBeInTheDocument()
+    }
   })
 })
 
