@@ -170,7 +170,7 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isEx = false,
   const engineStatus = useEngineStore(s => s.engineStatus)
   const activateAndStart = useEngineStore(s => s.activateAndStart)
   const [isStartLaunching, setIsStartLaunching] = useState(false)
-  const isEngineReady = engineStatus?.status === 'ready'
+  const isEngineReady = engineStatus?.status === 'ready' || engineStatus?.status === 'processing'
   const isEngineStarting = engineStatus?.status === 'starting' || engineStatus?.status === 'model_loading'
   const isModelRunning = isCurrent && isEngineReady
   const isModelLaunching = isCurrent && (isEngineStarting || isStartLaunching)
@@ -1230,7 +1230,7 @@ export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focu
         isCurrentRunning={
           drawerModel
             ? activeModelKey === `${drawerModel.id}@${drawerModel.source}` &&
-            engineStatus?.status === 'ready'
+            (engineStatus?.status === 'ready' || engineStatus?.status === 'processing')
             : false
         }
         onClose={() => setDrawerModel(null)}

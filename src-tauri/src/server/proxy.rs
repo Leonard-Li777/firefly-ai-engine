@@ -65,16 +65,55 @@ impl<S: futures::Stream + Unpin, G: Send + Unpin + 'static> futures::Stream for 
     }
 }
 
-/// 代理 handler：将所有 /v1/* 请求转发到 llama-server
+/// 判断当前反代请求是否为真正的 AI 模型推理/计算工作请求。
+/// 静态网页、样式、脚本、模型列表与探活路由不应触发 active_requests 计数。
+fn is_inference_request(path: &str) -> bool {
+    let p = path.trim_start_matches('/');
+    // 排除已知只读探活与静态资源
+    if p.is_empty()
+        || p == "index.html"
+        || p == "favicon.ico"
+        || p == "props"
+        || p == "slots"
+        || p == "health"
+        || p.starts_with("v1/models")
+        || p.ends_with(".js")
+        || p.ends_with(".css")
+        || p.ends_with(".ico")
+        || p.ends_with(".png")
+        || p.ends_with(".svg")
+        || p.ends_with(".wasm")
+    {
+        return false;
+    }
+
+    // 命中 AI 核心推理与计算端点
+    p.starts_with("v1/chat/completions")
+        || p.starts_with("v1/completions")
+        || p.starts_with("v1/embeddings")
+        || p.starts_with("v1/rerank")
+        || p.starts_with("completion")
+        || p.starts_with("tokenize")
+        || p.starts_with("detokenize")
+        || p.starts_with("embedding")
+        || p.starts_with("infill")
+}
+
+/// 代理 handler：将所有 /v1/* 与 WebUI 请求转发到 llama-server
 pub async fn proxy_handler(
     State(state): State<ProxyState>,
     req: Request<Body>,
 ) -> Response<Body> {
-    let coordinator = {
-        let guard = state.coordinator.lock().await;
-        guard.clone()
+    let req_path = req.uri().path().to_string();
+    let _request_guard = if is_inference_request(&req_path) {
+        let coordinator = {
+            let guard = state.coordinator.lock().await;
+            guard.clone()
+        };
+        coordinator.as_ref().map(|c| c.begin_request())
+    } else {
+        None
     };
-    let _request_guard = coordinator.as_ref().map(|c| c.begin_request());
 
     let target_port = {
         let guard = state.target_port.lock().await;

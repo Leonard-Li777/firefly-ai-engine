@@ -162,6 +162,17 @@ describe('Tier 2 管理视窗核心组件交互测试', () => {
 
     unmount()
 
+    // 处于 processing 工作状态：仍然稳定渲染 iframe，不会错误退到未就绪导致页面闪动
+    useEngineStore.setState(state => ({
+      engineStatus: state.engineStatus ? { ...state.engineStatus, status: 'processing' } : null
+    }))
+    const { unmount: unmountProcessing } = render(<LocalChatView />)
+    expect(screen.getByTitle('llama.cpp local chat')).toBeInTheDocument()
+    expect(screen.getByText('处理中...')).toBeInTheDocument()
+    expect(screen.queryByText('本地推理服务未就绪')).not.toBeInTheDocument()
+
+    unmountProcessing()
+
     // 切换到停止状态
     useEngineStore.setState(state => ({
       engineStatus: state.engineStatus ? { ...state.engineStatus, status: 'stopped' } : null

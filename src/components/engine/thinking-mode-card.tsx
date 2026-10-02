@@ -14,7 +14,7 @@ export const ThinkingModeCard: React.FC = () => {
   const engineStatus = useEngineStore(s => s.engineStatus)
   const startEngine = useEngineStore(s => s.startEngine)
   const stopEngine = useEngineStore(s => s.stopEngine)
-  const isEngineRunning = engineStatus?.status === 'ready'
+  const isEngineRunning = engineStatus?.status === 'ready' || engineStatus?.status === 'processing'
 
   const [enabled, setEnabled] = useState<boolean>(() => {
     if (typeof window !== 'undefined' && window.localStorage) {

@@ -220,40 +220,48 @@ export const App: React.FC = () => {
 
         {/* 顶部右侧快捷状态与设置 */}
         <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap justify-end shrink-0">
-          {/* 服务状态指示：根据真实状态区分展示（就绪/启动中/启动失败/未启动） */}
+          {/* 服务状态指示：根据真实状态区分展示（就绪/处理中/启动中/启动失败/未启动） */}
           {(() => {
             const st = engineStatus?.status
+            const isProcessing = st === 'processing'
             const isReady = st === 'ready'
+            const isOnline = isReady || isProcessing
             const isError = st === 'error'
             const isStopped = st === 'stopped' || !st
             const chipCls = isReady
               ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
-              : isError
-                ? 'bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/30'
-                : isStopped
-                  ? 'bg-muted/40 text-muted-foreground border-border/70'
-                  : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30'
+              : isProcessing
+                ? 'bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/30'
+                : isError
+                  ? 'bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/30'
+                  : isStopped
+                    ? 'bg-muted/40 text-muted-foreground border-border/70'
+                    : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30'
             const dotCls = isReady
               ? 'bg-emerald-400 opacity-75'
-              : isError
-                ? 'bg-red-400 opacity-75'
-                : isStopped
-                  ? 'bg-muted-foreground/50'
-                  : 'bg-amber-400 opacity-75'
+              : isProcessing
+                ? 'bg-purple-400 opacity-75'
+                : isError
+                  ? 'bg-red-400 opacity-75'
+                  : isStopped
+                    ? 'bg-muted-foreground/50'
+                    : 'bg-amber-400 opacity-75'
             const statusText = isReady
               ? `${t('就绪')} (${engineStatus?.port || 38400})`
-              : isError
-                ? t('启动失败')
-                : isStopped
-                  ? t('未启动')
-                  : t('启动中...')
+              : isProcessing
+                ? `${t('处理中...')} (${engineStatus?.port || 38400})`
+                : isError
+                  ? t('启动失败')
+                  : isStopped
+                    ? t('未启动')
+                    : t('启动中...')
             return (
               <div
                 className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-bold shrink-0 ${chipCls}`}
                 title={engineStatus?.last_error || undefined}
               >
-                <span className={`relative flex h-2 w-2 shrink-0 ${isReady || isError || !isStopped ? '' : 'opacity-100'}`}>
-                  {isReady || isError || !isStopped ? (
+                <span className={`relative flex h-2 w-2 shrink-0 ${isOnline || isError || !isStopped ? '' : 'opacity-100'}`}>
+                  {isOnline || isError || !isStopped ? (
                     <>
                       <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${dotCls}`}></span>
                       <span className={`relative inline-flex rounded-full h-2 w-2 ${dotCls.replace(' opacity-75', '')}`}></span>

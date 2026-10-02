@@ -78,7 +78,7 @@ export const DashboardView: React.FC = () => {
 
   // 服务运行状态
   const rawStatus = engineStatus?.status || 'stopped'
-  const isRunning = rawStatus === 'ready'
+  const isRunning = rawStatus === 'ready' || rawStatus === 'processing'
   const isStarting = rawStatus === 'starting'
 
   // 当前引擎：后端未上报（如从未下载任何引擎）时显示占位符，不硬编码兜底

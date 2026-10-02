@@ -12,7 +12,8 @@ export const LocalChatView: React.FC = () => {
   const [starting, setStarting] = useState(false)
 
   const port = engineStatus?.port || 38400
-  const isReady = engineStatus?.status === 'ready'
+  const isOnline = engineStatus?.status === 'ready' || engineStatus?.status === 'processing'
+  const isProcessing = engineStatus?.status === 'processing'
   const chatUrl = `http://127.0.0.1:${port}`
 
   const handleReload = () => {
@@ -48,12 +49,14 @@ export const LocalChatView: React.FC = () => {
           <Badge
             variant="outline"
             className={`text-[10px] h-5 px-1.5 py-0 font-mono shrink-0 ${
-              isReady
-                ? 'border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10'
+              isOnline
+                ? isProcessing
+                  ? 'border-purple-500/30 text-purple-600 dark:text-purple-400 bg-purple-500/10'
+                  : 'border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10'
                 : 'border-amber-500/30 text-amber-500 bg-amber-500/10'
             }`}
           >
-            {isReady ? `127.0.0.1:${port}` : t('服务未就绪')}
+            {isOnline ? (isProcessing ? t('处理中...') : `127.0.0.1:${port}`) : t('服务未就绪')}
           </Badge>
         </div>
 
@@ -84,7 +87,7 @@ export const LocalChatView: React.FC = () => {
 
       {/* 核心内容区：就绪时全屏自适应 iframe，未启动时提示卡片 */}
       <div className="flex-1 w-full h-full relative bg-card overflow-hidden">
-        {isReady ? (
+        {isOnline ? (
           <iframe
             key={iframeKey}
             src={chatUrl}
