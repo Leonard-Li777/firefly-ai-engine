@@ -38,6 +38,8 @@ pub async fn start_server(
     let port = find_available_port(base_port).await;
     // 立即记录实际绑定的端口，确保 IPC 在 serve 阻塞前就能返回该端口
     *coordinator.active_port.lock().await = Some(port);
+    *coordinator.app_handle.lock().await = app_handle.clone();
+    proxy_state.set_coordinator(coordinator.clone()).await;
 
     // 初始化下载任务管理器与活跃进程 PID 表
     let download_tasks = Arc::new(Mutex::new(HashMap::new()));

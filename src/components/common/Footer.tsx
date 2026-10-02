@@ -68,6 +68,29 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateTab, onOpenErrorPanel 
     return () => clearInterval(interval)
   }, [fetchEngineStatus])
 
+  // 监听 Tauri 后端推送的状态变更事件（毫秒级同步 API 工作中/完成切换）
+  useEffect(() => {
+    let unlisten: (() => void) | undefined
+    if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
+      import('@tauri-apps/api/event')
+        .then(({ listen }) => {
+          listen<any>('engine:status-changed', event => {
+            if (event?.payload) {
+              useEngineStore.setState({
+                engineStatus: event.payload
+              })
+            }
+          }).then(fn => {
+            unlisten = fn
+          })
+        })
+        .catch(() => {})
+    }
+    return () => {
+      unlisten?.()
+    }
+  }, [])
+
   // 当前模型信息解析（严格遵循优先级：启动模型 > 激活语言模型 > 激活嵌入模型 > 兜底）
   const safeModels = Array.isArray(models) ? models : []
   const { modelItem: currentModelItem, modelName: resolvedModelName } = useMemo(() => {
@@ -106,6 +129,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateTab, onOpenErrorPanel 
         }
       case 'model_loading':
       case 'downloading':
+      case 'processing':
         return {
           text: t('{modelInfo} 处理中...', { modelInfo: header }),
           icon: RefreshCw,

@@ -5,7 +5,10 @@
 use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
-    response::IntoResponse,
+    response::{
+        sse::{Event, KeepAlive, Sse},
+        IntoResponse,
+    },
     routing::{get, post},
     Json, Router,
 };
@@ -847,6 +850,41 @@ async fn engine_status(State(state): State<AppState>) -> impl IntoResponse {
     Json(status)
 }
 
+/// GET /api/engine/events
+/// SSE 实时事件流：实时向连接端（如 Desktop）广播状态变更快照
+async fn engine_status_events(
+    State(state): State<AppState>,
+) -> Sse<impl futures::Stream<Item = Result<Event, std::convert::Infallible>>> {
+    let initial = state.coordinator.get_status().await;
+    let initial_data = serde_json::to_string(&initial).unwrap_or_default();
+    let rx = state.coordinator.status_broadcast.subscribe();
+
+    let stream = futures::stream::unfold(
+        (rx, Some(initial_data)),
+        |(mut rx, initial)| async move {
+            if let Some(first) = initial {
+                return Some((Ok(Event::default().data(first)), (rx, None)));
+            }
+            loop {
+                match rx.recv().await {
+                    Ok(status) => {
+                        let data = serde_json::to_string(&status).unwrap_or_default();
+                        return Some((Ok(Event::default().data(data)), (rx, None)));
+                    }
+                    Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => {
+                        continue;
+                    }
+                    Err(tokio::sync::broadcast::error::RecvError::Closed) => {
+                        return None;
+                    }
+                }
+            }
+        },
+    );
+
+    Sse::new(stream).keep_alive(KeepAlive::default())
+}
+
 /// GET /api/engine/list
 /// 返回计算引擎管理列表（含已安装、未安装与推荐适配类型）
 async fn engine_list(State(state): State<AppState>) -> impl IntoResponse {
@@ -1270,7 +1308,7 @@ async fn switch_engine(
 
     // 4. 若当前推理服务正在运行或正在启动，执行热重启以无缝切换到新引擎
     let proc_status = state.coordinator.guard.status().await;
-    if proc_status == crate::engine::ProcessStatus::Running || proc_status == crate::engine::ProcessStatus::Starting {
+    let res = if proc_status == crate::engine::ProcessStatus::Running || proc_status == crate::engine::ProcessStatus::Starting {
         info!("当前引擎服务运行中，正在热重启以切换至新后端: {}", payload.backend);
         // 先停掉旧服务
         if let Err(e) = state.coordinator.stop_service().await {
@@ -1307,7 +1345,9 @@ async fn switch_engine(
                 "message": format!("首选引擎已切换为 {}，启动服务后生效", payload.backend)
             })),
         )
-    }
+    };
+    state.coordinator.notify_status_changed().await;
+    res
 }
 
 /// POST /api/engine/delete
@@ -3003,6 +3043,7 @@ async fn switch_model(
     }
 
     info!("模型已切换至: {} (名称: {:?})", current_model, payload.model_name);
+    state.coordinator.notify_status_changed().await;
     Json(json!({
         "success": true,
         "currentModel": current_model
@@ -3926,7 +3967,7 @@ async fn start_engine_service(
         *state.coordinator.active_model.lock().await = Some(target);
     }
 
-    match state.coordinator.start_service().await {
+    let res = match state.coordinator.start_service().await {
         Ok(_) => (StatusCode::OK, Json(json!({ "success": true, "message": "服务启动成功" }))),
         Err(e) => {
             error!("启动服务失败: {}", e);
@@ -3935,14 +3976,16 @@ async fn start_engine_service(
                 Json(json!({ "success": false, "error": e.to_string() })),
             )
         }
-    }
+    };
+    state.coordinator.notify_status_changed().await;
+    res
 }
 
 /// POST /api/engine/stop
 /// 停止 llama.cpp 推理服务子进程
 async fn stop_engine_service(State(state): State<AppState>) -> impl IntoResponse {
     info!("收到 stop_engine_service 请求");
-    match state.coordinator.stop_service().await {
+    let res = match state.coordinator.stop_service().await {
         Ok(_) => (StatusCode::OK, Json(json!({ "success": true, "message": "服务已停止" }))),
         Err(e) => {
             error!("停止服务失败: {}", e);
@@ -3951,7 +3994,9 @@ async fn stop_engine_service(State(state): State<AppState>) -> impl IntoResponse
                 Json(json!({ "success": false, "error": e.to_string() })),
             )
         }
-    }
+    };
+    state.coordinator.notify_status_changed().await;
+    res
 }
 
 /// GET /api/engine/logs
@@ -3972,6 +4017,7 @@ async fn clear_engine_logs(State(state): State<AppState>) -> impl IntoResponse {
 pub fn management_routes() -> Router<AppState> {
     Router::new()
         .route("/api/engine/status", get(engine_status))
+        .route("/api/engine/events", get(engine_status_events))
         .route("/api/engine/start", post(start_engine_service))
         .route("/api/engine/stop", post(stop_engine_service))
         .route("/api/engine/logs", get(get_engine_logs))

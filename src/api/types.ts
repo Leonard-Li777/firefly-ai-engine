@@ -19,7 +19,7 @@ export type EngineBackend =
   | 'sycl'
   | string
 
-export type EngineRunStatus = 'starting' | 'ready' | 'model_loading' | 'downloading' | 'error' | 'stopped'
+export type EngineRunStatus = 'starting' | 'ready' | 'model_loading' | 'downloading' | 'processing' | 'error' | 'stopped'
 export type ModelSource = 'huggingface' | 'modelscope'
 
 /**

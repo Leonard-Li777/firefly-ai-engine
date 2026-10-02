@@ -17,6 +17,7 @@ use tracing::{debug, warn};
 pub struct ProxyState {
     pub target_port: Arc<Mutex<Option<u16>>>,
     pub client: Client,
+    pub coordinator: Arc<Mutex<Option<Arc<crate::engine::EngineCoordinator>>>>,
 }
 
 impl ProxyState {
@@ -30,6 +31,7 @@ impl ProxyState {
         ProxyState {
             target_port: Arc::new(Mutex::new(None)),
             client,
+            coordinator: Arc::new(Mutex::new(None)),
         }
     }
 
@@ -38,6 +40,29 @@ impl ProxyState {
         *guard = Some(port);
         tracing::info!("反向代理目标端口更新: {}", port);
     }
+
+    pub async fn set_coordinator(&self, coordinator: Arc<crate::engine::EngineCoordinator>) {
+        let mut guard = self.coordinator.lock().await;
+        *guard = Some(coordinator);
+    }
+}
+
+/// 流包装器：持有生命周期 Guard 直至流完全消费结束或连接断开析构
+struct GuardedStream<S, G> {
+    inner: S,
+    _guard: Option<G>,
+}
+
+impl<S: futures::Stream + Unpin, G: Send + Unpin + 'static> futures::Stream for GuardedStream<S, G> {
+    type Item = S::Item;
+
+    fn poll_next(
+        self: std::pin::Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Option<Self::Item>> {
+        let this = self.get_mut();
+        std::pin::Pin::new(&mut this.inner).poll_next(cx)
+    }
 }
 
 /// 代理 handler：将所有 /v1/* 请求转发到 llama-server
@@ -45,6 +70,12 @@ pub async fn proxy_handler(
     State(state): State<ProxyState>,
     req: Request<Body>,
 ) -> Response<Body> {
+    let coordinator = {
+        let guard = state.coordinator.lock().await;
+        guard.clone()
+    };
+    let _request_guard = coordinator.as_ref().map(|c| c.begin_request());
+
     let target_port = {
         let guard = state.target_port.lock().await;
         *guard
@@ -134,10 +165,15 @@ pub async fn proxy_handler(
         .unwrap_or(false);
 
     if is_stream {
-        // 流式透传
+        // 流式透传：使用 GuardedStream 持有 _request_guard 直至整个数据流传输结束
         let stream = resp.bytes_stream();
         use futures::StreamExt;
-        let body = Body::from_stream(stream.map(|r| r.map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))));
+        let mapped = stream.map(|r| r.map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e)));
+        let guarded = GuardedStream {
+            inner: Box::pin(mapped),
+            _guard: _request_guard,
+        };
+        let body = Body::from_stream(guarded);
         builder.body(body).unwrap_or_else(|_| {
             Response::builder()
                 .status(StatusCode::INTERNAL_SERVER_ERROR)
@@ -145,7 +181,7 @@ pub async fn proxy_handler(
                 .unwrap()
         })
     } else {
-        // 普通响应
+        // 普通响应：body_bytes 读取完成并写入 Response，_request_guard 随函数正常返回而自动 drop
         let body_bytes = resp.bytes().await.unwrap_or_default();
         builder
             .body(Body::from(body_bytes))

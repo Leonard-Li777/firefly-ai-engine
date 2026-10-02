@@ -8,6 +8,7 @@ pub use process_guard::{ProcessError, ProcessEvent, ProcessGuard, ProcessStatus}
 pub use scheduler::{EngineScheduler, InstalledEngine};
 
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -15,10 +16,29 @@ use crate::hardware::{DriverComplianceService, HardwareDetector};
 use crate::config::{EngineConfig, find_available_port};
 use crate::server::proxy::ProxyState;
 
+/// API 工作态 RAII 卫士：请求进入时活跃计数+1，结束/中断析构时原子计数-1并在归零时广播状态变更
+pub struct RequestGuard {
+    active_requests: Arc<AtomicUsize>,
+    coordinator: std::sync::Weak<EngineCoordinator>,
+}
+
+impl Drop for RequestGuard {
+    fn drop(&mut self) {
+        let prev = self.active_requests.fetch_sub(1, Ordering::SeqCst);
+        if prev == 1 {
+            if let Some(coord) = self.coordinator.upgrade() {
+                tokio::spawn(async move {
+                    coord.notify_status_changed().await;
+                });
+            }
+        }
+    }
+}
+
 /// 引擎服务状态（对外暴露）
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct EngineStatus {
-    pub status: String,         // "starting" | "ready" | "error" | "stopped"
+    pub status: String,         // "starting" | "ready" | "processing" | "error" | "stopped"
     pub active_backend: String, // "cuda" | "vulkan" | "cpu" | ...
     pub current_model: Option<String>,
     pub current_model_name: Option<String>,
@@ -81,6 +101,12 @@ pub struct EngineCoordinator {
     pub install_bin_dirs: Vec<PathBuf>,
     /// 操作互斥锁（防止并发启动、停止或模型热切换导致多进程竞态）
     pub operation_lock: Arc<Mutex<()>>,
+    /// 活跃中的 API 推理/工作请求计数
+    pub active_requests: Arc<AtomicUsize>,
+    /// 状态快照变更广播频道（供 SSE 推送与订阅监听）
+    pub status_broadcast: tokio::sync::broadcast::Sender<EngineStatus>,
+    /// Tauri AppHandle 用于向引擎前端 WebView 广播状态事件
+    pub app_handle: Arc<Mutex<Option<tauri::AppHandle>>>,
 }
 
 impl EngineCoordinator {
@@ -93,6 +119,7 @@ impl EngineCoordinator {
     ) -> Arc<Self> {
         let scheduler = Arc::new(EngineScheduler::new(bin_dirs.clone(), compliance.clone()));
         let guard = ProcessGuard::new(compliance.clone());
+        let (status_broadcast, _) = tokio::sync::broadcast::channel(32);
 
         Arc::new(EngineCoordinator {
             hardware,
@@ -108,7 +135,35 @@ impl EngineCoordinator {
             active_model_name: Arc::new(Mutex::new(None)),
             install_bin_dirs: bin_dirs,
             operation_lock: Arc::new(Mutex::new(())),
+            active_requests: Arc::new(AtomicUsize::new(0)),
+            status_broadcast,
+            app_handle: Arc::new(Mutex::new(None)),
         })
+    }
+
+    /// 进入 API 工作态并返回生命周期 Guard（计数+1，并在由 0 变 1 时主动广播变更）
+    pub fn begin_request(self: &Arc<Self>) -> RequestGuard {
+        let prev = self.active_requests.fetch_add(1, Ordering::SeqCst);
+        if prev == 0 {
+            let coord = self.clone();
+            tokio::spawn(async move {
+                coord.notify_status_changed().await;
+            });
+        }
+        RequestGuard {
+            active_requests: self.active_requests.clone(),
+            coordinator: Arc::downgrade(self),
+        }
+    }
+
+    /// 向所有订阅方（SSE 连接、前端 WebView）实时广播最新状态快照
+    pub async fn notify_status_changed(&self) {
+        let status = self.get_status().await;
+        let _ = self.status_broadcast.send(status.clone());
+        if let Some(ref handle) = *self.app_handle.lock().await {
+            use tauri::Emitter;
+            let _ = handle.emit("engine:status-changed", &status);
+        }
     }
 
     /// 获取当前引擎状态（用于 /api/engine/status 端点）
@@ -116,7 +171,13 @@ impl EngineCoordinator {
         let proc_status = self.guard.status().await;
         let status_str = match proc_status {
             ProcessStatus::Starting => "starting",
-            ProcessStatus::Running => "ready",
+            ProcessStatus::Running => {
+                if self.active_requests.load(Ordering::Relaxed) > 0 {
+                    "processing"
+                } else {
+                    "ready"
+                }
+            }
             ProcessStatus::Failed => "error",
             ProcessStatus::Stopped => "stopped",
         };

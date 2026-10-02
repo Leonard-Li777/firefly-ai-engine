@@ -7,6 +7,7 @@ import { ThinkingModeCard } from '../src/components/engine/thinking-mode-card'
 import { LocalChatView } from '../src/components/chat/local-chat-view'
 import { ModelListPanel } from '../src/components/model/model-list-panel'
 import { DashboardView } from '../src/components/dashboard/dashboard-view'
+import { Footer } from '../src/components/common/Footer'
 import { useEngineStore } from '../src/stores/engine-store'
 import { isAbsolutePath } from '../src/lib/path-utils'
 
@@ -242,5 +243,25 @@ describe('Tier 2 管理视窗核心组件交互测试', () => {
       expect(screen.getByText(currentModel.name)).toBeInTheDocument()
     }
   })
+
+  it('Footer 左侧状态在 processing 时正确显示处理中，且不包含 [本地] 或 [云端] 前缀', async () => {
+    await useEngineStore.getState().fetchModels()
+    const currentStatus = useEngineStore.getState().engineStatus!
+    useEngineStore.setState({
+      engineStatus: {
+        ...currentStatus,
+        status: 'processing'
+      }
+    })
+
+    render(<Footer onNavigateTab={() => {}} />)
+
+    // 校验出现 "处理中..."
+    expect(screen.getByText(/处理中\.\.\./)).toBeInTheDocument()
+    // 校验 Engine 自身文案不包含 [本地] 或 [云端] 前缀
+    expect(screen.queryByText(/\[本地\]/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/\[云端\]/)).not.toBeInTheDocument()
+  })
 })
+
 
