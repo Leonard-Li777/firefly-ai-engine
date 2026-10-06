@@ -119,7 +119,14 @@ const ModelColumnHeader: React.FC = () => {
 
 interface ModelRowProps {
   model: ModelItem
+  /** 是否处于自身槽位的「已激活」配置态（语言槽 / 嵌入槽各自独立，可同时为真） */
   isCurrent: boolean
+  /**
+   * 是否为进程内实际运行（或正在加载）的模型。
+   * 与 isCurrent 严格区分：语言模型与嵌入模型可同时「已激活」，但同一时刻进程只运行一个模型，
+   * 故「已启动」仅能落在真正被引擎加载的那一个模型上。
+   */
+  isActiveModel?: boolean
   isEx?: boolean
   /** Desktop 深链引导的目标行：呼吸高亮光晕（Issue 0046 §3） */
   highlighted?: boolean
@@ -134,7 +141,7 @@ interface ModelRowProps {
  * 「已激活」状态条、描述、本地路径、状态与操作按钮各自独占整行子行，互不挤压。
  * 下载进行中以整行子区块展开进度条。
  */
-const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isEx = false, highlighted = false, onActivate, onOpenConfig, onDownloadSubmit }) => {
+const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isActiveModel = false, isEx = false, highlighted = false, onActivate, onOpenConfig, onDownloadSubmit }) => {
   const { fetchModels, modelsDir } = useEngineStore()
   const handleDownloadComplete = React.useCallback(() => {
     fetchModels()
@@ -172,8 +179,11 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isEx = false,
   const [isStartLaunching, setIsStartLaunching] = useState(false)
   const isEngineReady = engineStatus?.status === 'ready' || engineStatus?.status === 'processing'
   const isEngineStarting = engineStatus?.status === 'starting' || engineStatus?.status === 'model_loading'
-  const isModelRunning = isCurrent && isEngineReady
-  const isModelLaunching = isCurrent && (isEngineStarting || isStartLaunching)
+  // 运行态判定必须锚定「进程内实际运行的模型」（isActiveModel），而非「槽位已激活」（isCurrent）：
+  // 语言槽与嵌入槽可同时为「已激活」，但进程同一时刻只运行一个模型，
+  // 若用 isCurrent 判定会把另一槽位的模型也误标为「已启动」。
+  const isModelRunning = isActiveModel && isEngineReady
+  const isModelLaunching = isStartLaunching || (isActiveModel && isEngineStarting)
 
   // 处理「激活并启动」：切换模型 → 启动引擎服务
   const handleActivateAndStart = async () => {
@@ -978,12 +988,16 @@ export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focu
     const isCurrent = Boolean(model.isDownloaded) && (model.isEmbedding
       ? (activeEmbeddingModelKey === modelKey || (!activeEmbeddingModelKey && (activeModelKey === modelKey || model.id.toLowerCase().includes('wemm'))))
       : (activeLanguageModelKey === modelKey || (!activeLanguageModelKey && activeModelKey === modelKey)))
+    // 运行态（已启动/启动中）只归属于引擎进程实际加载的模型（activeModelKey 由 current_model 反查得到）；
+    // 与槽位激活态解耦，避免「语言模型在跑，嵌入模型却显示已启动」以及由此导致的无法手动切换。
+    const isActiveModel = Boolean(model.isDownloaded) && activeModelKey === modelKey
 
     return (
       <ModelRowItem
         key={modelKey}
         model={model}
         isCurrent={isCurrent}
+        isActiveModel={isActiveModel}
         isEx={model.isEx}
         highlighted={highlightedKey === modelKey}
         onActivate={async (id, source, localPath, modelName) => {

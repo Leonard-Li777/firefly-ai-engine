@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import { HardwareCard } from '../src/components/hardware/hardware-card'
 import { EngineTable } from '../src/components/engine/engine-table'
 import { ModelStorageConfig } from '../src/components/storage/model-storage-config'
@@ -10,6 +10,10 @@ import { DashboardView } from '../src/components/dashboard/dashboard-view'
 import { Footer } from '../src/components/common/Footer'
 import { useEngineStore } from '../src/stores/engine-store'
 import { isAbsolutePath } from '../src/lib/path-utils'
+import { mockApiClient } from '../src/api/mock-client'
+import { setEngineApiClient } from '../src/api/provider'
+import { modelMetadataService } from '../src/lib/model-metadata-service'
+import type { ModelItem } from '../src/api/types'
 
 describe('Tier 2 管理视窗核心组件交互测试', () => {
   beforeEach(async () => {
@@ -272,6 +276,94 @@ describe('Tier 2 管理视窗核心组件交互测试', () => {
     // 校验 Engine 自身文案不包含 [本地] 或 [云端] 前缀
     expect(screen.queryByText(/\[本地\]/)).not.toBeInTheDocument()
     expect(screen.queryByText(/\[云端\]/)).not.toBeInTheDocument()
+  })
+
+  it('模型列表运行态互斥：语言模型在跑时，嵌入模型只显示【已激活】而非【已启动】，且保留【激活并启动】可手动切换', async () => {
+    const lang: ModelItem = {
+      id: 'unsloth/Qwen3.5-0.8B-GGUF:UD-Q4_K_XL',
+      name: 'Qwen 3.5 0.8B (中文更佳)',
+      author: 'unsloth',
+      source: 'modelscope',
+      quant: 'Q4_K_XL',
+      fileSize: 558000000,
+      params: '0.8B',
+      description: '极速轻量文本模型。',
+      isDownloaded: true,
+      recommended: true,
+      localPath: 'D:\\AI_Models\\hub\\models\\unsloth\\Qwen3.5-0.8B-GGUF\\qwen3.5-0.8b-instruct-ud-q4_k_xl.gguf'
+    }
+    const wemm: ModelItem = {
+      id: 'WeMM-Embedding-2B:Q8_0',
+      name: 'WeMM-Embedding 2B',
+      author: 'WeMM',
+      source: 'modelscope',
+      quant: 'Q8_0',
+      fileSize: 2400000000,
+      params: '2B',
+      description: '多模态嵌入向量模型。',
+      isEmbedding: true,
+      isDownloaded: true,
+      recommended: true,
+      localPath: 'D:\\AI_Models\\hub\\models\\WeMM\\wemm-embedding-2b-q8_0.gguf'
+    }
+    const langKey = `${lang.id}@${lang.source}`
+    const wemmKey = `${wemm.id}@${wemm.source}`
+
+    // 注入受控 fake：语言模型槽位与嵌入模型槽位均已激活，但进程实际只加载了语言模型
+    const fake = Object.create(mockApiClient) as typeof mockApiClient
+    fake.getEngineStatus = async () => ({
+      status: 'ready',
+      active_backend: 'cuda',
+      current_model: lang.localPath ?? null,
+      current_model_name: lang.name,
+      active_language_model: langKey,
+      active_embedding_model: wemmKey,
+      models_dir: 'D:\\AI_Models',
+      vram_usage_mb: 1420,
+      port: 38400,
+      hardware: {
+        gpu_name: 'NVIDIA GeForce RTX 3060',
+        total_vram_gb: 12,
+        best_tier: 'cuda',
+        current_tier: 'cuda',
+        is_integrated: false
+      }
+    })
+    fake.listModels = async () => [lang, wemm]
+    fake.getEngineList = async () => []
+
+    const spy = vi.spyOn(modelMetadataService, 'getModelsForLanguage').mockReturnValue([lang, wemm])
+    setEngineApiClient(fake)
+    try {
+      await useEngineStore.getState().fetchEngineStatus()
+      await useEngineStore.getState().fetchModels()
+      render(<ModelListPanel />)
+
+      await waitFor(() => {
+        expect(document.querySelector(`[data-model-key="${wemmKey}"]`)).toBeTruthy()
+      })
+      const langRow = document.querySelector(`[data-model-key="${langKey}"]`) as HTMLElement
+      const wemmRow = document.querySelector(`[data-model-key="${wemmKey}"]`) as HTMLElement
+
+      // 语言模型：槽位已激活且进程实际运行 → 【已激活】+【已启动】
+      expect(within(langRow).getByText('已激活')).toBeInTheDocument()
+      expect(within(langRow).getByText('已启动')).toBeInTheDocument()
+
+      // 嵌入模型：槽位已激活（PRD-0047 双槽位），但进程未运行它 → 绝不显示【已启动】
+      expect(within(wemmRow).getByText('已激活')).toBeInTheDocument()
+      expect(within(wemmRow).queryByText('已启动')).toBeNull()
+
+      // 且必须保留可手动切换的【激活并启动】按钮（此前被误置的【已启动】徽标顶掉，导致无法手动切换嵌入模型）
+      expect(within(wemmRow).getByRole('button', { name: /激活并启动/ })).toBeInTheDocument()
+
+      // 全局同一时刻仅有一个模型处于【已启动】
+      expect(screen.getAllByText('已启动')).toHaveLength(1)
+    } finally {
+      spy.mockRestore()
+      setEngineApiClient(null)
+      await useEngineStore.getState().fetchEngineStatus()
+      await useEngineStore.getState().fetchModels()
+    }
   })
 })
 

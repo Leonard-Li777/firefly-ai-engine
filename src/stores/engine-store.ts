@@ -245,14 +245,15 @@ export const useEngineStore = create<EngineStoreState>((set, get) => ({
       if (res.success) {
         captureEvent('切换模型', { modelId, source: source || 'modelscope', isEmbedding: effectiveIsEmbedding })
         const key = matched ? `${matched.id}@${matched.source}` : `${modelId}@${source || 'modelscope'}`
-        const displayName = effectiveModelName || matched?.name || res.currentModel || modelId
+        // 切换只更新「配置槽位」（用户偏好），绝不宣称模型已进入运行态：
+        // - 语言模型与嵌入模型各自独立持有激活槽位，二者可同时处于「已激活」；
+        // - 但引擎进程同一时刻只运行一个模型，「已启动」由 /api/engine/status 的
+        //   current_model（后端 running_model）独占表达，且切换并不触发进程重启。
+        // 因此这里不改写 activeModelKey / engineStatus.current_model，避免把
+        // 「刚切换的模型」误标为「已启动」（曾导致语言模型在跑时嵌入模型也显示已启动、无法手动切换）。
         set(state => ({
-          activeModelKey: key,
           activeLanguageModelKey: effectiveIsEmbedding ? state.activeLanguageModelKey : key,
-          activeEmbeddingModelKey: effectiveIsEmbedding ? key : state.activeEmbeddingModelKey,
-          engineStatus: state.engineStatus
-            ? { ...state.engineStatus, current_model: displayName }
-            : state.engineStatus
+          activeEmbeddingModelKey: effectiveIsEmbedding ? key : state.activeEmbeddingModelKey
         }))
         return true
       }

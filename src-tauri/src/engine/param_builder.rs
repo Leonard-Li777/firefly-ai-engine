@@ -388,7 +388,31 @@ impl ParamBuilder {
                     args.extend(["--mmproj".to_string(), mmproj.clone()]);
                 }
             }
+        }
 
+        let is_prod = model_info.map(|i| i.is_production).unwrap_or(false);
+
+        // ── 嵌入向量服务模式（WeMM-Embedding 等高维修正专用）──
+        // 嵌入模型只做前向向量化，不生成 token。因此「语言模型专属」参数一律不注入：
+        //   --jinja / --chat-template（对话模板）、--reasoning*（推理抑制）、
+        //   --temp / --top-p / --top-k / --repeat-penalty（采样超参）、
+        //   --cache-type-k/v（KV 缓存量化）、--parallel（生成并发槽位）、
+        //   --no-context-shift / --load-mode、以及 --model-draft/--spec-type（投机采样）。
+        // 仅保留服务寻址、上下文长度、算力卸载与批处理等必要参数。
+        if model_info.map(|i| i.is_embedding).unwrap_or(false) {
+            args.push("--embedding".to_string());
+            args.extend([
+                "--ctx-size".to_string(),
+                params.ctx_size.to_string(),
+                "--alias".to_string(),
+                model_alias.to_string(),
+            ]);
+            Self::push_compute_args(&mut args, params, is_prod);
+            return args;
+        }
+
+        // ── 语言模型（生成）模式 ──
+        if let Some(info) = model_info {
             // DSpark 投机采样
             if let Some(ref dspark) = info.dspark_path {
                 args.extend([
@@ -417,11 +441,6 @@ impl ParamBuilder {
                     "--spec-draft-n-max".to_string(),
                     "3".to_string(),
                 ]);
-            }
-
-            // 嵌入向量服务模式（多模态高维修正专用）
-            if info.is_embedding {
-                args.push("--embedding".to_string());
             }
         }
 
@@ -526,6 +545,13 @@ impl ParamBuilder {
             }
         }
 
+        Self::push_compute_args(&mut args, params, is_prod);
+
+        args
+    }
+
+    /// 追加「算力卸载 / 批处理」通用参数（语言模型与嵌入模型共用）
+    fn push_compute_args(args: &mut Vec<String>, params: &EngineParams, is_prod: bool) {
         // Flash Attention
         if params.flash_attention {
             args.extend(["-fa".to_string(), "auto".to_string()]);
@@ -534,7 +560,6 @@ impl ParamBuilder {
         }
 
         // 生产环境详细日志
-        let is_prod = model_info.map(|i| i.is_production).unwrap_or(false);
         if is_prod {
             args.extend(["--verbose".to_string()]);
         }
@@ -560,8 +585,6 @@ impl ParamBuilder {
 
         // CPU 线程数
         args.extend(["-t".to_string(), params.threads.to_string()]);
-
-        args
     }
 }
 
@@ -825,11 +848,71 @@ mod tests {
         let resources = make_resources_with_dgpu(12 * 1024);
         let mut model = make_model(2.0, 1.8);
         model.is_embedding = true;
+        // 即便配置了语言模型专属项，嵌入模式也必须全部剔除
+        model.enable_thinking = false;
+        model.temp = Some(0.7);
+        model.top_p = Some(0.95);
+        model.top_k = Some(40);
+        model.repeat_penalty = Some(1.1);
+        model.parallel = Some(1);
+        model.cache_type_k = Some("f16".to_string());
+        model.cache_type_v = Some("f16".to_string());
+        model.dspark_path = Some("D:\\models\\dspark.gguf".to_string());
 
         let params = ParamBuilder::compute(&resources, &model, "cuda");
         let args = ParamBuilder::to_args(&params, 38400, "D:\\models\\wemm.gguf", "wemm-2b", Some(&model));
 
+        // 必需：嵌入模式开关
         assert!(args.contains(&"--embedding".to_string()), "应该注入 --embedding 参数");
+
+        // 必需：服务寻址 / 上下文 / 算力卸载 / 批处理
+        for flag in [
+            "--host", "--port", "--model", "--ctx-size", "--alias", "-fa",
+            "--n-gpu-layers", "--batch-size", "--ubatch-size", "-t",
+        ] {
+            assert!(args.contains(&flag.to_string()), "嵌入模式应保留必要参数 {}", flag);
+        }
+
+        // 严禁：语言模型（生成）专属参数
+        for forbidden in [
+            "--jinja",
+            "--chat-template",
+            "--no-context-shift",
+            "--load-mode",
+            "--cache-type-k",
+            "--cache-type-v",
+            "--parallel",
+            "--repeat-penalty",
+            "--reasoning",
+            "--reasoning-format",
+            "--reasoning-budget",
+            "--temp",
+            "--top-p",
+            "--top-k",
+            "--model-draft",
+            "--spec-type",
+        ] {
+            assert!(
+                !args.contains(&forbidden.to_string()),
+                "嵌入模式不得注入语言模型专属参数 {}",
+                forbidden
+            );
+        }
+    }
+
+    #[test]
+    fn test_to_args_language_mode_keeps_generation_params() {
+        // 反向守卫：语言模型模式必须仍然保留对话/采样/推理抑制参数
+        let resources = make_resources_with_dgpu(12 * 1024);
+        let model = make_model(7.0, 4.3);
+
+        let params = ParamBuilder::compute(&resources, &model, "cuda");
+        let args = ParamBuilder::to_args(&params, 38400, "D:\\models\\main.gguf", "test-model", Some(&model));
+
+        assert!(!args.contains(&"--embedding".to_string()), "语言模型不得注入 --embedding");
+        for flag in ["--jinja", "--chat-template", "--reasoning", "--temp", "--top-p"] {
+            assert!(args.contains(&flag.to_string()), "语言模型模式应保留 {}", flag);
+        }
     }
 
     #[test]
