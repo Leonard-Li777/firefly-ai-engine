@@ -331,9 +331,13 @@ export function mergeScannedWithRecommended(recommendedList: ModelItem[], scanne
     })
   }
 
-  // 2. 填入扫描到的本地自定义/独有模型（保证本地模型不被丢弃）；
-  //    此类条目不经过 normalizeRawModel，缺失 vramNeededGB 时按体积估算补齐，保证预估显存列可显示
+  // 2. 填入用户显式添加的自定义模型（custom: true），保证用户自定义模型进入底表；
+  //    未被第 1 步官方底表认领且非用户显式配置的纯物理扫描文件（!item.custom）坚决丢弃，严禁按物理文件列表伪造为模型！
   for (const item of scanned) {
+    if (!item.custom) {
+      continue
+    }
+
     const localFileName = item.localPath ? (item.localPath.split(/[\\/]/).pop() || '') : ''
     // 严格过滤：投影模型（mmproj）永远只是辅助投影器，绝不能作为独立的主模型添加到模型列表
     if (

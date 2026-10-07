@@ -155,10 +155,10 @@ describe('mergeScannedWithRecommended 推荐底表合并', () => {
     expect(merged[0].isDownloaded).toBe(false)
   })
 
-  it('本地独有模型不被丢弃，追加到合并结果尾部', () => {
+  it('本地独有模型（custom: true）不被丢弃，追加到合并结果尾部', () => {
     const recommended = [makeModel({ id: 'Test/Model-GGUF:q4_k_m' })]
     const scanned = [
-      makeModel({ id: 'MyCustom/local-only', name: 'Local Only', isDownloaded: true, localPath: 'D:/M/local-only.gguf' })
+      makeModel({ id: 'MyCustom/local-only', name: 'Local Only', isDownloaded: true, localPath: 'D:/M/local-only.gguf', custom: true })
     ]
 
     const merged = mergeScannedWithRecommended(recommended, scanned)
@@ -235,6 +235,57 @@ describe('mergeScannedWithRecommended 推荐底表合并', () => {
     expect(merged[0].id).toBe('zensignGG/MiniCPM5-1B-Claude-Opus-Fable5-V2-Thinking-heretic-GGUF:Q4KM')
     expect(merged[0].isDownloaded).toBe(true)
     expect(merged[0].localPath).toBe('C:/Users/lilun/AppData/Roaming/com.firefly.ai-engine/models/hub/models/zensignGG/MiniCPM5-1B-Claude-Opus-Fable5-V2-Thinking-heretic-GGUF/minicpm5_1b_heretic_q4km.gguf')
+  })
+
+  it('仅扫描到但未在官方推荐底表中且未标记 custom: true 的孤儿磁盘文件会被丢弃，不伪造为模型条目', () => {
+    const recommended = [
+      makeModel({
+        id: 'unsloth/Qwen3.5-0.8B-GGUF:UD-Q4_K_XL',
+        name: 'Qwen 3.5 0.8B'
+      })
+    ]
+    const scanned = [
+      makeModel({
+        id: 'some_random_downloaded_file',
+        name: 'some_random_downloaded_file',
+        isDownloaded: true,
+        localPath: 'D:/AI_Models/some_random_downloaded_file.gguf',
+        custom: false
+      })
+    ]
+
+    const merged = mergeScannedWithRecommended(recommended, scanned)
+
+    // 孤儿物理文件绝不能作为模型进入最终列表
+    expect(merged.length).toBe(1)
+    expect(merged[0].id).toBe('unsloth/Qwen3.5-0.8B-GGUF:UD-Q4_K_XL')
+    expect(merged.find(m => m.id === 'some_random_downloaded_file')).toBeUndefined()
+  })
+
+  it('标记 custom: true 的用户自定义模型条目即使不在推荐底表中也能正确保留并进入合并列表', () => {
+    const recommended = [
+      makeModel({
+        id: 'unsloth/Qwen3.5-0.8B-GGUF:UD-Q4_K_XL',
+        name: 'Qwen 3.5 0.8B'
+      })
+    ]
+    const scanned = [
+      makeModel({
+        id: 'HauhauCS/Qwen3.8-27B-Uncensored-GGUF',
+        name: 'Qwen 3.8 27B Uncensored',
+        isDownloaded: true,
+        localPath: 'D:/AI_Models/qwen3.8_27b.gguf',
+        custom: true
+      })
+    ]
+
+    const merged = mergeScannedWithRecommended(recommended, scanned)
+
+    expect(merged.length).toBe(2)
+    const custom = merged.find(m => m.id === 'HauhauCS/Qwen3.8-27B-Uncensored-GGUF')
+    expect(custom).toBeDefined()
+    expect(custom?.custom).toBe(true)
+    expect(custom?.isDownloaded).toBe(true)
   })
 })
 

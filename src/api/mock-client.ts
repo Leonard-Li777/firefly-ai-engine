@@ -86,7 +86,7 @@ export class MockApiClient implements IEngineApiClient {
   private models: ModelItem[] = [
     {
       id: 'unsloth/Qwen3.5-0.8B-GGUF:UD-Q4_K_XL',
-      name: 'Qwen 3.5 0.8B (中文更佳)',
+      name: 'Qwen 3.5 0.8B (轻量识图)',
       author: 'unsloth',
       source: 'modelscope',
       quant: 'Q4_K_XL',
@@ -100,18 +100,18 @@ export class MockApiClient implements IEngineApiClient {
       sha256: '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08'
     },
     {
-      id: 'LiquidAI/LFM2.5-1.2B-Instruct-GGUF:Q4_K_M',
-      name: 'LFM2.5 1.2B Instruct（英文更佳•高速）',
-      author: 'LiquidAI',
+      id: 'OpenBMB/MiniCPM5-2B-gguf:Q4_K_M',
+      name: 'MiniCPM5 2B（高质量•小体积）',
+      author: 'OpenBMB',
       source: 'modelscope',
       quant: 'Q4_K_M',
-      fileSize: 873000000,
-      params: '1.2B',
-      description: '最新 LFM2.5 指令模型，文本分析高效，CPU 推理快速。',
+      fileSize: 1450000000,
+      params: '2B',
+      description: '显存不足，又想正确分类文件，必须选我，唯一缺点仅支持文本。',
       isMultiModal: false,
       isDownloaded: true,
       recommended: true,
-      localPath: 'D:\\AI_Models\\hub\\models\\LiquidAI\\LFM2.5-1.2B-Instruct-GGUF\\lfm2.5-1.2b-instruct-q4_k_m.gguf',
+      localPath: 'D:\\AI_Models\\hub\\models\\OpenBMB\\MiniCPM5-2B-gguf\\minicpm5_2b_q4_k_m.gguf',
       sha256: '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8'
     },
     {

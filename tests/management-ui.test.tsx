@@ -6,6 +6,7 @@ import { ModelStorageConfig } from '../src/components/storage/model-storage-conf
 import { ThinkingModeCard } from '../src/components/engine/thinking-mode-card'
 import { LocalChatView } from '../src/components/chat/local-chat-view'
 import { ModelListPanel } from '../src/components/model/model-list-panel'
+import { CustomModelAddCard } from '../src/components/model/custom-model-add-card'
 import { DashboardView } from '../src/components/dashboard/dashboard-view'
 import { Footer } from '../src/components/common/Footer'
 import { useEngineStore } from '../src/stores/engine-store'
@@ -363,6 +364,107 @@ describe('Tier 2 管理视窗核心组件交互测试', () => {
       setEngineApiClient(null)
       await useEngineStore.getState().fetchEngineStatus()
       await useEngineStore.getState().fetchModels()
+    }
+  })
+
+  it('ModelListPanel 严格排除自定义模型，且关闭仅显示推荐时能显示官方注册的 recommended: false 模型', async () => {
+    const customItem: ModelItem = {
+      id: 'custom-org/my-custom-model',
+      name: '我的自定义模型',
+      author: 'custom-org',
+      source: 'modelscope',
+      quant: 'Q4_K_M',
+      fileSize: 1000000000,
+      params: '7B',
+      description: '自定义测试模型',
+      isDownloaded: false,
+      recommended: false,
+      custom: true
+    }
+    const nonRecommendedItem: ModelItem = {
+      id: 'official-org/official-non-recommended',
+      name: '官方未推荐模型',
+      author: 'official-org',
+      source: 'modelscope',
+      quant: 'Q4_K_M',
+      fileSize: 1000000000,
+      params: '7B',
+      description: '官方未推荐测试模型',
+      isDownloaded: false,
+      recommended: false,
+      custom: false
+    }
+
+    const currentModels = useEngineStore.getState().models
+    useEngineStore.setState({
+      models: [...currentModels, customItem, nonRecommendedItem]
+    })
+
+    try {
+      render(<ModelListPanel />)
+
+      // 默认开启「仅显示推荐」：自定义模型和非推荐官方模型均不可见
+      expect(screen.queryByText('我的自定义模型')).not.toBeInTheDocument()
+      expect(screen.queryByText('官方未推荐模型')).not.toBeInTheDocument()
+
+      // 点击切换「仅显示推荐」开关（关闭推荐开关）
+      const switchEl = screen.getByRole('switch')
+      fireEvent.click(switchEl)
+
+      // 关闭后：官方未推荐模型可见，但用户自定义模型依然严格隔离，绝不在主列表出现！
+      expect(screen.getByText('官方未推荐模型')).toBeInTheDocument()
+      expect(screen.queryByText('我的自定义模型')).not.toBeInTheDocument()
+    } finally {
+      useEngineStore.setState({ models: currentModels })
+    }
+  })
+
+  it('CustomModelAddCard 直接集中展示所有用户添加的自定义模型（不分 Tab），展示来源 Badge', async () => {
+    const customMs: ModelItem = {
+      id: 'ms-org/ms-custom-model',
+      name: 'MS自定义模型',
+      author: 'ms-org',
+      source: 'modelscope',
+      quant: 'Q4_K_M',
+      fileSize: 1200000000,
+      params: '7B',
+      description: 'MS自定义模型描述',
+      isDownloaded: false,
+      custom: true
+    }
+    const customHf: ModelItem = {
+      id: 'hf-org/hf-custom-model',
+      name: 'HF自定义模型',
+      author: 'hf-org',
+      source: 'huggingface',
+      quant: 'Q8_0',
+      fileSize: 2400000000,
+      params: '14B',
+      description: 'HF自定义模型描述',
+      isDownloaded: false,
+      custom: true
+    }
+
+    const currentModels = useEngineStore.getState().models
+    useEngineStore.setState({
+      models: [...currentModels, customMs, customHf]
+    })
+
+    try {
+      render(<CustomModelAddCard />)
+
+      // 两个不同来源的自定义模型在同一个卡片内直接平铺展示，不分 Tab
+      expect(screen.getByText('MS自定义模型')).toBeInTheDocument()
+      expect(screen.getByText('HF自定义模型')).toBeInTheDocument()
+
+      // 来源徽标正常渲染
+      expect(screen.getByText('ModelScope')).toBeInTheDocument()
+      expect(screen.getByText('Hugging Face')).toBeInTheDocument()
+
+      // 数量角标显示正确
+      expect(screen.getByText(/个自定义模型/)).toBeInTheDocument()
+    } finally {
+      useEngineStore.setState({ models: currentModels })
     }
   })
 })

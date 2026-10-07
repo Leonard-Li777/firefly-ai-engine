@@ -606,7 +606,7 @@ fn scan_and_merge_models(
                 }
             }
 
-            // 未匹配到预设模型则作为本地自定义模型添加（已被自由添加条目认领的文件除外，避免出现重复行）
+            // 未被自定义条目认领的物理文件作为扫描探针记录保留（供前端匹配官方注册模型是否已下载）
             if !matched && !claimed_files.iter().any(|c| c == file_path) {
                 // 从文件名提取真实量化标记，避免硬编码 Q4_K_M 与物理文件不符
                 let real_quant = extract_quant_tag_from_name(&file_name.to_lowercase())
@@ -619,10 +619,10 @@ fn scan_and_merge_models(
                     "quant": real_quant,
                     "fileSize": file_size,
                     "params": "Unknown",
-                    "description": "本地自定义模型",
                     "isMultiModal": false,
                     "isDownloaded": true,
                     "localPath": file_path.to_string_lossy().to_string(),
+                    "scanned_only": true,
                 }));
             }
         }

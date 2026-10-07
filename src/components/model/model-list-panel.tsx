@@ -937,9 +937,11 @@ export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focu
   const groupedModels = useMemo(() => {
     const matched = safeModels.filter(m => {
       if (!m) return false
+      // 用户自定义模型（custom: true）完全脱离主列表，独占下方 CustomModelAddCard 卡片呈现
+      if (m.custom) return false
       if (m.source !== activeSource) return false
-      // 自由添加的模型为用户显式提交，不受"只看推荐"过滤
-      if (showRecommendedOnly && !m.recommended && !m.custom) return false
+      // 仅显示推荐打开时过滤非推荐；关闭时展示当前源下全部官方注册模型（含 recommended = false）
+      if (showRecommendedOnly && !m.recommended) return false
       return true
     })
     const sorted = sortModels(matched, userVramGB)
@@ -962,10 +964,10 @@ export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focu
     groupedModels.notDownloaded.language.length + groupedModels.notDownloaded.embedding.length +
     groupedModels.vramLimited.language.length + groupedModels.vramLimited.embedding.length
 
-  // 统计各来源数量
+  // 统计各来源官方注册模型数量（排除用户自定义模型）
   const counts = useMemo(() => {
-    const scopeCount = safeModels.filter(m => m && m.source === 'modelscope').length
-    const hfCount = safeModels.filter(m => m && m.source === 'huggingface').length
+    const scopeCount = safeModels.filter(m => m && !m.custom && m.source === 'modelscope').length
+    const hfCount = safeModels.filter(m => m && !m.custom && m.source === 'huggingface').length
     return { modelscope: scopeCount, huggingface: hfCount }
   }, [safeModels])
 
@@ -974,7 +976,7 @@ export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focu
     const kw = focusModel?.trim().toLowerCase()
     if (!kw) return null
     return safeModels.find(
-      m => m && m.source === activeSource && (m.id.toLowerCase().includes(kw) || m.name.toLowerCase().includes(kw))
+      m => m && !m.custom && m.source === activeSource && (m.id.toLowerCase().includes(kw) || m.name.toLowerCase().includes(kw))
     ) || null
   }, [focusModel, activeSource, safeModels])
 
