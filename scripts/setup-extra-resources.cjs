@@ -60,6 +60,111 @@ function parseArgs(argv) {
   return args
 }
 
+// ---------- 私有仓库认证（firefly-resources 已转闭源：raw 索引与 release 资产均需 token） ----------
+
+let cachedGithubToken
+
+/**
+ * 解析 GitHub 访问 token（进程内缓存）。
+ * 优先级：GH_TOKEN → GITHUB_TOKEN → 本地 gh CLI 登录态；三者皆无返回 null。
+ * @returns {string|null}
+ */
+function resolveGithubToken() {
+  if (cachedGithubToken !== undefined) return cachedGithubToken
+  const fromEnv = process.env.GH_TOKEN || process.env.GITHUB_TOKEN
+  if (fromEnv) {
+    cachedGithubToken = fromEnv
+    return cachedGithubToken
+  }
+  try {
+    const out = spawnSync('gh', ['auth', 'token'], { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] })
+    if (out.status === 0 && out.stdout && out.stdout.trim()) {
+      cachedGithubToken = out.stdout.trim()
+      return cachedGithubToken
+    }
+  } catch (_) {
+    /* 未安装 gh / 未登录时忽略 */
+  }
+  cachedGithubToken = null
+  return null
+}
+
+/**
+ * 认证请求头（仅发往 GitHub 官方域名）
+ * @returns {object}
+ */
+function authHeaders() {
+  const token = resolveGithubToken()
+  return token ? { authorization: `token ${token}` } : {}
+}
+
+// release 资产 id 解析缓存（owner/repo@tag → Promise<{name, url}[]>）
+const releaseAssetsCache = new Map()
+
+/**
+ * 将容器仓库的 github.com 下载 URL 解析为认证可用的 API asset URL（两步法）。
+ * 私有仓库的 github.com/releases/download 域名不认 API token（匿名与带 token 均 404），
+ * 必须走 api.github.com/repos/.../releases/assets/{id} + Accept: application/octet-stream。
+ * 无 token 时返回 null（公开仓库直接用原 URL 下载即可）。
+ * @param {string} url github.com 下载 URL
+ * @param {string} containerRepo 目标容器仓库（owner/name）
+ * @returns {Promise<string|null>}
+ */
+async function toAuthenticatedAssetUrl(url, containerRepo) {
+  const token = resolveGithubToken()
+  if (!token) return null
+  const m = /^https:\/\/github\.com\/([^/]+)\/([^/]+)\/releases\/download\/([^/]+)\/(.+)$/.exec(url)
+  if (!m) return null
+  const [, owner, repo, tag, rawName] = m
+  if (`${owner}/${repo}` !== containerRepo) return null
+
+  const cacheKey = `${owner}/${repo}@${tag}`
+  if (!releaseAssetsCache.has(cacheKey)) {
+    releaseAssetsCache.set(
+      cacheKey,
+      new Promise((resolve, reject) => {
+        const apiUrl = `https://api.github.com/repos/${owner}/${repo}/releases/tags/${tag}`
+        https
+          .get(
+            apiUrl,
+            {
+              headers: {
+                'user-agent': 'firefly-ai-engine-setup',
+                accept: 'application/vnd.github+json',
+                authorization: `token ${token}`
+              }
+            },
+            res => {
+              if (res.statusCode !== 200) {
+                res.resume()
+                reject(new Error(`[setup] 查询 release 失败 ${res.statusCode}: ${apiUrl}`))
+                return
+              }
+              let body = ''
+              res.setEncoding('utf8')
+              res.on('data', c => (body += c))
+              res.on('end', () => {
+                try {
+                  const release = JSON.parse(body)
+                  resolve((release.assets || []).map(a => ({ name: a.name, url: a.url })))
+                } catch (e) {
+                  reject(e)
+                }
+              })
+            }
+          )
+          .on('error', reject)
+      })
+    )
+  }
+  const assets = await releaseAssetsCache.get(cacheKey)
+  const hit = assets.find(a => a.name === decodeURIComponent(rawName))
+  if (!hit) {
+    throw new Error(`[setup] 容器仓库 ${containerRepo}@${tag} 中找不到资产 ${decodeURIComponent(rawName)}`)
+  }
+  return hit.url
+}
+
 function resolveDownloadUrl(url, explicitProxy) {
   const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true'
   if (explicitProxy) {
@@ -72,9 +177,17 @@ function resolveDownloadUrl(url, explicitProxy) {
   return url
 }
 
-async function downloadFile(url, destPath, explicitProxy) {
+/**
+ * 下载文件（支持私有仓库认证头；API 直连时绕过 gh-proxy 镜像——镜像无法代理私有资产）
+ * @param {string} url
+ * @param {string} destPath
+ * @param {string} [explicitProxy]
+ * @param {object} [headers] 附加请求头
+ * @param {boolean} [bypassMirror] true 时不拼接 gh-proxy 镜像前缀（GitHub API 必须直连）
+ */
+async function downloadFile(url, destPath, explicitProxy, headers = {}, bypassMirror = false) {
   ensureDir(path.dirname(destPath))
-  const finalUrl = resolveDownloadUrl(url, explicitProxy)
+  const finalUrl = bypassMirror ? url : resolveDownloadUrl(url, explicitProxy)
   console.log(`📥 正在下载: ${path.basename(destPath)}`)
   console.log(`   源地址: ${finalUrl}`)
 
@@ -84,28 +197,39 @@ async function downloadFile(url, destPath, explicitProxy) {
       if (redirects > 10) return reject(new Error('Too many redirects'))
 
       const client = currentUrl.startsWith('http:') ? http : https
-      const req = client.get(currentUrl, { headers: { 'User-Agent': 'firefly-ai-engine-setup' } }, res => {
-        if ([301, 302, 303, 307, 308].includes(res.statusCode)) {
-          const loc = res.headers.location
-          if (!loc) return reject(new Error(`Redirect without location: HTTP ${res.statusCode}`))
-          return fetchWithRedirect(loc, redirects + 1)
-        }
-        if (res.statusCode !== 200) {
-          return reject(new Error(`HTTP ${res.statusCode} on downloading ${currentUrl}`))
-        }
-        const fileStream = fs.createWriteStream(tempPath)
-        res.pipe(fileStream)
-        fileStream.on('finish', () => {
-          fileStream.close(() => {
-            fs.renameSync(tempPath, destPath)
-            resolve()
+      const req = client.get(
+        currentUrl,
+        { headers: { 'User-Agent': 'firefly-ai-engine-setup', ...headers } },
+        res => {
+          if ([301, 302, 303, 307, 308].includes(res.statusCode)) {
+            const loc = res.headers.location
+            if (!loc) return reject(new Error(`Redirect without location: HTTP ${res.statusCode}`))
+            return fetchWithRedirect(loc, redirects + 1)
+          }
+          if (res.statusCode !== 200) {
+            return reject(
+              new Error(
+                `HTTP ${res.statusCode} on downloading ${currentUrl}` +
+                  (res.statusCode === 404
+                    ? '（若目标仓库已转私有，请配置 GH_TOKEN / GITHUB_TOKEN 或 gh auth login）'
+                    : '')
+              )
+            )
+          }
+          const fileStream = fs.createWriteStream(tempPath)
+          res.pipe(fileStream)
+          fileStream.on('finish', () => {
+            fileStream.close(() => {
+              fs.renameSync(tempPath, destPath)
+              resolve()
+            })
           })
-        })
-        fileStream.on('error', err => {
-          try { fs.unlinkSync(tempPath) } catch (_) {}
-          reject(err)
-        })
-      })
+          fileStream.on('error', err => {
+            try { fs.unlinkSync(tempPath) } catch (_) {}
+            reject(err)
+          })
+        }
+      )
       req.on('error', err => {
         try { fs.unlinkSync(tempPath) } catch (_) {}
         reject(err)
@@ -190,7 +314,8 @@ async function main() {
   if (!indexData) {
     console.log(`🌐 正在从 GitHub 获取最新资源索引: ${remoteIndexUrl}`)
     const tmpIndex = path.join(PRESET_DIR, 'index.json')
-    await downloadFile(remoteIndexUrl, tmpIndex, args.proxy)
+    // 仓库已转私有：raw 索引需带 token（公开仓库带 token 同样可用）
+    await downloadFile(remoteIndexUrl, tmpIndex, args.proxy, authHeaders())
     indexData = JSON.parse(fs.readFileSync(tmpIndex, 'utf8'))
   }
 
@@ -245,7 +370,11 @@ async function main() {
     // 4. 从 GitHub Releases 下载
     if (needDownload) {
       const downloadUrl = `https://github.com/${repo}/releases/download/${containerTag}/${archiveName}`
-      await downloadFile(downloadUrl, archivePath, args.proxy)
+      // 容器仓库已转私有：有 token 时经 API 两步解析并直连下载（绕过 gh-proxy 镜像，镜像无法代理私有资产）
+      const targetUrl = (await toAuthenticatedAssetUrl(downloadUrl, repo)) || downloadUrl
+      const reqHeaders =
+        targetUrl !== downloadUrl ? { ...authHeaders(), accept: 'application/octet-stream' } : {}
+      await downloadFile(targetUrl, archivePath, args.proxy, reqHeaders, targetUrl !== downloadUrl)
       const downloadedSha = await sha256File(archivePath)
       if (downloadedSha !== expectedSha256.toLowerCase()) {
         throw new Error(`下载的文件 SHA256 校验失败: ${archiveName} (期望: ${expectedSha256}, 实际: ${downloadedSha})`)
