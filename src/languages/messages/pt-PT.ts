@@ -249,10 +249,7 @@ export default  {
     "687": "A rolagem automática está ativada",
     "688": "Rolagem automática pausada (role para baixo para continuar)",
     "689": "Registros",
-    "690": "Foi adicionado com sucesso à lista de modelos, vá para a lista para visualizar",
-    "691": "A detecção está concluída e foi adicionada à lista de modelos abaixo como um cartão de modelo padrão.",
     "692": "Adicione qualquer modelo",
-    "693": "Sinta-se à vontade para adicionar quaisquer arquivos de modelo GGUF hospedados por ModelScope / HuggingFace e adicioná-los à lista de modelos para download acima.",
     "694": "Adicione livremente modelos especificados",
     "695": "Cheirando...",
     "696": "Adicione e cheire",
@@ -386,5 +383,14 @@ export default  {
     "1212": "Baixando",
     "1213": "Fazendo download do modelo de {source} (progresso {progress}%, velocidade {speed}), volte para visualizar o cartão em tempo real.",
     "1214": "Voltar para visualizar",
-    "1227": "A processar..."
+    "1227": "A processar...",
+    "1262": "Eliminar ficheiros de modelos físicos, libertar espaço em disco",
+    "1263": "Remover este registo de modelo personalizado",
+    "1264": "A preparar...",
+    "1265": "A carregar...",
+    "1266": "Adicionado com sucesso à lista de modelos personalizados",
+    "1267": "Sniffing concluído, adicionado à lista de modelos personalizados abaixo",
+    "1268": "Adicione livremente ficheiros de modelos GGUF hospedados no ModelScope / HuggingFace, guarde-os na configuração local e gerencie-os centralmente.",
+    "1269": "Modelos personalizados",
+    "1270": "Modelos personalizados adicionados"
 }

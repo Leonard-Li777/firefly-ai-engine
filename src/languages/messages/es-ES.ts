@@ -249,10 +249,7 @@ export default  {
     "687": "El desplazamiento automático está activado",
     "688": "Desplazamiento automático pausado (desplácese hacia abajo para reanudar)",
     "689": "Registros",
-    "690": "Se ha agregado exitosamente a la lista de modelos, vaya a la lista para ver",
-    "691": "El olfateo se completó y se agregó a la lista de modelos a continuación como una tarjeta de modelo estándar.",
     "692": "Añade cualquier modelo",
-    "693": "Siéntase libre de agregar cualquier archivo de modelo GGUF alojado en ModelScope/HuggingFace y agregarlo a la lista de modelos para descargar arriba.",
     "694": "Agregue libremente modelos específicos",
     "695": "Olfateando...",
     "696": "Agregar y oler",
@@ -386,5 +383,14 @@ export default  {
     "1212": "Descargando",
     "1213": "Descargando el modelo desde {source} (progreso {progress}%, velocidad {speed}), regrese para ver la tarjeta en tiempo real.",
     "1214": "Volver a ver",
-    "1227": "Procesando..."
+    "1227": "Procesando...",
+    "1262": "Eliminar el archivo de modelo físico para liberar espacio en disco",
+    "1263": "Eliminar este registro de modelo personalizado",
+    "1264": "Preparando...",
+    "1265": "Descargando...",
+    "1266": "Se ha añadido correctamente a la lista de modelos personalizados",
+    "1267": "Sniffing completado, se ha añadido a la lista de modelos personalizados siguiente",
+    "1268": "Agregue libremente cualquier archivo de modelo GGUF alojado en ModelScope / HuggingFace, guárdelo en la configuración local y gestiónelo de manera centralizada.",
+    "1269": "Modelos personalizados",
+    "1270": "Modelos personalizados añadidos"
 }

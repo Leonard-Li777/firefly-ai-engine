@@ -249,10 +249,7 @@ export default  {
     "687": "Autoscroll ist aktiviert",
     "688": "Autoscroll angehalten (zum Fortsetzen nach unten scrollen)",
     "689": "Protokolle",
-    "690": "Wurde erfolgreich zur Modellliste hinzugefügt. Bitte gehen Sie zur Ansicht zur Liste",
-    "691": "Das Schnüffeln ist abgeschlossen und wurde als Standardmodellkarte zur Modellliste unten hinzugefügt.",
     "692": "Fügen Sie ein beliebiges Modell hinzu",
-    "693": "Fühlen Sie sich frei, alle von ModelScope / HuggingFace gehosteten GGUF-Modelldateien hinzuzufügen und sie der Liste der oben herunterzuladenden Modelle hinzuzufügen.",
     "694": "Fügen Sie bestimmte Modelle frei hinzu",
     "695": "Schnüffeln...",
     "696": "Hinzufügen und schnüffeln",
@@ -386,5 +383,14 @@ export default  {
     "1212": "Herunterladen",
     "1213": "Modell wird von {source} heruntergeladen (Fortschritt {progress} %, Geschwindigkeit {speed}). Wechseln Sie zurück, um die Echtzeitkarte anzuzeigen.",
     "1214": "Wechseln Sie zurück zur Ansicht",
-    "1227": "Wird bearbeitet..."
+    "1227": "Wird bearbeitet...",
+    "1262": "Fisikalische Modelldateien löschen, um Speicherplatz zu freigeben",
+    "1263": "Diese benutzerdefinierte Modellregistrierung entfernen",
+    "1264": "Wird vorbereitet...",
+    "1265": "Wird heruntergeladen...",
+    "1266": "Erfolgreich zur Liste der benutzerdefinierten Modelle hinzugefügt",
+    "1267": "Sniffing abgeschlossen, zum obenstehenden benutzerdefinierten Modellverzeichnis hinzugefügt",
+    "1268": "Fügen Sie beliebig viele GGUF-Modelldateien hinzu, die von ModelScope / HuggingFace gehostet werden; sie werden in der lokalen Konfiguration gespeichert und zentral verwaltet.",
+    "1269": "Benutzerdefinierte Modelle",
+    "1270": "Hinzugefügte benutzerdefinierte Modelle"
 }

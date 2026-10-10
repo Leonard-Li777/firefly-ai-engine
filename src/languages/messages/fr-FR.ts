@@ -249,10 +249,7 @@ export default  {
     "687": "Le défilement automatique est activé",
     "688": "Défilement automatique en pause (faites défiler vers le bas pour reprendre)",
     "689": "Journaux",
-    "690": "A été ajouté avec succès à la liste des modèles, veuillez accéder à la liste pour voir",
-    "691": "Le reniflage est terminé et a été ajouté à la liste des modèles ci-dessous en tant que carte modèle standard.",
     "692": "Ajouter n'importe quel modèle",
-    "693": "N'hésitez pas à ajouter tous les fichiers de modèles GGUF hébergés par ModelScope / HuggingFace et à les ajouter à la liste des modèles à télécharger ci-dessus.",
     "694": "Ajoutez librement les modèles spécifiés",
     "695": "Reniflement...",
     "696": "Ajouter et renifler",
@@ -386,5 +383,14 @@ export default  {
     "1212": "Téléchargement",
     "1213": "En téléchargeant le modèle depuis {source} (progression {progress} %, vitesse {speed}), revenez pour afficher la carte en temps réel.",
     "1214": "Revenir à la vue",
-    "1227": "Traitement en cours..."
+    "1227": "Traitement en cours...",
+    "1262": "Supprimer le fichier de modèle physique et libérer de l'espace disque",
+    "1263": "Supprimer cette enregistrement de modèle personnalisé",
+    "1264": "Préparation...",
+    "1265": "Téléchargement...",
+    "1266": "Ajouté avec succès à la liste des modèles personnalisés",
+    "1267": "Analyse terminée, ajouté à la liste des modèles personnalisés ci-dessous",
+    "1268": "Ajoutez librement tout fichier de modèle GGUF hébergé sur ModelScope / HuggingFace, sauvegardez et gérez-les localement et centralisés.",
+    "1269": "Modèles personnalisés",
+    "1270": "Modèles personnalisés ajoutés"
 }

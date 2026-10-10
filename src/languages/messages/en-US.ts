@@ -249,10 +249,7 @@ export default  {
     "687": "Autoscroll is on",
     "688": "Autoscroll paused (scroll down to resume)",
     "689": "Logs",
-    "690": "Has been successfully added to the model list, please go to the list to view",
-    "691": "The sniffing is completed and has been added to the model list below as a standard model card.",
     "692": "Add any model",
-    "693": "Feel free to add any GGUF model files hosted by ModelScope / HuggingFace and add them to the list of models to be downloaded above.",
     "694": "Freely add specified models",
     "695": "Sniffing...",
     "696": "Add and sniff",
@@ -386,5 +383,14 @@ export default  {
     "1212": "Downloading",
     "1213": "Downloading model from {source} (progress {progress}%, speed {speed}), switch back to view the real-time card.",
     "1214": "Switch back to view",
-    "1227": "Processing..."
+    "1227": "Processing...",
+    "1262": "Delete physical model files and free up disk space",
+    "1263": "Remove this custom model record",
+    "1264": "Preparing...",
+    "1265": "Downloading...",
+    "1266": "Successfully added to the custom model list",
+    "1267": "Sniffing complete and added to the custom model list below",
+    "1268": "Freely add any GGUF model file hosted on ModelScope / HuggingFace, save them in local configuration for centralized management.",
+    "1269": "Custom Model",
+    "1270": "Added Custom Models"
 }
