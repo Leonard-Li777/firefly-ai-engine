@@ -80,10 +80,36 @@ pub struct ModelInfo {
     pub is_embedding: bool,
     /// 是否为生产环境（注入 --verbose）
     pub is_production: bool,
+    /// GGUF 二进制解析元数据（优先权威依据）
+    pub gguf_meta: Option<crate::engine::gguf_parser::GgufMetadata>,
+    /// llama-server 二进制支持特性能力标志
+    pub server_flags: Option<crate::engine::flag_detector::ServerFeatureFlags>,
+    /// 思考模式宽容 Jinja 模板路径（若需要注入 --chat-template-file）
+    pub tolerant_template_path: Option<String>,
 }
 
 impl ModelInfo {
-    /// 估算模型层数
+    /// 获取模型真实隐藏层数（优先 GGUF 元数据，未获取时回退至估算）
+    pub fn effective_layers(&self) -> u32 {
+        if let Some(ref meta) = self.gguf_meta {
+            if meta.n_layer > 0 {
+                return meta.n_layer;
+            }
+        }
+        self.estimated_layers()
+    }
+
+    /// 获取模型预训练上下文大小（优先 GGUF 元数据，默认 4096）
+    pub fn train_context_size(&self) -> u32 {
+        if let Some(ref meta) = self.gguf_meta {
+            if meta.train_ctx > 0 {
+                return meta.train_ctx;
+            }
+        }
+        4096
+    }
+
+    /// 估算模型层数（无元数据时的安全保底）
     pub fn estimated_layers(&self) -> u32 {
         if self.param_b <= 2.0 {
             24
@@ -149,12 +175,48 @@ impl ParamBuilder {
         }
     }
 
+    /// 计算单 Token KV 缓存所需的 GPU 显存字节数
+    pub fn compute_kv_cache_bytes_per_token(
+        meta: &crate::engine::gguf_parser::GgufMetadata,
+        cache_k: &str,
+        cache_v: &str,
+        n_gpu_layers: u32,
+    ) -> u64 {
+        let n_kv_head = if meta.n_kv_head > 0 { meta.n_kv_head } else { 8 };
+        let head_dim = if meta.head_dim > 0 { meta.head_dim } else { 128 };
+        let total_layers = if meta.n_layer > 0 { meta.n_layer } else { 28 };
+        let ngl = n_gpu_layers.min(total_layers);
+
+        let type_bytes = |t: &str| -> f64 {
+            match t.to_lowercase().as_str() {
+                "q4_0" | "q4_1" => 0.5,
+                "q8_0" => 1.0,
+                _ => 2.0, // 默认 f16 为 2 字节
+            }
+        };
+
+        let bytes_k = type_bytes(cache_k);
+        let bytes_v = type_bytes(cache_v);
+
+        let bytes_per_layer = (n_kv_head as f64) * (head_dim as f64) * (bytes_k + bytes_v);
+        (bytes_per_layer * (ngl as f64)).ceil() as u64
+    }
+
+    /// 正则净化 Jinja 模板，剔除导致 400 Alternation 报错的严格交替校验
+    pub fn sanitize_tolerant_jinja(raw_template: &str) -> String {
+        let re_block = regex::Regex::new(r"\{%[-]?\s*if\s+[^%]*alternate[^%]*%\}[\s\S]*?\{%[-]?\s*endif\s*[-]?%\}").unwrap();
+        let cleaned = re_block.replace_all(raw_template, "");
+        let re_raise = regex::Regex::new(r"\{\{[^}]*raise_exception\([^}]*alternate[^}]*\)[^}]*\}\}").unwrap();
+        re_raise.replace_all(&cleaned, "").to_string()
+    }
+
     /// 【CPU 模式】
     fn cpu_params(resources: &SystemResources, model: &ModelInfo, _backend: &str) -> EngineParams {
+        let train_ctx = model.train_context_size().min(131072);
         let batch_size = model.force_batch_size.unwrap_or(128).min(128);
         // 严格约束：ubatch <= batch
         let ubatch_size = model.force_ubatch_size.unwrap_or(128).min(batch_size);
-        let ctx_size = model.context_window.unwrap_or(4096);
+        let ctx_size = model.context_window.unwrap_or(4096).min(train_ctx);
         let threads = Self::compute_threads(&resources.cpu);
 
         info!(
@@ -184,7 +246,8 @@ impl ParamBuilder {
     ) -> EngineParams {
         let total_mem_gb = resources.memory.total_gb();
         let model_size_gb = model.effective_size_gb();
-        let estimated_layers = model.estimated_layers();
+        let total_layers = model.effective_layers();
+        let train_ctx = model.train_context_size().min(131072);
 
         // 预留 3GB 给系统和前台应用
         let usable_mem = (total_mem_gb - 3.0).max(2.0);
@@ -193,7 +256,7 @@ impl ParamBuilder {
             -1 // 全量 GPU 加速
         } else {
             let offload_ratio = usable_mem / model_size_gb;
-            (estimated_layers as f64 * offload_ratio).floor().max(8.0) as i32
+            (total_layers as f64 * offload_ratio).floor().max(8.0) as i32
         };
 
         let final_gpu_layers = model.force_gpu_layers.unwrap_or(gpu_layers);
@@ -201,15 +264,20 @@ impl ParamBuilder {
         let raw_ubatch = model.force_ubatch_size.unwrap_or(512);
         // 核心约束：ubatch <= batch
         let ubatch_size = raw_ubatch.min(batch_size);
-        let ctx_size = model.context_window.unwrap_or(4096);
-        let threads = Self::compute_threads(&resources.cpu);
 
+        let ctx_size = if let Some(user_ctx) = model.context_window {
+            user_ctx.clamp(512, train_ctx)
+        } else {
+            train_ctx.min(32768).max(4096)
+        };
+
+        let threads = Self::compute_threads(&resources.cpu);
         // Apple Silicon Metal 全系支持 Flash Attention
         let flash_attention = true;
 
         info!(
-            "Apple Silicon Metal (UMA: {:.1}GB, 模型: {:.2}GB) → ngl={}, batch={}, ubatch={}, ctx={}, fa={}",
-            total_mem_gb, model_size_gb, final_gpu_layers, batch_size, ubatch_size, ctx_size, flash_attention
+            "Apple Silicon Metal (UMA: {:.1}GB, 模型: {:.2}GB, 层数: {}) → ngl={}, batch={}, ubatch={}, ctx={}, fa={}",
+            total_mem_gb, model_size_gb, total_layers, final_gpu_layers, batch_size, ubatch_size, ctx_size, flash_attention
         );
 
         EngineParams {
@@ -221,8 +289,8 @@ impl ParamBuilder {
             flash_attention,
             is_cpu_mode: false,
             description: format!(
-                "Apple Silicon Metal UMA ({:.1}GB 内存, 模型 {:.2}GB)",
-                total_mem_gb, model_size_gb
+                "Apple Silicon Metal UMA ({:.1}GB 内存, 模型 {:.2}GB, {}层)",
+                total_mem_gb, model_size_gb, total_layers
             ),
         }
     }
@@ -237,7 +305,8 @@ impl ParamBuilder {
     ) -> EngineParams {
         let vram_gb = vram_mb as f64 / 1024.0;
         let model_size_gb = model.effective_size_gb();
-        let estimated_layers = model.estimated_layers();
+        let total_layers = model.effective_layers();
+        let train_ctx = model.train_context_size().min(131072);
 
         // 核显安全可用显存：min(3.5, max(1.8, vram * 0.7))
         let usable_vram = vram_gb.mul_add(0.7, 0.0).max(1.8).min(3.5);
@@ -250,7 +319,7 @@ impl ParamBuilder {
         let gpu_layers = if offload_ratio >= 0.85 || model_size_gb <= 2.0 {
             -1 // 轻量模型全量 GPU
         } else {
-            let target = (estimated_layers as f64 * offload_ratio).floor() as i32;
+            let target = (total_layers as f64 * offload_ratio).floor() as i32;
             target.max(8).min(16) // 8~16 层
         };
 
@@ -259,15 +328,15 @@ impl ParamBuilder {
         let raw_ubatch = model.force_ubatch_size.unwrap_or(256);
         // 核心约束：ubatch <= batch
         let ubatch_size = raw_ubatch.min(batch_size);
-        let ctx_size = model.context_window.unwrap_or(4096);
+        let ctx_size = model.context_window.unwrap_or(4096).min(train_ctx);
         let threads = Self::compute_threads(&resources.cpu);
 
         // 核显不支持 Flash Attention（Vulkan 后端不支持）
         let flash_attention = false;
 
         info!(
-            "集成显卡/核显 (VRAM: {:.1}GB, 可用: {:.1}GB, 模型: {:.2}GB, 容纳比: {:.0}%) → ngl={}, batch={}, ubatch={}, ctx={}",
-            vram_gb, usable_vram, model_size_gb, offload_ratio * 100.0,
+            "集成显卡/核显 (VRAM: {:.1}GB, 可用: {:.1}GB, 模型: {:.2}GB, 层数: {}, 容纳比: {:.0}%) → ngl={}, batch={}, ubatch={}, ctx={}",
+            vram_gb, usable_vram, model_size_gb, total_layers, offload_ratio * 100.0,
             final_gpu_layers, batch_size, ubatch_size, ctx_size
         );
 
@@ -280,14 +349,14 @@ impl ParamBuilder {
             flash_attention,
             is_cpu_mode: false,
             description: format!(
-                "集成显卡 iGPU (可用 {:.1}GB, 模型 {:.2}GB)",
-                usable_vram, model_size_gb
+                "集成显卡 iGPU (可用 {:.1}GB, 模型 {:.2}GB, {}层)",
+                usable_vram, model_size_gb, total_layers
             ),
         }
     }
 
     /// 【独立显卡 dGPU】
-    /// 精准压榨 VRAM，预留 0.8GB 缓冲
+    /// 精准压榨 VRAM，预留 0.8GB 缓冲，结合 GGUF 与实时显存推导 Max-Fill
     fn dgpu_params(
         resources: &SystemResources,
         model: &ModelInfo,
@@ -296,10 +365,18 @@ impl ParamBuilder {
     ) -> EngineParams {
         let vram_gb = vram_mb as f64 / 1024.0;
         let model_size_gb = model.effective_size_gb();
-        let estimated_layers = model.estimated_layers();
+        let total_layers = model.effective_layers();
+        let train_ctx = model.train_context_size().min(131072);
 
-        // 预留 0.8GB (Windows 桌面渲染 400MB + KV Cache 150MB + CUDA Runtime 250MB)
-        let usable_vram = (vram_gb - 0.8).max(0.0);
+        // 可用显存：若实时探测到了 memory_free_mb，优先使用真实剩余空闲（更准确）；否则回退至总显存
+        let primary_gpu = resources.primary_gpu();
+        let free_vram_gb = primary_gpu.and_then(|g| g.memory_free_gb());
+        let usable_vram = if let Some(free_gb) = free_vram_gb {
+            (free_gb - 0.8).max(0.0)
+        } else {
+            (vram_gb - 0.8).max(0.0)
+        };
+
         let offload_ratio = if model_size_gb > 0.0 {
             usable_vram / model_size_gb
         } else {
@@ -309,21 +386,63 @@ impl ParamBuilder {
         let gpu_layers = if offload_ratio >= 0.88 {
             -1 // 88% 以上全量卸载
         } else {
-            let target = (estimated_layers as f64 * offload_ratio).floor() as i32;
-            // < 6 层收益不如传输开销，置 0（纯 CPU）
+            let target = (total_layers as f64 * offload_ratio).floor() as i32;
             if target >= 6 { target } else { 0 }
         };
 
-        // 根据 VRAM 大小确定批大小
-        let (batch_size, raw_ubatch, ctx_size) = if vram_gb < 4.0 {
-            (512u32, 256u32, model.context_window.unwrap_or(4096))
-        } else if vram_gb < 8.0 {
-            (1024u32, 512u32, model.context_window.unwrap_or(4096))
+        let final_gpu_layers = model.force_gpu_layers.unwrap_or(gpu_layers);
+
+        // 计算上下文窗口 Max-Fill
+        let ctx_size = if let Some(user_ctx) = model.context_window {
+            user_ctx.clamp(512, train_ctx)
+        } else if let Some(ref meta) = model.gguf_meta {
+            let cache_k = model.cache_type_k.as_deref().unwrap_or("f16");
+            let cache_v = model.cache_type_v.as_deref().unwrap_or("f16");
+            let ngl_for_calc = if final_gpu_layers == -1 {
+                total_layers
+            } else {
+                final_gpu_layers.max(0) as u32
+            };
+
+            if ngl_for_calc == 0 {
+                4096.min(train_ctx)
+            } else {
+                let bytes_per_token = Self::compute_kv_cache_bytes_per_token(meta, cache_k, cache_v, ngl_for_calc);
+                let weights_on_gpu_gb = if final_gpu_layers == -1 {
+                    model_size_gb
+                } else {
+                    model_size_gb * (ngl_for_calc as f64 / total_layers.max(1) as f64)
+                };
+
+                let remaining_vram_bytes = ((usable_vram - weights_on_gpu_gb).max(0.0) * 1024.0 * 1024.0 * 1024.0) as u64;
+
+                if bytes_per_token > 0 && remaining_vram_bytes > (128 * 1024 * 1024) {
+                    let max_tokens = (remaining_vram_bytes / bytes_per_token) as u32;
+                    let aligned_tokens = (max_tokens / 256) * 256;
+                    aligned_tokens.clamp(2048, train_ctx)
+                } else {
+                    2048.min(train_ctx)
+                }
+            }
         } else {
-            (2048u32, 512u32, model.context_window.unwrap_or(8192))
+            if vram_gb < 4.0 {
+                2048
+            } else if vram_gb < 8.0 {
+                4096
+            } else {
+                8192
+            }
         };
 
-        let final_gpu_layers = model.force_gpu_layers.unwrap_or(gpu_layers);
+        // 根据 VRAM 大小确定批大小
+        let (batch_size, raw_ubatch) = if vram_gb < 4.0 {
+            (512u32, 256u32)
+        } else if vram_gb < 8.0 {
+            (1024u32, 512u32)
+        } else {
+            (2048u32, 512u32)
+        };
+
         let final_batch = model.force_batch_size.unwrap_or(batch_size);
         let final_raw_ubatch = model.force_ubatch_size.unwrap_or(raw_ubatch);
         // 核心安全约束：ubatch_size 严禁 > batch_size（防 0xC0000005 崩溃）
@@ -332,13 +451,12 @@ impl ParamBuilder {
         let threads = Self::compute_threads(&resources.cpu);
 
         // Flash Attention 判断（使用主 GPU 名称）
-        let primary_gpu = resources.primary_gpu();
         let gpu_name = primary_gpu.map(|g| g.name.as_str()).unwrap_or("");
         let flash_attention = crate::hardware::is_flash_attention_supported(backend, gpu_name);
 
         info!(
-            "独立显卡 dGPU (VRAM: {:.1}GB, 可用: {:.1}GB, 模型: {:.2}GB, 容纳比: {:.0}%) → ngl={}, batch={}, ubatch={}, ctx={}, fa={}",
-            vram_gb, usable_vram, model_size_gb, offload_ratio * 100.0,
+            "独立显卡 dGPU (VRAM: {:.1}GB, 可用: {:.1}GB, 模型: {:.2}GB, 层数: {}, 容纳比: {:.0}%) → ngl={}, batch={}, ubatch={}, ctx={}, fa={}",
+            vram_gb, usable_vram, model_size_gb, total_layers, offload_ratio * 100.0,
             final_gpu_layers, final_batch, final_ubatch, ctx_size, flash_attention
         );
 
@@ -351,8 +469,8 @@ impl ParamBuilder {
             flash_attention,
             is_cpu_mode: final_gpu_layers == 0,
             description: format!(
-                "独立显卡 dGPU ({:.1}GB VRAM, 模型 {:.2}GB, 容纳率 {:.0}%)",
-                vram_gb, model_size_gb, offload_ratio * 100.0
+                "独立显卡 dGPU ({:.1}GB VRAM, 模型 {:.2}GB, {}层, 容纳率 {:.0}%)",
+                vram_gb, model_size_gb, total_layers, offload_ratio * 100.0
             ),
         }
     }
@@ -391,22 +509,19 @@ impl ParamBuilder {
         }
 
         let is_prod = model_info.map(|i| i.is_production).unwrap_or(false);
+        let flags = model_info.and_then(|i| i.server_flags.as_ref());
+        let supports_alias = flags.map(|f| f.supports_alias).unwrap_or(true);
 
         // ── 嵌入向量服务模式（WeMM-Embedding 等高维修正专用）──
-        // 嵌入模型只做前向向量化，不生成 token。因此「语言模型专属」参数一律不注入：
-        //   --jinja / --chat-template（对话模板）、--reasoning*（推理抑制）、
-        //   --temp / --top-p / --top-k / --repeat-penalty（采样超参）、
-        //   --cache-type-k/v（KV 缓存量化）、--parallel（生成并发槽位）、
-        //   --no-context-shift / --load-mode、以及 --model-draft/--spec-type（投机采样）。
-        // 仅保留服务寻址、上下文长度、算力卸载与批处理等必要参数。
         if model_info.map(|i| i.is_embedding).unwrap_or(false) {
             args.push("--embedding".to_string());
             args.extend([
                 "--ctx-size".to_string(),
                 params.ctx_size.to_string(),
-                "--alias".to_string(),
-                model_alias.to_string(),
             ]);
+            if supports_alias {
+                args.extend(["--alias".to_string(), model_alias.to_string()]);
+            }
             Self::push_compute_args(&mut args, params, is_prod);
             return args;
         }
@@ -447,8 +562,11 @@ impl ParamBuilder {
         args.extend([
             "--ctx-size".to_string(),
             params.ctx_size.to_string(),
-            "--alias".to_string(),
-            model_alias.to_string(),
+        ]);
+        if supports_alias {
+            args.extend(["--alias".to_string(), model_alias.to_string()]);
+        }
+        args.extend([
             "--jinja".to_string(),
             "--no-context-shift".to_string(),
             "--load-mode".to_string(),
@@ -479,7 +597,7 @@ impl ParamBuilder {
             format!("{:.2}", rep_penalty),
         ]);
 
-        // 思考模式与聊天模板
+        // 思考模式与聊天模板状态机
         let enable_thinking = model_info.map(|i| i.enable_thinking).unwrap_or(false);
         let is_minicpm5 = model_info.map(|i| i.is_minicpm5).unwrap_or(false);
         let is_nanbeige4 = model_info.map(|i| i.is_nanbeige4).unwrap_or(false);
@@ -490,14 +608,20 @@ impl ParamBuilder {
         let user_top_k = model_info.and_then(|i| i.top_k);
 
         if !enable_thinking {
-            args.extend([
-                "--reasoning".to_string(),
-                "off".to_string(),
-                "--reasoning-format".to_string(),
-                "none".to_string(),
-                "--reasoning-budget".to_string(),
-                "0".to_string(),
-            ]);
+            // 【非思考模式】坚决使用 ChatML 组合拳抑制思考外溢
+            let supports_reasoning = flags.map(|f| f.supports_reasoning).unwrap_or(true);
+            let supports_format = flags.map(|f| f.supports_reasoning_format).unwrap_or(true);
+            let supports_budget = flags.map(|f| f.supports_reasoning_budget).unwrap_or(true);
+
+            if supports_reasoning {
+                args.extend(["--reasoning".to_string(), "off".to_string()]);
+            }
+            if supports_format {
+                args.extend(["--reasoning-format".to_string(), "none".to_string()]);
+            }
+            if supports_budget {
+                args.extend(["--reasoning-budget".to_string(), "0".to_string()]);
+            }
 
             let final_temp = user_temp.unwrap_or(0.7);
             let final_top_p = user_top_p.unwrap_or(0.95);
@@ -529,11 +653,20 @@ impl ParamBuilder {
                 ]);
             }
         } else {
+            // 【思考模式】按需注入宽容 Jinja 模板与思考预算
+            let supports_budget = flags.map(|f| f.supports_reasoning_budget).unwrap_or(true);
+            let supports_template_file = flags.map(|f| f.supports_chat_template_file).unwrap_or(true);
+
+            if supports_budget {
+                args.extend([
+                    "--reasoning-budget".to_string(),
+                    "1024".to_string(),
+                ]);
+            }
+
             let final_temp = user_temp.unwrap_or(0.9);
             let final_top_p = user_top_p.unwrap_or(0.95);
             args.extend([
-                "--reasoning-budget".to_string(),
-                "1024".to_string(),
                 "--temp".to_string(),
                 format!("{:.2}", final_temp),
                 "--top-p".to_string(),
@@ -542,6 +675,16 @@ impl ParamBuilder {
 
             if let Some(tk) = user_top_k {
                 args.extend(["--top-k".to_string(), tk.to_string()]);
+            }
+
+            // 若存在宽容模板且 flags 支持，注入 --chat-template-file
+            if let Some(ref tolerant_path) = model_info.and_then(|i| i.tolerant_template_path.as_ref()) {
+                if supports_template_file {
+                    args.extend([
+                        "--chat-template-file".to_string(),
+                        tolerant_path.to_string(),
+                    ]);
+                }
             }
         }
 
@@ -609,6 +752,7 @@ mod tests {
             gpus: vec![GpuInfo {
                 name: "NVIDIA GeForce RTX 3060".to_string(),
                 memory_mb: vram_mb,
+                memory_free_mb: None,
                 vendor: GpuVendor::Nvidia,
                 is_integrated: false,
                 supports_cuda: true,
@@ -647,6 +791,9 @@ mod tests {
             repeat_penalty: None,
             is_embedding: false,
             is_production: false,
+            gguf_meta: None,
+            server_flags: None,
+            tolerant_template_path: None,
         }
     }
 
@@ -736,6 +883,7 @@ mod tests {
             gpus: vec![GpuInfo {
                 name: "Apple M2 Pro".to_string(),
                 memory_mb: 16 * 1024, // UMA
+                memory_free_mb: None,
                 vendor: GpuVendor::Apple,
                 is_integrated: true,
                 supports_cuda: false,
@@ -770,6 +918,7 @@ mod tests {
             gpus: vec![GpuInfo {
                 name: "Intel Iris Xe Graphics".to_string(),
                 memory_mb: 2048, // 共享 2GB
+                memory_free_mb: None,
                 vendor: GpuVendor::Intel,
                 is_integrated: true,
                 supports_cuda: false,

@@ -1,8 +1,11 @@
-// engine/mod.rs
+pub mod flag_detector;
+pub mod gguf_parser;
 pub mod param_builder;
 pub mod process_guard;
 pub mod scheduler;
 
+pub use flag_detector::{FlagDetector, ServerFeatureFlags};
+pub use gguf_parser::GgufMetadata;
 pub use param_builder::{EngineParams, ModelInfo, ParamBuilder};
 pub use process_guard::{ProcessError, ProcessEvent, ProcessGuard, ProcessStatus};
 pub use scheduler::{EngineScheduler, InstalledEngine};
@@ -107,6 +110,8 @@ pub struct EngineCoordinator {
     pub status_broadcast: tokio::sync::broadcast::Sender<EngineStatus>,
     /// Tauri AppHandle 用于向引擎前端 WebView 广播状态事件
     pub app_handle: Arc<Mutex<Option<tauri::AppHandle>>>,
+    /// 最新一次成功启动运行的真实自适应参数快照
+    pub last_runtime_params: Arc<Mutex<Option<EngineParams>>>,
 }
 
 impl EngineCoordinator {
@@ -138,6 +143,7 @@ impl EngineCoordinator {
             active_requests: Arc::new(AtomicUsize::new(0)),
             status_broadcast,
             app_handle: Arc::new(Mutex::new(None)),
+            last_runtime_params: Arc::new(Mutex::new(None)),
         })
     }
 
@@ -315,13 +321,17 @@ impl EngineCoordinator {
 
         let downgrade_info = self.compliance.get_downgrade_info().await;
 
-        let runtime_params = Some(serde_json::json!({
-            "n_gpu_layers": 24,
-            "threads": 8,
-            "ctx_size": 4096,
-            "batch_size": 512,
-            "ubatch_size": 256
-        }));
+        let runtime_params = if let Some(ref p) = *self.last_runtime_params.lock().await {
+            Some(serde_json::json!({
+                "n_gpu_layers": p.gpu_layers,
+                "threads": p.threads,
+                "ctx_size": p.ctx_size,
+                "batch_size": p.batch_size,
+                "ubatch_size": p.ubatch_size,
+            }))
+        } else {
+            None
+        };
 
         let last_error = self.guard.last_error().await;
 
@@ -471,6 +481,48 @@ impl EngineCoordinator {
             || model_alias.to_lowercase().contains("nanbeige4")
             || active_model_lock.as_deref().unwrap_or("").to_lowercase().contains("nanbeige4");
 
+        // 1. 解析 GGUF 二进制头部元数据（提取真实架构、层数、KV头数、训练上下文）
+        let gguf_meta = match GgufMetadata::parse_file(&model_path) {
+            Ok(m) => {
+                tracing::info!(
+                    "GGUF 元数据解析成功: arch={}, layers={}, kv_heads={}, head_dim={}, train_ctx={}",
+                    m.arch, m.n_layer, m.n_kv_head, m.head_dim, m.train_ctx
+                );
+                Some(m)
+            }
+            Err(e) => {
+                tracing::warn!("GGUF 头部元数据解析失败 (将安全回退): {}", e);
+                None
+            }
+        };
+
+        // 2. 实时探测 NVIDIA 可用空闲显存（毫秒级）
+        let mut resources = resources;
+        if let Some(primary_gpu) = resources.gpus.first_mut() {
+            if primary_gpu.supports_cuda {
+                if let Some(free_mb) = crate::hardware::VramFreeProbe::probe_free_mb(primary_gpu).await {
+                    tracing::info!("实时探测 NVIDIA 可用显存: {} MB", free_mb);
+                    primary_gpu.memory_free_mb = Some(free_mb);
+                }
+            }
+        }
+
+        // 3. 后台异步非阻塞探测是否存在高显存竞争进程（>= 512MB），绝不阻塞启动链路
+        let app_handle_competitor = self.app_handle.clone();
+        tokio::spawn(async move {
+            let competitors = crate::hardware::CompetitorDetector::scan_competitors(512, None).await;
+            if !competitors.is_empty() {
+                tracing::warn!("检测到系统存在显存竞态进程: {:?}", competitors);
+                if let Some(ref handle) = *app_handle_competitor.lock().await {
+                    use tauri::Emitter;
+                    let _ = handle.emit("engine:gpu_competitor_detected", &competitors);
+                }
+            }
+        });
+
+        // 4. 探活 llama-server 命令行能力开关
+        let server_flags = Some(crate::engine::FlagDetector::detect(&selected_engine.binary_path).await);
+
         let (user_model_params, custom_layers, custom_ctx, enable_thinking) = {
             let config = self.config.lock().await;
             // 尝试通过活跃模型名、别名、文件名 stem 或原始 key 查找配置
@@ -479,6 +531,33 @@ impl EngineCoordinator {
                 .or_else(|| config.model_custom_params.get(&fallback_stem))
                 .cloned();
             (found, config.custom_gpu_layers, config.custom_context_window, config.enable_thinking)
+        };
+
+        // 5. 思考模式宽容 Jinja 模板按需生成（当且仅当开启思考模式且原生模板含交替报错时生成）
+        let tolerant_template_path = if enable_thinking {
+            if let Some(ref meta) = gguf_meta {
+                if meta.has_strict_role_alternation {
+                    if let Some(ref raw_template) = meta.chat_template {
+                        let tolerant_content = ParamBuilder::sanitize_tolerant_jinja(raw_template);
+                        let tolerant_file = model_path.with_extension("tolerant.jinja");
+                        if let Err(e) = std::fs::write(&tolerant_file, &tolerant_content) {
+                            tracing::warn!("写入宽容 Jinja 模板失败: {}", e);
+                            None
+                        } else {
+                            tracing::info!("生成宽容 Jinja 模板就绪: {:?}", tolerant_file);
+                            Some(tolerant_file.to_string_lossy().to_string())
+                        }
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        } else {
+            None
         };
 
         let force_gpu_layers = user_model_params.as_ref().map(|p| p.n_gpu_layers).or(custom_layers);
@@ -511,6 +590,9 @@ impl EngineCoordinator {
             repeat_penalty: user_model_params.as_ref().map(|p| p.repeat_penalty),
             is_embedding: model_str.to_lowercase().contains("wemm") || model_str.to_lowercase().contains("embedding"),
             is_production: !cfg!(debug_assertions),
+            gguf_meta,
+            server_flags,
+            tolerant_template_path,
         };
 
         let backend_str = selected_engine.tier.as_str();
@@ -545,6 +627,7 @@ impl EngineCoordinator {
                 self.proxy_state.set_target_port(llama_internal_port).await;
                 self.guard.mark_running().await;
                 *self.running_model.lock().await = Some(model_str.clone());
+                *self.last_runtime_params.lock().await = Some(params.clone());
                 tracing::info!("引擎服务启动并反代就绪: backend={}, internal_port={}, gateway_port={}", backend_str, llama_internal_port, gateway_port);
                 Ok(())
             }

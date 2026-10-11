@@ -533,6 +533,7 @@ impl HardwareDetector {
                         name
                     },
                     memory_mb: vram_mb,
+                    memory_free_mb: None,
                     vendor: vendor.clone(),
                     is_integrated,
                     supports_cuda: vendor == GpuVendor::Nvidia,
@@ -739,6 +740,7 @@ mod tests {
             GpuInfo {
                 name: "NVIDIA GeForce GTX 1060 6GB".to_string(),
                 memory_mb: 6144,
+                memory_free_mb: None,
                 vendor: GpuVendor::Nvidia,
                 is_integrated: false,
                 supports_cuda: true,
@@ -793,6 +795,7 @@ mod tests {
             GpuInfo {
                 name: "Intel Iris Xe Graphics".to_string(),
                 memory_mb: 0,
+                memory_free_mb: None,
                 vendor: GpuVendor::Intel,
                 is_integrated: true,
                 supports_cuda: false,
@@ -804,6 +807,7 @@ mod tests {
             GpuInfo {
                 name: "NVIDIA GeForce RTX 3060 Laptop GPU".to_string(),
                 memory_mb: 6144,
+                memory_free_mb: None,
                 vendor: GpuVendor::Nvidia,
                 is_integrated: false,
                 supports_cuda: true,
@@ -815,6 +819,7 @@ mod tests {
             GpuInfo {
                 name: "AMD Radeon Graphics".to_string(),
                 memory_mb: 512,
+                memory_free_mb: None,
                 vendor: GpuVendor::Amd,
                 is_integrated: true,
                 supports_cuda: false,
@@ -856,6 +861,7 @@ mod tests {
         let gpus = vec![GpuInfo {
             name: "Unknown GPU".to_string(),
             memory_mb: 512,
+            memory_free_mb: None,
             vendor: GpuVendor::Unknown,
             is_integrated: false,
             supports_cuda: false,

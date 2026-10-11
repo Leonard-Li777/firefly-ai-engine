@@ -936,11 +936,11 @@ async fn engine_list(State(state): State<AppState>) -> impl IntoResponse {
 
     // 根据当前 CPU 指令集特征动态决策最适 CPU 编译变体 (AVX2 -> AVX -> SSE4.2/NoAVX)
     let (cpu_id, cpu_name, cpu_backend, cpu_perf) = if status.hardware.has_avx2.unwrap_or(false) {
-        ("cpu", "CPU (AVX2)", "cpu", "无显卡加速 (AVX2 深度优化)")
+        ("cpu", "CPU (AVX2)", "cpu", "无显卡方案，纯 CPU 保底（AVX2 深度优化）")
     } else if status.hardware.has_avx.unwrap_or(false) {
-        ("cpu-avx", "CPU (AVX 兼容)", "cpu-avx", "无显卡加速 (AVX 兼容模式)")
+        ("cpu-avx", "CPU (AVX 兼容)", "cpu-avx", "无显卡方案，纯 CPU 保底（AVX 兼容模式）")
     } else {
-        ("cpu-noavx", "CPU (SSE4.2 兜底)", "cpu-noavx", "无显卡加速 (SSE4.2 极简兜底)")
+        ("cpu-noavx", "CPU (SSE4.2 兜底)", "cpu-noavx", "无显卡方案，纯 CPU 保底（SSE4.2 极简兜底）")
     };
 
     // 检查已安装 CPU 引擎是否与当前 CPU 指令集真正兼容，杜绝 0xC000001D 假就绪
@@ -978,7 +978,7 @@ async fn engine_list(State(state): State<AppState>) -> impl IntoResponse {
             "matchType": if metal_recommended { "best" } else { "compatible" },
             "matchText": if metal_recommended { "最佳匹配" } else { "兼容模式" },
             "isRecommended": metal_recommended,
-            "performance": "100% 统一内存利用",
+            "performance": "可发挥 GPU 100% 硬件性能（统一内存）",
             "isCurrent": active_backend == "metal",
             "isInstalled": has_metal,
             "downloadSizeMb": metal_size,
@@ -991,7 +991,7 @@ async fn engine_list(State(state): State<AppState>) -> impl IntoResponse {
             "matchType": if !metal_recommended { "best" } else { "fallback" },
             "matchText": if !metal_recommended { "最佳匹配" } else { "保底" },
             "isRecommended": !metal_recommended,
-            "performance": "无显卡加速",
+            "performance": "无显卡方案，纯 CPU 保底",
             "isCurrent": active_backend == "cpu",
             "isInstalled": has_cpu,
             "downloadSizeMb": cpu_size,
@@ -1020,7 +1020,7 @@ async fn engine_list(State(state): State<AppState>) -> impl IntoResponse {
                 "matchType": if recommend_cuda13 { "best" } else { "compatible" },
                 "matchText": if recommend_cuda13 { "最新最佳" } else { "兼容模式" },
                 "isRecommended": recommend_cuda13,
-                "performance": "100% 性能利用 (最新驱动)",
+                "performance": "可发挥显卡 100% 硬件性能（需最新驱动）",
                 "isCurrent": active_backend == "cuda134",
                 "isInstalled": has_cuda13,
                 "downloadSizeMb": cuda13_size,
@@ -1035,7 +1035,7 @@ async fn engine_list(State(state): State<AppState>) -> impl IntoResponse {
                 "matchType": if cuda12_compliant { "best" } else { "compatible" },
                 "matchText": if cuda12_compliant { "正确适配" } else { "兼容模式" },
                 "isRecommended": recommend_cuda12,
-                "performance": "100% 性能利用",
+                "performance": "可发挥显卡 95% 硬件性能",
                 "isCurrent": active_backend == "cuda",
                 "isInstalled": has_cuda12,
                 "downloadSizeMb": cuda12_size,
@@ -1050,7 +1050,7 @@ async fn engine_list(State(state): State<AppState>) -> impl IntoResponse {
                 "matchType": if recommend_vulkan { "best" } else { "compatible" },
                 "matchText": if recommend_vulkan { "最佳匹配" } else { "兼容模式" },
                 "isRecommended": recommend_vulkan,
-                "performance": "70% 性能利用",
+                "performance": "硬件兼容性较好，可发挥显卡 70% 硬件性能",
                 "isCurrent": active_backend == "vulkan",
                 "isInstalled": has_vulkan,
                 "downloadSizeMb": vulkan_size,
@@ -1082,7 +1082,7 @@ async fn engine_list(State(state): State<AppState>) -> impl IntoResponse {
                 "matchType": if hip_recommended { "best" } else { "compatible" },
                 "matchText": if hip_recommended { "最佳匹配" } else { "兼容模式" },
                 "isRecommended": hip_recommended,
-                "performance": "100% 性能利用",
+                "performance": "可发挥显卡 100% 硬件性能",
                 "isCurrent": active_backend == "hip" || active_backend == "rocm",
                 "isInstalled": has_hip,
                 "downloadSizeMb": hip_size,
@@ -1096,7 +1096,7 @@ async fn engine_list(State(state): State<AppState>) -> impl IntoResponse {
                 "matchType": if !hip_recommended { "best" } else { "compatible" },
                 "matchText": if !hip_recommended { "最佳匹配" } else { "兼容模式" },
                 "isRecommended": !hip_recommended,
-                "performance": "70% 性能利用",
+                "performance": "硬件兼容性较好，可发挥显卡 70% 硬件性能",
                 "isCurrent": active_backend == "vulkan",
                 "isInstalled": has_vulkan,
                 "downloadSizeMb": vulkan_size,
@@ -1127,7 +1127,7 @@ async fn engine_list(State(state): State<AppState>) -> impl IntoResponse {
                 "matchType": if sycl_recommended { "best" } else { "compatible" },
                 "matchText": if sycl_recommended { "最佳匹配" } else { "兼容模式" },
                 "isRecommended": sycl_recommended,
-                "performance": "80% 性能利用",
+                "performance": "可发挥显卡 80% 硬件性能",
                 "isCurrent": active_backend == "sycl",
                 "isInstalled": has_sycl,
                 "downloadSizeMb": sycl_size,
@@ -1141,7 +1141,7 @@ async fn engine_list(State(state): State<AppState>) -> impl IntoResponse {
                 "matchType": if !sycl_recommended { "best" } else { "compatible" },
                 "matchText": if !sycl_recommended { "最佳匹配" } else { "兼容模式" },
                 "isRecommended": !sycl_recommended,
-                "performance": "70% 性能利用",
+                "performance": "硬件兼容性较好，可发挥显卡 70% 硬件性能",
                 "isCurrent": active_backend == "vulkan",
                 "isInstalled": has_vulkan,
                 "downloadSizeMb": vulkan_size,
@@ -1174,7 +1174,7 @@ async fn engine_list(State(state): State<AppState>) -> impl IntoResponse {
                 "matchType": if recommend_vulkan { "best" } else { "compatible" },
                 "matchText": if recommend_vulkan { "最佳匹配" } else { "兼容模式" },
                 "isRecommended": recommend_vulkan,
-                "performance": "70% 性能利用",
+                "performance": "硬件兼容性较好，可发挥显卡 70% 硬件性能",
                 "isCurrent": active_backend == "vulkan",
                 "isInstalled": has_vulkan,
                 "downloadSizeMb": vulkan_size,

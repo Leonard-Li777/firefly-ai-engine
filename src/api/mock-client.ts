@@ -40,7 +40,7 @@ export class MockApiClient implements IEngineApiClient {
       backend: 'cuda', // 后端标识
       matchType: 'best',
       matchText: '最新最佳',
-      performance: '100% 性能利用 (最新驱动)',
+      performance: '可发挥显卡 100% 硬件性能（需最新驱动）',
       isCurrent: false,
       isInstalled: false,
       downloadSizeMb: 480,
@@ -53,7 +53,7 @@ export class MockApiClient implements IEngineApiClient {
       backend: 'cuda',
       matchType: 'best',
       matchText: '最佳匹配',
-      performance: '100% 性能利用',
+      performance: '可发挥显卡 95% 硬件性能',
       isCurrent: false,
       isInstalled: false, // 初始未安装，触发【下载引擎】
       downloadSizeMb: 450,
@@ -65,7 +65,7 @@ export class MockApiClient implements IEngineApiClient {
       backend: 'vulkan',
       matchType: 'compatible',
       matchText: '兼容模式',
-      performance: '70% 性能利用',
+      performance: '硬件兼容性较好，可发挥显卡 70% 硬件性能',
       isCurrent: true,
       isInstalled: true,
       driverCompliant: true
@@ -76,7 +76,7 @@ export class MockApiClient implements IEngineApiClient {
       backend: 'cpu',
       matchType: 'fallback',
       matchText: '保底',
-      performance: '无显卡加速',
+      performance: '无显卡方案，纯 CPU 保底（AVX2 深度优化）',
       isCurrent: false,
       isInstalled: true,
       driverCompliant: true

@@ -55,6 +55,9 @@ pub struct GpuInfo {
     pub name: String,
     /// 显存大小（MB）
     pub memory_mb: u64,
+    /// 剩余可用显存大小（MB，由实时探针探测，若不可用为 None）
+    #[serde(default)]
+    pub memory_free_mb: Option<u64>,
     /// 厂商
     pub vendor: GpuVendor,
     /// 是否为集成显卡
@@ -77,6 +80,7 @@ impl GpuInfo {
         GpuInfo {
             name: "CPU".to_string(),
             memory_mb: 0,
+            memory_free_mb: None,
             vendor: GpuVendor::Unknown,
             is_integrated: false,
             supports_cuda: false,
@@ -90,6 +94,11 @@ impl GpuInfo {
     /// 显存大小（GB，保留一位小数）
     pub fn memory_gb(&self) -> f64 {
         ((self.memory_mb as f64 / 1024.0) * 10.0).round() / 10.0
+    }
+
+    /// 剩余可用显存大小（GB，保留一位小数）
+    pub fn memory_free_gb(&self) -> Option<f64> {
+        self.memory_free_mb.map(|mb| ((mb as f64 / 1024.0) * 10.0).round() / 10.0)
     }
 }
 
@@ -314,5 +323,53 @@ pub fn is_flash_attention_supported(backend: &str, gpu_name: &str) -> bool {
             upper_gpu.contains("ARC") || upper_gpu.contains("CORE ULTRA") || upper_gpu.contains("XE-LPG")
         }
         _ => false,
+    }
+}
+
+/// 实时可用显存探针（毫秒级执行，用于启动前动态显存评估与 Max-Fill 计算）
+pub struct VramFreeProbe;
+
+impl VramFreeProbe {
+    /// 探测指定显卡的实时剩余可用显存（MB）
+    /// 针对 NVIDIA GPU 执行 nvidia-smi 提取 memory.free
+    /// 设有 1500ms 超时防挂起保护，并在 Windows 上配置 CREATE_NO_WINDOW
+    pub async fn probe_free_mb(gpu: &GpuInfo) -> Option<u64> {
+        if gpu.vendor != GpuVendor::Nvidia || !gpu.supports_cuda {
+            return None;
+        }
+
+        Self::probe_nvidia_free_mb().await
+    }
+
+    /// 探测首个可用的 NVIDIA GPU 剩余显存（MB）
+    pub async fn probe_nvidia_free_mb() -> Option<u64> {
+        let mut cmd = tokio::process::Command::new("nvidia-smi");
+        cmd.args(&[
+            "--query-gpu=memory.free",
+            "--format=csv,noheader,nounits",
+        ]);
+
+        #[cfg(windows)]
+        {
+            cmd.creation_flags(crate::win_proc::CREATE_NO_WINDOW);
+        }
+
+        let child = cmd.output();
+        let output = match tokio::time::timeout(std::time::Duration::from_millis(1500), child).await {
+            Ok(Ok(out)) => out,
+            Ok(Err(_)) => return None,
+            Err(_) => {
+                tracing::warn!("nvidia-smi 显存探测超时（1.5s），跳过实时显存推导");
+                return None;
+            }
+        };
+
+        if !output.status.success() {
+            return None;
+        }
+
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let first_line = stdout.lines().next()?.trim();
+        first_line.parse::<u64>().ok()
     }
 }
