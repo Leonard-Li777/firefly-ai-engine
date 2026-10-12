@@ -66,6 +66,8 @@
     "!pro/**",
     "!target/**",
     "!target*",
+    "!src-tauri/**",
+    "!test/**",
     "!**/*.wraper.*"
   ],
   "defaultNamespace": "default",
