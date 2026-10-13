@@ -1788,134 +1788,6 @@
     ],
     "$id": 548
   },
-  "服务未就绪": {
-    "en-US": "Service not ready",
-    "es-ES": "Servicio no listo",
-    "ar-EG": "الخدمة غير جاهزة",
-    "pt-PT": "Serviço não está pronto",
-    "ru-RU": "Сервис не готов",
-    "ja-JP": "サービスの準備ができていません",
-    "de-DE": "Dienst nicht bereit",
-    "fr-FR": "Service pas prêt",
-    "ko-KR": "서비스가 준비되지 않았습니다.",
-    "$files": [
-      "src/components/chat/local-chat-view.tsx(2482-2491)",
-      "src/components/chat/local-chat-view.tsx(2213-2222)"
-    ],
-    "$id": 549
-  },
-  "刷新页面": {
-    "en-US": "Refresh page",
-    "es-ES": "Actualizar página",
-    "ar-EG": "تحديث الصفحة",
-    "pt-PT": "Atualizar página",
-    "ru-RU": "Обновить страницу",
-    "ja-JP": "ページを更新する",
-    "de-DE": "Seite aktualisieren",
-    "fr-FR": "Actualiser la page",
-    "ko-KR": "페이지 새로고침",
-    "$files": [
-      "src/components/chat/local-chat-view.tsx(2832-2840)",
-      "src/components/chat/local-chat-view.tsx(2563-2571)"
-    ],
-    "$id": 550
-  },
-  "刷新": {
-    "en-US": "Refresh",
-    "es-ES": "Refrescar",
-    "ar-EG": "ينعش",
-    "pt-PT": "Atualizar",
-    "ru-RU": "обновить",
-    "ja-JP": "リフレッシュする",
-    "de-DE": "Auffrischen",
-    "fr-FR": "Rafraîchir",
-    "ko-KR": "새로 고치다",
-    "$files": [
-      "src/components/chat/local-chat-view.tsx(2961-2967)",
-      "src/components/chat/local-chat-view.tsx(2692-2698)"
-    ],
-    "$id": 551
-  },
-  "外部浏览器打开": {
-    "en-US": "Open external browser",
-    "es-ES": "Abrir navegador externo",
-    "ar-EG": "افتح المتصفح الخارجي",
-    "pt-PT": "Abra o navegador externo",
-    "ru-RU": "Открыть внешний браузер",
-    "ja-JP": "外部ブラウザを開く",
-    "de-DE": "Externen Browser öffnen",
-    "fr-FR": "Ouvrir un navigateur externe",
-    "ko-KR": "외부 브라우저 열기",
-    "$files": [
-      "src/components/chat/local-chat-view.tsx(3246-3257)",
-      "src/components/chat/local-chat-view.tsx(2977-2988)"
-    ],
-    "$id": 552
-  },
-  "浏览器打开": {
-    "en-US": "Browser opens",
-    "es-ES": "Se abre el navegador",
-    "ar-EG": "يفتح المتصفح",
-    "pt-PT": "O navegador abre",
-    "ru-RU": "Браузер открывается",
-    "ja-JP": "ブラウザが開きます",
-    "de-DE": "Der Browser wird geöffnet",
-    "fr-FR": "Le navigateur s'ouvre",
-    "ko-KR": "브라우저가 열립니다",
-    "$files": [
-      "src/components/chat/local-chat-view.tsx(3381-3390)",
-      "src/components/chat/local-chat-view.tsx(3112-3121)"
-    ],
-    "$id": 553
-  },
-  "本地推理服务未就绪": {
-    "en-US": "The local inference service is not ready",
-    "es-ES": "El servicio de inferencia local no está listo.",
-    "ar-EG": "خدمة الاستدلال المحلية ليست جاهزة",
-    "pt-PT": "O serviço de inferência local não está pronto",
-    "ru-RU": "Локальная служба вывода не готова",
-    "ja-JP": "ローカル推論サービスの準備ができていません",
-    "de-DE": "Der lokale Inferenzdienst ist nicht bereit",
-    "fr-FR": "Le service d'inférence local n'est pas prêt",
-    "ko-KR": "로컬 추론 서비스가 준비되지 않았습니다.",
-    "$files": [
-      "src/components/chat/local-chat-view.tsx(4440-4453)",
-      "src/components/chat/local-chat-view.tsx(4170-4183)"
-    ],
-    "$id": 554
-  },
-  "请先在仪表盘启动本地 AI 引擎服务，或等待模型加载完成。": {
-    "en-US": "Please start the local AI engine service on the dashboard first, or wait until the model is loaded.",
-    "es-ES": "Primero inicie el servicio del motor de IA local en el tablero o espere hasta que se cargue el modelo.",
-    "ar-EG": "يرجى بدء تشغيل خدمة محرك الذكاء الاصطناعي المحلي على لوحة المعلومات أولاً، أو الانتظار حتى يتم تحميل النموذج.",
-    "pt-PT": "Inicie primeiro o serviço do mecanismo de IA local no painel ou espere até que o modelo seja carregado.",
-    "ru-RU": "Сначала запустите локальную службу AI Engine на панели управления или подождите, пока модель загрузится.",
-    "ja-JP": "まずダッシュボードでローカル AI エンジン サービスを開始するか、モデルが読み込まれるまで待ってください。",
-    "de-DE": "Bitte starten Sie zuerst den lokalen AI-Engine-Dienst im Dashboard oder warten Sie, bis das Modell geladen ist.",
-    "fr-FR": "Veuillez d'abord démarrer le service du moteur d'IA local sur le tableau de bord ou attendre que le modèle soit chargé.",
-    "ko-KR": "먼저 대시보드에서 로컬 AI 엔진 서비스를 시작하거나 모델이 로드될 때까지 기다려 주세요.",
-    "$files": [
-      "src/components/chat/local-chat-view.tsx(4578-4611)",
-      "src/components/chat/local-chat-view.tsx(4308-4341)"
-    ],
-    "$id": 555
-  },
-  "立即启动服务": {
-    "en-US": "Start service now",
-    "es-ES": "Iniciar servicio ahora",
-    "ar-EG": "ابدأ الخدمة الآن",
-    "pt-PT": "Iniciar o serviço agora",
-    "ru-RU": "Начать обслуживание сейчас",
-    "ja-JP": "今すぐサービスを開始する",
-    "de-DE": "Jetzt Service starten",
-    "fr-FR": "Démarrer le service maintenant",
-    "ko-KR": "지금 서비스 시작하기",
-    "$files": [
-      "src/components/chat/local-chat-view.tsx(5183-5193)",
-      "src/components/chat/local-chat-view.tsx(4913-4923)"
-    ],
-    "$id": 556
-  },
   "{modelInfo} 启动中...": {
     "en-US": "{modelInfo} Starting...",
     "es-ES": "{modelInfo} A partir de...",
@@ -2156,6 +2028,134 @@
       "src/components/common/language-selector.tsx(1125-1153)"
     ],
     "$id": 614
+  },
+  "服务未就绪": {
+    "en-US": "Service not ready",
+    "es-ES": "Servicio no listo",
+    "ar-EG": "الخدمة غير جاهزة",
+    "pt-PT": "Serviço não está pronto",
+    "ru-RU": "Сервис не готов",
+    "ja-JP": "サービスの準備ができていません",
+    "de-DE": "Dienst nicht bereit",
+    "fr-FR": "Service pas prêt",
+    "ko-KR": "서비스가 준비되지 않았습니다.",
+    "$files": [
+      "src/components/chat/local-chat-view.tsx(2482-2491)",
+      "src/components/chat/local-chat-view.tsx(2213-2222)"
+    ],
+    "$id": 549
+  },
+  "刷新页面": {
+    "en-US": "Refresh page",
+    "es-ES": "Actualizar página",
+    "ar-EG": "تحديث الصفحة",
+    "pt-PT": "Atualizar página",
+    "ru-RU": "Обновить страницу",
+    "ja-JP": "ページを更新する",
+    "de-DE": "Seite aktualisieren",
+    "fr-FR": "Actualiser la page",
+    "ko-KR": "페이지 새로고침",
+    "$files": [
+      "src/components/chat/local-chat-view.tsx(2832-2840)",
+      "src/components/chat/local-chat-view.tsx(2563-2571)"
+    ],
+    "$id": 550
+  },
+  "刷新": {
+    "en-US": "Refresh",
+    "es-ES": "Refrescar",
+    "ar-EG": "ينعش",
+    "pt-PT": "Atualizar",
+    "ru-RU": "обновить",
+    "ja-JP": "リフレッシュする",
+    "de-DE": "Auffrischen",
+    "fr-FR": "Rafraîchir",
+    "ko-KR": "새로 고치다",
+    "$files": [
+      "src/components/chat/local-chat-view.tsx(2961-2967)",
+      "src/components/chat/local-chat-view.tsx(2692-2698)"
+    ],
+    "$id": 551
+  },
+  "外部浏览器打开": {
+    "en-US": "Open external browser",
+    "es-ES": "Abrir navegador externo",
+    "ar-EG": "افتح المتصفح الخارجي",
+    "pt-PT": "Abra o navegador externo",
+    "ru-RU": "Открыть внешний браузер",
+    "ja-JP": "外部ブラウザを開く",
+    "de-DE": "Externen Browser öffnen",
+    "fr-FR": "Ouvrir un navigateur externe",
+    "ko-KR": "외부 브라우저 열기",
+    "$files": [
+      "src/components/chat/local-chat-view.tsx(3246-3257)",
+      "src/components/chat/local-chat-view.tsx(2977-2988)"
+    ],
+    "$id": 552
+  },
+  "浏览器打开": {
+    "en-US": "Browser opens",
+    "es-ES": "Se abre el navegador",
+    "ar-EG": "يفتح المتصفح",
+    "pt-PT": "O navegador abre",
+    "ru-RU": "Браузер открывается",
+    "ja-JP": "ブラウザが開きます",
+    "de-DE": "Der Browser wird geöffnet",
+    "fr-FR": "Le navigateur s'ouvre",
+    "ko-KR": "브라우저가 열립니다",
+    "$files": [
+      "src/components/chat/local-chat-view.tsx(3381-3390)",
+      "src/components/chat/local-chat-view.tsx(3112-3121)"
+    ],
+    "$id": 553
+  },
+  "本地推理服务未就绪": {
+    "en-US": "The local inference service is not ready",
+    "es-ES": "El servicio de inferencia local no está listo.",
+    "ar-EG": "خدمة الاستدلال المحلية ليست جاهزة",
+    "pt-PT": "O serviço de inferência local não está pronto",
+    "ru-RU": "Локальная служба вывода не готова",
+    "ja-JP": "ローカル推論サービスの準備ができていません",
+    "de-DE": "Der lokale Inferenzdienst ist nicht bereit",
+    "fr-FR": "Le service d'inférence local n'est pas prêt",
+    "ko-KR": "로컬 추론 서비스가 준비되지 않았습니다.",
+    "$files": [
+      "src/components/chat/local-chat-view.tsx(4440-4453)",
+      "src/components/chat/local-chat-view.tsx(4170-4183)"
+    ],
+    "$id": 554
+  },
+  "请先在仪表盘启动本地 AI 引擎服务，或等待模型加载完成。": {
+    "en-US": "Please start the local AI engine service on the dashboard first, or wait until the model is loaded.",
+    "es-ES": "Primero inicie el servicio del motor de IA local en el tablero o espere hasta que se cargue el modelo.",
+    "ar-EG": "يرجى بدء تشغيل خدمة محرك الذكاء الاصطناعي المحلي على لوحة المعلومات أولاً، أو الانتظار حتى يتم تحميل النموذج.",
+    "pt-PT": "Inicie primeiro o serviço do mecanismo de IA local no painel ou espere até que o modelo seja carregado.",
+    "ru-RU": "Сначала запустите локальную службу AI Engine на панели управления или подождите, пока модель загрузится.",
+    "ja-JP": "まずダッシュボードでローカル AI エンジン サービスを開始するか、モデルが読み込まれるまで待ってください。",
+    "de-DE": "Bitte starten Sie zuerst den lokalen AI-Engine-Dienst im Dashboard oder warten Sie, bis das Modell geladen ist.",
+    "fr-FR": "Veuillez d'abord démarrer le service du moteur d'IA local sur le tableau de bord ou attendre que le modèle soit chargé.",
+    "ko-KR": "먼저 대시보드에서 로컬 AI 엔진 서비스를 시작하거나 모델이 로드될 때까지 기다려 주세요.",
+    "$files": [
+      "src/components/chat/local-chat-view.tsx(4578-4611)",
+      "src/components/chat/local-chat-view.tsx(4308-4341)"
+    ],
+    "$id": 555
+  },
+  "立即启动服务": {
+    "en-US": "Start service now",
+    "es-ES": "Iniciar servicio ahora",
+    "ar-EG": "ابدأ الخدمة الآن",
+    "pt-PT": "Iniciar o serviço agora",
+    "ru-RU": "Начать обслуживание сейчас",
+    "ja-JP": "今すぐサービスを開始する",
+    "de-DE": "Jetzt Service starten",
+    "fr-FR": "Démarrer le service maintenant",
+    "ko-KR": "지금 서비스 시작하기",
+    "$files": [
+      "src/components/chat/local-chat-view.tsx(5183-5193)",
+      "src/components/chat/local-chat-view.tsx(4913-4923)"
+    ],
+    "$id": 556
   },
   "未选定": {
     "en-US": "Not selected",
@@ -3290,111 +3290,6 @@
     ],
     "$id": 807
   },
-  "错误分析与解决建议": {
-    "en-US": "Error analysis and solution suggestions",
-    "es-ES": "Análisis de errores y sugerencias de solución.",
-    "ar-EG": "تحليل الأخطاء واقتراحات الحلول",
-    "pt-PT": "Análise de erros e sugestões de soluções",
-    "ru-RU": "Анализ ошибок и предложения по решению",
-    "ja-JP": "エラー分析と解決策の提案",
-    "de-DE": "Fehleranalyse und Lösungsvorschläge",
-    "fr-FR": "Analyse des erreurs et suggestions de solutions",
-    "ko-KR": "오류 분석 및 해결 방법 제안",
-    "$files": [
-      "src/components/errors/error-analysis-sidebar.tsx(2807-2820)"
-    ],
-    "$id": 637
-  },
-  "面向普通用户的引擎错误解读": {
-    "en-US": "Interpretation of engine errors for ordinary users",
-    "es-ES": "Interpretación de errores del motor para usuarios comunes.",
-    "ar-EG": "تفسير أخطاء المحرك للمستخدمين العاديين",
-    "pt-PT": "Interpretação de erros do motor para usuários comuns",
-    "ru-RU": "Расшифровка ошибок двигателя для обычных пользователей",
-    "ja-JP": "一般ユーザー向けのエンジンエラーの解釈",
-    "de-DE": "Interpretation von Motorfehlern für normale Benutzer",
-    "fr-FR": "Interprétation des erreurs du moteur pour les utilisateurs ordinaires",
-    "ko-KR": "일반 사용자를 위한 엔진 오류 해석",
-    "$files": [
-      "src/components/errors/error-analysis-sidebar.tsx(2954-2971)"
-    ],
-    "$id": 638
-  },
-  "关闭": {
-    "en-US": "Closure",
-    "es-ES": "Cierre",
-    "ar-EG": "إنهاء",
-    "pt-PT": "Encerramento",
-    "ru-RU": "закрытие",
-    "ja-JP": "閉鎖",
-    "de-DE": "Schließung",
-    "fr-FR": "Fermeture",
-    "ko-KR": "폐쇄",
-    "$files": [
-      "src/components/errors/error-analysis-sidebar.tsx(3300-3306)"
-    ],
-    "$id": 639
-  },
-  "严重级别": {
-    "en-US": "Severity level",
-    "es-ES": "Nivel de gravedad",
-    "ar-EG": "مستوى الخطورة",
-    "pt-PT": "Nível de gravidade",
-    "ru-RU": "Уровень серьезности",
-    "ja-JP": "重大度レベル",
-    "de-DE": "Schweregrad",
-    "fr-FR": "Niveau de gravité",
-    "ko-KR": "심각도 수준",
-    "$files": [
-      "src/components/errors/error-analysis-sidebar.tsx(3644-3652)"
-    ],
-    "$id": 640
-  },
-  "建议解决方案": {
-    "en-US": "Suggested solution",
-    "es-ES": "Solución recomendada",
-    "ar-EG": "الحلول المقترحة",
-    "pt-PT": "Solução recomendada",
-    "ru-RU": "Рекомендуемое решение",
-    "ja-JP": "提案される解決策",
-    "de-DE": "Empfohlene Lösung",
-    "fr-FR": "Solution recommandée",
-    "ko-KR": "권장 해결 방안",
-    "$files": [
-      "src/components/errors/error-analysis-sidebar.tsx(4932-4942)"
-    ],
-    "$id": 641
-  },
-  "原始错误详情": {
-    "en-US": "Original error details",
-    "es-ES": "Detalles del error original",
-    "ar-EG": "تفاصيل الخطأ الأصلي",
-    "pt-PT": "Detalhes do erro original",
-    "ru-RU": "Подробности исходной ошибки",
-    "ja-JP": "元のエラーの詳細",
-    "de-DE": "Ursprüngliche Fehlerdetails",
-    "fr-FR": "Détails de l'erreur d'origine",
-    "ko-KR": "원래 오류 세부정보",
-    "$files": [
-      "src/components/errors/error-analysis-sidebar.tsx(6002-6012)"
-    ],
-    "$id": 642
-  },
-  "查看运行日志": {
-    "en-US": "View running log",
-    "es-ES": "Ver registro de ejecución",
-    "ar-EG": "عرض سجل التشغيل",
-    "pt-PT": "Ver registro de execução",
-    "ru-RU": "Посмотреть журнал бега",
-    "ja-JP": "実行ログを表示する",
-    "de-DE": "Laufprotokoll ansehen",
-    "fr-FR": "Afficher le journal d'exécution",
-    "ko-KR": "실행 로그 보기",
-    "$files": [
-      "src/components/errors/error-analysis-sidebar.tsx(7404-7414)"
-    ],
-    "$id": 643
-  },
   "目前使用兼容模式，能发挥您显卡70% AI算力，显卡驱动需要升级，才能发挥满血性能": {
     "en-US": "Currently using compatibility mode, 70% of the AI ​​computing power of your graphics card can be used. The graphics card driver needs to be upgraded to achieve full performance.",
     "es-ES": "Actualmente, al utilizar el modo de compatibilidad, se puede utilizar el 70% de la potencia informática de IA de su tarjeta gráfica. Es necesario actualizar el controlador de la tarjeta gráfica para lograr el máximo rendimiento.",
@@ -3619,6 +3514,111 @@
       "src/components/hardware/hardware-card.tsx(7515-7521)"
     ],
     "$id": 658
+  },
+  "错误分析与解决建议": {
+    "en-US": "Error analysis and solution suggestions",
+    "es-ES": "Análisis de errores y sugerencias de solución.",
+    "ar-EG": "تحليل الأخطاء واقتراحات الحلول",
+    "pt-PT": "Análise de erros e sugestões de soluções",
+    "ru-RU": "Анализ ошибок и предложения по решению",
+    "ja-JP": "エラー分析と解決策の提案",
+    "de-DE": "Fehleranalyse und Lösungsvorschläge",
+    "fr-FR": "Analyse des erreurs et suggestions de solutions",
+    "ko-KR": "오류 분석 및 해결 방법 제안",
+    "$files": [
+      "src/components/errors/error-analysis-sidebar.tsx(2807-2820)"
+    ],
+    "$id": 637
+  },
+  "面向普通用户的引擎错误解读": {
+    "en-US": "Interpretation of engine errors for ordinary users",
+    "es-ES": "Interpretación de errores del motor para usuarios comunes.",
+    "ar-EG": "تفسير أخطاء المحرك للمستخدمين العاديين",
+    "pt-PT": "Interpretação de erros do motor para usuários comuns",
+    "ru-RU": "Расшифровка ошибок двигателя для обычных пользователей",
+    "ja-JP": "一般ユーザー向けのエンジンエラーの解釈",
+    "de-DE": "Interpretation von Motorfehlern für normale Benutzer",
+    "fr-FR": "Interprétation des erreurs du moteur pour les utilisateurs ordinaires",
+    "ko-KR": "일반 사용자를 위한 엔진 오류 해석",
+    "$files": [
+      "src/components/errors/error-analysis-sidebar.tsx(2954-2971)"
+    ],
+    "$id": 638
+  },
+  "关闭": {
+    "en-US": "Closure",
+    "es-ES": "Cierre",
+    "ar-EG": "إنهاء",
+    "pt-PT": "Encerramento",
+    "ru-RU": "закрытие",
+    "ja-JP": "閉鎖",
+    "de-DE": "Schließung",
+    "fr-FR": "Fermeture",
+    "ko-KR": "폐쇄",
+    "$files": [
+      "src/components/errors/error-analysis-sidebar.tsx(3300-3306)"
+    ],
+    "$id": 639
+  },
+  "严重级别": {
+    "en-US": "Severity level",
+    "es-ES": "Nivel de gravedad",
+    "ar-EG": "مستوى الخطورة",
+    "pt-PT": "Nível de gravidade",
+    "ru-RU": "Уровень серьезности",
+    "ja-JP": "重大度レベル",
+    "de-DE": "Schweregrad",
+    "fr-FR": "Niveau de gravité",
+    "ko-KR": "심각도 수준",
+    "$files": [
+      "src/components/errors/error-analysis-sidebar.tsx(3644-3652)"
+    ],
+    "$id": 640
+  },
+  "建议解决方案": {
+    "en-US": "Suggested solution",
+    "es-ES": "Solución recomendada",
+    "ar-EG": "الحلول المقترحة",
+    "pt-PT": "Solução recomendada",
+    "ru-RU": "Рекомендуемое решение",
+    "ja-JP": "提案される解決策",
+    "de-DE": "Empfohlene Lösung",
+    "fr-FR": "Solution recommandée",
+    "ko-KR": "권장 해결 방안",
+    "$files": [
+      "src/components/errors/error-analysis-sidebar.tsx(4932-4942)"
+    ],
+    "$id": 641
+  },
+  "原始错误详情": {
+    "en-US": "Original error details",
+    "es-ES": "Detalles del error original",
+    "ar-EG": "تفاصيل الخطأ الأصلي",
+    "pt-PT": "Detalhes do erro original",
+    "ru-RU": "Подробности исходной ошибки",
+    "ja-JP": "元のエラーの詳細",
+    "de-DE": "Ursprüngliche Fehlerdetails",
+    "fr-FR": "Détails de l'erreur d'origine",
+    "ko-KR": "원래 오류 세부정보",
+    "$files": [
+      "src/components/errors/error-analysis-sidebar.tsx(6002-6012)"
+    ],
+    "$id": 642
+  },
+  "查看运行日志": {
+    "en-US": "View running log",
+    "es-ES": "Ver registro de ejecución",
+    "ar-EG": "عرض سجل التشغيل",
+    "pt-PT": "Ver registro de execução",
+    "ru-RU": "Посмотреть журнал бега",
+    "ja-JP": "実行ログを表示する",
+    "de-DE": "Laufprotokoll ansehen",
+    "fr-FR": "Afficher le journal d'exécution",
+    "ko-KR": "실행 로그 보기",
+    "$files": [
+      "src/components/errors/error-analysis-sidebar.tsx(7404-7414)"
+    ],
+    "$id": 643
   },
   "条": {
     "en-US": "Strip",
