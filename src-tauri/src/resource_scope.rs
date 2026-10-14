@@ -1,11 +1,42 @@
 // resource_scope.rs
-// 资源查找范围约束：仅「自身安装目录」与「用户数据目录」
-// 禁止基于 CWD / exe 祖先向上逐级探测；禁止把宿主工程（如 desktop）的共享资源根当作安装目录。
+// 资源查找范围约束（用户裁定 2026-10-14 统一契约，omni 侧 omni-geo/discover.rs 同构）：
+//
+// **主层（严格隔离，原有铁律不变）**：仅「自身安装目录」与「用户数据目录」。
+// 禁止把自身主层的搜索根泄漏到 exe 目录之外；宿主 desktop 的共享 extraResources
+// 不得凭 resource_dir 解析而成为安装根（防陈旧/错源 DLL 与模型被静默采纳）。
+//
+// **回退层（本次裁定新增）**：当主层白名单未命中时，按运行模式补两档宿主来源——
+// - 仅开发模式：宿主 desktop 工程项目 `apps/desktop/build/extraResources/<子路径>`
+//   （从 exe 目录与 cwd 逐级上溯 ≤6 级，命中含 apps/desktop 的工作区根）
+// - 仅生产模式：宿主 desktop 共享资源目录的兄弟项 `<exe>/../<子路径>`、`<exe>/../../<子路径>`
+//   （exe 部署在宿主 extraResources/bin/ 或 extraResources/bin/<tool>/ 之下）
+//
+// 模式判定：`cfg!(debug_assertions)`（cargo/tauri 开发态）或环境变量 `OMNI_DEV_MODE=1`
+// （宿主 desktop spawn 时统一下发）。
+//
+// 历史说明：曾额外锚定编译期 `CARGO_MANIFEST_DIR/..`（引擎工程根）以覆盖开发态资源拓扑。
+// 该锚点已移除——引擎统一由 desktop 部署到集成目录
+// `apps/desktop/build/extraResources/bin/firefly-ai-engine/` 并以最终发布形态运行，
+// 开发态资源由 `_up_/build/extraResources`（`cargo tauri dev`）或集成目录内的 1:1 镜像提供，
+// 二者物理上都在 exe 目录之内。
 
 use std::path::{Path, PathBuf};
 
 /// 引擎用户数据目录名
 pub const APP_DATA_DIR_NAME: &str = "com.firefly.ai-engine";
+
+/// 宿主 desktop 统一下发的开发模式标记
+pub const ENV_DEV_MODE: &str = "OMNI_DEV_MODE";
+
+/// 是否为开发态：debug 构建，或宿主 desktop 显式标记
+pub fn is_dev_mode() -> bool {
+    if cfg!(debug_assertions) {
+        return true;
+    }
+    std::env::var(ENV_DEV_MODE)
+        .map(|v| v.trim() == "1")
+        .unwrap_or(false)
+}
 
 /// 是否为标准 macOS 应用包内的 Resources 目录（Contents/MacOS → Contents/Resources）
 fn is_macos_bundle_resources(exe_dir: &Path, candidate: &Path) -> bool {
@@ -104,12 +135,20 @@ fn install_bin_subpaths(root: &Path) -> Vec<PathBuf> {
 }
 
 /// 允许的安装目录 bin 搜索目录列表
+///
+/// 主层为严格隔离白名单（`allowed_install_roots` × `install_bin_subpaths`）；
+/// 末位追加回退层 `host_fallback_dirs(&["bin"])`（用户裁定 2026-10-14 统一契约：
+/// 开发态宿主工程目录 / 生产态宿主共享兄弟目录）。
 pub fn allowed_install_bin_dirs(resource_dir: Option<&Path>) -> Vec<PathBuf> {
     let mut dirs = Vec::new();
     for root in allowed_install_roots(resource_dir) {
         for bin in install_bin_subpaths(&root) {
             push_unique(&mut dirs, bin);
         }
+    }
+    // 回退层：主层未命中时才应走到这里（调用方按序探测，先到先得）
+    for dir in host_fallback_dirs(&["bin"]) {
+        push_unique(&mut dirs, dir);
     }
     dirs
 }
@@ -136,7 +175,82 @@ pub fn allowed_install_model_meta_dirs(resource_dir: Option<&Path>) -> Vec<PathB
             push_unique(&mut dirs, dir);
         }
     }
+    // 回退层：主层未命中时才应走到这里（调用方按序探测，先到先得）
+    for dir in host_fallback_dirs(&["model"]) {
+        push_unique(&mut dirs, dir);
+    }
     dirs
+}
+
+/// 开发态：从给定起点逐级上溯（≤6 级），收集宿主 `apps/desktop/build/extraResources/<子路径>`
+fn dev_workspace_host_dirs(base: &Path, subpath: &[&str]) -> Vec<PathBuf> {
+    let mut out = Vec::new();
+    let mut cur = base.to_path_buf();
+    for _ in 0..6 {
+        let mut p = cur.join("apps").join("desktop").join("build").join("extraResources");
+        for s in subpath {
+            p = p.join(s);
+        }
+        push_unique(&mut out, p);
+        if !cur.pop() {
+            break;
+        }
+    }
+    out
+}
+
+/// 生产态：从给定起点上溯 1/2 级的兄弟资源目录 `<base>/../<子路径>`、`<base>/../../<子路径>`
+/// （exe 部署在宿主 `extraResources/bin/` 或 `extraResources/bin/<tool>/` 之下，两者各覆盖一档）
+fn prod_sibling_host_dirs(base: &Path, subpath: &[&str]) -> Vec<PathBuf> {
+    let mut out = Vec::new();
+    for up in 1..=2usize {
+        let mut p = base.to_path_buf();
+        for _ in 0..up {
+            p.pop();
+        }
+        for s in subpath {
+            p = p.join(s);
+        }
+        push_unique(&mut out, p);
+    }
+    out
+}
+
+/// **回退层**（用户裁定 2026-10-14 统一契约）：宿主 desktop 来源的 `<子路径>` 目录。
+///
+/// - 仅开发模式：工作区内逐级上溯，取 `apps/desktop/build/extraResources/<子路径>`
+/// - 仅生产模式：exe 兄弟 `../<子路径>` 与 `../../<子路径>`
+///
+/// 注意：该层**有意**越出 exe 目录（宿主集成部署的物理事实），仅作主层白名单的末位回退；
+/// 主层（`allowed_install_roots` 系列）的严格隔离语义不变——宿主共享资源根仍然
+/// 不得凭 `resource_dir` 解析成为安装根。
+pub fn host_fallback_dirs(subpath: &[&str]) -> Vec<PathBuf> {
+    let mut out = Vec::new();
+
+    // 探测起点：exe 目录与 cwd（桌面 spawn 时 cwd=binDir，二者一致也无妨）
+    let mut bases: Vec<PathBuf> = Vec::new();
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(dir) = exe.parent() {
+            bases.push(dir.to_path_buf());
+        }
+    }
+    if let Ok(cwd) = std::env::current_dir() {
+        bases.push(cwd);
+    }
+
+    for base in &bases {
+        if is_dev_mode() {
+            for dir in dev_workspace_host_dirs(base, subpath) {
+                push_unique(&mut out, dir);
+            }
+        } else {
+            for dir in prod_sibling_host_dirs(base, subpath) {
+                push_unique(&mut out, dir);
+            }
+        }
+    }
+
+    out
 }
 
 /// 用户数据目录根（%APPDATA%/com.firefly.ai-engine）
@@ -290,6 +404,50 @@ mod tests {
             assert!(
                 !s.contains("firefly-ai-folder"),
                 "用户数据白名单不得包含宿主 desktop 目录: {dir:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_host_fallback_dev_points_to_workspace_desktop() {
+        // 开发态（cargo test 为 debug 构建）：从 <omni>/target/debug 上溯应命中工作区根的宿主工程目录
+        let dirs = dev_workspace_host_dirs(Path::new("/repo/apps/omni/target/debug"), &["model"]);
+        assert!(
+            dirs.iter()
+                .any(|d| d == Path::new("/repo/apps/desktop/build/extraResources/model")),
+            "开发态回退层应含宿主 desktop 工程目录: {dirs:?}"
+        );
+    }
+
+    #[test]
+    fn test_host_fallback_prod_points_to_exe_siblings() {
+        // 生产态：exe 在宿主 extraResources/bin/omni/ 下 ⇒ ../../<子路径> 命中 extraResources/<子路径>
+        let dirs = prod_sibling_host_dirs(Path::new("/opt/app/extraResources/bin/omni"), &["model"]);
+        assert!(
+            dirs.iter()
+                .any(|d| d == Path::new("/opt/app/extraResources/model")),
+            "生产态回退层应含 exe 上两级兄弟目录: {dirs:?}"
+        );
+        // exe 直接在 extraResources/bin/ 下 ⇒ ../<子路径> 命中
+        let dirs = prod_sibling_host_dirs(Path::new("/opt/app/extraResources/bin"), &["bin"]);
+        assert!(
+            dirs.iter().any(|d| d == Path::new("/opt/app/extraResources/bin")),
+            "生产态回退层应含 exe 上一级兄弟目录: {dirs:?}"
+        );
+    }
+
+    #[test]
+    fn test_host_fallback_is_appended_after_primary_whitelist() {
+        // 主层（严格隔离）必须排在回退层之前：宿主来源只作末位兜底
+        let dirs = allowed_install_bin_dirs(None);
+        if let Some(first_host) = dirs.iter().position(|d| d.to_string_lossy().contains("apps/desktop"))
+        {
+            assert!(first_host > 0, "宿主回退层必须排在主层之后: {dirs:?}");
+            assert!(
+                dirs[..first_host]
+                    .iter()
+                    .all(|d| !d.to_string_lossy().contains("apps/desktop")),
+                "宿主回退层不得穿插在主层之间: {dirs:?}"
             );
         }
     }
