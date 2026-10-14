@@ -436,6 +436,15 @@ impl ProcessGuard {
                 ));
             }
 
+            // 子进程若已退出（崩溃、缺 DLL、被外部 taskkill 等），继续空等只会白耗预算，
+            // 立即失败以便上层尽快走错误落库 / 降级链路。
+            if !self.is_running().await {
+                return Err(anyhow!(
+                    "llama-server 子进程已退出，端口 {} 无法就绪",
+                    port
+                ));
+            }
+
             // HTTP 健康探测：TCP 可达不代表模型已加载完成，
             // llama-server 的 /health 在模型加载完毕前会返回 503，只有加载完成后才返回 200，
             // 以此确保「已就绪」状态与日志中 `listening on` 信号（模型加载完成）保持一致

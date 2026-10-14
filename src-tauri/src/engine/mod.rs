@@ -19,6 +19,14 @@ use crate::hardware::{DriverComplianceService, HardwareDetector};
 use crate::config::{EngineConfig, find_available_port};
 use crate::server::proxy::ProxyState;
 
+/// llama-server 冷启动就绪预算（秒）。
+///
+/// 实测 MiniCPM-V-4.6-Q4_K_M + mmproj、ctx=131072 在 RTX 3060 上冷载约 **21.3s**；
+/// 更大参数量的模型 / 更长上下文会更久。原预算 15s 会在模型真正就绪之前就判定超时，
+/// 进而误杀一个健康的 llama-server 进程（并让状态落到 Failed）。此处给足冷载余量；
+/// 子进程若中途退出，`wait_ready` 会通过 `is_running()` 提前失败，不会白等满整个预算。
+const LLAMA_READY_TIMEOUT_SECS: u64 = 120;
+
 /// API 工作态 RAII 卫士：请求进入时活跃计数+1，结束/中断析构时原子计数-1并在归零时广播状态变更
 pub struct RequestGuard {
     active_requests: Arc<AtomicUsize>,
@@ -358,16 +366,39 @@ impl EngineCoordinator {
     /// （Footer 错误行 / 错误分析侧边栏）。**校验类失败**（未检测到 GGUF 模型、
     /// 引擎二进制缺失、模型文件不存在等）在拉起子进程之前就已返回，不会进入
     /// 子进程监控循环，若不显式落库，前端将完全看不到失败原因。
-    pub async fn start_service(&self) -> anyhow::Result<()> {
-        let _op_lock = self.operation_lock.lock().await;
-        match self.start_service_inner().await {
-            Ok(()) => Ok(()),
-            Err(e) => {
-                let message = e.to_string();
-                tracing::error!("引擎服务启动失败: {}", message);
-                self.guard.set_last_error(message).await;
-                Err(e)
+    ///
+    /// # 取消安全（Cancellation Safety）
+    ///
+    /// 启动过程**必须脱离调用方 Future 的生命周期**。`/api/engine/start` 是 axum handler，
+    /// 当 HTTP 客户端（Desktop EngineBridge 的 `AbortSignal.timeout`、浏览器刷新、
+    /// `curl -m` 等）超时或断开连接时，hyper 会 drop 掉该 handler 的 Future。
+    /// 若启动逻辑直接跑在这个 Future 上，就会出现「`guard.start()` 已把状态置为
+    /// `Starting`、llama-server 已被拉起」之后被中途丢弃的窗口，后果是：
+    /// 状态永久卡在 `starting`（引擎 Footer 恒显「启动中...」）、llama-server 沦为
+    /// 无人认领的孤儿进程、且后续 `/api/engine/start` 会因 `Starting` 早返回而**再也无法自愈**。
+    ///
+    /// 因此这里把实际启动派发到独立 task，调用方只 `await` 其 `JoinHandle`：
+    /// drop `JoinHandle` 只会 **detach** 任务而不会取消它，启动必定走完并落到
+    /// `Running` / `Failed`，状态机不会残留中间态。
+    pub async fn start_service(self: &Arc<Self>) -> anyhow::Result<()> {
+        let coordinator = self.clone();
+        let handle = tokio::spawn(async move {
+            let _op_lock = coordinator.operation_lock.lock().await;
+            match coordinator.start_service_inner().await {
+                Ok(()) => Ok(()),
+                Err(e) => {
+                    let message = e.to_string();
+                    tracing::error!("引擎服务启动失败: {}", message);
+                    coordinator.guard.set_last_error(message).await;
+                    Err(e)
+                }
             }
+        });
+
+        match handle.await {
+            Ok(result) => result,
+            // JoinHandle 出错仅可能是任务 panic / 被 abort；此处显式落库，避免状态机静默悬空
+            Err(join_err) => Err(anyhow::anyhow!("引擎启动任务异常终止: {}", join_err)),
         }
     }
 
@@ -620,8 +651,8 @@ impl EngineCoordinator {
             return Err(e);
         }
 
-        // 等待服务内部端口可达（超时 15 秒）
-        match self.guard.wait_ready(llama_internal_port, 15).await {
+        // 等待服务内部端口可达（预算见 LLAMA_READY_TIMEOUT_SECS；子进程中途退出会提前失败）
+        match self.guard.wait_ready(llama_internal_port, LLAMA_READY_TIMEOUT_SECS).await {
             Ok(_) => {
                 // 成功就绪：向反向代理注册内部目标端口，并标记进程状态为 Running
                 self.proxy_state.set_target_port(llama_internal_port).await;
