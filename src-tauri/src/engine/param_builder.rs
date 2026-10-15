@@ -40,6 +40,12 @@ pub struct ModelInfo {
     pub quantization: String,
     /// 是否多模态（含 mmproj）
     pub is_multimodal: bool,
+    /// 是否加载多模态识图模型（双重互锁：物理文件存在 + 开关开启，默认 true）
+    pub enable_vision: bool,
+    /// 是否加载投机采样加速模型（双重互锁：物理文件存在 + 开关开启，默认 true）
+    pub enable_draft: bool,
+    /// 投机采样最大预测 token 步数（默认 5）
+    pub draft_max_tokens: Option<u32>,
     /// 用户指定上下文长度（None = 自动）
     pub context_window: Option<u32>,
     /// 用户强制 GPU 层数（None = 自动）
@@ -499,9 +505,9 @@ impl ParamBuilder {
             model_path.to_string(),
         ];
 
-        // 多模态投影器 --mmproj（仅当模型明确为多模态时加载）
+        // 多模态投影器 --mmproj（双重互锁：模型明确为多模态 + 文件存在 + 用户未关闭识图）
         if let Some(info) = model_info {
-            if info.is_multimodal {
+            if info.is_multimodal && info.enable_vision {
                 if let Some(ref mmproj) = info.mmproj_path {
                     args.extend(["--mmproj".to_string(), mmproj.clone()]);
                 }
@@ -528,34 +534,37 @@ impl ParamBuilder {
 
         // ── 语言模型（生成）模式 ──
         if let Some(info) = model_info {
-            // DSpark 投机采样
-            if let Some(ref dspark) = info.dspark_path {
-                args.extend([
-                    "--model-draft".to_string(),
-                    dspark.clone(),
-                    "--spec-type".to_string(),
-                    "draft-dspark".to_string(),
-                    "--spec-draft-n-max".to_string(),
-                    "5".to_string(),
-                    "--spec-draft-n-min".to_string(),
-                    "0".to_string(),
-                ]);
-                if !params.is_cpu_mode && params.gpu_layers > 0 {
+            if info.enable_draft {
+                let draft_max = info.draft_max_tokens.unwrap_or(5);
+                // DSpark 投机采样
+                if let Some(ref dspark) = info.dspark_path {
                     args.extend([
-                        "--gpu-layers-draft".to_string(),
-                        params.gpu_layers.to_string(),
+                        "--model-draft".to_string(),
+                        dspark.clone(),
+                        "--spec-type".to_string(),
+                        "draft-dspark".to_string(),
+                        "--spec-draft-n-max".to_string(),
+                        draft_max.to_string(),
+                        "--spec-draft-n-min".to_string(),
+                        "0".to_string(),
+                    ]);
+                    if !params.is_cpu_mode && params.gpu_layers > 0 {
+                        args.extend([
+                            "--gpu-layers-draft".to_string(),
+                            params.gpu_layers.to_string(),
+                        ]);
+                    }
+                } else if let Some(ref draft) = info.draft_path {
+                    // MTP / 常规 Draft
+                    args.extend([
+                        "--model-draft".to_string(),
+                        draft.clone(),
+                        "--spec-type".to_string(),
+                        "draft-mtp".to_string(),
+                        "--spec-draft-n-max".to_string(),
+                        draft_max.to_string(),
                     ]);
                 }
-            } else if let Some(ref draft) = info.draft_path {
-                // MTP / 常规 Draft
-                args.extend([
-                    "--model-draft".to_string(),
-                    draft.clone(),
-                    "--spec-type".to_string(),
-                    "draft-mtp".to_string(),
-                    "--spec-draft-n-max".to_string(),
-                    "3".to_string(),
-                ]);
             }
         }
 
@@ -771,6 +780,9 @@ mod tests {
             size_gb,
             quantization: "Q4_K_M".to_string(),
             is_multimodal: false,
+            enable_vision: true,
+            enable_draft: true,
+            draft_max_tokens: Some(5),
             context_window: None,
             force_gpu_layers: None,
             force_batch_size: None,
@@ -1082,5 +1094,32 @@ mod tests {
         model.is_multimodal = true;
         let args_mm = ParamBuilder::to_args(&params, 38400, "D:\\models\\vl-model.gguf", "vl-model", Some(&model));
         assert!(args_mm.contains(&"--mmproj".to_string()), "多模态模型且存在投影文件时应注入 --mmproj");
+    }
+
+    #[test]
+    fn test_to_args_respects_enable_vision_and_draft_interlocks() {
+        let resources = make_resources_with_dgpu(12 * 1024);
+        let mut model = make_model(7.0, 4.3);
+        model.is_multimodal = true;
+        model.mmproj_path = Some("D:\\models\\mmproj.gguf".to_string());
+        model.dspark_path = Some("D:\\models\\dspark.gguf".to_string());
+        model.enable_vision = false; // 用户在高级选项中关闭识图以节约显存
+        model.enable_draft = false;  // 用户关闭加速
+
+        let params = ParamBuilder::compute(&resources, &model, "cuda");
+        let args_disabled = ParamBuilder::to_args(&params, 38400, "D:\\models\\main.gguf", "test-model", Some(&model));
+
+        assert!(!args_disabled.contains(&"--mmproj".to_string()), "用户关闭识图后即使有投影文件也不应注入 --mmproj");
+        assert!(!args_disabled.contains(&"--model-draft".to_string()), "用户关闭加速后即使有草稿文件也不应注入 --model-draft");
+
+        // 重新开启并自定义步数
+        model.enable_vision = true;
+        model.enable_draft = true;
+        model.draft_max_tokens = Some(7);
+        let args_enabled = ParamBuilder::to_args(&params, 38400, "D:\\models\\main.gguf", "test-model", Some(&model));
+
+        assert!(args_enabled.contains(&"--mmproj".to_string()), "用户开启识图后应注入 --mmproj");
+        assert!(args_enabled.contains(&"--model-draft".to_string()), "用户开启加速后应注入 --model-draft");
+        assert!(args_enabled.contains(&"7".to_string()), "应注入自定义 draft_max_tokens 7");
     }
 }

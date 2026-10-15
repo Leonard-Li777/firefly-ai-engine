@@ -5,6 +5,7 @@ import {
   DownloadProgressEvent,
   DownloadTaskSummary,
   RuntimeParams,
+  StartModelDownloadOptions,
   UiIntentConsumeResponse
 } from './types'
 import { IEngineApiClient } from './client'
@@ -273,7 +274,7 @@ export class MockApiClient implements IEngineApiClient {
 
   async startModelDownload(
     modelId: string,
-    options?: { source?: string; forceRestart?: boolean },
+    options?: StartModelDownloadOptions,
     onProgress?: (event: DownloadProgressEvent) => void
   ): Promise<DownloadTaskSummary> {
     // 优先在本地已知列表中查找，找不到则从元数据推荐列表中动态补充

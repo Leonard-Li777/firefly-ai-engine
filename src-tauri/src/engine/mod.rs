@@ -503,6 +503,17 @@ impl EngineCoordinator {
             None
         };
 
+        // 自动探测同级或 models_dir 目录下的 DSpark 投机加速草稿模型
+        let detected_dspark = {
+            let parent_dir = model_path.parent();
+            all_ggufs.iter().find(|(p, name)| {
+                let n_lower = name.to_lowercase();
+                (n_lower.contains("dspark") || n_lower.contains("draft"))
+                    && !n_lower.contains("mmproj")
+                    && (p.parent() == parent_dir || p.parent() == Some(&models_dir))
+            }).map(|(p, _)| p.to_string_lossy().to_string())
+        };
+
         let model_size_gb = std::fs::metadata(&model_path).map(|m| m.len() as f64 / (1024.0 * 1024.0 * 1024.0)).unwrap_or(1.0);
         let model_lower = model_str.to_lowercase();
         let is_minicpm5 = model_lower.contains("minicpm5")
@@ -595,12 +606,18 @@ impl EngineCoordinator {
         let context_window = user_model_params.as_ref().map(|p| p.ctx_size).or(custom_ctx);
         let force_batch_size = user_model_params.as_ref().map(|p| p.batch_size);
         let force_ubatch_size = user_model_params.as_ref().map(|p| p.ubatch_size);
+        let enable_vision = user_model_params.as_ref().and_then(|p| p.enable_vision).unwrap_or(true);
+        let enable_draft = user_model_params.as_ref().and_then(|p| p.enable_draft).unwrap_or(true);
+        let draft_max_tokens = user_model_params.as_ref().and_then(|p| p.draft_max_tokens);
 
         let model_info = ModelInfo {
             param_b: if model_size_gb < 1.0 { 0.8 } else if model_size_gb < 2.0 { 1.5 } else { 2.5 },
             size_gb: model_size_gb,
             quantization: "Q4_K_M".to_string(),
             is_multimodal: is_multimodal && detected_mmproj.is_some(),
+            enable_vision,
+            enable_draft,
+            draft_max_tokens,
             context_window,
             force_gpu_layers,
             force_batch_size,
@@ -610,7 +627,7 @@ impl EngineCoordinator {
             is_minicpm5,
             is_nanbeige4,
             mmproj_path: detected_mmproj,
-            dspark_path: None,
+            dspark_path: detected_dspark,
             draft_path: None,
             cache_type_k: user_model_params.as_ref().map(|p| p.cache_type_k.clone()),
             cache_type_v: user_model_params.as_ref().map(|p| p.cache_type_v.clone()),

@@ -180,33 +180,39 @@ export class ModelResolver {
       )
     })
 
+    // 寻找加速草稿模型 (--model-draft / dspark)
+    const draftPath = filePaths.find(p => {
+      const fileName = p.substring(p.lastIndexOf('/') + 1).toLowerCase()
+      return (
+        p.startsWith(dirPath) &&
+        fileName.endsWith('.gguf') &&
+        (fileName.includes('dspark') || fileName.includes('draft')) &&
+        !fileName.includes('mmproj')
+      )
+    })
+
     return {
       modelId,
       modelPath: mainModelPath,
       mmprojPath: mmprojPath || undefined,
+      draftPath: draftPath || undefined,
       dirPath
     }
   }
 
   /**
-   * 检查模型是否完全下载且可用（主模型存在，多模态时 mmproj 投影器也必须存在）
-   * 严格对齐 Desktop ModelDownloadManager 的 checkModelDownloadStatus 逻辑
+   * 检查模型是否可用（主模型落盘即认为可用并可启动，伴随模型未就绪时支持补偿下载）
    */
   public static checkModelFullyDownloaded(
     modelId: string,
     baseDir: string,
-    isMultiModal: boolean = false,
+    _isMultiModal: boolean = false,
     existingFiles?: string[] | string,
     source?: string
   ): { isDownloaded: boolean; resolution: ModelResolution | null } {
     const resolution = this.resolve(modelId, baseDir, existingFiles, source)
     if (!resolution || !resolution.modelPath) {
       return { isDownloaded: false, resolution: null }
-    }
-
-    // 多模态模型必须同时具备 mmproj 投影器文件
-    if (isMultiModal && !resolution.mmprojPath) {
-      return { isDownloaded: false, resolution }
     }
 
     return { isDownloaded: true, resolution }
@@ -323,7 +329,8 @@ export function mergeScannedWithRecommended(recommendedList: ModelItem[], scanne
     })
 
     const isDownloaded = existing ? Boolean(existing.isDownloaded) : false
-    map.set(rec.id, {
+    const recKey = `${rec.id}@${rec.source || 'default'}`
+    map.set(recKey, {
       ...rec,
       isDownloaded,
       localPath: existing?.localPath,
@@ -355,7 +362,7 @@ export function mergeScannedWithRecommended(recommendedList: ModelItem[], scanne
         (item.fileSize > 0 ? estimateRequiredVRAM(formatFileSizeToSizeStr(item.fileSize)) : undefined)
     }
     const isAlreadyMapped = Array.from(map.values()).some(m => {
-      if (m.id === enriched.id) return true
+      if (m.id === enriched.id && (m.source || 'default') === (enriched.source || 'default')) return true
       if (
         enriched.localPath &&
         m.localPath &&
@@ -366,7 +373,7 @@ export function mergeScannedWithRecommended(recommendedList: ModelItem[], scanne
       return false
     })
     if (!isAlreadyMapped) {
-      map.set(enriched.id, enriched)
+      map.set(`${enriched.id}@${enriched.source || 'default'}`, enriched)
     }
   }
 

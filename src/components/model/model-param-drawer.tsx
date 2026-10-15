@@ -8,14 +8,19 @@ import {
   Check,
   AlertTriangle,
   RotateCw,
-  HardDrive
+  HardDrive,
+  Eye,
+  Zap,
+  Sparkles,
+  Layers
 } from 'lucide-react'
 import { ModelItem, RuntimeParams } from '../../api/types'
 import { useEngineStore } from '../../stores/engine-store'
 import { t } from '../../languages'
-import { DEFAULT_MODEL_PARAMS, saveModelCustomParams } from '../../lib/model-param-storage'
+import { DEFAULT_MODEL_PARAMS, saveModelCustomParams, calculateRecommendedParams } from '../../lib/model-param-storage'
 import { Button } from '../ui/button'
 import { Slider } from '../ui/slider'
+import { Checkbox } from '../ui/checkbox'
 
 interface ModelParamDrawerProps {
   isOpen: boolean
@@ -35,8 +40,14 @@ export const ModelParamDrawer: React.FC<ModelParamDrawerProps> = ({
     saveModelParams,
     getModelParams,
     startEngine,
-    stopEngine
+    stopEngine,
+    engineStatus
   } = useEngineStore()
+
+  const hardware = engineStatus?.hardware
+  const recommendedParams = React.useMemo(() => {
+    return calculateRecommendedParams(model, hardware)
+  }, [model, hardware])
 
   const [params, setParams] = useState<RuntimeParams>(DEFAULT_MODEL_PARAMS)
   const [isSaving, setIsSaving] = useState(false)
@@ -91,6 +102,16 @@ export const ModelParamDrawer: React.FC<ModelParamDrawerProps> = ({
   const handleResetDefaults = () => {
     setParams({ ...DEFAULT_MODEL_PARAMS, ...runtimeParams })
   }
+
+  // 恢复当前硬件智能推荐
+  const handleResetRecommended = () => {
+    setParams({ ...recommendedParams })
+  }
+
+  // 伴随模型能力判定（多模态识图与 DSpark 投机加速）
+  const hasVisionCapability = Boolean(model?.isMultiModal || model?.mmproj)
+  const hasDraftCapability = Boolean(model?.dspark)
+  const hasCompanionModels = hasVisionCapability || hasDraftCapability
 
   // 保存参数
   const handleSave = async () => {
@@ -193,8 +214,91 @@ export const ModelParamDrawer: React.FC<ModelParamDrawerProps> = ({
             </div>
           </div>
 
-          {/* 抽屉内容区：三大功能组，每行一个参数 */}
+          {/* 抽屉内容区：伴随模型与三大功能组 */}
           <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-slim">
+
+            {/* 伴随模型与特性 (Companion Models & Capabilities) */}
+            {hasCompanionModels && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 pb-2 border-b border-border/40">
+                  <Layers className="h-4 w-4 text-primary" />
+                  <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">
+                    {t('伴随模型与特性 (Companion Models & Capabilities)')}
+                  </h4>
+                </div>
+
+                {/* 识图模型 Checkbox */}
+                {hasVisionCapability && (
+                  <div className="bg-muted/15 p-3.5 rounded-xl border border-border/40 space-y-2">
+                    <label className="flex items-start gap-3 cursor-pointer select-none">
+                      <Checkbox
+                        id="enable-vision"
+                        checked={params.enableVision !== false}
+                        onCheckedChange={checked => setParams(p => ({ ...p, enableVision: checked }))}
+                        className="mt-0.5"
+                      />
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
+                          <Eye className="h-3.5 w-3.5 text-purple-500" />
+                          <span>{t('加载识图模型')}</span>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground/80 leading-relaxed">
+                          {t('如果不需要识图，关闭可以节约显存')}
+                        </p>
+                      </div>
+                    </label>
+                  </div>
+                )}
+
+                {/* 加速模型 Checkbox */}
+                {hasDraftCapability && (
+                  <div className="bg-muted/15 p-3.5 rounded-xl border border-border/40 space-y-3">
+                    <label className="flex items-start gap-3 cursor-pointer select-none">
+                      <Checkbox
+                        id="enable-draft"
+                        checked={params.enableDraft !== false}
+                        onCheckedChange={checked => setParams(p => ({ ...p, enableDraft: checked }))}
+                        className="mt-0.5"
+                      />
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
+                          <Zap className="h-3.5 w-3.5 text-emerald-500" />
+                          <span>{t('加载加速模型 (DSpark)')}</span>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground/80 leading-relaxed">
+                          {t('投机采样加速可显著提升生成速度，但需常驻占用 1~2.5GB 显存；在显存紧张或以短文本为主时不建议开启')}
+                        </p>
+                      </div>
+                    </label>
+
+                    {/* 勾选加速后联动展示 1~8 步数滑块 */}
+                    {params.enableDraft !== false && (
+                      <div className="pt-2 pl-7 space-y-1.5 border-t border-border/30 animate-in fade-in slide-in-from-top-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <div>
+                            <span className="font-bold text-foreground">{t('投机步数')}</span>
+                            <span className="font-mono text-muted-foreground ml-1.5">(--draft-max, draft_max_tokens)</span>
+                          </div>
+                          <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                            {params.draftMaxTokens ?? 5}
+                          </span>
+                        </div>
+                        <Slider
+                          value={params.draftMaxTokens ?? 5}
+                          min={1}
+                          max={8}
+                          step={1}
+                          onChange={val => setParams(p => ({ ...p, draftMaxTokens: val }))}
+                        />
+                        <p className="text-[11px] text-muted-foreground/80">
+                          {t('单步最大预测 token 数，增大可提升高命中率下的加速比，但会轻微增加显存压力 (默认: 5)')}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* 第一组：硬件与计算性能 */}
             <div className="space-y-4">
@@ -208,9 +312,12 @@ export const ModelParamDrawer: React.FC<ModelParamDrawerProps> = ({
               {/* 1. GPU 卸载层数 */}
               <div className="space-y-1.5 bg-muted/15 p-3 rounded-xl border border-border/40">
                 <div className="flex items-center justify-between text-xs">
-                  <div>
+                  <div className="flex items-center flex-wrap gap-1">
                     <span className="font-bold text-foreground">{t('GPU 卸载层数')}</span>
-                    <span className="font-mono text-muted-foreground ml-1.5">(-ngl)</span>
+                    <span className="font-mono text-muted-foreground">(-ngl)</span>
+                    <span className="text-[10px] text-primary/80 bg-primary/10 px-1.5 py-0.5 rounded font-mono">
+                      {t('硬件推荐')}: {recommendedParams.n_gpu_layers === -1 ? t('全量卸载 (-1)') : recommendedParams.n_gpu_layers}
+                    </span>
                   </div>
                   <span className="font-mono font-bold text-primary">
                     {params.n_gpu_layers === -1 ? t('全量卸载 (-1)') : params.n_gpu_layers}
@@ -231,9 +338,12 @@ export const ModelParamDrawer: React.FC<ModelParamDrawerProps> = ({
               {/* 2. CPU 线程数 */}
               <div className="space-y-1.5 bg-muted/15 p-3 rounded-xl border border-border/40">
                 <div className="flex items-center justify-between text-xs">
-                  <div>
+                  <div className="flex items-center flex-wrap gap-1">
                     <span className="font-bold text-foreground">{t('CPU 推理线程数')}</span>
-                    <span className="font-mono text-muted-foreground ml-1.5">(-t, threads)</span>
+                    <span className="font-mono text-muted-foreground">(-t, threads)</span>
+                    <span className="text-[10px] text-primary/80 bg-primary/10 px-1.5 py-0.5 rounded font-mono">
+                      {t('硬件推荐')}: {recommendedParams.threads}
+                    </span>
                   </div>
                   <span className="font-mono font-bold text-primary">{params.threads}</span>
                 </div>
@@ -252,9 +362,12 @@ export const ModelParamDrawer: React.FC<ModelParamDrawerProps> = ({
               {/* 3. 批处理大小 Batch Size */}
               <div className="space-y-1.5 bg-muted/15 p-3 rounded-xl border border-border/40">
                 <div className="flex items-center justify-between text-xs">
-                  <div>
+                  <div className="flex items-center flex-wrap gap-1">
                     <span className="font-bold text-foreground">{t('Prompt 批处理大小')}</span>
-                    <span className="font-mono text-muted-foreground ml-1.5">(-b, batch_size)</span>
+                    <span className="font-mono text-muted-foreground">(-b, batch_size)</span>
+                    <span className="text-[10px] text-primary/80 bg-primary/10 px-1.5 py-0.5 rounded font-mono">
+                      {t('硬件推荐')}: {recommendedParams.batch_size}
+                    </span>
                   </div>
                   <span className="font-mono font-bold text-primary">{params.batch_size}</span>
                 </div>
@@ -273,9 +386,12 @@ export const ModelParamDrawer: React.FC<ModelParamDrawerProps> = ({
               {/* 4. 微批大小 Ubatch Size */}
               <div className="space-y-1.5 bg-muted/15 p-3 rounded-xl border border-border/40">
                 <div className="flex items-center justify-between text-xs">
-                  <div>
+                  <div className="flex items-center flex-wrap gap-1">
                     <span className="font-bold text-foreground">{t('物理微批大小')}</span>
-                    <span className="font-mono text-muted-foreground ml-1.5">(-ub, ubatch_size)</span>
+                    <span className="font-mono text-muted-foreground">(-ub, ubatch_size)</span>
+                    <span className="text-[10px] text-primary/80 bg-primary/10 px-1.5 py-0.5 rounded font-mono">
+                      {t('硬件推荐')}: {recommendedParams.ubatch_size}
+                    </span>
                   </div>
                   <span className="font-mono font-bold text-primary">{params.ubatch_size}</span>
                 </div>
@@ -304,9 +420,12 @@ export const ModelParamDrawer: React.FC<ModelParamDrawerProps> = ({
               {/* 5. 上下文长度 */}
               <div className="space-y-1.5 bg-muted/15 p-3 rounded-xl border border-border/40">
                 <div className="flex items-center justify-between text-xs">
-                  <div>
+                  <div className="flex items-center flex-wrap gap-1">
                     <span className="font-bold text-foreground">{t('上下文长度')}</span>
-                    <span className="font-mono text-muted-foreground ml-1.5">(-c, ctx_size)</span>
+                    <span className="font-mono text-muted-foreground">(-c, ctx_size)</span>
+                    <span className="text-[10px] text-primary/80 bg-primary/10 px-1.5 py-0.5 rounded font-mono">
+                      {t('硬件推荐')}: {recommendedParams.ctx_size}
+                    </span>
                   </div>
                   <span className="font-mono font-bold text-primary">{params.ctx_size}</span>
                 </div>
@@ -522,16 +641,29 @@ export const ModelParamDrawer: React.FC<ModelParamDrawerProps> = ({
 
           {/* 抽屉底部操作栏 */}
           <div className="p-5 border-t border-border/60 bg-muted/20 flex items-center justify-between gap-3">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleResetDefaults}
-              disabled={isSaving || isRestarting}
-              className="h-8 text-xs font-bold"
-            >
-              <RotateCcw className="h-3 w-3 mr-1 text-muted-foreground" />
-              {t('恢复默认')}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleResetRecommended}
+                disabled={isSaving || isRestarting}
+                title={t('根据当前检测到的 GPU 与 CPU 硬件自适应恢复最佳参数')}
+                className="h-8 text-xs font-bold text-primary border-primary/40 hover:bg-primary/10"
+              >
+                <Sparkles className="h-3.5 w-3.5 mr-1 text-primary" />
+                {t('恢复智能推荐')}
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={handleResetDefaults}
+                disabled={isSaving || isRestarting}
+                className="h-8 text-xs font-bold text-muted-foreground"
+              >
+                <RotateCcw className="h-3 w-3 mr-1 text-muted-foreground" />
+                {t('恢复默认')}
+              </Button>
+            </div>
 
             <div className="flex items-center gap-2">
               {savedSuccess && (

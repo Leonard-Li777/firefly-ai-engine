@@ -125,7 +125,7 @@ export const EngineTable: React.FC = () => {
                             {isRecommended && (
                               <Badge
                                 variant="default"
-                                className="text-[10px] font-bold px-2 py-0.5 bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-400 border border-amber-500/30 gap-1 shadow-2xs inline-flex"
+                                className="text-[9px] font-medium px-1.5 py-0.5 bg-amber-500/10 hover:bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/20 gap-0.5 shadow-none inline-flex"
                               >
                                 <Sparkles className="h-2.5 w-2.5 text-amber-500 shrink-0" />
                                 <span>{t('推荐')}</span>

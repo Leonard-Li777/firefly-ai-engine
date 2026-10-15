@@ -5,6 +5,7 @@ import {
   DownloadProgressEvent,
   DownloadTaskSummary,
   RuntimeParams,
+  StartModelDownloadOptions,
   UiIntentConsumeResponse
 } from './types'
 import { DownloadTaskPoller } from './download-task-poller'
@@ -48,7 +49,7 @@ export interface IEngineApiClient {
    */
   startModelDownload(
     modelId: string,
-    options?: { source?: string; forceRestart?: boolean; quantization?: string },
+    options?: StartModelDownloadOptions,
     onProgress?: (event: DownloadProgressEvent) => void
   ): Promise<DownloadTaskSummary>
 
@@ -292,7 +293,7 @@ export class HttpEngineApiClient implements IEngineApiClient {
 
   async startModelDownload(
     modelId: string,
-    options?: { source?: string; forceRestart?: boolean; quantization?: string },
+    options?: StartModelDownloadOptions,
     onProgress?: (event: DownloadProgressEvent) => void
   ): Promise<DownloadTaskSummary> {
     await this.ensureReady()
@@ -304,7 +305,10 @@ export class HttpEngineApiClient implements IEngineApiClient {
         modelId,
         source: options?.source || 'modelscope',
         forceRestart: options?.forceRestart || false,
-        quantization: options?.quantization
+        quantization: options?.quantization,
+        isMultiModal: options?.isMultiModal,
+        mmproj: options?.mmproj,
+        dspark: options?.dspark
       })
     })
     const taskId: string = task.taskId

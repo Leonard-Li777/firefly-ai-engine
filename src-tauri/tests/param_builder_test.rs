@@ -43,6 +43,9 @@ fn make_base_model(param_b: f64, size_gb: f64) -> ModelInfo {
         size_gb,
         quantization: "Q4_K_M".to_string(),
         is_multimodal: false,
+        enable_vision: true,
+        enable_draft: true,
+        draft_max_tokens: None,
         context_window: None,
         force_gpu_layers: None,
         force_batch_size: None,
@@ -262,4 +265,48 @@ fn test_flag_detector_legacy_server_graceful_downgrade() {
     assert!(!args.contains(&"--reasoning".to_string()), "旧版服务必须省略 --reasoning");
     assert!(!args.contains(&"--reasoning-format".to_string()), "旧版服务必须省略 --reasoning-format");
     assert!(!args.contains(&"--reasoning-budget".to_string()), "旧版服务必须省略 --reasoning-budget");
+}
+
+#[test]
+fn test_to_args_non_multimodal_ignores_mmproj() {
+    let resources = make_test_resources(16 * 1024, None);
+    let mut model = make_base_model(7.0, 4.3);
+    model.is_multimodal = false;
+    model.mmproj_path = Some("D:\\models\\mmproj.gguf".to_string());
+
+    let params = ParamBuilder::compute(&resources, &model, "cuda");
+    let args = ParamBuilder::to_args(&params, 38400, "D:\\models\\text-only.gguf", "test-model", Some(&model));
+
+    assert!(!args.contains(&"--mmproj".to_string()), "非多模态模型即使有投影文件也不应注入 --mmproj");
+
+    model.is_multimodal = true;
+    let args_mm = ParamBuilder::to_args(&params, 38400, "D:\\models\\vl-model.gguf", "vl-model", Some(&model));
+    assert!(args_mm.contains(&"--mmproj".to_string()), "多模态模型且存在投影文件时应注入 --mmproj");
+}
+
+#[test]
+fn test_to_args_respects_enable_vision_and_draft_interlocks() {
+    let resources = make_test_resources(16 * 1024, None);
+    let mut model = make_base_model(7.0, 4.3);
+    model.is_multimodal = true;
+    model.mmproj_path = Some("D:\\models\\mmproj.gguf".to_string());
+    model.dspark_path = Some("D:\\models\\dspark.gguf".to_string());
+    model.enable_vision = false;
+    model.enable_draft = false;
+
+    let params = ParamBuilder::compute(&resources, &model, "cuda");
+    let args_disabled = ParamBuilder::to_args(&params, 38400, "D:\\models\\main.gguf", "test-model", Some(&model));
+
+    assert!(!args_disabled.contains(&"--mmproj".to_string()), "用户关闭识图后即使有投影文件也不应注入 --mmproj");
+    assert!(!args_disabled.contains(&"--model-draft".to_string()), "用户关闭加速后即使有草稿文件也不应注入 --model-draft");
+
+    // 重新开启并自定义步数
+    model.enable_vision = true;
+    model.enable_draft = true;
+    model.draft_max_tokens = Some(7);
+    let args_enabled = ParamBuilder::to_args(&params, 38400, "D:\\models\\main.gguf", "test-model", Some(&model));
+
+    assert!(args_enabled.contains(&"--mmproj".to_string()), "用户开启识图后应注入 --mmproj");
+    assert!(args_enabled.contains(&"--model-draft".to_string()), "用户开启加速后应注入 --model-draft");
+    assert!(args_enabled.contains(&"7".to_string()), "应注入自定义 draft_max_tokens 7");
 }

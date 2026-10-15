@@ -150,6 +150,9 @@ pub struct StartModelDownloadReq {
     pub source: Option<String>,
     pub force_restart: Option<bool>,
     pub quantization: Option<String>,
+    pub is_multimodal: Option<bool>,
+    pub mmproj: Option<String>,
+    pub dspark: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -448,33 +451,60 @@ pub(crate) fn lookup_model_quantization(
 /// 2. 从文件名提取标准化量化标识只是 fallback
 /// 3. 若均无法获取量化参数且以 .gguf 结尾，fallback 走 -msf / -hff 精确文件名参数
 /// 4. 其余情况直接传递 target_id
+/// 5. mmproj 严格排他门禁：多模态时使用短标签或 auto，非多模态一律强制传递 none
+/// 6. dspark 伴随模型：存在且非空时追加 --dspark 参数
 pub(crate) fn build_downloader_args(
     source_flag: &str,
     target_id: &str,
     explicit_quant: Option<&str>,
+    is_multimodal: Option<bool>,
+    mmproj: Option<&str>,
+    dspark: Option<&str>,
 ) -> Vec<String> {
+    let mut args = Vec::new();
     let file_flag = if source_flag == "-hf" { "-hff" } else { "-msf" };
 
+    // 1. 主模型参数
     if let Some((repo, tag_or_file)) = target_id.split_once(':') {
         let tag_or_file_lower = tag_or_file.to_lowercase();
         if tag_or_file_lower.ends_with(".gguf") {
-            // 优先：检查是否从模型列表获取到 quantization 字段
             if let Some(quant) = explicit_quant.filter(|q| !q.trim().is_empty()) {
-                vec![source_flag.to_string(), format!("{}:{}", repo, quant.trim().to_uppercase()), "--json".to_string()]
+                args.extend_from_slice(&[source_flag.to_string(), format!("{}:{}", repo, quant.trim().to_uppercase())]);
             } else if let Some(quant) = extract_quant_tag_from_name(&tag_or_file_lower) {
-                // Fallback：从文件名提取标准化量化标识
-                vec![source_flag.to_string(), format!("{}:{}", repo, quant.to_uppercase()), "--json".to_string()]
+                args.extend_from_slice(&[source_flag.to_string(), format!("{}:{}", repo, quant.to_uppercase())]);
             } else {
-                // Fallback：无法识别量化 tag，作为精确文件下载
-                vec![source_flag.to_string(), repo.to_string(), file_flag.to_string(), tag_or_file.to_string(), "--json".to_string()]
+                args.extend_from_slice(&[source_flag.to_string(), repo.to_string(), file_flag.to_string(), tag_or_file.to_string()]);
             }
         } else {
-            // 已经是 quant 标签 (如 Q4_K_M 或 PTQ1_0)
-            vec![source_flag.to_string(), format!("{}:{}", repo, tag_or_file), "--json".to_string()]
+            args.extend_from_slice(&[source_flag.to_string(), format!("{}:{}", repo, tag_or_file)]);
         }
     } else {
-        vec![source_flag.to_string(), target_id.to_string(), "--json".to_string()]
+        args.extend_from_slice(&[source_flag.to_string(), target_id.to_string()]);
     }
+
+    // 2. mmproj 强排他门禁
+    if is_multimodal == Some(true) {
+        if let Some(m) = mmproj.filter(|s| !s.trim().is_empty()) {
+            args.push("--mmproj".to_string());
+            args.push(m.trim().to_string());
+        } else {
+            args.push("--mmproj".to_string());
+            args.push("auto".to_string());
+        }
+    } else {
+        args.push("--mmproj".to_string());
+        args.push("none".to_string());
+    }
+
+    // 3. dspark 伴随模型
+    if let Some(d) = dspark.filter(|s| !s.trim().is_empty()) {
+        args.push("--dspark".to_string());
+        args.push(d.trim().to_string());
+    }
+
+    // 4. json 交互协议
+    args.push("--json".to_string());
+    args
 }
 
 /// 扫描本地模型目录（支持 HuggingFace 和 ModelScope 两种目录结构）
@@ -773,6 +803,7 @@ pub(crate) fn verify_model_artifacts(
 }
 
 /// 解析多模态模型所配套的视觉投影器文件名（mmproj）
+#[allow(dead_code)]
 pub(crate) fn resolve_mmproj_filename(model_id: &str, source_flag: &str) -> Option<String> {
     let lower = model_id.to_lowercase();
     if lower.contains("bonsai") {
@@ -2418,6 +2449,10 @@ async fn start_model_download(
         .filter(|q| !q.trim().is_empty())
         .or_else(|| lookup_model_quantization(&model_id, &state.model_meta_dirs, &custom_models));
 
+    let is_multimodal = payload.is_multimodal;
+    let mmproj = payload.mmproj.clone();
+    let dspark = payload.dspark.clone();
+
     // 后台 spawn 真实下载进程
     tokio::spawn(async move {
         run_model_download(
@@ -2425,6 +2460,9 @@ async fn start_model_download(
             model_id,
             source,
             quantization,
+            is_multimodal,
+            mmproj,
+            dspark,
             models_dir,
             downloader_path,
             tasks_store,
@@ -2445,6 +2483,9 @@ async fn run_model_download(
     model_id: String,
     source: String,
     quantization: Option<String>,
+    is_multimodal_opt: Option<bool>,
+    mmproj: Option<String>,
+    dspark: Option<String>,
     models_dir: PathBuf,
     downloader_path: PathBuf,
     tasks: DownloadTaskStore,
@@ -2487,16 +2528,37 @@ async fn run_model_download(
         }
     }
 
-    // 更新任务初始状态为下载中
+    // 动态预估流水线需下载的文件总数
+    let is_multimodal = is_multimodal_opt == Some(true);
+    let mut total_files: u32 = 1;
+    if is_multimodal && mmproj.as_deref() != Some("none") {
+        total_files += 1;
+    }
+    if let Some(ref d) = dspark {
+        if !d.trim().is_empty() && d.trim() != "none" {
+            total_files += 1;
+        }
+    }
+
+    // 更新任务初始状态为下载中并初始化多文件计数
     {
         let mut lock = tasks.lock().await;
         if let Some(task) = lock.get_mut(&task_id) {
             task.status = DownloadStatus::Downloading;
+            task.total_files = total_files;
+            task.file_index = 0;
         }
     }
 
     let mut cmd = tokio::process::Command::new(&downloader_path);
-    let downloader_args = build_downloader_args(source_flag, &download_target_id, quantization.as_deref());
+    let downloader_args = build_downloader_args(
+        source_flag,
+        &download_target_id,
+        quantization.as_deref(),
+        is_multimodal_opt,
+        mmproj.as_deref(),
+        dspark.as_deref(),
+    );
     for arg in &downloader_args {
         cmd.arg(arg);
     }
@@ -2544,10 +2606,24 @@ async fn run_model_download(
         }
     };
 
-    // 记录子进程 PID 供取消时强制终止
+    // 记录子进程 PID 供取消时强制终止，并绑定 Job Object 防孤儿泄漏
     if let Some(pid) = child.id() {
+        crate::win_proc::assign_pid_to_job(pid);
         let mut pids = child_pids.lock().await;
         pids.insert(task_id.clone(), pid);
+    }
+
+    // 取消双检：如果外部在 spawn 期间已请求取消，立即清理并退出
+    {
+        let lock = tasks.lock().await;
+        if let Some(task) = lock.get(&task_id) {
+            if task.status == DownloadStatus::Canceled {
+                let _ = child.kill().await;
+                let mut pids = child_pids.lock().await;
+                pids.remove(&task_id);
+                return;
+            }
+        }
     }
 
     use tokio::io::{AsyncBufReadExt, BufReader};
@@ -2574,13 +2650,10 @@ async fn run_model_download(
     // 状态统计闭包变量（用于跨文件累加和速度滑动平均）
     let mut completed_bytes: u64 = 0;
     let mut current_file: Option<String> = None;
+    let mut current_file_idx: u32 = 0;
     let mut speed_prev_bytes: Option<u64> = None;
     let mut speed_prev_time = std::time::Instant::now();
     let mut last_speed_bps: f64 = 0.0;
-    let mut is_multimodal = model_id.to_lowercase().contains("vl")
-        || model_id.to_lowercase().contains("multimodal")
-        || model_id.to_lowercase().contains("bonsai")
-        || model_id.to_lowercase().contains("omni");
 
     // 读取 stdout 解析 JSON 进度流
     if let Some(stdout) = child.stdout.take() {
@@ -2602,49 +2675,43 @@ async fn run_model_download(
                         break;
                     }
 
-                    // 1. 跟踪多文件流切换
+                    // 1. 跟踪多文件流切换与单调索引流转
                     if let Some(fname) = progress.get("file").and_then(|v| v.as_str()).or_else(|| progress.get("filename").and_then(|v| v.as_str())) {
                         let fname_str = fname.to_string();
                         if !fname_str.is_empty() {
-                            if fname_str.to_lowercase().contains("mmproj") {
-                                is_multimodal = true;
-                            }
                             if let Some(ref cur) = current_file {
-                                if cur != &fname_str && task.total_bytes > 0 {
-                                    // 文件切换，将上一个文件的接收累加到 completed_bytes
-                                    completed_bytes = task.received_bytes;
+                                if cur != &fname_str {
+                                    current_file_idx = (current_file_idx + 1).min(total_files.saturating_sub(1));
+                                    if task.total_bytes > 0 {
+                                        completed_bytes = task.received_bytes;
+                                    }
                                 }
                             }
                             current_file = Some(fname_str.clone());
                             task.current_file_name = Some(fname_str.clone());
-
-                            // 多模态阶段判定
-                            if is_multimodal {
-                                task.total_files = 2;
-                                if fname_str.to_lowercase().contains("mmproj") {
-                                    task.file_index = 1;
-                                } else {
-                                    task.file_index = 0;
-                                }
-                            }
+                            task.file_index = current_file_idx;
+                            task.total_files = total_files;
                         }
                     }
 
-                    // 2. 进度计算与阶段加权
+                    // 2. 进度计算与阶段加权（主模型 70%，伴随模型平分 30%）
                     let raw_percent = progress.get("percent").and_then(|v| v.as_f64())
                         .or_else(|| progress.get("progress").and_then(|v| v.as_f64()).map(|p| p * 100.0));
 
                     if let Some(pct) = raw_percent {
-                        let weighted_percent = if is_multimodal {
-                            if task.file_index == 0 {
-                                pct * 0.8
-                            } else {
-                                80.0 + pct * 0.2
-                            }
-                        } else {
+                        let weighted_percent = if total_files <= 1 {
                             pct
+                        } else {
+                            let companion_files = total_files - 1;
+                            let companion_weight = 30.0 / (companion_files as f64);
+                            if current_file_idx == 0 {
+                                pct * 0.7
+                            } else {
+                                let base = 70.0 + ((current_file_idx - 1) as f64) * companion_weight;
+                                base + pct * (companion_weight / 100.0)
+                            }
                         };
-                        task.percent = (weighted_percent * 10.0).round() / 10.0;
+                        task.percent = (weighted_percent.clamp(0.0, 100.0) * 10.0).round() / 10.0;
                     }
 
                     // 3. 字节累加计算
@@ -2677,9 +2744,6 @@ async fn run_model_download(
 
                     if let Some(status) = progress.get("status").and_then(|v| v.as_str()) {
                         match status {
-                            // 注意：单文件的 completed/done 绝不能在进程运行中提前把 task.status 置为 Completed，
-                            // 否则在多模态多文件下载流中，首个文件（如投影器）完成就会提前通知前端终止监听！
-                            // 整个下载的成功判定由 child.wait() 正常退出后统一置为 Completed。
                             "error" | "failed" => {
                                 task.status = DownloadStatus::Error;
                                 task.error = progress.get("error").and_then(|v| v.as_str()).map(|s| s.to_string());
@@ -2703,9 +2767,6 @@ async fn run_model_download(
         pids.remove(&task_id);
     }
 
-    // 1. 检查阶段 1 完成后物理文件状态
-    let (mut main_exists, mut mmproj_exists) = verify_model_artifacts(&models_dir, &model_id, is_multimodal);
-
     // 检查是否已被用户主动取消
     {
         let lock = tasks.lock().await;
@@ -2716,133 +2777,21 @@ async fn run_model_download(
         }
     }
 
-    // 2. 如果是多模态模型，且主模型已成功落盘，但缺少配套的 mmproj 投影文件：
-    // 自动触发阶段 2 下载配套 mmproj 投影文件（常见于 ModelScope 等源）
-    if is_multimodal && main_exists && !mmproj_exists {
-        if let Some(mmproj_name) = resolve_mmproj_filename(&model_id, source_flag) {
-            let repo = model_id.split(':').next().unwrap_or(&model_id);
-            let mmproj_args = if source_flag == "-ms" {
-                vec![
-                    "-ms".to_string(),
-                    repo.to_string(),
-                    "-msf".to_string(),
-                    mmproj_name.clone(),
-                    "--json".to_string(),
-                ]
-            } else {
-                vec![
-                    "-hf".to_string(),
-                    repo.to_string(),
-                    "-hff".to_string(),
-                    mmproj_name.clone(),
-                    "--json".to_string(),
-                ]
-            };
+    // 检查主模型落盘状态
+    let (main_exists, _mmproj_exists) = verify_model_artifacts(&models_dir, &model_id, is_multimodal);
 
-            info!("多模态主模型就绪，自动启动阶段 2 下载配套投影器: {:?} 参数: {:?}", downloader_path, mmproj_args);
-
-            // 更新任务状态为第 2 阶段
-            {
-                let mut lock = tasks.lock().await;
-                if let Some(task) = lock.get_mut(&task_id) {
-                    task.file_index = 1;
-                    task.total_files = 2;
-                    task.current_file_name = Some(mmproj_name.clone());
-                    task.percent = 80.0;
-                }
-            }
-
-            let mut cmd2 = tokio::process::Command::new(&downloader_path);
-            for arg in &mmproj_args {
-                cmd2.arg(arg);
-            }
-            cmd2.env("LLAMA_CACHE", models_dir.to_string_lossy().as_ref());
-            cmd2.env("PYTHONUNBUFFERED", "1")
-                .env("CLICOLOR_FORCE", "1")
-                .env("FORCE_COLOR", "1")
-                .env("TERM", "cygwin")
-                .env("DEBIAN_FRONTEND", "noninteractive")
-                .env("STDBUF_OUT", "0")
-                .env("STDBUF_ERR", "0");
-
-            if is_modelscope {
-                let domains = "modelscope.cn,*.modelscope.cn,aliyun.com,*.aliyun.com,aliyuncs.com,*.aliyuncs.com,hf-mirror.com";
-                cmd2.env("no_proxy", domains);
-                cmd2.env("NO_PROXY", domains);
-            }
-
-            cmd2.stdin(std::process::Stdio::null())
-                .stdout(std::process::Stdio::piped())
-                .stderr(std::process::Stdio::piped());
-            crate::win_proc::apply_no_window(&mut cmd2);
-
-            if let Ok(mut child2) = cmd2.spawn() {
-                if let Some(pid) = child2.id() {
-                    let mut pids = child_pids.lock().await;
-                    pids.insert(task_id.clone(), pid);
-                }
-
-                if let Some(stdout2) = child2.stdout.take() {
-                    let reader2 = BufReader::new(stdout2);
-                    let mut lines2 = reader2.lines();
-                    while let Ok(Some(line)) = lines2.next_line().await {
-                        let line = line.trim().to_string();
-                        if line.is_empty() {
-                            continue;
-                        }
-                        if let Ok(progress) = serde_json::from_str::<serde_json::Value>(&line) {
-                            let mut lock = tasks.lock().await;
-                            if let Some(task) = lock.get_mut(&task_id) {
-                                if task.status == DownloadStatus::Canceled {
-                                    break;
-                                }
-                                let raw_pct = progress.get("percent").and_then(|v| v.as_f64())
-                                    .or_else(|| progress.get("progress").and_then(|v| v.as_f64()).map(|p| p * 100.0));
-                                if let Some(pct) = raw_pct {
-                                    task.percent = ((80.0 + pct * 0.2) * 10.0).round() / 10.0;
-                                }
-                                if let Some(downloaded) = progress.get("downloaded").and_then(|v| v.as_u64()) {
-                                    task.received_bytes = completed_bytes + downloaded;
-                                }
-                                if let Some(total) = progress.get("total").and_then(|v| v.as_u64()) {
-                                    task.total_bytes = completed_bytes + total;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                let _ = child2.wait().await;
-                {
-                    let mut pids = child_pids.lock().await;
-                    pids.remove(&task_id);
-                }
-            }
-
-            // 阶段 2 执行完毕后，重新检测完整性
-            let (m2, mm2) = verify_model_artifacts(&models_dir, &model_id, is_multimodal);
-            main_exists = m2;
-            mmproj_exists = mm2;
-        }
-    }
-
-    // 3. 严格落盘校验：仅当物理实体文件真实完备时才标记为 Completed
+    // 容错落盘判定：主模型存在即标记为 Completed，不因伴随文件缺失阻断
     let mut lock = tasks.lock().await;
     if let Some(task) = lock.get_mut(&task_id) {
         if task.status == DownloadStatus::Canceled {
             return;
         }
 
-        let fully_ready = if is_multimodal {
-            main_exists && mmproj_exists
-        } else {
-            main_exists
-        };
-
-        if fully_ready {
+        if main_exists {
             task.status = DownloadStatus::Completed;
             task.percent = 100.0;
-            info!("模型真实下载成功并校验完整: {}", task.model_id);
+            task.file_index = total_files.saturating_sub(1);
+            info!("主模型下载就绪并校验完整: {}", task.model_id);
         } else {
             task.status = DownloadStatus::Error;
             let code_str = exit_status.map(|s| format!("{:?}", s.code())).unwrap_or_else(|e| e.to_string());
@@ -2850,14 +2799,12 @@ async fn run_model_download(
                 let lock = stderr_lines.lock().await;
                 if !lock.is_empty() {
                     lock.join("; ")
-                } else if !main_exists {
-                    format!("主模型文件未完整写入或下载提前中断 (退出码: {})", code_str)
                 } else {
-                    "多模态视觉投影文件缺失或校验失败".to_string()
+                    format!("主模型文件未完整写入或下载提前中断 (退出码: {})", code_str)
                 }
             };
             task.error = Some(stderr_summary);
-            error!("模型下载未完全就绪: {} 详情: {:?}", task.model_id, task.error);
+            error!("主模型下载未完全就绪: {} 详情: {:?}", task.model_id, task.error);
         }
     }
 }
@@ -4394,41 +4341,97 @@ mod tests {
     /// 验证：build_downloader_args 优先使用模型列表的 quantization 字段，文件名提取仅作为 fallback
     #[test]
     fn test_build_downloader_args() {
-        // 1. 优先：显式传入模型列表中的 quantization（如 "PTQ1_0"）
+        // 1. 优先：显式传入模型列表中的 quantization（如 "PTQ1_0"），非多模态强排他门禁追加 --mmproj none
         let args_explicit = build_downloader_args(
             "-ms",
             "prism-ml/Ternary-Bonsai-2-27B-gguf:Ternary-Bonsai-2-27B-PTQ1_0.gguf",
-            Some("PTQ1_0")
+            Some("PTQ1_0"),
+            Some(false),
+            None,
+            None,
         );
-        assert_eq!(args_explicit, vec!["-ms", "prism-ml/Ternary-Bonsai-2-27B-gguf:PTQ1_0", "--json"]);
+        assert_eq!(args_explicit, vec!["-ms", "prism-ml/Ternary-Bonsai-2-27B-gguf:PTQ1_0", "--mmproj", "none", "--json"]);
 
         // 2. 优先：自定义或非常规命名文件，但模型列表存在 quantization 字段时，优先按 quantization 构造
         let args_non_standard = build_downloader_args(
             "-ms",
             "prism-ml/Ternary-Bonsai-2-27B-gguf:custom_arbitrary_name.gguf",
-            Some("PQ2_0")
+            Some("PQ2_0"),
+            None, // 缺省为非多模态
+            None,
+            None,
         );
-        assert_eq!(args_non_standard, vec!["-ms", "prism-ml/Ternary-Bonsai-2-27B-gguf:PQ2_0", "--json"]);
+        assert_eq!(args_non_standard, vec!["-ms", "prism-ml/Ternary-Bonsai-2-27B-gguf:PQ2_0", "--mmproj", "none", "--json"]);
 
         // 3. Fallback：未传入 explicit_quant 时，从文件名中提取标准量化标识
         let args_fallback_filename = build_downloader_args(
             "-ms",
             "prism-ml/Ternary-Bonsai-2-27B-gguf:Ternary-Bonsai-2-27B-PTQ1_0.gguf",
-            None
+            None,
+            Some(false),
+            None,
+            None,
         );
-        assert_eq!(args_fallback_filename, vec!["-ms", "prism-ml/Ternary-Bonsai-2-27B-gguf:PTQ1_0", "--json"]);
+        assert_eq!(args_fallback_filename, vec!["-ms", "prism-ml/Ternary-Bonsai-2-27B-gguf:PTQ1_0", "--mmproj", "none", "--json"]);
 
         // 4. 常规量化模型 (如 Q4_K_M)：直接保持 repo:quant 格式
-        let args_qwen = build_downloader_args("-ms", "Qwen/Qwen2.5-7B-Instruct-GGUF:Q4_K_M", None);
-        assert_eq!(args_qwen, vec!["-ms", "Qwen/Qwen2.5-7B-Instruct-GGUF:Q4_K_M", "--json"]);
+        let args_qwen = build_downloader_args("-ms", "Qwen/Qwen2.5-7B-Instruct-GGUF:Q4_K_M", None, Some(false), None, None);
+        assert_eq!(args_qwen, vec!["-ms", "Qwen/Qwen2.5-7B-Instruct-GGUF:Q4_K_M", "--mmproj", "none", "--json"]);
 
-        // 5. Fallback：无模型列表 quantization 且文件名中提取不到量化 tag 时，拆分为精确文件参数 -ms repo -msf file
-        let args_custom = build_downloader_args("-ms", "my-org/my-model:custom_weights.gguf", None);
-        assert_eq!(args_custom, vec!["-ms", "my-org/my-model", "-msf", "custom_weights.gguf", "--json"]);
+        // 5. 多模态且显式指定 mmproj 短标签 (如 "f16")
+        let args_vl_mmproj = build_downloader_args(
+            "-ms",
+            "OpenBMB/MiniCPM-V-2_6-gguf:Q4_K_M",
+            None,
+            Some(true),
+            Some("f16"),
+            Some("DSpark-BF16"),
+        );
+        assert_eq!(args_vl_mmproj, vec![
+            "-ms", "OpenBMB/MiniCPM-V-2_6-gguf:Q4_K_M",
+            "--mmproj", "f16",
+            "--dspark", "DSpark-BF16",
+            "--json"
+        ]);
 
-        // 6. HuggingFace 来源精确文件名：应使用 -hff
-        let args_hf_file = build_downloader_args("-hf", "my-org/my-model:custom_weights.gguf", None);
-        assert_eq!(args_hf_file, vec!["-hf", "my-org/my-model", "-hff", "custom_weights.gguf", "--json"]);
+        // 6. 多模态但未指定 mmproj 短标签：自动推导为 auto
+        let args_vl_auto = build_downloader_args(
+            "-ms",
+            "OpenBMB/MiniCPM-V-2_6-gguf:Q4_K_M",
+            None,
+            Some(true),
+            None,
+            None,
+        );
+        assert_eq!(args_vl_auto, vec![
+            "-ms", "OpenBMB/MiniCPM-V-2_6-gguf:Q4_K_M",
+            "--mmproj", "auto",
+            "--json"
+        ]);
+
+        // 7. 定向补偿加速模型：非多模态但携带 dspark 短标签
+        let args_dspark_only = build_downloader_args(
+            "-ms",
+            "OpenBMB/MiniCPM-V-2_6-gguf:Q4_K_M",
+            None,
+            Some(false),
+            None,
+            Some("DSpark-BF16"),
+        );
+        assert_eq!(args_dspark_only, vec![
+            "-ms", "OpenBMB/MiniCPM-V-2_6-gguf:Q4_K_M",
+            "--mmproj", "none",
+            "--dspark", "DSpark-BF16",
+            "--json"
+        ]);
+
+        // 8. Fallback：无模型列表 quantization 且文件名中提取不到量化 tag 时，拆分为精确文件参数 -ms repo -msf file
+        let args_custom = build_downloader_args("-ms", "my-org/my-model:custom_weights.gguf", None, None, None, None);
+        assert_eq!(args_custom, vec!["-ms", "my-org/my-model", "-msf", "custom_weights.gguf", "--mmproj", "none", "--json"]);
+
+        // 9. HuggingFace 来源精确文件名：应使用 -hff
+        let args_hf_file = build_downloader_args("-hf", "my-org/my-model:custom_weights.gguf", None, None, None, None);
+        assert_eq!(args_hf_file, vec!["-hf", "my-org/my-model", "-hff", "custom_weights.gguf", "--mmproj", "none", "--json"]);
     }
 
     /// 验证 is_same_model 正确识别相同/不同模型，防止平滑重启逻辑误判

@@ -92,12 +92,12 @@ export function getIntelligenceConfig(id?: number | null): IntelligenceLevelItem
 export const INTELLIGENCE_CONFIG = getIntelligenceConfig
 
 /**
- * 表格统一列模板：模型名称(弹性) | 推荐 | 智能程度 | 能力 | 参数量 | 量化 | 体积 | 显存
+ * 表格统一列模板：模型名称(弹性，含推荐/自定义徽章) | 智能程度 | 能力 | 参数量 | 量化 | 体积 | 显存
  * 主行与表头共用该模板，保证各指标列纵向严格对齐；
  * 描述、本地路径、状态与操作按钮各自独占整行子行，不参与网格。
  */
 const MODEL_GRID =
-  'grid grid-cols-[minmax(0,1fr)_64px_72px_104px_52px_88px_72px_60px] items-center gap-x-3'
+  'grid grid-cols-[minmax(0,1fr)_72px_104px_52px_88px_72px_60px] items-center gap-x-3'
 
 /** 表头行：各列标题（小号弱化文字，与数据主行共用网格模板） */
 const ModelColumnHeader: React.FC = () => {
@@ -106,7 +106,6 @@ const ModelColumnHeader: React.FC = () => {
       className={`${MODEL_GRID} border-b border-border/50 bg-muted/30 px-4 py-2 text-[11px] font-bold uppercase tracking-wide text-muted-foreground`}
     >
       <span className="min-w-0 truncate">{t('模型名称')}</span>
-      <span>{t('推荐')}</span>
       <span>{t('智能程度')}</span>
       <span>{t('能力')}</span>
       <span>{t('参数量')}</span>
@@ -163,13 +162,6 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isActiveModel
     retryDownload,
     resetDownload
   } = useModelDownload(model.id, dlOptions)
-
-  // 如果有投机采样加速模型 (dspark)，为其初始化下载控制
-  const dsparkId = model.dspark as string | undefined
-  const {
-    state: dsparkDl,
-    startDownload: startDsparkDownload
-  } = useModelDownload(dsparkId || '', dlOptions)
 
   const [isActivating, setIsActivating] = useState(false)
 
@@ -245,19 +237,22 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isActiveModel
     remainingText = t('剩余约 {value} 小时', { value: remainingTime.value ?? 0 })
 
   const isDownloaded = model.isDownloaded || dl.status === 'completed'
-  const isDsparkDownloaded = dsparkDl.status === 'completed'
   const intelligence = INTELLIGENCE_CONFIG(model.intelligenceLevel)
   const isDownloadingOrPaused = dl.isDownloading || dl.isPaused
 
-  // 确保无论 model.localPath 是否由后端提前填入，都能从 modelsDir 解析得到有效物理路径
+  // 确保无论 model.localPath 是否由后端提前填入，都能从 modelsDir 解析得到有效物理路径及伴随模型状态
+  const modelResolution = React.useMemo(() => {
+    if (!modelsDir) return null
+    return ModelResolver.resolve(model.id, modelsDir, undefined, model.source)
+  }, [model.id, modelsDir, model.source])
+
   const resolvedLocalPath = React.useMemo(() => {
-    let lp = model.localPath
-    if (!lp && isDownloaded && modelsDir) {
-      const resolution = ModelResolver.resolve(model.id, modelsDir, undefined, model.source)
-      if (resolution?.modelPath) lp = resolution.modelPath
-    }
-    return lp
-  }, [model.localPath, isDownloaded, modelsDir, model.id, model.source])
+    if (model.localPath) return model.localPath
+    return modelResolution?.modelPath
+  }, [model.localPath, modelResolution])
+
+  const hasMmprojPhysical = Boolean(modelResolution?.mmprojPath)
+  const hasDraftPhysical = Boolean(modelResolution?.draftPath)
 
   // 高级操作可见性：移除（未下载的自定义模型）/ 删除（已下载且显存未超标）/ 参数配置（已下载且显存未超标）
   const canRemoveCustom = !!model.custom && !isDownloaded
@@ -324,29 +319,27 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isActiveModel
         </div>
       )}
 
-      {/* 主行网格：与表头 8 列严格对齐 */}
+      {/* 主行网格：与表头 7 列严格对齐 */}
       <div className={`${MODEL_GRID} px-4 pt-3 pb-1.5`}>
-        {/* 列1：模型名称（徽章已拆分为独立列） */}
+        {/* 列1：模型名称 + 推荐/自定义徽章（内联于名称旁，不再单独成列） */}
         <h4 className="min-w-0 font-bold text-sm text-foreground tracking-tight leading-snug break-words">
-          {model.name}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="truncate">{model.name}</span>
+            {model.custom ? (
+              <Badge className="text-[9px] font-medium h-4 px-1 bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 shadow-none flex items-center gap-0.5 w-fit max-w-full">
+                <Tag className="h-2.5 w-2.5 shrink-0" />
+                <span className="truncate">{t('自定义')}</span>
+              </Badge>
+            ) : model.recommended ? (
+              <Badge className="text-[9px] font-medium h-4 px-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shadow-none flex items-center gap-0.5 w-fit max-w-full">
+                <Star className="h-2.5 w-2.5 shrink-0" />
+                <span className="truncate">{t('推荐')}</span>
+              </Badge>
+            ) : null}
+          </div>
         </h4>
 
-        {/* 列2：推荐来源标识（自定义模型显示「自定义」，官方推荐显示「推荐」，其余占位） */}
-        {model.custom ? (
-          <Badge className="text-[10px] font-bold h-5 px-1.5 bg-sky-500/15 text-sky-700 dark:text-sky-400 border border-sky-500/30 shadow-none flex items-center gap-1 w-fit max-w-full">
-            <Tag className="h-3 w-3 shrink-0" />
-            <span className="truncate">{t('自定义')}</span>
-          </Badge>
-        ) : model.recommended ? (
-          <Badge className="text-[10px] font-bold h-5 px-1.5 bg-gradient-to-r from-amber-500 to-orange-600 text-white border-none shadow-xs flex items-center gap-1 w-fit max-w-full">
-            <Star className="h-3 w-3 fill-current text-white shrink-0" />
-            <span className="truncate">{t('推荐')}</span>
-          </Badge>
-        ) : (
-          <span className="text-xs text-muted-foreground/40">-</span>
-        )}
-
-        {/* 列3：智能程度级别（完整含义悬停查看） */}
+        {/* 列2：智能程度级别（完整含义悬停查看） */}
         {intelligence ? (
           <Badge
             variant="outline"
@@ -585,18 +578,33 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isActiveModel
             <>
               {/* 删除与参数配置已收纳进操作区首位的「高级」按钮 */}
 
-              {/* 配置了 DSpark 加速模型且未下载时，展示【下载加速模型】按钮 */}
-              {dsparkId && !isDsparkDownloaded && (
+              {/* 伴随模型定向补偿下载：主模型成功但识图模型 (mmproj) 未落盘时，展示【下载识图模型】 */}
+              {(Boolean(model.isMultiModal) || Boolean(model.mmproj)) && !hasMmprojPhysical && (
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => startDsparkDownload()}
-                  disabled={dsparkDl.isDownloading}
+                  onClick={() => startDownload(model.id, { isMultiModal: true, mmproj: model.mmproj, dspark: undefined })}
+                  disabled={dl.isDownloading}
+                  title={t('下载识图多模态投影模型，支持图片理解')}
+                  className="h-7.5 text-xs px-3 rounded-lg border-purple-500/50 text-purple-600 dark:text-purple-400 hover:bg-purple-500/10 font-bold flex items-center gap-1 transition-all"
+                >
+                  <Eye className="h-3 w-3 shrink-0" />
+                  <span>{t('下载识图模型')}</span>
+                </Button>
+              )}
+
+              {/* 伴随模型定向补偿下载：主模型成功但加速模型 (dspark) 未落盘时，展示【下载加速模型】 */}
+              {Boolean(model.dspark) && !hasDraftPhysical && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => startDownload(model.id, { isMultiModal: false, dspark: model.dspark, mmproj: undefined })}
+                  disabled={dl.isDownloading}
                   title={t('下载投机采样加速模型，大幅提升推理速度')}
                   className="h-7.5 text-xs px-3 rounded-lg border-emerald-500/50 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 font-bold flex items-center gap-1 transition-all"
                 >
-                  <Zap className={`h-3 w-3 shrink-0 ${dsparkDl.isDownloading ? 'fill-current animate-pulse' : ''}`} />
-                  <span>{dsparkDl.isDownloading ? t('加速模型下载中...') : t('下载加速模型')}</span>
+                  <Zap className="h-3 w-3 shrink-0" />
+                  <span>{t('下载加速模型')}</span>
                 </Button>
               )}
 
@@ -792,7 +800,7 @@ export interface ModelListPanelProps {
 
 export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focusSource }) => {
   const { models, fetchModels, activeModelKey, activeLanguageModelKey, activeEmbeddingModelKey, switchModel, engineStatus, engineList, fetchEngineList, lastAddedSource } = useEngineStore()
-  const [activeSource, setActiveSource] = useState<ModelSource>('modelscope')
+  const [activeSource, setActiveSource] = useState<ModelSource>(focusSource || 'modelscope')
   const [showRecommendedOnly, setShowRecommendedOnly] = useState<boolean>(true)
   const [drawerModel, setDrawerModel] = useState<ModelItem | null>(null)
   /** 当前处于呼吸高亮状态的模型行 key（`${id}@${source}`） */
@@ -940,8 +948,9 @@ export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focu
       // 用户自定义模型（custom: true）完全脱离主列表，独占下方 CustomModelAddCard 卡片呈现
       if (m.custom) return false
       if (m.source !== activeSource) return false
-      // 仅显示推荐打开时过滤非推荐；关闭时展示当前源下全部官方注册模型（含 recommended = false）
-      if (showRecommendedOnly && !m.recommended) return false
+      // 仅显示推荐打开时过滤非推荐；特例：若为当前外部深链聚焦的目标模型，即便未标 recommended 也必须展示以呈现安装引导
+      const isFocused = Boolean(focusModel && (m.id.toLowerCase().includes(focusModel.toLowerCase()) || m.name.toLowerCase().includes(focusModel.toLowerCase())))
+      if (showRecommendedOnly && !m.recommended && !isFocused) return false
       return true
     })
     const sorted = sortModels(matched, userVramGB)
@@ -957,7 +966,7 @@ export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focu
       notDownloaded: splitGroup(sorted.filter(m => !m.isDownloaded && !m.isEx)),
       vramLimited: splitGroup(sorted.filter(m => !m.isDownloaded && m.isEx))
     }
-  }, [safeModels, activeSource, showRecommendedOnly, userVramGB])
+  }, [safeModels, activeSource, showRecommendedOnly, userVramGB, focusModel])
 
   const totalCount =
     groupedModels.downloaded.language.length + groupedModels.downloaded.embedding.length +

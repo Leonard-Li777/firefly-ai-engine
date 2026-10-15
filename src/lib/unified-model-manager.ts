@@ -117,10 +117,12 @@ export class UnifiedModelManager {
     let draftFile: string | undefined
     if (model?.dspark) {
       const draftRes = ModelResolver.resolve(model.dspark, baseDir, undefined, finalSource)
-      draftFile = draftRes?.modelPath
+      draftFile = draftRes?.modelPath || resolution?.draftPath
     } else if (model?.draftId) {
       const draftRes = ModelResolver.resolve(model.draftId, baseDir, undefined, finalSource)
-      draftFile = draftRes?.modelPath
+      draftFile = draftRes?.modelPath || resolution?.draftPath
+    } else {
+      draftFile = resolution?.draftPath
     }
 
     // 核心规则：若模型元数据已定义，以 model.isMultiModal 为权威依据；
@@ -197,26 +199,52 @@ export class UnifiedModelManager {
     modelId: string,
     source?: string,
     mirror: 'cn' | 'global' = 'cn',
-    downloadBinaryPath: string = 'llama-model-download.exe'
+    downloadBinaryPath: string = 'llama-model-download.exe',
+    options?: { isMultiModal?: boolean; mmproj?: string; dspark?: string }
   ): DownloadStrategy {
     const model = this.getModelById(modelId, source)
     const finalSource = source || model?.source || 'huggingface'
     const sourceFlag = finalSource === 'modelscope' ? '-ms' : '-hf'
     const targetId = this.normalizeDownloadTargetId(model?.downloadId || modelId)
-    let downloadArgs: string[] = [sourceFlag, targetId, '--json']
+    let downloadArgs: string[] = []
 
     if (targetId.includes(':')) {
       const [repo, fileOrQuant] = targetId.split(':')
       if (fileOrQuant.toLowerCase().endsWith('.gguf')) {
         const quant = model?.quantization || fileOrQuant.replace(/\.gguf$/i, '').split(/[-_]/).pop()
         if (quant && /^(?:Q[0-9]|PT?Q|IQ|BF16|FP?16)/i.test(quant)) {
-          downloadArgs = [sourceFlag, `${repo}:${quant.toUpperCase()}`, '--json']
+          downloadArgs = [sourceFlag, `${repo}:${quant.toUpperCase()}`]
         } else {
           const fileFlag = finalSource === 'modelscope' ? '-msf' : '-hff'
-          downloadArgs = [sourceFlag, repo, fileFlag, fileOrQuant, '--json']
+          downloadArgs = [sourceFlag, repo, fileFlag, fileOrQuant]
         }
+      } else {
+        downloadArgs = [sourceFlag, targetId]
       }
+    } else {
+      downloadArgs = [sourceFlag, targetId]
     }
+
+    // 强排他 mmproj 门禁：非多模态一律强制传递 none
+    const isMultiModal = options?.isMultiModal !== undefined ? Boolean(options.isMultiModal) : Boolean(model?.isMultiModal)
+    const mmproj = options?.mmproj !== undefined ? options.mmproj : model?.mmproj
+    if (isMultiModal) {
+      if (mmproj && mmproj.trim()) {
+        downloadArgs.push('--mmproj', mmproj.trim())
+      } else {
+        downloadArgs.push('--mmproj', 'auto')
+      }
+    } else {
+      downloadArgs.push('--mmproj', 'none')
+    }
+
+    // 伴随草稿加速模型
+    const dspark = options?.dspark !== undefined ? options.dspark : model?.dspark
+    if (dspark && dspark.trim()) {
+      downloadArgs.push('--dspark', dspark.trim())
+    }
+
+    downloadArgs.push('--json')
 
     const env: Record<string, string> = {
       LLAMA_CACHE: toShortPathOnWindows(this.getModelBaseDir())

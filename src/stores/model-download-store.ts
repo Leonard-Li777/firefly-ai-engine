@@ -5,6 +5,7 @@ import { useEngineStore } from './engine-store'
 import { captureEvent } from '../lib/posthog'
 import { t } from '../languages'
 import { toast } from '../components/common/Toast'
+import { modelMetadataService } from '../lib/model-metadata-service'
 
 export interface ModelDownloadState {
   isDownloading: boolean
@@ -28,6 +29,9 @@ export interface UseModelDownloadOptions {
   source?: ModelSource
   quantization?: string
   isDownloaded?: boolean
+  isMultiModal?: boolean
+  mmproj?: string
+  dspark?: string
   onDownloadStart?: () => void
   onDownloadProgress?: (progress: DownloadProgressEvent) => void
   onDownloadComplete?: () => void
@@ -44,6 +48,9 @@ interface ModelDownloadStoreState {
       source?: ModelSource
       quantization?: string
       forceRestart?: boolean
+      isMultiModal?: boolean
+      mmproj?: string
+      dspark?: string
       onDownloadStart?: () => void
       onDownloadProgress?: (progress: DownloadProgressEvent) => void
       onDownloadComplete?: () => void
@@ -150,13 +157,22 @@ export const useModelDownloadStore = create<ModelDownloadStoreState>((set, get) 
     options.onDownloadStart?.()
     captureEvent('开始下载模型', { modelId, source })
 
+    // 若未显式传入伴随模型门控与标签，从元数据底表中补齐
+    const meta = modelMetadataService.getModelById(modelId, undefined, source)
+    const isMultiModal = options.isMultiModal !== undefined ? options.isMultiModal : meta?.isMultiModal
+    const mmproj = options.mmproj !== undefined ? options.mmproj : meta?.mmproj
+    const dspark = options.dspark !== undefined ? options.dspark : meta?.dspark
+
     try {
       const taskSummary = await engineApiClient.startModelDownload(
         modelId,
         {
           source,
           forceRestart: options.forceRestart,
-          quantization
+          quantization,
+          isMultiModal,
+          mmproj,
+          dspark
         },
         (progress: DownloadProgressEvent) => {
           set(state => {

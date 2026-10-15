@@ -224,20 +224,20 @@ describe('Tier 2 管理视窗核心组件交互测试', () => {
     })
   })
 
-  it('ModelListPanel 能正确显示 WeMM-Embedding-2B 推荐模型，并在 focusModel 聚焦时高亮并展示安装引导提示', async () => {
+  it('ModelListPanel 能正确显示嵌入推荐模型，并在 focusModel 聚焦时高亮并展示安装引导提示', async () => {
     await useEngineStore.getState().fetchModels()
-    const { unmount } = render(<ModelListPanel focusModel="WeMM-Embedding-2B" focusSource="modelscope" />)
+    const { unmount } = render(<ModelListPanel focusModel="qwen3-embedding" focusSource="modelscope" />)
 
-    // 默认开启「仅显示推荐」下，WeMM 依然可见（recommended: true）
-    expect(screen.getAllByText(/WeMM-Embedding 2B/i).length).toBeGreaterThan(0)
+    // 默认开启「仅显示推荐」下，嵌入模型依然可见（recommended: true）
+    expect(screen.getAllByText(/Qwen3-Embedding 8B/i).length).toBeGreaterThan(0)
     // 聚焦提示横幅显示
     expect(screen.getByText(/主程序已开启高维修正与视频检索/)).toBeInTheDocument()
 
     unmount()
 
-    // 切换到 huggingface 来源同样可见 WeMM
-    render(<ModelListPanel focusModel="WeMM-Embedding-2B" focusSource="huggingface" />)
-    expect(screen.getAllByText(/WeMM-Embedding 2B/i).length).toBeGreaterThan(0)
+    // 切换到 huggingface 来源同样可见
+    render(<ModelListPanel focusModel="qwen3-embedding" focusSource="huggingface" />)
+    expect(screen.getAllByText(/Qwen3-Embedding 8B/i).length).toBeGreaterThan(0)
   })
 
   it('DashboardView 能够在【推理引擎后台服务】与状态徽标之间正确渲染当前模型名称', async () => {

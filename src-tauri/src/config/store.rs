@@ -118,6 +118,16 @@ pub struct ModelCustomParams {
     /// 重复惩罚 (1.0 ~ 2.0)
     #[serde(default = "default_repeat_penalty")]
     pub repeat_penalty: f64,
+
+    /// 是否加载识图多模态投影（默认 true）
+    #[serde(default = "default_enable_vision", rename = "enableVision", alias = "enable_vision")]
+    pub enable_vision: Option<bool>,
+    /// 是否加载投机加速草稿模型（默认 true）
+    #[serde(default = "default_enable_draft", rename = "enableDraft", alias = "enable_draft")]
+    pub enable_draft: Option<bool>,
+    /// 投机预测最大步数（默认 5，范围 1~8）
+    #[serde(default = "default_draft_max_tokens", rename = "draftMaxTokens", alias = "draft_max_tokens")]
+    pub draft_max_tokens: Option<u32>,
 }
 
 /// 用户自由添加的自定义模型条目（URL 嗅探结果持久化至 config.json）
@@ -164,6 +174,9 @@ fn default_temp() -> f64 { 0.7 }
 fn default_top_p() -> f64 { 0.95 }
 fn default_top_k() -> u32 { 40 }
 fn default_repeat_penalty() -> f64 { 1.1 }
+fn default_enable_vision() -> Option<bool> { Some(true) }
+fn default_enable_draft() -> Option<bool> { Some(true) }
+fn default_draft_max_tokens() -> Option<u32> { Some(5) }
 
 impl Default for ModelCustomParams {
     fn default() -> Self {
@@ -180,6 +193,9 @@ impl Default for ModelCustomParams {
             top_p: default_top_p(),
             top_k: default_top_k(),
             repeat_penalty: default_repeat_penalty(),
+            enable_vision: default_enable_vision(),
+            enable_draft: default_enable_draft(),
+            draft_max_tokens: default_draft_max_tokens(),
         }
     }
 }

@@ -67,6 +67,20 @@ export interface RuntimeParams {
   top_p?: number
   top_k?: number
   repeat_penalty?: number
+
+  // 伴随模型控制与微调（新增）
+  enableVision?: boolean       // 是否加载识图多模态投影（默认 true）
+  enableDraft?: boolean        // 是否加载投机加速草稿模型（默认 true）
+  draftMaxTokens?: number      // 投机预测最大步数（默认 5，范围 1~8）
+}
+
+export interface StartModelDownloadOptions {
+  source?: string
+  forceRestart?: boolean
+  quantization?: string
+  isMultiModal?: boolean       // 多模态门控
+  mmproj?: string              // 投影短标签/目标
+  dspark?: string              // 草稿短标签/目标
 }
 
 export type ModelCustomParams = RuntimeParams
@@ -134,6 +148,7 @@ export interface ModelItem {
   isMultiModal?: boolean
   /** 嵌入向量模型标记（如 WeMM-Embedding），与语言模型分组展示，不参与激活/启动流程 */
   isEmbedding?: boolean
+  mmproj?: string
   mmprojFileName?: string
   isDownloaded: boolean
   localPath?: string
@@ -188,6 +203,7 @@ export interface ModelResolution {
   modelId: string
   modelPath: string
   mmprojPath?: string
+  draftPath?: string           // 新增：伴随草稿模型物理路径
   dirPath: string
   dirType: 'modern' | 'modelscope' | 'legacy' | 'root'
 }

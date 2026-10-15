@@ -51,6 +51,12 @@ export interface BuildCommandOptions {
   isProduction?: boolean
   /** Linux 环境是否启用 NUMA 隔离优化 */
   enableNUMA?: boolean
+  /** 是否启用多模态视觉投影器（双重互锁：物理文件存在 + 选项为 true） */
+  enableVision?: boolean
+  /** 是否启用投机采样加速模型（双重互锁：物理文件存在 + 选项为 true） */
+  enableDraft?: boolean
+  /** 投机采样最大预测 token 步数 */
+  draftMaxTokens?: number
 }
 
 export interface BuiltCommandContext {
@@ -96,9 +102,10 @@ export class LlamaCommandBuilder {
       modelArg = ['--model', modelCmdPath]
 
       // 多模态投影器 --mmproj 参数：
-      // 若当前模型明确为非多模态（modelConfig.isMultiModal === false 或 !paths.isMultiModal），即使下载了投影模型也不能加载
+      // 双重互锁：若当前模型明确为非多模态或用户关闭了识图（options.enableVision === false），即使下载了投影模型也不能加载
       const isMultiModal = modelConfig ? Boolean(modelConfig.isMultiModal) : Boolean(paths.isMultiModal)
-      if (isMultiModal && paths.mmprojFile) {
+      const enableVision = options.enableVision !== false
+      if (isMultiModal && paths.mmprojFile && enableVision) {
         const projCmdPath = resolveModelArgForCmd(paths.mmprojFile, modelBaseDir, finalSource)
         projectorArg = ['--mmproj', projCmdPath]
       }
@@ -245,7 +252,11 @@ export class LlamaCommandBuilder {
     const isFlashAttentionEnabled = !isCpuMode && backend !== 'vulkan' && isFlashAttentionSupported
 
     // 6. DSpark 投机采样配对与草稿模型
-    if (modelConfig?.dspark && paths.draftFile) {
+    // 双重互锁：物理文件存在 + 选项未关闭（options.enableDraft !== false）
+    const enableDraft = options.enableDraft !== false
+    const draftMaxTokens = String(options.draftMaxTokens || 5)
+
+    if (enableDraft && modelConfig?.dspark && paths.draftFile) {
       const draftCmdPath = resolveModelArgForCmd(paths.draftFile, modelBaseDir, finalSource)
       draftArg = [
         '--model-draft',
@@ -253,14 +264,14 @@ export class LlamaCommandBuilder {
         '--spec-type',
         'draft-dspark',
         '--spec-draft-n-max',
-        '5',
+        draftMaxTokens,
         '--spec-draft-n-min',
         '0'
       ]
       if (!isCpuMode && finalGpuLayers > 0) {
         draftArg.push('--gpu-layers-draft', String(finalGpuLayers))
       }
-    } else if (modelConfig?.draftId && paths.draftFile) {
+    } else if (enableDraft && modelConfig?.draftId && paths.draftFile) {
       const draftCmdPath = resolveModelArgForCmd(paths.draftFile, modelBaseDir, finalSource)
       draftArg = [
         '--model-draft',
@@ -268,7 +279,7 @@ export class LlamaCommandBuilder {
         '--spec-type',
         'draft-mtp',
         '--spec-draft-n-max',
-        '3'
+        draftMaxTokens
       ]
     }
 

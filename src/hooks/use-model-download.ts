@@ -52,7 +52,14 @@ export function useModelDownload(
   const startDownload = useCallback(
     async (
       targetModelId?: string,
-      downloadOptions?: { forceRestart?: boolean; source?: ModelSource; quantization?: string }
+      downloadOptions?: {
+        forceRestart?: boolean
+        source?: ModelSource
+        quantization?: string
+        isMultiModal?: boolean
+        mmproj?: string
+        dspark?: string
+      }
     ) => {
       const finalModelId = targetModelId || initialModelId
       if (!finalModelId) return
@@ -64,6 +71,9 @@ export function useModelDownload(
         source: finalSource,
         quantization: finalQuant,
         forceRestart: downloadOptions?.forceRestart,
+        isMultiModal: downloadOptions?.isMultiModal ?? optionsRef.current.isMultiModal,
+        mmproj: downloadOptions?.mmproj ?? optionsRef.current.mmproj,
+        dspark: downloadOptions?.dspark ?? optionsRef.current.dspark,
         onDownloadStart: () => optionsRef.current.onDownloadStart?.(),
         onDownloadProgress: (p) => optionsRef.current.onDownloadProgress?.(p),
         onDownloadComplete: () => optionsRef.current.onDownloadComplete?.(),

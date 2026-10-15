@@ -80,6 +80,7 @@ function normalizeRawModel(raw: any): ModelItem {
     params: raw.parameterSize || '7B',
     parameterSize: raw.parameterSize,
     isMultiModal: Boolean(raw.isMultiModal),
+    mmproj: raw.mmproj,
     mmprojFileName: raw.mmprojFileName,
     dspark: raw.dspark,
     draftId: raw.draftId,
