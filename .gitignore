@@ -37,3 +37,4 @@ build/extraResources/models/
 languages/api.json
 languages/translates/*/*.bak.*.json
 **/*.wrapped.*
+src/languages/translates/messages/default.bak.1.json
