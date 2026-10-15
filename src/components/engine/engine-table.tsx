@@ -65,11 +65,8 @@ export const EngineTable: React.FC = () => {
         <table className="w-full text-left border-collapse min-w-[760px]">
           <thead>
             <tr className="border-b border-border/60 bg-muted/40">
-              <th className="p-3 text-xs font-semibold text-muted-foreground uppercase text-left pl-4 w-[18%]">
+              <th className="p-3 text-xs font-semibold text-muted-foreground uppercase text-left pl-4 w-[22%]">
                 {t('AI 引擎')}
-              </th>
-              <th className="p-3 text-xs font-semibold text-muted-foreground uppercase text-center w-[8%]">
-                {t('推荐')}
               </th>
               <th className="p-3 text-xs font-semibold text-muted-foreground uppercase text-center w-[12%]">
                 {t('适配类型')}
@@ -91,7 +88,7 @@ export const EngineTable: React.FC = () => {
           <tbody>
             {safeEngineList.length === 0 ? (
               <tr>
-                <td colSpan={7} className="p-8 text-center text-xs text-muted-foreground">
+                <td colSpan={6} className="p-8 text-center text-xs text-muted-foreground">
                   <Loader2 className="h-4.5 w-4.5 animate-spin mx-auto mb-2 text-primary" />
                   {t('正在扫描已安装计算引擎...')}
                 </td>
@@ -123,27 +120,23 @@ export const EngineTable: React.FC = () => {
                           <Cpu className="h-4 w-4" />
                         </div>
                         <div className="flex flex-col min-w-0">
-                          <span className="font-bold text-foreground truncate">{item.name}</span>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-bold text-foreground truncate">{item.name}</span>
+                            {isRecommended && (
+                              <Badge
+                                variant="default"
+                                className="text-[10px] font-bold px-2 py-0.5 bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-400 border border-amber-500/30 gap-1 shadow-2xs inline-flex"
+                              >
+                                <Sparkles className="h-2.5 w-2.5 text-amber-500 shrink-0" />
+                                <span>{t('推荐')}</span>
+                              </Badge>
+                            )}
+                          </div>
                           <span className="text-[10px] text-muted-foreground/70 font-mono">
                             backend: {item.backend}
                           </span>
                         </div>
                       </div>
-                    </td>
-
-                    {/* 推荐标记 */}
-                    <td className="p-3 text-center align-middle">
-                      {isRecommended ? (
-                        <Badge
-                          variant="default"
-                          className="text-[10px] font-bold px-2 py-0.5 bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-400 border border-amber-500/30 gap-1 shadow-2xs inline-flex"
-                        >
-                          <Sparkles className="h-2.5 w-2.5 text-amber-500 shrink-0" />
-                          <span>{t('推荐')}</span>
-                        </Badge>
-                      ) : (
-                        <span className="text-xs text-muted-foreground/50 select-none">-</span>
-                      )}
                     </td>
 
                     {/* 适配类型 */}
