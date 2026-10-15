@@ -480,6 +480,7 @@ mod tests {
             gpus: vec![GpuInfo {
                 name: "NVIDIA GeForce RTX 3060".to_string(),
                 memory_mb: 12 * 1024,
+                memory_free_mb: None,
                 vendor: GpuVendor::Nvidia,
                 is_integrated: false,
                 supports_cuda: true,
@@ -621,6 +622,7 @@ mod tests {
             gpus: vec![GpuInfo {
                 name: "NVIDIA GeForce RTX 4070".to_string(),
                 memory_mb: 12288,
+                memory_free_mb: None,
                 vendor: GpuVendor::Nvidia,
                 is_integrated: false,
                 supports_cuda: true,
@@ -655,6 +657,7 @@ mod tests {
             gpus: vec![GpuInfo {
                 name: "NVIDIA GeForce GTX 1060 6GB".to_string(),
                 memory_mb: 6144,
+                memory_free_mb: None,
                 vendor: GpuVendor::Nvidia,
                 is_integrated: false,
                 supports_cuda: true,
@@ -700,6 +703,7 @@ mod tests {
             gpus: vec![GpuInfo {
                 name: "NVIDIA GeForce GTX 1650".to_string(),
                 memory_mb: 4096,
+                memory_free_mb: None,
                 vendor: GpuVendor::Nvidia,
                 is_integrated: false,
                 supports_cuda: true,
@@ -764,6 +768,7 @@ mod tests {
         let igpu = GpuInfo {
             name: "Intel Iris Xe Graphics".to_string(),
             memory_mb: 0,
+            memory_free_mb: None,
             vendor: GpuVendor::detect("Intel Iris Xe Graphics", "intel"),
             is_integrated: true,
             supports_cuda: false,
@@ -775,6 +780,7 @@ mod tests {
         let dgpu = GpuInfo {
             name: "NVIDIA GeForce RTX 3060 Laptop GPU".to_string(),
             memory_mb: 6144,
+            memory_free_mb: None,
             vendor: GpuVendor::detect("NVIDIA GeForce RTX 3060 Laptop GPU", "nvidia"),
             is_integrated: false,
             supports_cuda: true,

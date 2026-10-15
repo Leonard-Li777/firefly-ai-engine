@@ -4,13 +4,14 @@
 use serde::{Deserialize, Serialize};
 
 /// GPU 厂商
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum GpuVendor {
     Nvidia,
     Amd,
     Intel,
     Apple,
+    #[default]
     Unknown,
 }
 
@@ -49,7 +50,7 @@ impl GpuVendor {
 }
 
 /// GPU 信息（对应桌面端 IGPUInfo）
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct GpuInfo {
     /// 显卡名称
     pub name: String,
