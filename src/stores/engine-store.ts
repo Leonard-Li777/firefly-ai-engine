@@ -300,6 +300,8 @@ export const useEngineStore = create<EngineStoreState>((set, get) => ({
     try {
       const res = await engineApiClient.deleteEngine(backend)
       if (res.success) {
+        // 乐观更新：立即从列表中移除，避免后端异步删除导致的 UI 延迟（需二次点击才能看到删除态）
+        set({ engineList: get().engineList.filter(e => e.backend !== backend) })
         await Promise.all([get().fetchEngineStatus(), get().fetchEngineList()])
         return true
       }
