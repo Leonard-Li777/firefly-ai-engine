@@ -6,6 +6,7 @@ import { ModelStorageConfig } from '../src/components/storage/model-storage-conf
 import { ThinkingModeCard } from '../src/components/engine/thinking-mode-card'
 import { LocalChatView } from '../src/components/chat/local-chat-view'
 import { ModelListPanel } from '../src/components/model/model-list-panel'
+import { ModelParamDrawer } from '../src/components/model/model-param-drawer'
 import { CustomModelAddCard } from '../src/components/model/custom-model-add-card'
 import { DashboardView } from '../src/components/dashboard/dashboard-view'
 import { Footer } from '../src/components/common/Footer'
@@ -466,6 +467,138 @@ describe('Tier 2 管理视窗核心组件交互测试', () => {
     } finally {
       useEngineStore.setState({ models: currentModels })
     }
+  })
+
+  it('多模态伴随模型物理探测：mmprojLocalPath 存在时绝不显示【下载识图模型】按钮，缺失时显示', async () => {
+    const multiModalWithMmproj: ModelItem = {
+      id: 'ornith-ai/Ornith-1.5-9B-GGUF:UD-Q4_K_M',
+      name: 'Ornith 1.5 9B',
+      author: 'ornith-ai',
+      source: 'modelscope',
+      quant: 'UD-Q4_K_M',
+      fileSize: 5000000000,
+      params: '9B',
+      description: '多模态识图模型',
+      isMultiModal: true,
+      mmproj: 'mmproj-Ornith-1.5-9B-BF16.gguf',
+      isDownloaded: true,
+      recommended: true,
+      localPath: 'D:\\AI_Models\\hub\\models\\ornith-ai\\Ornith-1.5-9B-GGUF\\Ornith-1.5-9B-Q4_K_M.gguf',
+      mmprojLocalPath: 'D:\\AI_Models\\hub\\models\\ornith-ai\\Ornith-1.5-9B-GGUF\\mmproj-Ornith-1.5-9B-BF16.gguf'
+    }
+
+    const multiModalWithoutMmproj: ModelItem = {
+      id: 'test-org/vision-model-without-proj',
+      name: 'Vision Without Proj',
+      author: 'test-org',
+      source: 'modelscope',
+      quant: 'Q4_K_M',
+      fileSize: 4000000000,
+      params: '7B',
+      description: '多模态但未下载投影器',
+      isMultiModal: true,
+      mmproj: 'mmproj-test.gguf',
+      isDownloaded: true,
+      recommended: true,
+      localPath: 'D:\\AI_Models\\hub\\models\\test-org\\vision\\model.gguf'
+    }
+
+    const keyWithMmproj = `${multiModalWithMmproj.id}@${multiModalWithMmproj.source}`
+    const keyWithoutMmproj = `${multiModalWithoutMmproj.id}@${multiModalWithoutMmproj.source}`
+
+    const fake = Object.create(mockApiClient) as typeof mockApiClient
+    fake.listModels = async () => [multiModalWithMmproj, multiModalWithoutMmproj]
+    fake.getEngineList = async () => []
+
+    const spy = vi.spyOn(modelMetadataService, 'getModelsForLanguage').mockReturnValue([multiModalWithMmproj, multiModalWithoutMmproj])
+    setEngineApiClient(fake)
+
+    try {
+      await useEngineStore.getState().fetchEngineStatus()
+      await useEngineStore.getState().fetchModels()
+      render(<ModelListPanel />)
+
+      await waitFor(() => {
+        expect(document.querySelector(`[data-model-key="${keyWithMmproj}"]`)).toBeTruthy()
+        expect(document.querySelector(`[data-model-key="${keyWithoutMmproj}"]`)).toBeTruthy()
+      })
+
+      // multiModalWithMmproj 已经有 mmprojLocalPath，绝不展示【下载识图模型】
+      const rowWithMmproj = document.querySelector(`[data-model-key="${keyWithMmproj}"]`) as HTMLElement
+      expect(within(rowWithMmproj).queryByRole('button', { name: /下载识图模型/ })).not.toBeInTheDocument()
+
+      // multiModalWithoutMmproj 缺少 mmprojLocalPath，必须展示【下载识图模型】补偿按钮
+      const rowWithoutMmproj = document.querySelector(`[data-model-key="${keyWithoutMmproj}"]`) as HTMLElement
+      expect(within(rowWithoutMmproj).getByRole('button', { name: /下载识图模型/ })).toBeInTheDocument()
+    } finally {
+      spy.mockRestore()
+      setEngineApiClient(mockApiClient)
+      await useEngineStore.getState().fetchModels()
+    }
+  })
+
+  it('ModelParamDrawer 初始使用智能推荐配置且保存按钮置灰，恢复保守配置或修改时高亮保存', async () => {
+    const testModel: ModelItem = {
+      id: 'test-model-param',
+      name: 'Test Model Param',
+      author: 'test-org',
+      source: 'modelscope',
+      quant: 'Q4_K_M',
+      fileSize: 2000000000,
+      params: '7B',
+      description: '参数抽屉测试模型',
+      isMultiModal: true,
+      mmproj: 'mmproj.gguf',
+      dspark: 'dspark.gguf',
+      isDownloaded: true
+    }
+
+    const onClose = vi.fn()
+    render(
+      <ModelParamDrawer
+        isOpen={true}
+        model={testModel}
+        isCurrentRunning={false}
+        onClose={onClose}
+      />
+    )
+
+    // 1. 验证按钮文案包含【恢复智能推荐】与【恢复保守配置】
+    expect(screen.getByRole('button', { name: /恢复智能推荐/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /恢复保守配置/ })).toBeInTheDocument()
+
+    // 2. 初始使用智能推荐配置，且保存按钮处于置灰未修改态
+    const saveButton = screen.getByRole('button', { name: /保存参数/ })
+    await waitFor(() => {
+      expect(saveButton).toBeDisabled()
+    })
+
+    // 3. 点击【恢复保守配置】：因与初始智能推荐配置不同，保存按钮应立即高亮可点击
+    const conservativeBtn = screen.getByRole('button', { name: /恢复保守配置/ })
+    fireEvent.click(conservativeBtn)
+    await waitFor(() => {
+      expect(saveButton).not.toBeDisabled()
+    })
+
+    // 4. 点击【恢复智能推荐】：因恢复回初始智能推荐配置，保存按钮应重回置灰态
+    const recommendedBtn = screen.getByRole('button', { name: /恢复智能推荐/ })
+    fireEvent.click(recommendedBtn)
+    await waitFor(() => {
+      expect(saveButton).toBeDisabled()
+    })
+
+    // 5. 点击【加载识图模型】复选框进行手动修改：保存按钮应再次高亮
+    const visionCheckbox = screen.getByRole('checkbox', { name: /加载识图模型/ })
+    fireEvent.click(visionCheckbox)
+    await waitFor(() => {
+      expect(saveButton).not.toBeDisabled()
+    })
+
+    // 6. 点击保存参数后，持久化基准更新，保存按钮重回置灰态
+    fireEvent.click(saveButton)
+    await waitFor(() => {
+      expect(saveButton).toBeDisabled()
+    })
   })
 })
 

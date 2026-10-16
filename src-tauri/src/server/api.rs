@@ -559,14 +559,37 @@ fn scan_and_merge_models(
             })
         };
         let hit = exact.or_else(loose);
+        let mut mmproj_path = None;
+        let mut draft_path = None;
         if let Some((p, _)) = hit {
             claimed_files.push(p.clone());
+            let parent_dir = p.parent();
+            mmproj_path = parent_dir.and_then(|dir| {
+                found_ggufs.iter().find(|(gp, n)| {
+                    n.to_lowercase().contains("mmproj") && (gp.parent() == Some(dir) || gp.parent() == Some(models_dir))
+                }).map(|(gp, _)| gp.to_string_lossy().to_string())
+            });
+            draft_path = parent_dir.and_then(|dir| {
+                found_ggufs.iter().find(|(gp, n)| {
+                    let nl = n.to_lowercase();
+                    (nl.contains("dspark") || nl.contains("draft"))
+                        && !nl.contains("mmproj")
+                        && (gp.parent() == Some(dir) || gp.parent() == Some(models_dir))
+                }).map(|(gp, _)| gp.to_string_lossy().to_string())
+            });
         }
-        custom_jsons.push(custom_model::entry_to_model_json(
+        let mut custom_val = custom_model::entry_to_model_json(
             entry,
             hit.is_some(),
             hit.map(|(p, _)| p.to_string_lossy().to_string()).as_deref(),
-        ));
+        );
+        if let Some(mmp) = mmproj_path {
+            custom_val["mmprojLocalPath"] = json!(mmp);
+        }
+        if let Some(dp) = draft_path {
+            custom_val["draftLocalPath"] = json!(dp);
+        }
+        custom_jsons.push(custom_val);
     }
 
     if models_dir.exists() {
@@ -641,6 +664,21 @@ fn scan_and_merge_models(
                 // 从文件名提取真实量化标记，避免硬编码 Q4_K_M 与物理文件不符
                 let real_quant = extract_quant_tag_from_name(&file_name.to_lowercase())
                     .unwrap_or_else(|| "Q4_K_M".to_string());
+                let parent_dir = file_path.parent();
+                let mmproj_path = parent_dir.and_then(|dir| {
+                    found_ggufs.iter().find(|(p, n)| {
+                        n.to_lowercase().contains("mmproj") && (p.parent() == Some(dir) || p.parent() == Some(models_dir))
+                    }).map(|(p, _)| p.to_string_lossy().to_string())
+                });
+                let draft_path = parent_dir.and_then(|dir| {
+                    found_ggufs.iter().find(|(p, n)| {
+                        let nl = n.to_lowercase();
+                        (nl.contains("dspark") || nl.contains("draft"))
+                            && !nl.contains("mmproj")
+                            && (p.parent() == Some(dir) || p.parent() == Some(models_dir))
+                    }).map(|(p, _)| p.to_string_lossy().to_string())
+                });
+
                 default_models.push(json!({
                     "id": file_name.trim_end_matches(".gguf"),
                     "name": file_name.trim_end_matches(".gguf"),
@@ -649,9 +687,11 @@ fn scan_and_merge_models(
                     "quant": real_quant,
                     "fileSize": file_size,
                     "params": "Unknown",
-                    "isMultiModal": false,
+                    "isMultiModal": mmproj_path.is_some(),
                     "isDownloaded": true,
                     "localPath": file_path.to_string_lossy().to_string(),
+                    "mmprojLocalPath": mmproj_path,
+                    "draftLocalPath": draft_path,
                     "scanned_only": true,
                 }));
             }

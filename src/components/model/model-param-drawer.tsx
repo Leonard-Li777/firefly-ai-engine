@@ -29,13 +29,37 @@ interface ModelParamDrawerProps {
   onClose: () => void
 }
 
+/**
+ * 严格比对两份超参配置是否实质相等（覆盖全部 14 个可调超参与伴随模型开关）
+ */
+function areParamsEqual(a: RuntimeParams | null, b: RuntimeParams | null): boolean {
+  if (!a || !b) return a === b
+  return (
+    Number(a.n_gpu_layers) === Number(b.n_gpu_layers) &&
+    Number(a.threads) === Number(b.threads) &&
+    Number(a.ctx_size) === Number(b.ctx_size) &&
+    Number(a.batch_size) === Number(b.batch_size) &&
+    Number(a.ubatch_size) === Number(b.ubatch_size) &&
+    String(a.cache_type_k || 'f16') === String(b.cache_type_k || 'f16') &&
+    String(a.cache_type_v || 'f16') === String(b.cache_type_v || 'f16') &&
+    Number(a.parallel || 1) === Number(b.parallel || 1) &&
+    Math.round(Number(a.temp ?? 0.7) * 100) === Math.round(Number(b.temp ?? 0.7) * 100) &&
+    Math.round(Number(a.top_p ?? 0.95) * 100) === Math.round(Number(b.top_p ?? 0.95) * 100) &&
+    Number(a.top_k ?? 40) === Number(b.top_k ?? 40) &&
+    Math.round(Number(a.repeat_penalty ?? 1.1) * 100) === Math.round(Number(b.repeat_penalty ?? 1.1) * 100) &&
+    Boolean(a.enableVision !== false) === Boolean(b.enableVision !== false) &&
+    Boolean(a.enableDraft !== false) === Boolean(b.enableDraft !== false) &&
+    Number(a.draftMaxTokens || 5) === Number(b.draftMaxTokens || 5)
+  )
+}
+
 export const ModelParamDrawer: React.FC<ModelParamDrawerProps> = ({
   isOpen,
   model,
   isCurrentRunning,
   onClose
 }) => {
-    const {
+  const {
     runtimeParams,
     saveModelParams,
     getModelParams,
@@ -50,26 +74,33 @@ export const ModelParamDrawer: React.FC<ModelParamDrawerProps> = ({
   }, [model, hardware])
 
   const [params, setParams] = useState<RuntimeParams>(DEFAULT_MODEL_PARAMS)
+  // 当前已持久化保存的参数基准（用于脏检查比对与保存按钮高亮/置灰控制）
+  const [savedParams, setSavedParams] = useState<RuntimeParams | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [savedSuccess, setSavedSuccess] = useState(false)
   const [showRestartPrompt, setShowRestartPrompt] = useState(false)
   const [isRestarting, setIsRestarting] = useState(false)
 
-  // 当 Drawer 打开或模型变更时，从后端持久化配置中加载（回退到全局运行时参数）
+  // 当 Drawer 打开或模型变更时，初始加载参数：优先读取后端已保存配置，未保存时初始采用智能推荐配置
   useEffect(() => {
     if (!isOpen || !model) return
     let isCancelled = false
 
     const loadParams = async () => {
-      // 1. 先尝试从后端 config.json 获取
+      // 1. 先尝试从后端 config.json 获取该模型持久化参数
       const backendSaved = await getModelParams(model.id)
       if (isCancelled) return
 
-      if (backendSaved) {
-        setParams({ ...DEFAULT_MODEL_PARAMS, ...runtimeParams, ...backendSaved })
+      let initial: RuntimeParams
+      if (backendSaved && Object.keys(backendSaved).length > 0) {
+        // 已有已保存自定义配置：以智能推荐配置为底合并已保存参数
+        initial = { ...recommendedParams, ...runtimeParams, ...backendSaved }
       } else {
-        setParams({ ...DEFAULT_MODEL_PARAMS, ...runtimeParams })
+        // 初始使用智能推荐配置
+        initial = { ...recommendedParams }
       }
+      setParams(initial)
+      setSavedParams(initial)
     }
 
     loadParams()
@@ -79,7 +110,12 @@ export const ModelParamDrawer: React.FC<ModelParamDrawerProps> = ({
     return () => {
       isCancelled = true
     }
-  }, [isOpen, model, getModelParams, runtimeParams])
+  }, [isOpen, model, getModelParams, runtimeParams, recommendedParams])
+
+  // 脏检查：当前编辑中的 params 与已保存持久化参数基准比对
+  const isDirty = React.useMemo(() => {
+    return !areParamsEqual(params, savedParams)
+  }, [params, savedParams])
 
   if (!isOpen || !model) return null
 
@@ -98,12 +134,12 @@ export const ModelParamDrawer: React.FC<ModelParamDrawerProps> = ({
     }))
   }
 
-  // 恢复系统默认
-  const handleResetDefaults = () => {
+  // 恢复保守配置（恢复系统保守基准超参，需用户主动点击保存才持久化）
+  const handleResetConservative = () => {
     setParams({ ...DEFAULT_MODEL_PARAMS, ...runtimeParams })
   }
 
-  // 恢复当前硬件智能推荐
+  // 恢复当前硬件智能推荐（恢复自适应最佳超参，需用户主动点击保存才持久化）
   const handleResetRecommended = () => {
     setParams({ ...recommendedParams })
   }
@@ -128,6 +164,9 @@ export const ModelParamDrawer: React.FC<ModelParamDrawerProps> = ({
 
       // 2. 持久化至后端 config.json
       await saveModelParams(model.id, safeParams)
+
+      // 3. 更新已保存基准，使保存按钮重回未修改（置灰）态
+      setSavedParams(safeParams)
 
       setSavedSuccess(true)
       setTimeout(() => setSavedSuccess(false), 2500)
@@ -656,12 +695,13 @@ export const ModelParamDrawer: React.FC<ModelParamDrawerProps> = ({
               <Button
                 size="sm"
                 variant="ghost"
-                onClick={handleResetDefaults}
+                onClick={handleResetConservative}
                 disabled={isSaving || isRestarting}
-                className="h-8 text-xs font-bold text-muted-foreground"
+                title={t('恢复系统保守基准配置，适合显存紧张或排查异常稳定性问题')}
+                className="h-8 text-xs font-bold text-muted-foreground hover:text-foreground"
               >
                 <RotateCcw className="h-3 w-3 mr-1 text-muted-foreground" />
-                {t('恢复默认')}
+                {t('恢复保守配置')}
               </Button>
             </div>
 
@@ -683,10 +723,15 @@ export const ModelParamDrawer: React.FC<ModelParamDrawerProps> = ({
               </Button>
               <Button
                 size="sm"
-                variant="default"
+                variant={isDirty ? 'default' : 'secondary'}
                 onClick={handleSave}
-                disabled={isSaving || isRestarting}
-                className="h-8 text-xs px-4 font-bold"
+                disabled={!isDirty || isSaving || isRestarting}
+                title={!isDirty ? t('当前参数与已保存配置一致，未作任何修改') : t('保存当前修改后的模型启动参数')}
+                className={`h-8 text-xs px-4 font-bold transition-all ${
+                  isDirty
+                    ? 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-md ring-2 ring-primary/30 cursor-pointer'
+                    : 'opacity-50 cursor-not-allowed bg-muted text-muted-foreground border border-border/40'
+                }`}
               >
                 {isSaving ? t('保存中...') : t('保存参数')}
               </Button>

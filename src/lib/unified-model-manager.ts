@@ -115,7 +115,9 @@ export class UnifiedModelManager {
     const resolution = ModelResolver.resolve(modelId, baseDir, undefined, finalSource)
 
     let draftFile: string | undefined
-    if (model?.dspark) {
+    if (model?.draftLocalPath) {
+      draftFile = model.draftLocalPath
+    } else if (model?.dspark) {
       const draftRes = ModelResolver.resolve(model.dspark, baseDir, undefined, finalSource)
       draftFile = draftRes?.modelPath || resolution?.draftPath
     } else if (model?.draftId) {
@@ -128,10 +130,10 @@ export class UnifiedModelManager {
     // 核心规则：若模型元数据已定义，以 model.isMultiModal 为权威依据；
     // 若当前模型 isMultiModal: false，即使它有下载投影模型，启动时也不能加载，mmprojFile 必须为 undefined
     const isMultiModal = model ? Boolean(model.isMultiModal) : Boolean(resolution?.mmprojPath)
-    const mmprojFile = isMultiModal ? resolution?.mmprojPath : undefined
+    const mmprojFile = isMultiModal ? (model?.mmprojLocalPath || resolution?.mmprojPath) : undefined
 
     return {
-      modelFile: resolution?.modelPath,
+      modelFile: model?.localPath || resolution?.modelPath,
       mmprojFile,
       draftFile,
       isMultiModal,

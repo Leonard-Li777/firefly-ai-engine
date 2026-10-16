@@ -153,6 +153,7 @@ export interface ModelItem {
   isDownloaded: boolean
   localPath?: string
   mmprojLocalPath?: string
+  draftLocalPath?: string
   sha256?: string
   dspark?: string
   draftId?: string

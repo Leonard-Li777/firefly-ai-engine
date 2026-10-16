@@ -240,19 +240,31 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isActiveModel
   const intelligence = INTELLIGENCE_CONFIG(model.intelligenceLevel)
   const isDownloadingOrPaused = dl.isDownloading || dl.isPaused
 
+  // 从 store 中聚合已知物理模型路径作为兜底输入
+  const allModels = useEngineStore(s => s.models)
+  const existingFiles = React.useMemo(() => {
+    const files: string[] = []
+    for (const m of allModels) {
+      if (m.localPath) files.push(m.localPath)
+      if (m.mmprojLocalPath) files.push(m.mmprojLocalPath)
+      if (m.draftLocalPath) files.push(m.draftLocalPath)
+    }
+    return files
+  }, [allModels])
+
   // 确保无论 model.localPath 是否由后端提前填入，都能从 modelsDir 解析得到有效物理路径及伴随模型状态
   const modelResolution = React.useMemo(() => {
     if (!modelsDir) return null
-    return ModelResolver.resolve(model.id, modelsDir, undefined, model.source)
-  }, [model.id, modelsDir, model.source])
+    return ModelResolver.resolve(model.id, modelsDir, existingFiles, model.source)
+  }, [model.id, modelsDir, existingFiles, model.source])
 
   const resolvedLocalPath = React.useMemo(() => {
     if (model.localPath) return model.localPath
     return modelResolution?.modelPath
   }, [model.localPath, modelResolution])
 
-  const hasMmprojPhysical = Boolean(modelResolution?.mmprojPath)
-  const hasDraftPhysical = Boolean(modelResolution?.draftPath)
+  const hasMmprojPhysical = Boolean(model.mmprojLocalPath || modelResolution?.mmprojPath)
+  const hasDraftPhysical = Boolean(model.draftLocalPath || modelResolution?.draftPath)
 
   // 高级操作可见性：移除（未下载的自定义模型）/ 删除（已下载且显存未超标）/ 参数配置（已下载且显存未超标）
   const canRemoveCustom = !!model.custom && !isDownloaded

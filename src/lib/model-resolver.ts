@@ -334,6 +334,8 @@ export function mergeScannedWithRecommended(recommendedList: ModelItem[], scanne
       ...rec,
       isDownloaded,
       localPath: existing?.localPath,
+      mmprojLocalPath: existing?.mmprojLocalPath || (existing as any)?.mmproj_local_path,
+      draftLocalPath: existing?.draftLocalPath || (existing as any)?.draft_local_path,
       sha256: existing?.sha256 || rec.sha256
     })
   }
@@ -357,6 +359,8 @@ export function mergeScannedWithRecommended(recommendedList: ModelItem[], scanne
 
     const enriched: ModelItem = {
       ...item,
+      mmprojLocalPath: item.mmprojLocalPath || (item as any).mmproj_local_path,
+      draftLocalPath: item.draftLocalPath || (item as any).draft_local_path,
       vramNeededGB:
         item.vramNeededGB ??
         (item.fileSize > 0 ? estimateRequiredVRAM(formatFileSizeToSizeStr(item.fileSize)) : undefined)
