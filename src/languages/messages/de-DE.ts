@@ -303,7 +303,6 @@ export default  {
     "744": "Pausieren",
     "745": "Wiederholen",
     "746": "Laden Sie das spekulative Sampling-Beschleunigungsmodell herunter, um die Inferenzgeschwindigkeit erheblich zu verbessern",
-    "747": "Modell-Download wird beschleunigt...",
     "748": "Beschleunigungsmodell herunterladen",
     "749": "Aktiviert",
     "750": "Aktivieren",
@@ -392,5 +391,17 @@ export default  {
     "1267": "Sniffing abgeschlossen, zum obenstehenden benutzerdefinierten Modellverzeichnis hinzugefügt",
     "1268": "Fügen Sie beliebig viele GGUF-Modelldateien hinzu, die von ModelScope / HuggingFace gehostet werden; sie werden in der lokalen Konfiguration gespeichert und zentral verwaltet.",
     "1269": "Benutzerdefinierte Modelle",
-    "1270": "Hinzugefügte benutzerdefinierte Modelle"
+    "1270": "Hinzugefügte benutzerdefinierte Modelle",
+    "1288": "Laden Sie das multimodale Projektionsmodell der Bilderkennung herunter, um das Bildverständnis zu unterstützen",
+    "1289": "Laden Sie das Kartenerkennungsmodell herunter",
+    "1290": "Begleitmodelle und -fähigkeiten (Begleitmodelle und -fähigkeiten)",
+    "1291": "Laden Sie das Erkennungsmodell",
+    "1292": "Wenn Sie das Bild nicht erkennen müssen, kann durch Ausschalten Videospeicher gespart werden",
+    "1293": "Ladebeschleunigungsmodell (DSpark)",
+    "1294": "Die Zufallsstichprobenbeschleunigung kann die Generierungsgeschwindigkeit erheblich verbessern, muss jedoch dauerhaft 1 bis 2,5 GB Videospeicher belegen. Es wird nicht empfohlen, das Gerät einzuschalten, wenn der Videospeicher knapp ist oder kurzer Text im Mittelpunkt steht.",
+    "1295": "Anzahl der spekulativen Schritte",
+    "1296": "Die maximale Anzahl der vorhergesagten Token in einem einzigen Schritt, Erhöhen kann das Beschleunigungsverhältnis bei hohen Trefferraten erhöhen, aber es wird den Videospeicherdruck leicht erhöhen (Standard: 5)",
+    "1297": "Hardware-Empfehlung",
+    "1298": "Adaptive Wiederherstellung der besten Parameter basierend auf der aktuell erkannten GPU- und CPU-Hardware",
+    "1299": "Intelligente Empfehlung wiederherstellen"
 }

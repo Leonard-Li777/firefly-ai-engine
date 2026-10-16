@@ -303,7 +303,6 @@ export default  {
     "744": "Pause",
     "745": "Retry",
     "746": "Download the speculative sampling acceleration model to greatly improve the inference speed",
-    "747": "Accelerating model download...",
     "748": "Download acceleration model",
     "749": "Activated",
     "750": "Activate  ",
@@ -392,5 +391,17 @@ export default  {
     "1267": "Sniffing complete and added to the custom model list below",
     "1268": "Freely add any GGUF model file hosted on ModelScope / HuggingFace, save them in local configuration for centralized management.",
     "1269": "Custom Model",
-    "1270": "Added Custom Models"
+    "1270": "Added Custom Models",
+    "1288": "Download the multi-modal projection model of image recognition to support image understanding",
+    "1289": "Download the map recognition model",
+    "1290": "Companion Models & Capabilities (Companion Models & Capabilities)",
+    "1291": "Load the recognition model",
+    "1292": "If you don't need to recognize the picture, turning it off can save video memory",
+    "1293": "Loading acceleration model (DSpark)",
+    "1294": "Random sampling acceleration can significantly improve the generation speed, but it needs to occupy 1~2.5GB of video memory permanently; it is not recommended to turn on when the video memory is tight or short text is the main focus.",
+    "1295": "Number of speculative steps",
+    "1296": "The maximum number of predicted tokens in a single step, increasing can increase the acceleration ratio at high hit rates, but it will slightly increase the video memory pressure (default: 5)",
+    "1297": "Hardware Recommendation",
+    "1298": "Adaptively restore the best parameters based on the currently detected GPU and CPU hardware",
+    "1299": "Restore smart recommendation"
 }

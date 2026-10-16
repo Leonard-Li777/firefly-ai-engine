@@ -303,7 +303,6 @@ export default  {
     "744": "Suspendre",
     "745": "Réessayer",
     "746": "Téléchargez le modèle d'accélération de l'échantillonnage spéculatif pour améliorer considérablement la vitesse d'inférence",
-    "747": "Téléchargement du modèle accéléré...",
     "748": "Télécharger le modèle d'accélération",
     "749": "Activé",
     "750": "Activer",
@@ -392,5 +391,17 @@ export default  {
     "1267": "Analyse terminée, ajouté à la liste des modèles personnalisés ci-dessous",
     "1268": "Ajoutez librement tout fichier de modèle GGUF hébergé sur ModelScope / HuggingFace, sauvegardez et gérez-les localement et centralisés.",
     "1269": "Modèles personnalisés",
-    "1270": "Modèles personnalisés ajoutés"
+    "1270": "Modèles personnalisés ajoutés",
+    "1288": "Téléchargez le modèle de projection multimodale de reconnaissance d'image pour faciliter la compréhension des images",
+    "1289": "Télécharger le modèle de reconnaissance cartographique",
+    "1290": "Modèles et capacités compagnons (Companion Models & Capabilities)",
+    "1291": "Charger le modèle de reconnaissance",
+    "1292": "Si vous n'avez pas besoin de reconnaître l'image, la désactiver peut économiser de la mémoire vidéo",
+    "1293": "Modèle d'accélération de chargement (DSpark)",
+    "1294": "L'accélération d'échantillonnage aléatoire peut améliorer considérablement la vitesse de génération, mais elle doit occuper 1 à 2,5 Go de mémoire vidéo en permanence; il n'est pas recommandé de l'allumer lorsque la mémoire vidéo est restreinte ou que le texte court est l'objectif principal.",
+    "1295": "Nombre d'étapes spéculatives",
+    "1296": "Le nombre maximum de jetons prédits en une seule étape, l'augmentation peut augmenter le taux d'accélération à des taux de réussite élevés, mais cela augmentera légèrement la pression de la mémoire vidéo (par défaut: 5)",
+    "1297": "Recommandation matériel",
+    "1298": "Restaurez de manière adaptative les meilleurs paramètres en fonction du matériel GPU et CPU actuellement détecté",
+    "1299": "Restaurer la recommandation intelligente"
 }

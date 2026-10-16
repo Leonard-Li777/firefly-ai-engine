@@ -303,7 +303,6 @@ export default  {
     "744": "Pausar",
     "745": "Repetir",
     "746": "Baixe o modelo de aceleração de amostragem especulativa para melhorar significativamente a velocidade de inferência",
-    "747": "Acelerando o download do modelo...",
     "748": "Baixar modelo de aceleração",
     "749": "Ativado",
     "750": "Ativar",
@@ -392,5 +391,17 @@ export default  {
     "1267": "Sniffing concluído, adicionado à lista de modelos personalizados abaixo",
     "1268": "Adicione livremente ficheiros de modelos GGUF hospedados no ModelScope / HuggingFace, guarde-os na configuração local e gerencie-os centralmente.",
     "1269": "Modelos personalizados",
-    "1270": "Modelos personalizados adicionados"
+    "1270": "Modelos personalizados adicionados",
+    "1288": "Faça o Download do modelo de projeção multimodal de reconhecimento de imagem para apoiar a compreensão da imagem",
+    "1289": "Faça o Download do modelo de reconhecimento de mapas",
+    "1290": "Modelos E Capacidades Complementares (Modelos E Capacidades Complementares)",
+    "1291": "Carregar o modelo de reconhecimento",
+    "1292": "Se você não precisar reconhecer a imagem, desligá-la pode economizar memória de vídeo",
+    "1293": "Modelo de aceleração de carga (DSpark)",
+    "1294": "A aceleração de amostragem aleatória pode melhorar significativamente a velocidade de geração, mas precisa ocupar 1~2,5 GB de memória de vídeo permanentemente; não é recomendado ligar quando a memória de vídeo está apertada ou o texto curto é o foco principal.",
+    "1295": "Número de etapas especulativas",
+    "1296": "O número máximo de tokens previstos em uma única etapa, aumentando pode aumentar a taxa de aceleração em altas taxas de acerto, mas aumentará ligeiramente a pressão da memória de vídeo (padrão: 5)",
+    "1297": "Hardware Recommendation",
+    "1298": "Restaure adaptativamente os melhores parâmetros com base no hardware de GPU e CPU atualmente detectado",
+    "1299": "Restaurar recomendação inteligente"
 }
