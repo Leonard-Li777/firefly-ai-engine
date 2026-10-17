@@ -76,10 +76,11 @@ pub async fn start_server(
         .merge(management_routes().with_state(app_state))
         // 透明反代 /v1/*
         .route("/v1/{*path}", any(proxy_handler).with_state(proxy_state.clone()))
-        // 根路径健康探测
-        .route("/health", axum::routing::get(|| async { "ok" }))
-        // 兜底：其余所有路径（/、/index.html 等 llama-server WebUI 资源）
-        // 全部转发给内部 llama-server，使网关端口即可直接访问聊天 WebUI
+        // 注意：严禁在此硬编码静态 /health 返回 "ok"，
+        // 必须让 /health 走 fallback 转发给底层 llama-server 探活，
+        // 当模型仍在加载时（target_port 为 None 或 llama-server 报告 503）真实反映未就绪状态
+        // 兜底：其余所有路径（/、/health、/index.html 等 llama-server WebUI 资源）
+        // 全部转发给内部 llama-server，使网关端口即可直接访问聊天 WebUI 与真实探活端点
         .fallback(any(proxy_handler).with_state(proxy_state.clone()))
         .layer(cors)
         .layer(TraceLayer::new_for_http());
