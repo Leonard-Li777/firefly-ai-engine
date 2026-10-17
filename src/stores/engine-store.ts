@@ -11,30 +11,21 @@ import { modelMetadataService } from '../lib/model-metadata-service'
 import { i18nScope, t } from '../languages'
 import type { SupportedLanguage } from '../lib/language'
 import { resolveToAbsolutePath } from '../lib/path-utils'
-import { mergeScannedWithRecommended } from '../lib/model-resolver'
+import { matchEngineModel, mergeScannedWithRecommended } from '../lib/model-resolver'
 import { captureEvent } from '../lib/posthog'
 import { toast } from '../components/common/Toast'
 
 /**
  * 判断列表中的模型是否就是后端当前运行的模型。
- * 后端 current_model 是 GGUF 文件完整路径（也可能为模型 ID/名称），
- * 匹配规则：
- * 1. 名称 / ID / 别名精确相等
- * 2. localPath 与 current_model 互为包含（忽略 Windows 大小写差异）
- * 3. 兜底：按文件名（不含扩展名、小写）在 current_model 路径中匹配
+ * 后端 current_model 是 GGUF 文件完整路径（也可能为模型 ID/名称）。
+ *
+ * 匹配规则统一收敛到 `matchEngineModel`（与首页 / Footer 的展示判定同源），
+ * 避免「首页能识别运行中模型、模型列表却反查失败仍显示『激活并启动』」的口径分裂。
+ * 该函数历史上只看 name/id/localPath，遇到「current_model 为物理路径 + 列表条目 localPath 缺失」
+ * 时必然失配，导致 activeModelKey 恒为 null。
  */
 function matchCurrentModel(model: ModelItem, currentModel: string): boolean {
-  if (model.name === currentModel || model.id === currentModel) return true
-  if (model.localPath) {
-    const lp = model.localPath
-    const a = lp.toLowerCase()
-    const b = currentModel.toLowerCase()
-    if (a === b || a.includes(b) || b.includes(a)) return true
-    // 兜底：文件名匹配（如 current_model 为路径、localPath 未同步时的场景）
-    const fileName = lp.replace(/\\/g, '/').split('/').pop()?.replace(/\.gguf$/i, '').toLowerCase()
-    if (fileName && currentModel.toLowerCase().includes(fileName)) return true
-  }
-  return false
+  return matchEngineModel(model, currentModel)
 }
 
 interface EngineStoreState {

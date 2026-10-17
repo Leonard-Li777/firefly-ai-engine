@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest'
-import { ModelResolver, mergeScannedWithRecommended, resolveDisplayModel } from '../src/lib/model-resolver'
+import {
+  ModelResolver,
+  mergeScannedWithRecommended,
+  resolveDisplayModel,
+  matchEngineModel
+} from '../src/lib/model-resolver'
 import { unifiedModelManager } from '../src/lib/unified-model-manager'
 import type { ModelItem } from '../src/api/types'
 
@@ -380,5 +385,67 @@ describe('resolveDisplayModel 界面模型优先级算法', () => {
 
     expect(res.modelName).toBe('WeMM-Embedding 2B')
     expect(res.sourceType).toBe('active_embedding')
+  })
+})
+
+describe('matchEngineModel 引擎运行模型对齐（模型页「已启动」判定）', () => {
+  // 回归场景：引擎 current_model 上报物理路径，而合并后的列表条目丢失 localPath，
+  // 旧实现（只看 name/id/localPath）必然失配 ⇒ activeModelKey 恒为 null ⇒
+  // 首页 / Footer 靠 active_language_model 兜底显示「已启动」，模型列表却仍显示「激活并启动」。
+  const crackModel = makeModel({
+    id: 'dealignai/MiniCPM-V-4.7-1B-CRACK-GGUF:Q4_K_M',
+    name: 'MiniCPM-V 4.7 1B（识图小钢炮•越狱）',
+    source: 'modelscope',
+    isDownloaded: true,
+    localPath: undefined
+  })
+
+  const runningPath =
+    'D:\\llm\\hub\\models\\dealignai\\MiniCPM-V-4.7-1B-CRACK-GGUF\\MiniCPM-V-4.7-1B-CRACK-Q4_K_M.gguf'
+
+  it('current_model 为物理路径且条目 localPath 缺失时，按文件名主干归一化仍能命中', () => {
+    expect(matchEngineModel(crackModel, runningPath)).toBe(true)
+  })
+
+  it('current_model 为 id@source 或裸 id 时命中', () => {
+    expect(matchEngineModel(crackModel, 'dealignai/MiniCPM-V-4.7-1B-CRACK-GGUF:Q4_K_M@modelscope')).toBe(true)
+    expect(matchEngineModel(crackModel, 'dealignai/MiniCPM-V-4.7-1B-CRACK-GGUF:Q4_K_M')).toBe(true)
+  })
+
+  it('不同量化的同名模型不得误判为运行中', () => {
+    const q4kmModel = makeModel({
+      id: 'dealignai/MiniCPM-V-4.7-1B-CRACK-GGUF:Q4_K_M',
+      isDownloaded: true
+    })
+    const runningQ4ksPath =
+      'D:\\llm\\hub\\models\\dealignai\\MiniCPM-V-4.7-1B-CRACK-GGUF\\MiniCPM-V-4.7-1B-CRACK-Q4_K_S.gguf'
+    expect(matchEngineModel(q4kmModel, runningQ4ksPath)).toBe(false)
+  })
+
+  it('空 current_model 一律不命中（服务停止态不得残留运行标记）', () => {
+    expect(matchEngineModel(crackModel, null)).toBe(false)
+    expect(matchEngineModel(crackModel, '')).toBe(false)
+  })
+
+  it('resolveDisplayModel 在同一场景下应返回 running，与模型列表判定保持同源', () => {
+    const res = resolveDisplayModel({
+      engineStatus: {
+        status: 'ready',
+        active_backend: 'cuda134',
+        current_model: runningPath,
+        active_language_model: 'dealignai/MiniCPM-V-4.7-1B-CRACK-GGUF:Q4_K_M@modelscope',
+        models_dir: 'D:\\llm',
+        vram_usage_mb: 1000,
+        port: 38400,
+        hardware: {} as any
+      },
+      models: [crackModel],
+      // activeModelKey 反查失败的典型形态：null
+      activeModelKey: null,
+      activeLanguageModelKey: 'dealignai/MiniCPM-V-4.7-1B-CRACK-GGUF:Q4_K_M@modelscope'
+    })
+
+    expect(res.sourceType).toBe('running')
+    expect(res.modelItem?.id).toBe('dealignai/MiniCPM-V-4.7-1B-CRACK-GGUF:Q4_K_M')
   })
 })

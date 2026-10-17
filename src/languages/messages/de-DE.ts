@@ -363,7 +363,6 @@ export default  {
     "805": "Neustart...",
     "806": "Starten Sie sofort neu, damit es wirksam wird",
     "807": "Später neu starten",
-    "808": "Standard wiederherstellen",
     "809": "Gespeichert und synchronisiert",
     "810": "Einsparung...",
     "811": "Parameter speichern",
@@ -403,5 +402,9 @@ export default  {
     "1296": "Die maximale Anzahl der vorhergesagten Token in einem einzigen Schritt, Erhöhen kann das Beschleunigungsverhältnis bei hohen Trefferraten erhöhen, aber es wird den Videospeicherdruck leicht erhöhen (Standard: 5)",
     "1297": "Hardware-Empfehlung",
     "1298": "Adaptive Wiederherstellung der besten Parameter basierend auf der aktuell erkannten GPU- und CPU-Hardware",
-    "1299": "Intelligente Empfehlung wiederherstellen"
+    "1299": "Intelligente Empfehlung wiederherstellen",
+    "1313": "Stellen Sie die konservative Benchmark-Konfiguration des Systems wieder her, die für engen Videospeicher oder die Behebung abnormaler Stabilitätsprobleme geeignet ist",
+    "1314": "Konservative Konfiguration wiederherstellen",
+    "1315": "Die aktuellen Parameter stimmen ohne Änderung mit der gespeicherten Konfiguration überein",
+    "1316": "Speichern der aktuell geänderten Modellstartparameter"
 }

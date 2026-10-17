@@ -363,7 +363,6 @@ export default  {
     "805": "Restarting...",
     "806": "Restart immediately to take effect",
     "807": "Restart later",
-    "808": "Restore default",
     "809": "Saved and synced",
     "810": "Saving...",
     "811": "Save parameters",
@@ -403,5 +402,9 @@ export default  {
     "1296": "The maximum number of predicted tokens in a single step, increasing can increase the acceleration ratio at high hit rates, but it will slightly increase the video memory pressure (default: 5)",
     "1297": "Hardware Recommendation",
     "1298": "Adaptively restore the best parameters based on the currently detected GPU and CPU hardware",
-    "1299": "Restore smart recommendation"
+    "1299": "Restore smart recommendation",
+    "1313": "Restore the conservative benchmark configuration of the system, suitable for tight video memory or troubleshooting abnormal stability issues",
+    "1314": "Restore conservative configuration",
+    "1315": "The current parameters are consistent with the saved configuration without any modification",
+    "1316": "Save the currently modified model startup parameters"
 }

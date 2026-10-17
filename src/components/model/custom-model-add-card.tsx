@@ -29,7 +29,7 @@ import { useModelDownload } from '../../hooks/use-model-download'
 import { ModelItem } from '../../api/types'
 import { formatFileSize, formatSpeed, calculateRemainingTime } from '../../lib/utils'
 import { getDisplayRelativeModelPath } from '../../lib/path-utils'
-import { ModelResolver } from '../../lib/model-resolver'
+import { ModelResolver, matchEngineModel } from '../../lib/model-resolver'
 import { ModelParamDrawer } from './model-param-drawer'
 import { t } from '../../languages'
 import { toast } from '../common/Toast'
@@ -99,8 +99,7 @@ const CustomModelRowItem: React.FC<CustomModelRowProps> = ({ model, onOpenConfig
   const modelKey = `${model.id}@${model.source}`
   const isActiveModel =
     isDownloaded &&
-    (activeModelKey === modelKey ||
-      (engineStatus?.current_model ? engineStatus.current_model.includes(model.id) : false))
+    (activeModelKey === modelKey || matchEngineModel(model, engineStatus?.current_model))
   const isModelRunning = isActiveModel && isEngineReady
   const isModelLaunching = isStartLaunching || (isActiveModel && isEngineStarting)
 

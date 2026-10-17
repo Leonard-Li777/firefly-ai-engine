@@ -363,7 +363,6 @@ export default  {
     "805": "Reiniciando...",
     "806": "Reinicie imediatamente para entrar em vigor",
     "807": "Reinicie mais tarde",
-    "808": "Restaurar padrão",
     "809": "Salvo e sincronizado",
     "810": "Poupança...",
     "811": "Salvar parâmetros",
@@ -403,5 +402,9 @@ export default  {
     "1296": "O número máximo de tokens previstos em uma única etapa, aumentando pode aumentar a taxa de aceleração em altas taxas de acerto, mas aumentará ligeiramente a pressão da memória de vídeo (padrão: 5)",
     "1297": "Hardware Recommendation",
     "1298": "Restaure adaptativamente os melhores parâmetros com base no hardware de GPU e CPU atualmente detectado",
-    "1299": "Restaurar recomendação inteligente"
+    "1299": "Restaurar recomendação inteligente",
+    "1313": "Restaurar a configuração de referência conservadora do sistema, adequada para memória de vídeo apertada ou resolução de problemas de estabilidade anormais",
+    "1314": "Restaurar a configuração conservadora",
+    "1315": "Os parâmetros atuais são consistentes com a configuração salva sem qualquer modificação",
+    "1316": "Guardar os parâmetros de arranque do modelo actualmente modificados"
 }

@@ -363,7 +363,6 @@ export default  {
     "805": "Redémarrage...",
     "806": "Redémarrez immédiatement pour prendre effet",
     "807": "Redémarrer plus tard",
-    "808": "Restaurer les valeurs par défaut",
     "809": "Enregistré et synchronisé",
     "810": "Économiser...",
     "811": "Enregistrer les paramètres",
@@ -403,5 +402,9 @@ export default  {
     "1296": "Le nombre maximum de jetons prédits en une seule étape, l'augmentation peut augmenter le taux d'accélération à des taux de réussite élevés, mais cela augmentera légèrement la pression de la mémoire vidéo (par défaut: 5)",
     "1297": "Recommandation matériel",
     "1298": "Restaurez de manière adaptative les meilleurs paramètres en fonction du matériel GPU et CPU actuellement détecté",
-    "1299": "Restaurer la recommandation intelligente"
+    "1299": "Restaurer la recommandation intelligente",
+    "1313": "Restaurez la configuration de référence conservatrice du système, adaptée à une mémoire vidéo étroite ou au dépannage de problèmes de stabilité anormaux",
+    "1314": "Restaurer la configuration conservatrice",
+    "1315": "Les paramètres actuels sont cohérents avec la configuration enregistrée sans aucune modification",
+    "1316": "Enregistrer les paramètres de démarrage du modèle actuellement modifiés"
 }

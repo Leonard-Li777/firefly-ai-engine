@@ -405,6 +405,67 @@ export interface DisplayModelResult {
 }
 
 /**
+ * 归一化模型标识为纯字母数字主干。
+ * - 去扩展名 `.gguf`
+ * - 去仓库名中的 `-gguf` 片段（`dealignai/X-GGUF:Q4_K_M` → `X:Q4_K_M`）
+ * - 去全部分隔符（`-` `_` `.` `:` 等）
+ *
+ * 用途：引擎 `current_model` 上报的是物理路径（`...\MiniCPM-V-4.7-1B-CRACK-Q4_K_M.gguf`），
+ * 而列表条目 id 是仓库量化标识（`dealignai/MiniCPM-V-4.7-1B-CRACK-GGUF:Q4_K_M`），
+ * 二者归一化后主干相同（`minicpmv471bcrackq4km`），可在 localPath 缺失时仍对齐同一模型。
+ */
+function normalizeModelToken(raw: string): string {
+  return raw
+    .toLowerCase()
+    .replace(/\.gguf$/i, '')
+    .replace(/-gguf(?![a-z0-9])/g, '')
+    .replace(/[^a-z0-9]/g, '')
+}
+
+/**
+ * 判断列表条目是否就是引擎当前运行 / 激活的模型。
+ *
+ * 引擎 `current_model` 可能是 GGUF 完整路径、模型 ID 或 `id@source`，而列表条目的 `localPath`
+ * 也可能因合并失配而缺失，因此按三级降级匹配：
+ * 1. 标识严格相等（name / id / id@source）
+ * 2. 忽略组织前缀的末段互含
+ * 3. localPath 与 target 互含（含去扩展名的文件名）
+ * 4. 兜底：物理文件名主干与模型 ID 末段主干归一化后相等
+ *
+ * 说明：此函数被 `resolveDisplayModel`、引擎 store 的 `activeModelKey` 反查、
+ * 以及模型列表行级「已启动」判定共用，保证首页 / Footer / 模型页三处口径一致。
+ */
+export function matchEngineModel(model: ModelItem, target: string | null | undefined): boolean {
+  if (!target) return false
+  if (model.name === target || model.id === target) return true
+  if (`${model.id}@${model.source}` === target) return true
+
+  // 兼容忽略组织前缀（如 LiquidAI/LFM2.5-1.2B... 与 LFM2.5-1.2B... 互相匹配）
+  const targetBase = target.replace(/\\/g, '/').split('/').pop()?.toLowerCase() || ''
+  const idBase = model.id.replace(/\\/g, '/').split('/').pop()?.toLowerCase() || ''
+  if (targetBase && idBase && (targetBase === idBase || targetBase.includes(idBase) || idBase.includes(targetBase))) {
+    return true
+  }
+
+  if (model.localPath) {
+    const a = model.localPath.toLowerCase()
+    const b = target.toLowerCase()
+    if (a === b || a.includes(b) || b.includes(a)) return true
+    const fileName = model.localPath.replace(/\\/g, '/').split('/').pop()?.replace(/\.gguf$/i, '').toLowerCase()
+    if (fileName && (b.includes(fileName) || fileName.includes(b))) return true
+  }
+
+  // 兜底：物理文件名主干与模型 ID 末段主干相等（覆盖 localPath 缺失、target 为路径或 repo:quant 的场景）。
+  // 长度门槛 6 防止过短主干（如 wemm）在长路径中产生误命中。
+  const targetFileName = target.replace(/\\/g, '/').split('/').pop() || ''
+  const targetStem = normalizeModelToken(targetFileName)
+  const idStem = normalizeModelToken(idBase)
+  if (targetStem.length >= 6 && idStem.length >= 6 && targetStem === idStem) return true
+
+  return false
+}
+
+/**
  * 解析当前界面应展示的模型与友好名称
  * 严格遵循优先级规则：
  * 启动模型 (Running Model, 仅实际运行态) > 激活模型 (Active Models: 语言模型 > Embedding模型) > 兜底可用模型
@@ -422,27 +483,7 @@ export function resolveDisplayModel(options: DisplayModelResolutionOptions): Dis
   const rawStatus = engineStatus?.status || 'stopped'
   const isRunningOrStarting = rawStatus === 'ready' || rawStatus === 'starting'
 
-  const matchModel = (model: ModelItem, target: string): boolean => {
-    if (!target) return false
-    if (model.name === target || model.id === target) return true
-    if (`${model.id}@${model.source}` === target) return true
-
-    // 兼容忽略组织前缀（如 LiquidAI/LFM2.5-1.2B... 与 LFM2.5-1.2B... 互相匹配）
-    const targetBase = target.replace(/\\/g, '/').split('/').pop()?.toLowerCase() || ''
-    const idBase = model.id.replace(/\\/g, '/').split('/').pop()?.toLowerCase() || ''
-    if (targetBase && idBase && (targetBase === idBase || targetBase.includes(idBase) || idBase.includes(targetBase))) {
-      return true
-    }
-
-    if (model.localPath) {
-      const a = model.localPath.toLowerCase()
-      const b = target.toLowerCase()
-      if (a === b || a.includes(b) || b.includes(a)) return true
-      const fileName = model.localPath.replace(/\\/g, '/').split('/').pop()?.replace(/\.gguf$/i, '').toLowerCase()
-      if (fileName && (b.includes(fileName) || fileName.includes(b))) return true
-    }
-    return false
-  }
+  const matchModel = matchEngineModel
 
   // ──────────────────────────────────────────────────────────
   // 优先级 1：启动模型（Running Model）

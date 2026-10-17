@@ -42,7 +42,7 @@ import { t } from '../../languages'
 import { toast } from '../common/Toast'
 import { sortModels, EnrichedModelItem } from '../../lib/model-sorting'
 import { getDisplayRelativeModelPath } from '../../lib/path-utils'
-import { ModelResolver } from '../../lib/model-resolver'
+import { ModelResolver, matchEngineModel } from '../../lib/model-resolver'
 import { ModelParamDrawer } from './model-param-drawer'
 import {
   ModelBubbleGuide,
@@ -1001,7 +1001,11 @@ export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focu
       : (activeLanguageModelKey === modelKey || (!activeLanguageModelKey && activeModelKey === modelKey)))
     // 运行态（已启动/启动中）只归属于引擎进程实际加载的模型（activeModelKey 由 current_model 反查得到）；
     // 与槽位激活态解耦，避免「语言模型在跑，嵌入模型却显示已启动」以及由此导致的无法手动切换。
-    const isActiveModel = Boolean(model.isDownloaded) && activeModelKey === modelKey
+    // 兜底：反查 activeModelKey 可能因「current_model 为物理路径 + 条目 localPath 缺失」而失败，
+    // 此时直接用同一套 matchEngineModel 与 current_model 比对，保证与首页 / Footer 判定口径一致。
+    const isActiveModel =
+      Boolean(model.isDownloaded) &&
+      (activeModelKey === modelKey || matchEngineModel(model, engineStatus?.current_model))
 
     return (
       <ModelRowItem
@@ -1254,7 +1258,8 @@ export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focu
         model={drawerModel}
         isCurrentRunning={
           drawerModel
-            ? activeModelKey === `${drawerModel.id}@${drawerModel.source}` &&
+            ? (activeModelKey === `${drawerModel.id}@${drawerModel.source}` ||
+                matchEngineModel(drawerModel, engineStatus?.current_model)) &&
             (engineStatus?.status === 'ready' || engineStatus?.status === 'processing')
             : false
         }
