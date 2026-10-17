@@ -193,18 +193,28 @@ async function downloadFile(url, destPath, explicitProxy, headers = {}, bypassMi
 
   return new Promise((resolve, reject) => {
     const tempPath = `${destPath}.tmp.${Date.now()}`
-    const fetchWithRedirect = (currentUrl, redirects = 0) => {
+    const fetchWithRedirect = (currentUrl, redirects = 0, currentHeaders = headers) => {
       if (redirects > 10) return reject(new Error('Too many redirects'))
 
       const client = currentUrl.startsWith('http:') ? http : https
       const req = client.get(
         currentUrl,
-        { headers: { 'User-Agent': 'firefly-ai-engine-setup', ...headers } },
+        { headers: { 'User-Agent': 'firefly-ai-engine-setup', ...currentHeaders } },
         res => {
           if ([301, 302, 303, 307, 308].includes(res.statusCode)) {
             const loc = res.headers.location
             if (!loc) return reject(new Error(`Redirect without location: HTTP ${res.statusCode}`))
-            return fetchWithRedirect(loc, redirects + 1)
+            // 跨主机重定向时剥离 Authorization，防止泄露或干扰目标存储服务（如 S3）的签名校验
+            const nextHeaders = { ...currentHeaders }
+            try {
+              const currentHost = new URL(currentUrl).host
+              const nextHost = new URL(loc, currentUrl).host
+              if (currentHost !== nextHost) {
+                delete nextHeaders.authorization
+                delete nextHeaders.Authorization
+              }
+            } catch (_) {}
+            return fetchWithRedirect(loc, redirects + 1, nextHeaders)
           }
           if (res.statusCode !== 200) {
             return reject(
@@ -314,8 +324,8 @@ async function main() {
   if (!indexData) {
     console.log(`🌐 正在从 GitHub 获取最新资源索引: ${remoteIndexUrl}`)
     const tmpIndex = path.join(PRESET_DIR, 'index.json')
-    // 仓库已转私有：raw 索引需带 token（公开仓库带 token 同样可用）
-    await downloadFile(remoteIndexUrl, tmpIndex, args.proxy, authHeaders())
+    // 仓库已转私有：raw 索引需带 token 且直连 GitHub（绕过 gh-proxy 镜像）
+    await downloadFile(remoteIndexUrl, tmpIndex, args.proxy, authHeaders(), true)
     indexData = JSON.parse(fs.readFileSync(tmpIndex, 'utf8'))
   }
 
