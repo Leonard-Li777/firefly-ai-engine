@@ -300,7 +300,7 @@ fn test_to_args_respects_enable_vision_and_draft_interlocks() {
     assert!(!args_disabled.contains(&"--mmproj".to_string()), "用户关闭识图后即使有投影文件也不应注入 --mmproj");
     assert!(!args_disabled.contains(&"--model-draft".to_string()), "用户关闭加速后即使有草稿文件也不应注入 --model-draft");
 
-    // 重新开启并自定义步数
+    // 重新开启并自定义步数（DSpark 草稿存在下限 15：低于 15 自动对齐官方块大小）
     model.enable_vision = true;
     model.enable_draft = true;
     model.draft_max_tokens = Some(7);
@@ -308,5 +308,20 @@ fn test_to_args_respects_enable_vision_and_draft_interlocks() {
 
     assert!(args_enabled.contains(&"--mmproj".to_string()), "用户开启识图后应注入 --mmproj");
     assert!(args_enabled.contains(&"--model-draft".to_string()), "用户开启加速后应注入 --model-draft");
-    assert!(args_enabled.contains(&"7".to_string()), "应注入自定义 draft_max_tokens 7");
+    let nmax_idx = args_enabled.iter().position(|r| r == "--spec-draft-n-max").unwrap();
+    assert_eq!(args_enabled[nmax_idx + 1], "15", "DSpark n-max 低于 15 应对齐官方块大小 15");
+    let ngld_idx = args_enabled.iter().position(|r| r == "--gpu-layers-draft").unwrap();
+    assert_eq!(args_enabled[ngld_idx + 1], "-1", "GPU 模式下草稿模型应显式全量常驻显存（-1）");
+
+    // 用户配置高于 15 时透传
+    model.draft_max_tokens = Some(20);
+    let args_higher = ParamBuilder::to_args(&params, 38400, "D:\\models\\main.gguf", "test-model", Some(&model));
+    let nmax_idx2 = args_higher.iter().position(|r| r == "--spec-draft-n-max").unwrap();
+    assert_eq!(args_higher[nmax_idx2 + 1], "20", "DSpark n-max 高于 15 应透传用户配置");
+
+    // 未配置时默认对齐官方推荐值 15
+    model.draft_max_tokens = None;
+    let args_default = ParamBuilder::to_args(&params, 38400, "D:\\models\\main.gguf", "test-model", Some(&model));
+    let nmax_idx3 = args_default.iter().position(|r| r == "--spec-draft-n-max").unwrap();
+    assert_eq!(args_default[nmax_idx3 + 1], "15", "DSpark 未配置 n-max 时应默认 15");
 }

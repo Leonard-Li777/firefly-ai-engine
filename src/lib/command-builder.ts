@@ -254,22 +254,32 @@ export class LlamaCommandBuilder {
     // 6. DSpark 投机采样配对与草稿模型
     // 双重互锁：物理文件存在 + 选项未关闭（options.enableDraft !== false）
     const enableDraft = options.enableDraft !== false
+    // MTP / 常规草稿模型默认步数
     const draftMaxTokens = String(options.draftMaxTokens || 5)
 
     if (enableDraft && modelConfig?.dspark && paths.draftFile) {
       const draftCmdPath = resolveModelArgForCmd(paths.draftFile, modelBaseDir, finalSource)
+      // DSpark 草稿模型（openbmb/MiniCPM-V-4.7-1B-DSpark-gguf）采用块扩散 + 马尔可夫头
+      // 架构，单次前向传播固定产出 15 个草稿 token；llama.cpp 一次前向即输出整块候选，
+      // n-max < 15 会人为截断同一次计算的剩余候选。故下限强制对齐官方推荐值 15，
+      // 用户配置更高（>15）时透传。
+      const dsparkMaxTokens = String(Math.max(Number(options.draftMaxTokens) || 15, 15))
       draftArg = [
         '--model-draft',
         draftCmdPath,
         '--spec-type',
         'draft-dspark',
         '--spec-draft-n-max',
-        draftMaxTokens,
+        dsparkMaxTokens,
         '--spec-draft-n-min',
         '0'
       ]
-      if (!isCpuMode && finalGpuLayers > 0) {
-        draftArg.push('--gpu-layers-draft', String(finalGpuLayers))
+      // 草稿模型 GPU 层数显式化：DSpark 草稿模型仅约 438MB / 5 层，若依赖 llama.cpp 的
+      // auto 估算，长上下文显存吃紧时可能保守回退 CPU 导致推理变慢。只要主模型存在任何
+      // GPU 卸载（-1 全量或部分层数），草稿模型即全量常驻显存（--gpu-layers-draft -1，
+      // 别名 -ngld -1）；仅纯 CPU 模式跳过。
+      if (!isCpuMode && finalGpuLayers !== 0) {
+        draftArg.push('--gpu-layers-draft', '-1')
       }
     } else if (enableDraft && modelConfig?.draftId && paths.draftFile) {
       const draftCmdPath = resolveModelArgForCmd(paths.draftFile, modelBaseDir, finalSource)
@@ -353,6 +363,9 @@ export class LlamaCommandBuilder {
       ...draftArg,
       '--port',
       String(options.port || 38400),
+      // 注意：开启投机采样后主模型与 DSpark 草稿模型会按 --ctx-size 各自分配 KV 缓存
+      // （f16 精度下开销近似翻倍）。日常无需满载长上下文时建议下调 ctx-size
+      // （参照官方示例 8192 / 32768）以降低显存占用并加速批处理验证。
       '--ctx-size',
       String(finalContextSize),
       '--alias',

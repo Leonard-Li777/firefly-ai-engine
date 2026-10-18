@@ -4,7 +4,7 @@
 // 关键安全约束：ubatchSize <= batchSize（防止 llama.cpp 0xC0000005 崩溃）
 
 use serde::{Deserialize, Serialize};
-use tracing::info;
+use tracing::{info, warn};
 
 use crate::hardware::gpu_info::SystemResources;
 
@@ -44,7 +44,8 @@ pub struct ModelInfo {
     pub enable_vision: bool,
     /// 是否加载投机采样加速模型（双重互锁：物理文件存在 + 开关开启，默认 true）
     pub enable_draft: bool,
-    /// 投机采样最大预测 token 步数（默认 5）
+    /// 投机采样最大预测 token 步数（MTP/常规草稿默认 5；DSpark 草稿强制下限 15，
+    /// 因其块扩散架构单次前向固定产出 15 个候选，低于该值会截断同一次计算的产出）
     pub draft_max_tokens: Option<u32>,
     /// 用户指定上下文长度（None = 自动）
     pub context_window: Option<u32>,
@@ -535,24 +536,40 @@ impl ParamBuilder {
         // ── 语言模型（生成）模式 ──
         if let Some(info) = model_info {
             if info.enable_draft {
+                // MTP / 常规草稿模型默认步数
                 let draft_max = info.draft_max_tokens.unwrap_or(5);
                 // DSpark 投机采样
                 if let Some(ref dspark) = info.dspark_path {
+                    // DSpark 草稿模型（openbmb/MiniCPM-V-4.7-1B-DSpark-gguf）采用块扩散 +
+                    // 马尔可夫头架构，单次前向传播固定产出 15 个草稿 token；llama.cpp 的
+                    // DSpark 实现一次前向即输出整块候选，n-max < 15 会人为截断同一次计算
+                    // 的剩余候选。故下限强制对齐官方推荐值 15，用户配置更高（>15）时透传。
+                    let dspark_max = info.draft_max_tokens.map_or(15, |v| v.max(15));
                     args.extend([
                         "--model-draft".to_string(),
                         dspark.clone(),
                         "--spec-type".to_string(),
                         "draft-dspark".to_string(),
                         "--spec-draft-n-max".to_string(),
-                        draft_max.to_string(),
+                        dspark_max.to_string(),
                         "--spec-draft-n-min".to_string(),
                         "0".to_string(),
                     ]);
-                    if !params.is_cpu_mode && params.gpu_layers > 0 {
-                        args.extend([
-                            "--gpu-layers-draft".to_string(),
-                            params.gpu_layers.to_string(),
-                        ]);
+                    // 草稿模型 GPU 层数显式化：DSpark 草稿模型仅约 438MB / 5 层，若依赖
+                    // llama.cpp 的 auto 估算，长上下文显存吃紧时可能保守回退 CPU 导致推理
+                    // 变慢。只要主模型存在任何 GPU 卸载（-1 全量或部分层数），草稿模型即
+                    // 全量常驻显存（--gpu-layers-draft -1，别名 -ngld -1）；仅 CPU 模式跳过。
+                    if !params.is_cpu_mode && params.gpu_layers != 0 {
+                        args.extend(["--gpu-layers-draft".to_string(), "-1".to_string()]);
+                    }
+                    // 显存提示：开启投机采样后主模型与 DSpark 草稿模型会按 --ctx-size 各自
+                    // 分配 KV 缓存（f16 精度下开销近似翻倍）。日常无需满载长上下文时，建议
+                    // 下调 ctx-size（参照官方示例 8192 / 32768）以降低占用并加速批处理验证。
+                    if params.ctx_size >= 65536 {
+                        warn!(
+                            ctx_size = params.ctx_size,
+                            "DSpark 投机采样下主模型与草稿模型各按 --ctx-size 分配 KV 缓存（f16 精度近似双倍开销），显存吃紧时建议下调至 8192/32768"
+                        );
                     }
                 } else if let Some(ref draft) = info.draft_path {
                     // MTP / 常规 Draft
@@ -1112,7 +1129,7 @@ mod tests {
         assert!(!args_disabled.contains(&"--mmproj".to_string()), "用户关闭识图后即使有投影文件也不应注入 --mmproj");
         assert!(!args_disabled.contains(&"--model-draft".to_string()), "用户关闭加速后即使有草稿文件也不应注入 --model-draft");
 
-        // 重新开启并自定义步数
+        // 重新开启并自定义步数（DSpark 草稿存在下限 15：低于 15 自动对齐官方块大小）
         model.enable_vision = true;
         model.enable_draft = true;
         model.draft_max_tokens = Some(7);
@@ -1120,6 +1137,21 @@ mod tests {
 
         assert!(args_enabled.contains(&"--mmproj".to_string()), "用户开启识图后应注入 --mmproj");
         assert!(args_enabled.contains(&"--model-draft".to_string()), "用户开启加速后应注入 --model-draft");
-        assert!(args_enabled.contains(&"7".to_string()), "应注入自定义 draft_max_tokens 7");
+        let nmax_idx = args_enabled.iter().position(|r| r == "--spec-draft-n-max").unwrap();
+        assert_eq!(args_enabled[nmax_idx + 1], "15", "DSpark n-max 低于 15 应对齐官方块大小 15");
+        let ngld_idx = args_enabled.iter().position(|r| r == "--gpu-layers-draft").unwrap();
+        assert_eq!(args_enabled[ngld_idx + 1], "-1", "GPU 模式下草稿模型应显式全量常驻显存（-1）");
+
+        // 用户配置高于 15 时透传
+        model.draft_max_tokens = Some(20);
+        let args_higher = ParamBuilder::to_args(&params, 38400, "D:\\models\\main.gguf", "test-model", Some(&model));
+        let nmax_idx2 = args_higher.iter().position(|r| r == "--spec-draft-n-max").unwrap();
+        assert_eq!(args_higher[nmax_idx2 + 1], "20", "DSpark n-max 高于 15 应透传用户配置");
+
+        // 未配置时默认对齐官方推荐值 15
+        model.draft_max_tokens = None;
+        let args_default = ParamBuilder::to_args(&params, 38400, "D:\\models\\main.gguf", "test-model", Some(&model));
+        let nmax_idx3 = args_default.iter().position(|r| r == "--spec-draft-n-max").unwrap();
+        assert_eq!(args_default[nmax_idx3 + 1], "15", "DSpark 未配置 n-max 时应默认 15");
     }
 }
