@@ -109,12 +109,21 @@ export const useEngineStore = create<EngineStoreState>((set, get) => ({
         ...(silent ? {} : { loading: false })
       })
 
-      // 依据后端 current_model 反查 activeModelKey（当前进程实际运行的模型）
-      if (status.current_model) {
+      // 依据后端 current_model 反查 activeModelKey（当前进程实际运行 / 正在加载的模型）。
+      // 反查失败或后端未上报时必须显式清空：运行态键只能由引擎上报派生，
+      // 绝不允许残留上一次的值（否则重启期间会把旧模型继续标成「已启动/启动中」）。
+      {
         const currentModels = get().models
-        const matched = currentModels.find(m => matchCurrentModel(m, status.current_model!))
-        if (matched) {
-          const realKey = `${matched.id}@${matched.source}`
+        const reported = status.current_model
+        if (!reported) {
+          // 后端明确没有运行 / 加载中的模型 → 必须清空，杜绝残留值被当作运行态
+          if (get().activeModelKey !== null) {
+            set({ activeModelKey: null })
+          }
+        } else if (currentModels.length > 0) {
+          // 列表未就绪时无法反查，保持原值，等 fetchModels 再对齐
+          const matched = currentModels.find(m => matchCurrentModel(m, reported))
+          const realKey = matched ? `${matched.id}@${matched.source}` : null
           if (get().activeModelKey !== realKey) {
             set({ activeModelKey: realKey })
           }
@@ -199,17 +208,19 @@ export const useEngineStore = create<EngineStoreState>((set, get) => ({
         if (initialEmb) targetEmbKey = `${initialEmb.id}@${initialEmb.source}`
       }
 
-      // 运行态 activeModelKey 仅当当前运行模型可查时对齐
-      let targetActiveKey = get().activeModelKey
+      // 运行态 activeModelKey 严格由引擎上报的 current_model 派生：
+      // 引擎未运行 / 尚未解析出模型时保持 null，绝不用「槽位激活态」或「首个已下载模型」兜底。
+      // 历史上这里用 targetLangKey 兜底，导致重启期间（current_model 尚未上报）把列表第一行
+      // 的已下载模型误标成「启动中」，而真正被加载的激活模型反而不显示。
+      let targetActiveKey: string | null = null
       if (engineStatus?.current_model) {
         const activeItem = models.find(m => matchCurrentModel(m, engineStatus.current_model!))
-        if (activeItem && activeItem.isDownloaded) {
-          targetActiveKey = `${activeItem.id}@${activeItem.source}`
-        } else {
-          targetActiveKey = null
-        }
-      } else if (!targetActiveKey) {
-        targetActiveKey = targetLangKey
+        targetActiveKey = activeItem && activeItem.isDownloaded
+          ? `${activeItem.id}@${activeItem.source}`
+          : null
+      } else if (get().activeModelKey && models.some(m => `${m.id}@${m.source}` === get().activeModelKey)) {
+        // 状态快照暂时缺失（如刚启动尚未拿到 status）时保留已确认的运行态，但不新造
+        targetActiveKey = get().activeModelKey
       }
 
       set({

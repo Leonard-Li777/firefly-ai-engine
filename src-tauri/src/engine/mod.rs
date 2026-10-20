@@ -297,7 +297,14 @@ impl EngineCoordinator {
         };
 
         let active_port = self.active_port.lock().await.unwrap_or(38400);
-        let current_model = if proc_status == ProcessStatus::Running {
+        // 运行态与「启动中」都要上报模型：
+        // `active_model` 在 start_service_inner 里于拉起子进程之前就已解析落库，
+        // 是「正在加载的模型」的唯一真相。若 Starting 期间不报，前端无从判断该给哪一行
+        // 打「启动中」徽标，只能退化用槽位激活态 / 列表首项瞎猜（曾把列表第一行误标为启动中）。
+        // 停止态（Stopped / Failed）仍然严格置空，避免用残留值假装有模型在跑。
+        let is_model_lifecycle = proc_status == ProcessStatus::Running || proc_status == ProcessStatus::Starting;
+
+        let current_model = if is_model_lifecycle {
             let rm = self.running_model.lock().await.clone();
             if rm.is_some() {
                 rm
@@ -308,7 +315,7 @@ impl EngineCoordinator {
             None
         };
 
-        let current_model_name = if proc_status == ProcessStatus::Running {
+        let current_model_name = if is_model_lifecycle {
             let active_name = self.active_model_name.lock().await.clone();
             if active_name.is_some() {
                 active_name
