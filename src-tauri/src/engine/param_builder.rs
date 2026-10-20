@@ -537,14 +537,18 @@ impl ParamBuilder {
         if let Some(info) = model_info {
             if info.enable_draft {
                 // MTP / 常规草稿模型默认步数
-                let draft_max = info.draft_max_tokens.unwrap_or(5);
+                let draft_max = info.draft_max_tokens.unwrap_or(6);
                 // DSpark 投机采样
                 if let Some(ref dspark) = info.dspark_path {
                     // DSpark 草稿模型（openbmb/MiniCPM-V-4.7-1B-DSpark-gguf）采用块扩散 +
-                    // 马尔可夫头架构，单次前向传播固定产出 15 个草稿 token；llama.cpp 的
-                    // DSpark 实现一次前向即输出整块候选，n-max < 15 会人为截断同一次计算
-                    // 的剩余候选。故下限强制对齐官方推荐值 15，用户配置更高（>15）时透传。
-                    let dspark_max = info.draft_max_tokens.map_or(15, |v| v.max(15));
+                    // 马尔可夫头架构。2026-10-20 用户实测调参：旧策略把 n-max 强制对齐
+                    // 块大小 15，但草稿命中率仅 4%~21%、平均每次仅接受 2.4~4.15 个词
+                    // （temp 0.7 常规对话场景）——第 4 个词之后猜错即整段作废，第 5~15
+                    // 个候选纯属无效计算，白耗显卡算力。故取消 15 下限，透传用户配置，
+                    // 缺省取甜点值 6：既覆盖实测平均命中长度，又砍掉后续无效草稿。
+                    // 结构化/识图等低温场景（API 动态传 temperature≤0.3）命中率翻倍后，
+                    // 可在模型参数抽屉内调高至 8。
+                    let dspark_max = info.draft_max_tokens.unwrap_or(6);
                     args.extend([
                         "--model-draft".to_string(),
                         dspark.clone(),
@@ -1129,7 +1133,7 @@ mod tests {
         assert!(!args_disabled.contains(&"--mmproj".to_string()), "用户关闭识图后即使有投影文件也不应注入 --mmproj");
         assert!(!args_disabled.contains(&"--model-draft".to_string()), "用户关闭加速后即使有草稿文件也不应注入 --model-draft");
 
-        // 重新开启并自定义步数（DSpark 草稿存在下限 15：低于 15 自动对齐官方块大小）
+        // 重新开启并自定义步数（2026-10-20 起 DSpark 取消 15 下限：用户值透传）
         model.enable_vision = true;
         model.enable_draft = true;
         model.draft_max_tokens = Some(7);
@@ -1138,20 +1142,20 @@ mod tests {
         assert!(args_enabled.contains(&"--mmproj".to_string()), "用户开启识图后应注入 --mmproj");
         assert!(args_enabled.contains(&"--model-draft".to_string()), "用户开启加速后应注入 --model-draft");
         let nmax_idx = args_enabled.iter().position(|r| r == "--spec-draft-n-max").unwrap();
-        assert_eq!(args_enabled[nmax_idx + 1], "15", "DSpark n-max 低于 15 应对齐官方块大小 15");
+        assert_eq!(args_enabled[nmax_idx + 1], "7", "DSpark n-max 低于 15 时应透传用户配置");
         let ngld_idx = args_enabled.iter().position(|r| r == "--gpu-layers-draft").unwrap();
         assert_eq!(args_enabled[ngld_idx + 1], "-1", "GPU 模式下草稿模型应显式全量常驻显存（-1）");
 
-        // 用户配置高于 15 时透传
+        // 用户配置更高时透传
         model.draft_max_tokens = Some(20);
         let args_higher = ParamBuilder::to_args(&params, 38400, "D:\\models\\main.gguf", "test-model", Some(&model));
         let nmax_idx2 = args_higher.iter().position(|r| r == "--spec-draft-n-max").unwrap();
-        assert_eq!(args_higher[nmax_idx2 + 1], "20", "DSpark n-max 高于 15 应透传用户配置");
+        assert_eq!(args_higher[nmax_idx2 + 1], "20", "DSpark n-max 应透传用户配置");
 
-        // 未配置时默认对齐官方推荐值 15
+        // 未配置时默认取甜点值 6（对齐草稿平均命中长度 2.4~4.15，砍掉 15 的无效猜测）
         model.draft_max_tokens = None;
         let args_default = ParamBuilder::to_args(&params, 38400, "D:\\models\\main.gguf", "test-model", Some(&model));
         let nmax_idx3 = args_default.iter().position(|r| r == "--spec-draft-n-max").unwrap();
-        assert_eq!(args_default[nmax_idx3 + 1], "15", "DSpark 未配置 n-max 时应默认 15");
+        assert_eq!(args_default[nmax_idx3 + 1], "6", "DSpark 未配置 n-max 时应默认 6");
     }
 }

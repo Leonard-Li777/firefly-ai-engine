@@ -255,15 +255,17 @@ export class LlamaCommandBuilder {
     // 双重互锁：物理文件存在 + 选项未关闭（options.enableDraft !== false）
     const enableDraft = options.enableDraft !== false
     // MTP / 常规草稿模型默认步数
-    const draftMaxTokens = String(options.draftMaxTokens || 5)
+    const draftMaxTokens = String(options.draftMaxTokens || 6)
 
     if (enableDraft && modelConfig?.dspark && paths.draftFile) {
       const draftCmdPath = resolveModelArgForCmd(paths.draftFile, modelBaseDir, finalSource)
-      // DSpark 草稿模型（openbmb/MiniCPM-V-4.7-1B-DSpark-gguf）采用块扩散 + 马尔可夫头
-      // 架构，单次前向传播固定产出 15 个草稿 token；llama.cpp 一次前向即输出整块候选，
-      // n-max < 15 会人为截断同一次计算的剩余候选。故下限强制对齐官方推荐值 15，
-      // 用户配置更高（>15）时透传。
-      const dsparkMaxTokens = String(Math.max(Number(options.draftMaxTokens) || 15, 15))
+      // DSpark 草稿模型（openbmb/MiniCPM-V-4.7-1B-DSpark-gguf）采用块扩散 + 马尔可夫头架构。
+      // 2026-10-20 用户实测调参：旧策略把 n-max 强制对齐块大小 15，但草稿命中率仅
+      // 4%~21%、平均每次仅接受 2.4~4.15 个词（temp 0.7 常规对话场景）——第 4 个词之后
+      // 猜错即整段作废，第 5~15 个候选纯属无效计算，白耗显卡算力。故取消 15 下限，
+      // 透传用户配置，缺省取甜点值 6：既覆盖实测平均命中长度，又砍掉后续无效草稿。
+      // 结构化/识图等低温场景（API 动态传 temperature≤0.3）命中率翻倍后可调高至 8。
+      const dsparkMaxTokens = String(Number(options.draftMaxTokens) || 6)
       draftArg = [
         '--model-draft',
         draftCmdPath,

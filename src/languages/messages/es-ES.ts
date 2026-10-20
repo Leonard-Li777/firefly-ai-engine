@@ -399,12 +399,12 @@ export default  {
     "1293": "Modelo de aceleración de carga (DSpark)",
     "1294": "La aceleración de muestreo aleatorio puede mejorar significativamente la velocidad de generación, pero necesita ocupar de 1 a 2,5 GB de memoria de video de forma permanente; no se recomienda encender cuando la memoria de video es escasa o el texto corto es el foco principal.",
     "1295": "Número de pasos especulativos",
-    "1296": "El número máximo de tokens predichos en un solo paso, aumentando puede aumentar la relación de aceleración a altas tasas de aciertos, pero aumentará ligeramente la presión de la memoria de video (predeterminado: 5)",
     "1297": "Recomendación de hardware",
     "1298": "Restaure de forma adaptativa los mejores parámetros en función del hardware de GPU y CPU detectado actualmente",
     "1299": "Restaurar recomendación inteligente",
     "1313": "Restaure la configuración conservadora de referencia del sistema, adecuada para una memoria de video ajustada o para solucionar problemas de estabilidad anormales",
     "1314": "Restaurar configuración conservadora",
     "1315": "Los parámetros actuales son consistentes con la configuración guardada sin ninguna modificación",
-    "1316": "Guarde los parámetros de inicio del modelo modificados actualmente"
+    "1316": "Guarde los parámetros de inicio del modelo modificados actualmente",
+    "1319": "La cantidad máxima de tokens de predicción en un solo paso. Aumentarlo puede mejorar la tasa de aceleración con altas tasas de aciertos, pero aumentará ligeramente la presión de la memoria (predeterminado: 6)"
 }

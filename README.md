@@ -25,8 +25,8 @@
 - 具备 `chcp 65001` 与系统活动代码页双向解码及 `fs.existsSync` 双重物理校验。
 
 ### 3. ⚡ DSpark 与 MTP 投机采样加速 (Speculative Sampling)
-- 支持 DSpark 草稿模型配对（`--spec-type draft-dspark --spec-draft-n-max 15`，块扩散架构单次前向固定产出 15 个候选，低于 15 自动对齐官方块大小），并显式指定 `--gpu-layers-draft -1` 确保草稿模型全量常驻显存，大幅提升小参数模型生成速率；
-- 支持 MTP 预测草稿模型（`draft-mtp`，默认 `--spec-draft-n-max 5`）。
+- 支持 DSpark 草稿模型配对（`--spec-type draft-dspark`，默认 `--spec-draft-n-max 6`——2026-10-20 实测调参甜点值：草稿命中率 4%~21%、平均仅接受 2.4~4.15 个词，旧值 15 时第 5 个起全部作废属无效计算；命中率高的低温场景可在参数抽屉调至 8），并显式指定 `--gpu-layers-draft -1` 确保草稿模型全量常驻显存，大幅提升小参数模型生成速率；
+- 支持 MTP 预测草稿模型（`draft-mtp`，默认 `--spec-draft-n-max 6`）。
 
 ### 4. 🌐 双轨高速断点续传下载器与 10 语种模型元数据
 - **网络探针与自动镜像**：300ms 快速探测网络，国内环境自动走 GitHub 代理与 ModelScope；海外环境直连 HuggingFace 与 GitHub 官方 Release；

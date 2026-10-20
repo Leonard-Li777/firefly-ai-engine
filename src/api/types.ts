@@ -71,7 +71,7 @@ export interface RuntimeParams {
   // 伴随模型控制与微调（新增）
   enableVision?: boolean       // 是否加载识图多模态投影（默认 true）
   enableDraft?: boolean        // 是否加载投机加速草稿模型（默认 true）
-  draftMaxTokens?: number      // 投机预测最大步数（默认 5；DSpark 草稿模型强制下限 15——块扩散单次前向固定产出 15 个候选）
+  draftMaxTokens?: number      // 投机预测最大步数（默认 6——DSpark 甜点值；2026-10-20 取消 15 下限，命中率低时 15 个候选大部分作废）
 }
 
 export interface StartModelDownloadOptions {

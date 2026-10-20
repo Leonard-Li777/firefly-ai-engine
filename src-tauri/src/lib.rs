@@ -1,6 +1,7 @@
 // lib.rs
 // Tauri 应用入口（lib 供测试引用）
 
+pub mod app_log;
 pub mod config;
 pub mod engine;
 pub mod hardware;
@@ -142,14 +143,20 @@ fn setup_tray_menu(app: &tauri::AppHandle) {
 /// 构建并运行 Tauri 应用
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    // 初始化 tracing 日志
+    // 初始化 tracing 日志：控制台 + AppData/logs/app.log 双写。
+    // 落盘是为了让进程崩溃 / 被重启后仍能回看启动与错误记录（仅控制台输出会随进程一起消失）。
+    use tracing_subscriber::fmt::writer::MakeWriterExt;
     tracing_subscriber::fmt()
         .with_env_filter(
             tracing_subscriber::EnvFilter::try_from_default_env()
                 .unwrap_or_else(|_| "firefly_ai_engine_lib=info,tower_http=warn".parse().unwrap()),
         )
         .json()
+        .with_writer(std::io::stdout.and(app_log::FileAppender))
         .init();
+
+    // panic 现场写盘：release 为 panic=abort，hook 仍会先执行
+    app_log::install_panic_hook();
 
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
@@ -161,6 +168,10 @@ pub fn run() {
                 .expect("无法获取 AppData 目录");
 
             info!("Firefly AI Engine 数据目录: {:?}", data_dir);
+
+            // 应用级日志落盘（tracing + panic），崩溃后可追溯
+            let log_dir = data_dir.join("logs");
+            app_log::init(&log_dir);
 
             // 加载配置（失败时使用默认配置，但必须确保 data_dir 正确设置）
             // 注意：不能用 unwrap_or_default()，EngineConfig::default() 的 data_dir 是空 PathBuf，
@@ -192,12 +203,15 @@ pub fn run() {
             let proxy_state = ProxyState::new();
 
             // 初始化引擎协调器
-            let coordinator = EngineCoordinator::new(
+            // 传入日志目录：llama-server 输出会追加写入 <data_dir>/logs/runtime.log，
+            // 并在启动时回灌上一轮尾部日志（崩溃现场不再随内存缓冲一起消失）
+            let coordinator = EngineCoordinator::new_with_log_dir(
                 hardware.clone(),
                 compliance,
                 install_bin_dirs,
                 config.clone(),
                 proxy_state.clone(),
+                Some(log_dir.clone()),
             );
 
             let coordinator_clone = coordinator.clone();

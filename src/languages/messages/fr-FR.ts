@@ -399,12 +399,12 @@ export default  {
     "1293": "Modèle d'accélération de chargement (DSpark)",
     "1294": "L'accélération d'échantillonnage aléatoire peut améliorer considérablement la vitesse de génération, mais elle doit occuper 1 à 2,5 Go de mémoire vidéo en permanence; il n'est pas recommandé de l'allumer lorsque la mémoire vidéo est restreinte ou que le texte court est l'objectif principal.",
     "1295": "Nombre d'étapes spéculatives",
-    "1296": "Le nombre maximum de jetons prédits en une seule étape, l'augmentation peut augmenter le taux d'accélération à des taux de réussite élevés, mais cela augmentera légèrement la pression de la mémoire vidéo (par défaut: 5)",
     "1297": "Recommandation matériel",
     "1298": "Restaurez de manière adaptative les meilleurs paramètres en fonction du matériel GPU et CPU actuellement détecté",
     "1299": "Restaurer la recommandation intelligente",
     "1313": "Restaurez la configuration de référence conservatrice du système, adaptée à une mémoire vidéo étroite ou au dépannage de problèmes de stabilité anormaux",
     "1314": "Restaurer la configuration conservatrice",
     "1315": "Les paramètres actuels sont cohérents avec la configuration enregistrée sans aucune modification",
-    "1316": "Enregistrer les paramètres de démarrage du modèle actuellement modifiés"
+    "1316": "Enregistrer les paramètres de démarrage du modèle actuellement modifiés",
+    "1319": "Le nombre maximum de jetons de prédiction en une seule étape. L'augmenter peut améliorer le taux d'accélération en cas de taux de réussite élevés, mais augmentera légèrement la pression sur la mémoire (par défaut : 6)"
 }

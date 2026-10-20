@@ -49,7 +49,7 @@ function areParamsEqual(a: RuntimeParams | null, b: RuntimeParams | null): boole
     Math.round(Number(a.repeat_penalty ?? 1.1) * 100) === Math.round(Number(b.repeat_penalty ?? 1.1) * 100) &&
     Boolean(a.enableVision !== false) === Boolean(b.enableVision !== false) &&
     Boolean(a.enableDraft !== false) === Boolean(b.enableDraft !== false) &&
-    Number(a.draftMaxTokens || 5) === Number(b.draftMaxTokens || 5)
+    Number(a.draftMaxTokens || 6) === Number(b.draftMaxTokens || 6)
   )
 }
 
@@ -319,18 +319,18 @@ export const ModelParamDrawer: React.FC<ModelParamDrawerProps> = ({
                             <span className="font-mono text-muted-foreground ml-1.5">(--draft-max, draft_max_tokens)</span>
                           </div>
                           <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                            {params.draftMaxTokens ?? 5}
+                            {params.draftMaxTokens ?? 6}
                           </span>
                         </div>
                         <Slider
-                          value={params.draftMaxTokens ?? 5}
+                          value={params.draftMaxTokens ?? 6}
                           min={1}
                           max={8}
                           step={1}
                           onChange={val => setParams(p => ({ ...p, draftMaxTokens: val }))}
                         />
                         <p className="text-[11px] text-muted-foreground/80">
-                          {t('单步最大预测 token 数，增大可提升高命中率下的加速比，但会轻微增加显存压力 (默认: 5)')}
+                          {t('单步最大预测 token 数，增大可提升高命中率下的加速比，但会轻微增加显存压力 (默认: 6)')}
                         </p>
                       </div>
                     )}

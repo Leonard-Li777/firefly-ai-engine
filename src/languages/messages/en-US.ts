@@ -399,12 +399,12 @@ export default  {
     "1293": "Loading acceleration model (DSpark)",
     "1294": "Random sampling acceleration can significantly improve the generation speed, but it needs to occupy 1~2.5GB of video memory permanently; it is not recommended to turn on when the video memory is tight or short text is the main focus.",
     "1295": "Number of speculative steps",
-    "1296": "The maximum number of predicted tokens in a single step, increasing can increase the acceleration ratio at high hit rates, but it will slightly increase the video memory pressure (default: 5)",
     "1297": "Hardware Recommendation",
     "1298": "Adaptively restore the best parameters based on the currently detected GPU and CPU hardware",
     "1299": "Restore smart recommendation",
     "1313": "Restore the conservative benchmark configuration of the system, suitable for tight video memory or troubleshooting abnormal stability issues",
     "1314": "Restore conservative configuration",
     "1315": "The current parameters are consistent with the saved configuration without any modification",
-    "1316": "Save the currently modified model startup parameters"
+    "1316": "Save the currently modified model startup parameters",
+    "1319": "The maximum number of prediction tokens in a single step. Increasing it can improve the speedup ratio under high hit rates, but will slightly increase the memory pressure (default: 6)"
 }

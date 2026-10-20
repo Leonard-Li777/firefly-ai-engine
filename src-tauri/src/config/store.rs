@@ -125,7 +125,7 @@ pub struct ModelCustomParams {
     /// 是否加载投机加速草稿模型（默认 true）
     #[serde(default = "default_enable_draft", rename = "enableDraft", alias = "enable_draft")]
     pub enable_draft: Option<bool>,
-    /// 投机预测最大步数（默认 5，范围 1~8）
+    /// 投机预测最大步数（默认 6——DSpark 甜点值，范围 1~8）
     #[serde(default = "default_draft_max_tokens", rename = "draftMaxTokens", alias = "draft_max_tokens")]
     pub draft_max_tokens: Option<u32>,
 }
@@ -176,7 +176,7 @@ fn default_top_k() -> u32 { 40 }
 fn default_repeat_penalty() -> f64 { 1.1 }
 fn default_enable_vision() -> Option<bool> { Some(true) }
 fn default_enable_draft() -> Option<bool> { Some(true) }
-fn default_draft_max_tokens() -> Option<u32> { Some(5) }
+fn default_draft_max_tokens() -> Option<u32> { Some(6) }
 
 impl Default for ModelCustomParams {
     fn default() -> Self {

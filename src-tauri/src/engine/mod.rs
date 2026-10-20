@@ -1,11 +1,13 @@
 pub mod flag_detector;
 pub mod gguf_parser;
+pub mod log_store;
 pub mod param_builder;
 pub mod process_guard;
 pub mod scheduler;
 
 pub use flag_detector::{FlagDetector, ServerFeatureFlags};
 pub use gguf_parser::GgufMetadata;
+pub use log_store::RuntimeLogStore;
 pub use param_builder::{EngineParams, ModelInfo, ParamBuilder};
 pub use process_guard::{ProcessError, ProcessEvent, ProcessGuard, ProcessStatus};
 pub use scheduler::{EngineScheduler, InstalledEngine};
@@ -130,8 +132,21 @@ impl EngineCoordinator {
         config: Arc<Mutex<EngineConfig>>,
         proxy_state: ProxyState,
     ) -> Arc<Self> {
+        Self::new_with_log_dir(hardware, compliance, bin_dirs, config, proxy_state, None)
+    }
+
+    /// 带运行时日志目录的构造：`log_dir` 下的 `runtime.log` 会持久化 llama-server
+    /// 的 stdout/stderr，崩溃 / 重启后仍可回看（见 [`RuntimeLogStore`]）。
+    pub fn new_with_log_dir(
+        hardware: Arc<HardwareDetector>,
+        compliance: Arc<DriverComplianceService>,
+        bin_dirs: Vec<PathBuf>,
+        config: Arc<Mutex<EngineConfig>>,
+        proxy_state: ProxyState,
+        log_dir: Option<PathBuf>,
+    ) -> Arc<Self> {
         let scheduler = Arc::new(EngineScheduler::new(bin_dirs.clone(), compliance.clone()));
-        let guard = ProcessGuard::new(compliance.clone());
+        let guard = ProcessGuard::new_with_log_dir(compliance.clone(), log_dir);
         let (status_broadcast, _) = tokio::sync::broadcast::channel(32);
 
         Arc::new(EngineCoordinator {

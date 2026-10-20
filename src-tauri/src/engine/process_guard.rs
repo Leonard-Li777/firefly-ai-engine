@@ -3,6 +3,7 @@
 // 功能：进程生命周期管理 + 实时 stderr/stdout 监控 + 错误结构化分类
 
 use anyhow::{anyhow, Result};
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
@@ -13,6 +14,7 @@ use tracing::{debug, info, warn};
 
 use crate::hardware::{DowngradeReason, DriverComplianceService};
 
+use super::log_store::RuntimeLogStore;
 use super::scheduler::InstalledEngine;
 
 /// 进程状态
@@ -41,6 +43,9 @@ pub enum ProcessEvent {
     Log(String),
 }
 
+/// 内存环形日志缓冲上限（行）。与落盘文件互不影响：文件保留更长历史。
+const LOG_BUFFER_CAPACITY: usize = 2000;
+
 /// 进程守护器（单实例，单进程）
 pub struct ProcessGuard {
     compliance: Arc<DriverComplianceService>,
@@ -58,11 +63,48 @@ pub struct ProcessGuard {
     current_engine: Mutex<Option<InstalledEngine>>,
     /// 环形内存日志缓冲区（最多保留 2000 行，供 UI 实时查看与清空）
     log_buffer: Arc<Mutex<std::collections::VecDeque<String>>>,
+    /// 日志落盘存储（可选）。崩溃 / 重启后靠它把上一轮日志读回内存缓冲。
+    log_store: Option<Arc<RuntimeLogStore>>,
 }
 
 impl ProcessGuard {
     pub fn new(compliance: Arc<DriverComplianceService>) -> Arc<Self> {
+        Self::new_with_log_dir(compliance, None)
+    }
+
+    /// 构造并绑定日志目录。
+    ///
+    /// `log_dir` 下的 `runtime.log` 会以 append 方式持久化子进程输出；构造时还会把
+    /// 文件尾部（上一次会话，含崩溃现场）回灌进内存缓冲，使 UI 重启后仍能看到历史。
+    pub fn new_with_log_dir(
+        compliance: Arc<DriverComplianceService>,
+        log_dir: Option<PathBuf>,
+    ) -> Arc<Self> {
         let (event_tx, _) = broadcast::channel(64);
+        let log_buffer = Arc::new(Mutex::new(std::collections::VecDeque::with_capacity(
+            LOG_BUFFER_CAPACITY,
+        )));
+        let log_store = log_dir
+            .as_deref()
+            .and_then(RuntimeLogStore::open)
+            .map(Arc::new);
+
+        // 回灌上一轮日志：崩溃后重启，界面第一眼就能看到崩溃前的最后一段输出
+        if let Some(store) = &log_store {
+            match log_buffer.try_lock() {
+                Ok(mut buffer) => {
+                    for line in store.read_tail(LOG_BUFFER_CAPACITY) {
+                        buffer.push_back(line);
+                    }
+                    // 会话分隔行同步进内存，避免「文件里有、界面没有」
+                    buffer.push_back(store.append_marker("引擎进程启动"));
+                }
+                Err(_) => {
+                    store.append_marker("引擎进程启动");
+                }
+            }
+        }
+
         Arc::new(ProcessGuard {
             compliance,
             child: Arc::new(Mutex::new(None)),
@@ -71,7 +113,8 @@ impl ProcessGuard {
             shutting_down: Arc::new(AtomicBool::new(false)),
             event_tx,
             current_engine: Mutex::new(None),
-            log_buffer: Arc::new(Mutex::new(std::collections::VecDeque::with_capacity(2000))),
+            log_buffer,
+            log_store,
         })
     }
 
@@ -86,20 +129,35 @@ impl ProcessGuard {
         guard.iter().cloned().collect()
     }
 
-    /// 清空日志
+    /// 清空日志（内存缓冲 + 落盘文件，仅响应用户显式操作）
     pub async fn clear_logs(&self) {
-        let mut guard = self.log_buffer.lock().await;
-        guard.clear();
+        {
+            let mut guard = self.log_buffer.lock().await;
+            guard.clear();
+        }
+        if let Some(store) = &self.log_store {
+            store.clear();
+        }
         info!("llama.cpp 运行时日志已清空");
     }
 
-    /// 向缓冲区写入一条日志
-    async fn append_log(buffer: &Arc<Mutex<std::collections::VecDeque<String>>>, line: String) {
-        let mut guard = buffer.lock().await;
-        if guard.len() >= 2000 {
-            guard.pop_front();
+    /// 向缓冲区写入一条日志，并同步落盘（落盘失败静默降级）
+    async fn append_log(&self, line: String) {
+        {
+            let mut guard = self.log_buffer.lock().await;
+            if guard.len() >= LOG_BUFFER_CAPACITY {
+                guard.pop_front();
+            }
+            guard.push_back(line.clone());
         }
-        guard.push_back(line);
+        if let Some(store) = &self.log_store {
+            store.append(&line);
+        }
+    }
+
+    /// 日志文件路径（未启用落盘时为 None）
+    pub fn log_file_path(&self) -> Option<PathBuf> {
+        self.log_store.as_ref().map(|s| s.path().to_path_buf())
     }
 
     /// 启动 llama-server 子进程
@@ -151,7 +209,7 @@ impl ProcessGuard {
             engine.binary_path,
             args.join(" ")
         );
-        Self::append_log(&self.log_buffer, full_launch_cmd.clone()).await;
+        self.append_log(full_launch_cmd.clone()).await;
         let _ = self.event_tx.send(ProcessEvent::Log(full_launch_cmd));
 
         // 注入 PATH（Windows DLL 加载关键）
@@ -194,7 +252,7 @@ impl ProcessGuard {
         // 异步监控 stdout
         if let Some(stdout) = child.stdout.take() {
             let tx = self.event_tx.clone();
-            let log_buf = self.log_buffer.clone();
+            let guard_arc = self.clone();
             let status = self.status.clone();
             tokio::spawn(async move {
                 let reader = BufReader::new(stdout);
@@ -215,7 +273,7 @@ impl ProcessGuard {
                     }
 
                     let formatted = format!("[stdout] {}", line);
-                    Self::append_log(&log_buf, formatted.clone()).await;
+                    guard_arc.append_log(formatted.clone()).await;
                     let _ = tx.send(ProcessEvent::Log(formatted));
                 }
             });
@@ -227,7 +285,7 @@ impl ProcessGuard {
             let compliance = self.compliance.clone();
             let engine_clone = engine.clone();
             let shutting_down = self.shutting_down.clone();
-            let log_buf = self.log_buffer.clone();
+            let guard_arc = self.clone();
             let status = self.status.clone();
             let last_error = self.last_error.clone();
 
@@ -239,7 +297,7 @@ impl ProcessGuard {
                 while let Ok(Some(line)) = lines.next_line().await {
                     debug!("[llama-stderr] {}", line);
                     let formatted = format!("[stderr] {}", line);
-                    Self::append_log(&log_buf, formatted.clone()).await;
+                    guard_arc.append_log(formatted.clone()).await;
                     let _ = tx.send(ProcessEvent::Log(formatted));
 
                     error_buffer.push_str(&line);
@@ -296,6 +354,7 @@ impl ProcessGuard {
         let compliance_clone = self.compliance.clone();
         let engine_clone = engine.clone();
         let tx_clone = self.event_tx.clone();
+        let guard_arc = self.clone();
 
         let mut guard = self.child.lock().await;
         *guard = Some(child);
@@ -312,6 +371,14 @@ impl ProcessGuard {
                         Ok(Some(exit_status)) => {
                             if !shutting_down_clone.load(Ordering::SeqCst) {
                                 warn!("llama-server 异常退出: {:?}", exit_status);
+                                // 把崩溃事件本身写进运行日志：否则界面只能看到「输出戛然而止」，
+                                // 且重启后（历史已落盘）仍能确认上一轮是被异常终止的。
+                                guard_arc
+                                    .append_log(format!(
+                                        "[guard] llama-server 异常退出: {:?}",
+                                        exit_status
+                                    ))
+                                    .await;
                                 let mut s = status_clone.lock().await;
                                 *s = ProcessStatus::Failed;
                                 let mut err = last_error_clone.lock().await;
@@ -330,6 +397,9 @@ impl ProcessGuard {
                                     ).await;
                                     let msg = "当前 CPU 缺少该引擎所需的高级指令集(如 AVX2/AVX)，进程触发非法指令异常(0xC000001D)，已标记并隔离".to_string();
                                     *err = Some(msg.clone());
+                                    guard_arc
+                                        .append_log(format!("[guard] {}", msg))
+                                        .await;
                                     let proc_err = ProcessError {
                                         kind: DowngradeReason::CpuInstructionUnsupported,
                                         message: msg,
@@ -346,6 +416,9 @@ impl ProcessGuard {
                         Err(e) => {
                             if !shutting_down_clone.load(Ordering::SeqCst) {
                                 warn!("等待 llama-server 出错: {}", e);
+                                guard_arc
+                                    .append_log(format!("[guard] 等待 llama-server 出错: {}", e))
+                                    .await;
                                 let mut s = status_clone.lock().await;
                                 *s = ProcessStatus::Failed;
                             }
@@ -472,6 +545,8 @@ impl ProcessGuard {
         let mut guard = self.child.lock().await;
         if let Some(mut child) = guard.take() {
             info!("正在终止 llama-server 子进程...");
+            self.append_log("[guard] 上层请求停止 llama-server，正在终止子进程".to_string())
+                .await;
 
             // 先尝试优雅终止
             #[cfg(windows)]

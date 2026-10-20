@@ -3988,9 +3988,17 @@ async fn stop_engine_service(State(state): State<AppState>) -> impl IntoResponse
 
 /// GET /api/engine/logs
 /// 获取 llama.cpp 最近运行日志
+///
+/// `logs` 同时包含本轮与上一轮（崩溃前）的尾部内容——日志已落盘到 `file` 指向的文件，
+/// 进程重启不会清空。
 async fn get_engine_logs(State(state): State<AppState>) -> impl IntoResponse {
     let logs = state.coordinator.guard.get_logs().await;
-    Json(json!({ "logs": logs }))
+    let file = state
+        .coordinator
+        .guard
+        .log_file_path()
+        .map(|p| p.to_string_lossy().to_string());
+    Json(json!({ "logs": logs, "file": file }))
 }
 
 /// POST /api/engine/logs/clear

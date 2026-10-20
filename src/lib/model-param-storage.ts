@@ -20,7 +20,7 @@ export const DEFAULT_MODEL_PARAMS: RuntimeParams = {
   repeat_penalty: 1.1,
   enableVision: true,
   enableDraft: true,
-  draftMaxTokens: 5
+  draftMaxTokens: 6
 }
 
 /**
@@ -148,6 +148,6 @@ export function calculateRecommendedParams(_model?: import('../api/types').Model
     repeat_penalty: 1.1,
     enableVision: true,
     enableDraft: true,
-    draftMaxTokens: 5
+    draftMaxTokens: 6
   }
 }
