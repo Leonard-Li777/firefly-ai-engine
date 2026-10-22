@@ -15,6 +15,7 @@ pub use scheduler::{EngineScheduler, InstalledEngine};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
+use std::time::{Duration, Instant};
 use tokio::sync::Mutex;
 
 use crate::hardware::{DriverComplianceService, HardwareDetector};
@@ -122,6 +123,16 @@ pub struct EngineCoordinator {
     pub app_handle: Arc<Mutex<Option<tauri::AppHandle>>>,
     /// 最新一次成功启动运行的真实自适应参数快照
     pub last_runtime_params: Arc<Mutex<Option<EngineParams>>>,
+    /// 硬件摘要缓存 `(采集时刻, 摘要)`。
+    ///
+    /// `/api/engine/status` 是高频轮询接口（desktop 每 2~3s 一次），而真实探测要
+    /// 拉起 fastfetch 子进程（数百 ms ~ 1s）。一旦探测耗时接近轮询周期，上层探活就会
+    /// 超时并误判「引擎离线」，进而重复拉起新实例、顺手清掉正在服务的 llama-server——
+    /// 这正是「一次 API 调用失败就导致引擎异常退出」的放大链条。
+    /// 硬件信息本身变化极慢，缓存 15s 既保证首屏准确，也让 status 稳定在毫秒级。
+    pub hardware_cache: Arc<Mutex<Option<(Instant, HardwareSummary)>>>,
+    /// 崩溃自愈守护是否已启动（惰性启动，保证只在 Tokio 上下文里 spawn）
+    watchdog_started: Arc<std::sync::atomic::AtomicBool>,
 }
 
 impl EngineCoordinator {
@@ -149,7 +160,7 @@ impl EngineCoordinator {
         let guard = ProcessGuard::new_with_log_dir(compliance.clone(), log_dir);
         let (status_broadcast, _) = tokio::sync::broadcast::channel(32);
 
-        Arc::new(EngineCoordinator {
+        let coordinator = Arc::new(EngineCoordinator {
             hardware,
             scheduler,
             compliance,
@@ -167,7 +178,147 @@ impl EngineCoordinator {
             status_broadcast,
             app_handle: Arc::new(Mutex::new(None)),
             last_runtime_params: Arc::new(Mutex::new(None)),
-        })
+            hardware_cache: Arc::new(Mutex::new(None)),
+            watchdog_started: Arc::new(std::sync::atomic::AtomicBool::new(false)),
+        });
+
+        coordinator
+    }
+
+    /// 惰性启动崩溃自愈守护。
+    ///
+    /// 不能在构造函数里直接 `tokio::spawn`：Tauri 的 setup 回调是同步上下文，
+    /// 此时没有 Tokio reactor，`spawn` 会 panic「there is no reactor running」。
+    /// 首次 `start_service()`（必然在 async handler 内）时启动即可——
+    /// 没有子进程时本来也无需自愈。
+    fn ensure_crash_watchdog(self: &Arc<Self>) {
+        if self
+            .watchdog_started
+            .swap(true, Ordering::SeqCst)
+        {
+            return;
+        }
+        if tokio::runtime::Handle::try_current().is_err() {
+            // 极端情况：仍不在运行时内，回滚标记等待下次
+            self.watchdog_started.store(false, Ordering::SeqCst);
+            return;
+        }
+        Self::spawn_crash_watchdog(self);
+    }
+
+    /// 崩溃自愈守护任务
+    ///
+    /// 目标：**任何一次请求失败或 llama-server 崩溃，都不应升级为「整个引擎不可用」**。
+    /// 宿主进程保持存活，只重建失败的子进程；连续崩溃到上限才停在 Failed，
+    /// 并把原因写进 `last_error` 交给 UI 呈现，避免无限重启刷屏。
+    ///
+    /// 与手动停止的边界：只有 `status == Failed`（崩溃后落库的失败态）才自愈；
+    /// 用户主动停止后状态是 `Stopped`，绝不擅自拉起。
+    fn spawn_crash_watchdog(this: &Arc<Self>) {
+        /// 连续自动重启上限
+        const MAX_AUTO_RESTARTS: u32 = 3;
+        /// 稳定运行多久后把重试计数清零
+        const STABLE_RUN: Duration = Duration::from_secs(60);
+        /// 轮询间隔
+        const TICK: Duration = Duration::from_secs(2);
+
+        let weak = Arc::downgrade(this);
+        tokio::spawn(async move {
+            let mut attempts: u32 = 0;
+            let mut last_attempt: Option<Instant> = None;
+            let mut stable_since: Option<Instant> = None;
+
+            loop {
+                tokio::time::sleep(TICK).await;
+                // 协调器已销毁（进程退出）则结束守护
+                let Some(coord) = weak.upgrade() else { break };
+
+                let status = coord.guard.status().await;
+
+                // 稳定运行计数：跑够一段时间说明这次启动是健康的，清零历史崩溃次数
+                if status == ProcessStatus::Running {
+                    match stable_since {
+                        None => stable_since = Some(Instant::now()),
+                        Some(since) if attempts > 0 && since.elapsed() >= STABLE_RUN => {
+                            tracing::info!(
+                                "llama-server 已稳定运行 {}s，重置崩溃自愈计数",
+                                STABLE_RUN.as_secs()
+                            );
+                            attempts = 0;
+                            stable_since = Some(Instant::now());
+                        }
+                        _ => {}
+                    }
+                    continue;
+                }
+                stable_since = None;
+
+                // 只处理「子进程意外退出」；启动前的校验类失败（模型缺失等）重试无意义
+                if !coord.guard.is_crashed() {
+                    continue;
+                }
+                if status != ProcessStatus::Failed {
+                    // 崩溃后被用户主动停止（Stopped）等场景：清标记，不擅自拉起
+                    coord.guard.clear_crash_flag();
+                    continue;
+                }
+                if attempts >= MAX_AUTO_RESTARTS {
+                    tracing::warn!(
+                        "llama-server 连续异常退出 {} 次，已停止自动重启（请查看运行日志定位原因）",
+                        attempts
+                    );
+                    coord.guard.clear_crash_flag();
+                    continue;
+                }
+
+                // 指数退避：3s / 8s / 20s
+                let backoff = Duration::from_secs(match attempts {
+                    0 => 3,
+                    1 => 8,
+                    _ => 20,
+                });
+                if let Some(t) = last_attempt {
+                    if t.elapsed() < backoff {
+                        continue;
+                    }
+                }
+
+                coord.guard.clear_crash_flag();
+                attempts += 1;
+                last_attempt = Some(Instant::now());
+                tracing::warn!(
+                    "检测到 llama-server 意外退出，{}s 后自动重启（第 {}/{} 次）",
+                    backoff.as_secs(),
+                    attempts,
+                    MAX_AUTO_RESTARTS
+                );
+                coord
+                    .guard
+                    .append_log(format!(
+                        "[guard] 检测到推理进程意外退出，{}s 后自动重启（第 {}/{} 次）",
+                        backoff.as_secs(),
+                        attempts,
+                        MAX_AUTO_RESTARTS
+                    ))
+                    .await;
+
+                tokio::time::sleep(backoff).await;
+
+                // 退避期间状态可能被用户操作改变，重新确认后再拉起
+                if coord.guard.status().await != ProcessStatus::Failed {
+                    continue;
+                }
+                match coord.start_service().await {
+                    Ok(()) => {
+                        tracing::info!("崩溃自愈成功：llama-server 已重新拉起");
+                        stable_since = None;
+                    }
+                    Err(e) => {
+                        tracing::warn!("崩溃自愈失败（第 {} 次）: {}", attempts, e);
+                    }
+                }
+            }
+        });
     }
 
     /// 进入 API 工作态并返回生命周期 Guard（计数+1，并在由 0 变 1 时主动广播变更）
@@ -219,41 +370,60 @@ impl EngineCoordinator {
         drop(config);
 
         // 获取硬件信息（best_tier 仅供前端展示"最佳适配"，不参与当前引擎判定）
-        let hardware = match self.hardware.detect(false).await {
-            Ok(resources) => {
-                let gpu = resources.primary_gpu();
-                let best = resources.best_acceleration_tier.as_str().to_string();
-                HardwareSummary {
-                    gpu_name: gpu.map(|g| g.name.clone()).unwrap_or_default(),
-                    total_vram_gb: gpu.map(|g| g.memory_gb()).unwrap_or(0.0),
-                    used_vram_gb: None,
-                    best_tier: best,
-                    current_tier: String::new(), // 下方统一填入
-                    is_integrated: gpu.map(|g| g.is_integrated).unwrap_or(false),
-                    cpu_cores: Some(resources.cpu.cores as usize),
-                    cpu_threads: Some(resources.cpu.threads as usize),
-                    os_platform: Some(std::env::consts::OS.to_string()),
-                    total_ram_gb: Some(resources.memory.total_gb()),
-                    used_ram_gb: Some(((resources.memory.total_mb.saturating_sub(resources.memory.available_mb)) as f64) / 1024.0),
-                    has_avx2: Some(resources.cpu.has_avx2),
-                    has_avx: Some(resources.cpu.has_avx),
+        // 走 15s 缓存：status 被高频轮询，真实探测要拉起 fastfetch，慢到会让上层误判离线
+        const HW_CACHE_TTL: Duration = Duration::from_secs(15);
+        let cached_hw = {
+            let cache = self.hardware_cache.lock().await;
+            cache
+                .as_ref()
+                .filter(|(at, _)| at.elapsed() < HW_CACHE_TTL)
+                .map(|(_, summary)| summary.clone())
+        };
+        let hardware = match cached_hw {
+            Some(summary) => summary,
+            None => {
+                let fresh = match self.hardware.detect(false).await {
+                    Ok(resources) => {
+                        let gpu = resources.primary_gpu();
+                        let best = resources.best_acceleration_tier.as_str().to_string();
+                        HardwareSummary {
+                            gpu_name: gpu.map(|g| g.name.clone()).unwrap_or_default(),
+                            total_vram_gb: gpu.map(|g| g.memory_gb()).unwrap_or(0.0),
+                            used_vram_gb: None,
+                            best_tier: best,
+                            current_tier: String::new(), // 下方统一填入
+                            is_integrated: gpu.map(|g| g.is_integrated).unwrap_or(false),
+                            cpu_cores: Some(resources.cpu.cores as usize),
+                            cpu_threads: Some(resources.cpu.threads as usize),
+                            os_platform: Some(std::env::consts::OS.to_string()),
+                            total_ram_gb: Some(resources.memory.total_gb()),
+                            used_ram_gb: Some(((resources.memory.total_mb.saturating_sub(resources.memory.available_mb)) as f64) / 1024.0),
+                            has_avx2: Some(resources.cpu.has_avx2),
+                            has_avx: Some(resources.cpu.has_avx),
+                        }
+                    }
+                    Err(_) => HardwareSummary {
+                        gpu_name: String::new(),
+                        total_vram_gb: 0.0,
+                        used_vram_gb: None,
+                        best_tier: "cpu".to_string(),
+                        current_tier: String::new(),
+                        is_integrated: false,
+                        cpu_cores: None,
+                        cpu_threads: None,
+                        os_platform: Some(std::env::consts::OS.to_string()),
+                        total_ram_gb: None,
+                        used_ram_gb: None,
+                        has_avx2: None,
+                        has_avx: None,
+                    },
+                };
+                // 只缓存成功探测的结果：失败态（如 fastfetch 暂不可用）下一轮立刻重试
+                if fresh.total_ram_gb.is_some() || !fresh.gpu_name.is_empty() {
+                    *self.hardware_cache.lock().await = Some((Instant::now(), fresh.clone()));
                 }
+                fresh
             }
-            Err(_) => HardwareSummary {
-                gpu_name: String::new(),
-                total_vram_gb: 0.0,
-                used_vram_gb: None,
-                best_tier: "cpu".to_string(),
-                current_tier: String::new(),
-                is_integrated: false,
-                cpu_cores: None,
-                cpu_threads: None,
-                os_platform: Some(std::env::consts::OS.to_string()),
-                total_ram_gb: None,
-                used_ram_gb: None,
-                has_avx2: None,
-                has_avx: None,
-            },
         };
 
         // 当前引擎只反映真实状态：
@@ -403,6 +573,8 @@ impl EngineCoordinator {
     /// drop `JoinHandle` 只会 **detach** 任务而不会取消它，启动必定走完并落到
     /// `Running` / `Failed`，状态机不会残留中间态。
     pub async fn start_service(self: &Arc<Self>) -> anyhow::Result<()> {
+        // 首次启动服务时拉起崩溃自愈守护（此处必在 Tokio 上下文内）
+        self.ensure_crash_watchdog();
         let coordinator = self.clone();
         let handle = tokio::spawn(async move {
             let _op_lock = coordinator.operation_lock.lock().await;

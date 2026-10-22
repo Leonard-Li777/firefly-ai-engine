@@ -5,7 +5,7 @@
 use anyhow::{anyhow, Result};
 use std::path::PathBuf;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::time::Duration;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::{Child, Command};
@@ -46,6 +46,19 @@ pub enum ProcessEvent {
 /// 内存环形日志缓冲上限（行）。与落盘文件互不影响：文件保留更长历史。
 const LOG_BUFFER_CAPACITY: usize = 2000;
 
+/// 判定子进程退出是否属于「意外崩溃」
+///
+/// 两个条件缺一不可：
+/// - `my_generation == current_generation`：期间没有任何 start / stop 推进代次，
+///   说明没人主动换过进程，这次退出不是我们要求的；
+/// - `!shutting_down`：本进程也不处于关闭流程中。
+///
+/// 只看 `shutting_down` 会误判：`start()` 在内部 `stop()` 之后会把它重置为 false，
+/// 于是上一代监控任务看到的正是「非主动停止」，把正常的模型热切换记成崩溃。
+fn is_unexpected_exit(my_generation: u64, current_generation: u64, shutting_down: bool) -> bool {
+    my_generation == current_generation && !shutting_down
+}
+
 /// 进程守护器（单实例，单进程）
 pub struct ProcessGuard {
     compliance: Arc<DriverComplianceService>,
@@ -57,6 +70,16 @@ pub struct ProcessGuard {
     last_error: Arc<Mutex<Option<String>>>,
     /// 是否正在关闭
     shutting_down: Arc<AtomicBool>,
+    /// 生命周期代次：每次 start / stop 递增。
+    ///
+    /// 监控任务启动时记住自己的代次，退出判定时先比对代次——
+    /// 只有「代次未变」才说明没有任何人主动启停过，此时进程退出才是真异常。
+    /// 仅靠 `shutting_down` 布尔会误判：`start()` 在 stop 之后会把它重置为 false，
+    /// 于是上一个监控任务看到的正是「非主动停止」，把正常的模型切换记成崩溃。
+    generation: Arc<AtomicU64>,
+    /// 子进程是否属于「意外退出」（区别于启动前校验失败）。
+    /// 仅此标志为真时，崩溃自愈守护任务才会自动重新拉起。
+    crashed: Arc<AtomicBool>,
     /// 事件广播（通知调用方进程状态变化）
     event_tx: broadcast::Sender<ProcessEvent>,
     /// 当前引擎（用于错误回调时标记不合规）
@@ -111,6 +134,8 @@ impl ProcessGuard {
             status: Arc::new(Mutex::new(ProcessStatus::Stopped)),
             last_error: Arc::new(Mutex::new(None)),
             shutting_down: Arc::new(AtomicBool::new(false)),
+            generation: Arc::new(AtomicU64::new(0)),
+            crashed: Arc::new(AtomicBool::new(false)),
             event_tx,
             current_engine: Mutex::new(None),
             log_buffer,
@@ -142,7 +167,7 @@ impl ProcessGuard {
     }
 
     /// 向缓冲区写入一条日志，并同步落盘（落盘失败静默降级）
-    async fn append_log(&self, line: String) {
+    pub(crate) async fn append_log(&self, line: String) {
         {
             let mut guard = self.log_buffer.lock().await;
             if guard.len() >= LOG_BUFFER_CAPACITY {
@@ -167,14 +192,36 @@ impl ProcessGuard {
         args: &[String],
         env_extras: &[(&str, &str)],
     ) -> Result<()> {
-        // 1. 严格单例保障：如果内部已有托管的旧子进程，先执行彻底终止并等待
-        let _ = self.stop().await;
+        // 1. 严格单例保障：如果内部已有托管的旧子进程，先执行彻底终止并等待。
+        //    但若它其实已经退出（崩溃自愈重建、外部终止），直接回收句柄即可——
+        //    否则会往运行日志里写一条误导性的「上层请求停止」，让人误以为有人主动停服。
+        let already_exited = {
+            let mut guard = self.child.lock().await;
+            let exited = matches!(
+                guard.as_mut().map(|c| c.try_wait()),
+                Some(Ok(Some(_)))
+            );
+            if exited {
+                // 取出并丢弃已退出的句柄（kill_on_drop 对已退出进程无副作用）
+                guard.take();
+            }
+            exited
+        };
+        if !already_exited {
+            let _ = self.stop().await;
+        }
 
-        // 2. 系统级孤儿进程清场：终结因热更新、崩溃等遗留的任何 llama-server.exe
+        // 2. 系统级孤儿进程清场：只终结「父进程已退出」的 llama-server.exe，
+        //    绝不碰其他仍存活宿主正在服务的推理进程（多实例并存时也不会互相残杀）
         let cleaned = crate::win_proc::kill_stale_llama_servers(None);
         if cleaned > 0 {
             info!("启动前清理了 {} 个残留的 llama-server 孤儿进程", cleaned);
         }
+
+        // 3. 开启新代次：必须在 stop 之后取，stop 自身也会推进代次
+        let my_gen = self.generation.fetch_add(1, Ordering::SeqCst) + 1;
+        // 新一轮启动，清掉上一次的崩溃标记（崩溃自愈守护据此判断是否需要接管）
+        self.crashed.store(false, Ordering::SeqCst);
 
         // 更新状态
         {
@@ -355,6 +402,8 @@ impl ProcessGuard {
         let engine_clone = engine.clone();
         let tx_clone = self.event_tx.clone();
         let guard_arc = self.clone();
+        let generation_clone = self.generation.clone();
+        let crashed_clone = self.crashed.clone();
 
         let mut guard = self.child.lock().await;
         *guard = Some(child);
@@ -369,8 +418,18 @@ impl ProcessGuard {
                 if let Some(ref mut c) = child_opt {
                     match c.try_wait() {
                         Ok(Some(exit_status)) => {
-                            if !shutting_down_clone.load(Ordering::SeqCst) {
+                            // 代次已被推进 ⇒ 期间发生过新的 start / stop：
+                            // 本次退出属于正常生命周期切换（模型切换、后端切换、显式停止），
+                            // 一律不记「异常退出」、不置 Failed、不触发崩溃自愈。
+                            if is_unexpected_exit(
+                                my_gen,
+                                generation_clone.load(Ordering::SeqCst),
+                                shutting_down_clone.load(Ordering::SeqCst),
+                            ) {
                                 warn!("llama-server 异常退出: {:?}", exit_status);
+                                // 标记为「真崩溃」：崩溃自愈守护任务据此自动重新拉起，
+                                // 避免一次推理进程退出就让整个引擎长期停在 error。
+                                crashed_clone.store(true, Ordering::SeqCst);
                                 // 把崩溃事件本身写进运行日志：否则界面只能看到「输出戛然而止」，
                                 // 且重启后（历史已落盘）仍能确认上一轮是被异常终止的。
                                 guard_arc
@@ -414,8 +473,13 @@ impl ProcessGuard {
                         }
                         Ok(None) => {}
                         Err(e) => {
-                            if !shutting_down_clone.load(Ordering::SeqCst) {
+                            if is_unexpected_exit(
+                                my_gen,
+                                generation_clone.load(Ordering::SeqCst),
+                                shutting_down_clone.load(Ordering::SeqCst),
+                            ) {
                                 warn!("等待 llama-server 出错: {}", e);
+                                crashed_clone.store(true, Ordering::SeqCst);
                                 guard_arc
                                     .append_log(format!("[guard] 等待 llama-server 出错: {}", e))
                                     .await;
@@ -438,6 +502,19 @@ impl ProcessGuard {
     /// 获取最近一次错误详情
     pub async fn last_error(&self) -> Option<String> {
         self.last_error.lock().await.clone()
+    }
+
+    /// 子进程是否刚刚「意外退出」（区别于启动前的校验类失败）
+    ///
+    /// 崩溃自愈守护任务只在此标志为真时接管重启；校验类失败（模型缺失等）
+    /// 重试也没意义，必须由用户修复配置，故不置位。
+    pub fn is_crashed(&self) -> bool {
+        self.crashed.load(Ordering::SeqCst)
+    }
+
+    /// 清除崩溃标记（自愈守护在「接管 / 放弃接管」时调用，避免同一崩溃被反复处理）
+    pub fn clear_crash_flag(&self) {
+        self.crashed.store(false, Ordering::SeqCst);
     }
 
     /// 清除最近一次错误
@@ -541,6 +618,8 @@ impl ProcessGuard {
     /// 停止子进程（强制终止，确保完全释放 GPU 显存）
     pub async fn stop(&self) -> Result<()> {
         self.shutting_down.store(true, Ordering::SeqCst);
+        // 推进代次：正在运行的监控任务据此判定「本次退出是主动停止，不是崩溃」
+        self.generation.fetch_add(1, Ordering::SeqCst);
 
         let mut guard = self.child.lock().await;
         if let Some(mut child) = guard.take() {
@@ -626,6 +705,37 @@ mod tests {
 
     fn make_guard() -> Arc<ProcessGuard> {
         ProcessGuard::new(DriverComplianceService::new())
+    }
+
+    /// 退出归因：只有「代次未变 + 非关闭流程」才算意外崩溃。
+    ///
+    /// 回归背景：`start()` 内部先 `stop()` 再重置 `shutting_down=false`，
+    /// 上一代监控任务因此把「模型热切换导致的退出」误记成 `[guard] 异常退出: ExitStatus(1)`，
+    /// 用户侧看到的就是「一次调用失败 → 引擎报异常退出」。
+    #[test]
+    fn unexpected_exit_requires_same_generation_and_not_shutting_down() {
+        // 真崩溃：没人启停过，也不在关闭流程
+        assert!(is_unexpected_exit(3, 3, false));
+        // 已被新的 start / stop 取代：属正常生命周期切换
+        assert!(!is_unexpected_exit(3, 4, false));
+        assert!(!is_unexpected_exit(3, 5, true));
+        // 主动停止
+        assert!(!is_unexpected_exit(3, 3, true));
+    }
+
+    /// stop() 必须推进代次，使在途监控任务失去「崩溃归因」资格。
+    #[tokio::test]
+    async fn stop_bumps_generation() {
+        let guard = make_guard();
+        let before = guard.generation.load(Ordering::SeqCst);
+
+        guard.stop().await.unwrap();
+
+        assert!(
+            guard.generation.load(Ordering::SeqCst) > before,
+            "stop() 未推进代次，在途监控任务会把主动停止误判为崩溃"
+        );
+        assert!(!guard.is_crashed());
     }
 
     /// 校验类失败必须能落库：状态置为 Failed 且 last_error 有值，

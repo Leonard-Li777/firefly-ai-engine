@@ -7,6 +7,7 @@ pub mod engine;
 pub mod hardware;
 pub mod resource_scope;
 pub mod server;
+pub mod stdin_guard;
 pub mod win_proc;
 
 use config::ConfigStore;
@@ -239,6 +240,11 @@ pub fn run() {
             });
 
             app.manage(coordinator.clone());
+
+            // 宿主生命周期守护：桌面端以 ENGINE_WATCH_STDIN=1 + stdin 管道拉起本进程时，
+            // 一旦宿主进程消失（含 taskkill /F 强杀），stdin 读到 EOF 即主动退出，
+            // 并借由自身 Job Object 关闭带走 llama-server，杜绝孤儿进程占用端口与显存。
+            stdin_guard::spawn_if_requested(app_handle.clone());
 
             // 检查是否 --silent 启动（不显示窗口）
             let args: Vec<String> = std::env::args().collect();

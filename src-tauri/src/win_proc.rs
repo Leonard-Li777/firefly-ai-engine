@@ -119,24 +119,48 @@ pub fn assign_pid_to_job(pid: u32) {
     }
 }
 
-/// 扫描并强杀系统中残留的 llama-server 孤儿进程（严格控制单例运行）
+/// 扫描并强杀系统中残留的 llama-server **孤儿**进程
 ///
-/// 当因为历史热更新重启、宿主异常退出或模型切换残留时，
-/// 本函数会遍历系统进程列表，终结除 `exclude_pid` 之外的所有 `llama-server.exe` 进程，
-/// 确保启动新实例时端口与显存被彻底释放。
+/// 「孤儿」判定（缺一不可）：
+/// 1. 进程名是 `llama-server(.exe)`；
+/// 2. 不是调用方自己的子进程（`exclude_pid`）；
+/// 3. **父进程已经退出**（父进程仍存活则一律跳过）。
+///
+/// 第 3 条是硬约束：早期实现会无差别终结所有 `llama-server.exe`，
+/// 于是「另一个仍活着的引擎宿主正在服务的推理进程」会被新建实例顺手杀掉——
+/// 表现为服务端 stderr 毫无输出、`[guard] llama-server 异常退出: ExitStatus(1)`
+/// （`TerminateProcess(h, 1)` 的退出码正是 1），
+/// 上层任何一次请求失败触发的重复拉起都能造成这种误杀。
+/// 现在只清理真正无人认领的残留，多实例并存也不会互相残杀。
 pub fn kill_stale_llama_servers(exclude_pid: Option<u32>) -> usize {
     let mut killed_count = 0;
     #[cfg(windows)]
     {
-        use windows_sys::Win32::Foundation::{CloseHandle, INVALID_HANDLE_VALUE};
+        use windows_sys::Win32::Foundation::{CloseHandle, INVALID_HANDLE_VALUE, STILL_ACTIVE};
         use windows_sys::Win32::System::Diagnostics::ToolHelp::{
             CreateToolhelp32Snapshot, Process32FirstW, Process32NextW, PROCESSENTRY32W,
             TH32CS_SNAPPROCESS,
         };
         use windows_sys::Win32::System::Threading::{
-            OpenProcess, TerminateProcess, WaitForSingleObject, PROCESS_SYNCHRONIZE,
-            PROCESS_TERMINATE,
+            GetExitCodeProcess, OpenProcess, TerminateProcess, WaitForSingleObject,
+            PROCESS_QUERY_LIMITED_INFORMATION, PROCESS_SYNCHRONIZE, PROCESS_TERMINATE,
         };
+
+        /// 父进程是否仍然存活（拿不到句柄视为已退出）
+        unsafe fn is_process_alive(pid: u32) -> bool {
+            if pid == 0 {
+                return false;
+            }
+            let handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, pid);
+            if handle.is_null() || handle == INVALID_HANDLE_VALUE {
+                return false;
+            }
+            let mut code: u32 = 0;
+            let ok = GetExitCodeProcess(handle, &mut code);
+            CloseHandle(handle);
+            // STILL_ACTIVE 在 windows-sys 中是 i32(259)，退出码是 u32
+            ok != 0 && code == STILL_ACTIVE as u32
+        }
 
         unsafe {
             let snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
@@ -162,8 +186,11 @@ pub fn kill_stale_llama_servers(exclude_pid: Option<u32>) -> usize {
                             .unwrap_or(entry.szExeFile.len());
                         let proc_name = String::from_utf16_lossy(&entry.szExeFile[..name_len]);
 
-                        if proc_name.eq_ignore_ascii_case("llama-server.exe")
-                            || proc_name.eq_ignore_ascii_case("llama-server")
+                        if (proc_name.eq_ignore_ascii_case("llama-server.exe")
+                            || proc_name.eq_ignore_ascii_case("llama-server"))
+                            // 父进程仍存活 ⇒ 这个 llama-server 有主，属于另一个仍在工作的宿主
+                            // （或多实例场景下的同族进程），绝不可抢杀。
+                            && !is_process_alive(entry.th32ParentProcessID)
                         {
                             tracing::warn!(
                                 "发现残留孤儿进程: {} (pid={})，正在执行清理与显存释放...",
@@ -186,6 +213,14 @@ pub fn kill_stale_llama_servers(exclude_pid: Option<u32>) -> usize {
                                 }
                                 CloseHandle(h_proc);
                             }
+                        } else if proc_name.eq_ignore_ascii_case("llama-server.exe")
+                            || proc_name.eq_ignore_ascii_case("llama-server")
+                        {
+                            tracing::debug!(
+                                "跳过仍有父进程守护的 llama-server (pid={}, parent={})",
+                                pid,
+                                entry.th32ParentProcessID
+                            );
                         }
                     }
 

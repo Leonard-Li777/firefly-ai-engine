@@ -81,6 +81,7 @@
     "$files": [
       "src/App.tsx(10308-10318)",
       "src/components/chat/local-chat-view.tsx(2445-2455)",
+      "src/components/model/custom-model-add-card.tsx(9748-9758)",
       "src/components/model/custom-model-add-card.tsx(9489-9499)",
       "src/components/model/custom-model-add-card.tsx(9510-9520)"
     ],
@@ -136,10 +137,12 @@
       "src/App.tsx(10499-10509)",
       "src/components/chat/local-chat-view.tsx(5169-5179)",
       "src/components/dashboard/dashboard-view.tsx(9525-9535)",
-      "src/components/model/custom-model-add-card.tsx(14361-14371)",
-      "src/components/model/custom-model-add-card.tsx(14787-14797)",
+      "src/components/model/custom-model-add-card.tsx(14729-14739)",
+      "src/components/model/custom-model-add-card.tsx(15166-15176)",
       "src/components/model/model-list-panel.tsx(27362-27372)",
       "src/components/model/model-list-panel.tsx(27843-27853)",
+      "src/components/model/custom-model-add-card.tsx(14361-14371)",
+      "src/components/model/custom-model-add-card.tsx(14787-14797)",
       "src/components/model/custom-model-add-card.tsx(14382-14392)",
       "src/components/model/custom-model-add-card.tsx(14808-14818)",
       "src/components/model/model-list-panel.tsx(27344-27354)",
@@ -417,51 +420,6 @@
       "src/App.tsx(17940-17948)"
     ],
     "$id": 460
-  },
-  "引擎更新并部署成功": {
-    "en-US": "Engine updated and deployed successfully",
-    "es-ES": "Motor actualizado e implementado correctamente",
-    "ar-EG": "تم تحديث المحرك ونشره بنجاح",
-    "pt-PT": "Mecanismo atualizado e implantado com sucesso",
-    "ru-RU": "Движок обновлен и успешно развернут.",
-    "ja-JP": "エンジンが正常に更新され、デプロイされました",
-    "de-DE": "Engine wurde erfolgreich aktualisiert und bereitgestellt",
-    "fr-FR": "Moteur mis à jour et déployé avec succès",
-    "ko-KR": "엔진이 업데이트되고 성공적으로 배포되었습니다.",
-    "$files": [
-      "src/hooks/use-engine-download.ts(2333-2346)"
-    ],
-    "$id": 461
-  },
-  "下载未正常完成": {
-    "en-US": "Download did not complete normally",
-    "es-ES": "La descarga no se completó normalmente",
-    "ar-EG": "لم يكتمل التنزيل بشكل طبيعي",
-    "pt-PT": "O download não foi concluído normalmente",
-    "ru-RU": "Загрузка не завершилась нормально",
-    "ja-JP": "ダウンロードが正常に完了しませんでした",
-    "de-DE": "Der Download wurde nicht normal abgeschlossen",
-    "fr-FR": "Le téléchargement ne s'est pas terminé normalement",
-    "ko-KR": "다운로드가 정상적으로 완료되지 않았습니다",
-    "$files": [
-      "src/hooks/use-engine-download.ts(2390-2401)"
-    ],
-    "$id": 462
-  },
-  "引擎下载失败": {
-    "en-US": "Engine download failed",
-    "es-ES": "Falló la descarga del motor",
-    "ar-EG": "فشل تنزيل المحرك",
-    "pt-PT": "Falha no download do mecanismo",
-    "ru-RU": "Загрузка движка не удалась",
-    "ja-JP": "エンジンのダウンロードに失敗しました",
-    "de-DE": "Der Engine-Download ist fehlgeschlagen",
-    "fr-FR": "Échec du téléchargement du moteur",
-    "ko-KR": "엔진 다운로드 실패",
-    "$files": [
-      "src/hooks/use-engine-download.ts(2517-2527)"
-    ],
-    "$id": 463
   },
   "显存不足": {
     "en-US": "Insufficient VRAM",
@@ -1298,6 +1256,51 @@
     ],
     "$id": 519
   },
+  "引擎更新并部署成功": {
+    "en-US": "Engine updated and deployed successfully",
+    "es-ES": "Motor actualizado e implementado correctamente",
+    "ar-EG": "تم تحديث المحرك ونشره بنجاح",
+    "pt-PT": "Mecanismo atualizado e implantado com sucesso",
+    "ru-RU": "Движок обновлен и успешно развернут.",
+    "ja-JP": "エンジンが正常に更新され、デプロイされました",
+    "de-DE": "Engine wurde erfolgreich aktualisiert und bereitgestellt",
+    "fr-FR": "Moteur mis à jour et déployé avec succès",
+    "ko-KR": "엔진이 업데이트되고 성공적으로 배포되었습니다.",
+    "$files": [
+      "src/hooks/use-engine-download.ts(2333-2346)"
+    ],
+    "$id": 461
+  },
+  "下载未正常完成": {
+    "en-US": "Download did not complete normally",
+    "es-ES": "La descarga no se completó normalmente",
+    "ar-EG": "لم يكتمل التنزيل بشكل طبيعي",
+    "pt-PT": "O download não foi concluído normalmente",
+    "ru-RU": "Загрузка не завершилась нормально",
+    "ja-JP": "ダウンロードが正常に完了しませんでした",
+    "de-DE": "Der Download wurde nicht normal abgeschlossen",
+    "fr-FR": "Le téléchargement ne s'est pas terminé normalement",
+    "ko-KR": "다운로드가 정상적으로 완료되지 않았습니다",
+    "$files": [
+      "src/hooks/use-engine-download.ts(2390-2401)"
+    ],
+    "$id": 462
+  },
+  "引擎下载失败": {
+    "en-US": "Engine download failed",
+    "es-ES": "Falló la descarga del motor",
+    "ar-EG": "فشل تنزيل المحرك",
+    "pt-PT": "Falha no download do mecanismo",
+    "ru-RU": "Загрузка движка не удалась",
+    "ja-JP": "エンジンのダウンロードに失敗しました",
+    "de-DE": "Der Engine-Download ist fehlgeschlagen",
+    "fr-FR": "Échec du téléchargement du moteur",
+    "ko-KR": "엔진 다운로드 실패",
+    "$files": [
+      "src/hooks/use-engine-download.ts(2517-2527)"
+    ],
+    "$id": 463
+  },
   "获取引擎状态失败": {
     "en-US": "Failed to get engine status",
     "es-ES": "No se pudo obtener el estado del motor",
@@ -1309,6 +1312,7 @@
     "fr-FR": "Impossible d'obtenir l'état du moteur",
     "ko-KR": "엔진 상태를 가져오지 못했습니다.",
     "$files": [
+      "src/stores/engine-store.ts(6160-6172)",
       "src/stores/engine-store.ts(5780-5792)",
       "src/stores/engine-store.ts(6164-6176)"
     ],
@@ -1325,6 +1329,7 @@
     "fr-FR": "Moteur commuté avec succès",
     "ko-KR": "엔진이 성공적으로 전환되었습니다",
     "$files": [
+      "src/stores/engine-store.ts(12130-12141)",
       "src/stores/engine-store.ts(11488-11499)",
       "src/stores/engine-store.ts(11872-11883)",
       "src/stores/engine-store.ts(11807-11818)"
@@ -1342,6 +1347,7 @@
     "fr-FR": "Impossible de changer de moteur",
     "ko-KR": "엔진을 전환하지 못했습니다.",
     "$files": [
+      "src/stores/engine-store.ts(12221-12231)",
       "src/stores/engine-store.ts(11579-11589)",
       "src/stores/engine-store.ts(11963-11973)",
       "src/stores/engine-store.ts(11898-11908)"
@@ -1359,6 +1365,7 @@
     "fr-FR": "Anomalie de commutation du moteur",
     "ko-KR": "스위칭 엔진 이상",
     "$files": [
+      "src/stores/engine-store.ts(12345-12355)",
       "src/stores/engine-store.ts(11703-11713)",
       "src/stores/engine-store.ts(12087-12097)",
       "src/stores/engine-store.ts(12022-12032)"
@@ -1376,6 +1383,8 @@
     "fr-FR": "Échec de l'ajout du modèle",
     "ko-KR": "모델을 추가하지 못했습니다.",
     "$files": [
+      "src/stores/engine-store.ts(16214-16224)",
+      "src/components/model/custom-model-add-card.tsx(18371-18381)",
       "src/stores/engine-store.ts(15572-15582)",
       "src/components/model/custom-model-add-card.tsx(17898-17908)",
       "src/stores/engine-store.ts(15956-15966)",
@@ -1397,6 +1406,7 @@
     "fr-FR": "Échec de la suppression du modèle",
     "ko-KR": "모델을 삭제하지 못했습니다.",
     "$files": [
+      "src/stores/engine-store.ts(17378-17388)",
       "src/stores/engine-store.ts(16736-16746)",
       "src/stores/engine-store.ts(17120-17130)",
       "src/stores/engine-store.ts(16980-16990)",
@@ -1415,6 +1425,7 @@
     "fr-FR": "Échec de la suppression du modèle",
     "ko-KR": "모델을 삭제하지 못했습니다.",
     "$files": [
+      "src/stores/engine-store.ts(18496-18506)",
       "src/stores/engine-store.ts(17854-17864)",
       "src/stores/engine-store.ts(18238-18248)",
       "src/stores/engine-store.ts(18098-18108)",
@@ -1450,8 +1461,9 @@
     "ko-KR": "다운로드 실패",
     "$files": [
       "src/stores/model-download-store.ts(7348-7356)",
-      "src/components/model/custom-model-add-card.tsx(8339-8347)",
+      "src/components/model/custom-model-add-card.tsx(8572-8580)",
       "src/components/model/model-list-panel.tsx(17348-17356)",
+      "src/components/model/custom-model-add-card.tsx(8339-8347)",
       "src/components/model/custom-model-add-card.tsx(8360-8368)",
       "src/components/model/model-list-panel.tsx(17330-17338)",
       "src/components/model/model-list-panel.tsx(16854-16862)",
@@ -3355,111 +3367,6 @@
     ],
     "$id": 807
   },
-  "错误分析与解决建议": {
-    "en-US": "Error analysis and solution suggestions",
-    "es-ES": "Análisis de errores y sugerencias de solución.",
-    "ar-EG": "تحليل الأخطاء واقتراحات الحلول",
-    "pt-PT": "Análise de erros e sugestões de soluções",
-    "ru-RU": "Анализ ошибок и предложения по решению",
-    "ja-JP": "エラー分析と解決策の提案",
-    "de-DE": "Fehleranalyse und Lösungsvorschläge",
-    "fr-FR": "Analyse des erreurs et suggestions de solutions",
-    "ko-KR": "오류 분석 및 해결 방법 제안",
-    "$files": [
-      "src/components/errors/error-analysis-sidebar.tsx(2807-2820)"
-    ],
-    "$id": 637
-  },
-  "面向普通用户的引擎错误解读": {
-    "en-US": "Interpretation of engine errors for ordinary users",
-    "es-ES": "Interpretación de errores del motor para usuarios comunes.",
-    "ar-EG": "تفسير أخطاء المحرك للمستخدمين العاديين",
-    "pt-PT": "Interpretação de erros do motor para usuários comuns",
-    "ru-RU": "Расшифровка ошибок двигателя для обычных пользователей",
-    "ja-JP": "一般ユーザー向けのエンジンエラーの解釈",
-    "de-DE": "Interpretation von Motorfehlern für normale Benutzer",
-    "fr-FR": "Interprétation des erreurs du moteur pour les utilisateurs ordinaires",
-    "ko-KR": "일반 사용자를 위한 엔진 오류 해석",
-    "$files": [
-      "src/components/errors/error-analysis-sidebar.tsx(2954-2971)"
-    ],
-    "$id": 638
-  },
-  "关闭": {
-    "en-US": "Closure",
-    "es-ES": "Cierre",
-    "ar-EG": "إنهاء",
-    "pt-PT": "Encerramento",
-    "ru-RU": "закрытие",
-    "ja-JP": "閉鎖",
-    "de-DE": "Schließung",
-    "fr-FR": "Fermeture",
-    "ko-KR": "폐쇄",
-    "$files": [
-      "src/components/errors/error-analysis-sidebar.tsx(3300-3306)"
-    ],
-    "$id": 639
-  },
-  "严重级别": {
-    "en-US": "Severity level",
-    "es-ES": "Nivel de gravedad",
-    "ar-EG": "مستوى الخطورة",
-    "pt-PT": "Nível de gravidade",
-    "ru-RU": "Уровень серьезности",
-    "ja-JP": "重大度レベル",
-    "de-DE": "Schweregrad",
-    "fr-FR": "Niveau de gravité",
-    "ko-KR": "심각도 수준",
-    "$files": [
-      "src/components/errors/error-analysis-sidebar.tsx(3644-3652)"
-    ],
-    "$id": 640
-  },
-  "建议解决方案": {
-    "en-US": "Suggested solution",
-    "es-ES": "Solución recomendada",
-    "ar-EG": "الحلول المقترحة",
-    "pt-PT": "Solução recomendada",
-    "ru-RU": "Рекомендуемое решение",
-    "ja-JP": "提案される解決策",
-    "de-DE": "Empfohlene Lösung",
-    "fr-FR": "Solution recommandée",
-    "ko-KR": "권장 해결 방안",
-    "$files": [
-      "src/components/errors/error-analysis-sidebar.tsx(4932-4942)"
-    ],
-    "$id": 641
-  },
-  "原始错误详情": {
-    "en-US": "Original error details",
-    "es-ES": "Detalles del error original",
-    "ar-EG": "تفاصيل الخطأ الأصلي",
-    "pt-PT": "Detalhes do erro original",
-    "ru-RU": "Подробности исходной ошибки",
-    "ja-JP": "元のエラーの詳細",
-    "de-DE": "Ursprüngliche Fehlerdetails",
-    "fr-FR": "Détails de l'erreur d'origine",
-    "ko-KR": "원래 오류 세부정보",
-    "$files": [
-      "src/components/errors/error-analysis-sidebar.tsx(6002-6012)"
-    ],
-    "$id": 642
-  },
-  "查看运行日志": {
-    "en-US": "View running log",
-    "es-ES": "Ver registro de ejecución",
-    "ar-EG": "عرض سجل التشغيل",
-    "pt-PT": "Ver registro de execução",
-    "ru-RU": "Посмотреть журнал бега",
-    "ja-JP": "実行ログを表示する",
-    "de-DE": "Laufprotokoll ansehen",
-    "fr-FR": "Afficher le journal d'exécution",
-    "ko-KR": "실행 로그 보기",
-    "$files": [
-      "src/components/errors/error-analysis-sidebar.tsx(7404-7414)"
-    ],
-    "$id": 643
-  },
   "目前使用兼容模式，能发挥您显卡70% AI算力，显卡驱动需要升级，才能发挥满血性能": {
     "en-US": "Currently using compatibility mode, 70% of the AI ​​computing power of your graphics card can be used. The graphics card driver needs to be upgraded to achieve full performance.",
     "es-ES": "Actualmente, al utilizar el modo de compatibilidad, se puede utilizar el 70% de la potencia informática de IA de su tarjeta gráfica. Es necesario actualizar el controlador de la tarjeta gráfica para lograr el máximo rendimiento.",
@@ -4162,8 +4069,9 @@
     "fr-FR": "Environ {value} secondes restantes",
     "ko-KR": "약 {value}초 남음",
     "$files": [
-      "src/components/model/custom-model-add-card.tsx(5063-5080)",
+      "src/components/model/custom-model-add-card.tsx(5214-5231)",
       "src/components/model/model-list-panel.tsx(7590-7607)",
+      "src/components/model/custom-model-add-card.tsx(5063-5080)",
       "src/components/model/custom-model-add-card.tsx(5084-5101)",
       "src/components/model/model-list-panel.tsx(7572-7589)",
       "src/components/model/model-list-panel.tsx(7820-7837)",
@@ -4184,8 +4092,9 @@
     "fr-FR": "Environ {value} minutes {seconds} secondes restantes",
     "ko-KR": "약 {value}분 {seconds}초 남음",
     "$files": [
-      "src/components/model/custom-model-add-card.tsx(5188-5217)",
+      "src/components/model/custom-model-add-card.tsx(5341-5370)",
       "src/components/model/model-list-panel.tsx(7713-7742)",
+      "src/components/model/custom-model-add-card.tsx(5188-5217)",
       "src/components/model/custom-model-add-card.tsx(5209-5238)",
       "src/components/model/model-list-panel.tsx(7695-7724)",
       "src/components/model/model-list-panel.tsx(7943-7972)",
@@ -4206,8 +4115,9 @@
     "fr-FR": "Environ {value} heures restantes",
     "ko-KR": "약 {value}시간 남음",
     "$files": [
-      "src/components/model/custom-model-add-card.tsx(5376-5394)",
+      "src/components/model/custom-model-add-card.tsx(5534-5552)",
       "src/components/model/model-list-panel.tsx(7883-7901)",
+      "src/components/model/custom-model-add-card.tsx(5376-5394)",
       "src/components/model/custom-model-add-card.tsx(5397-5415)",
       "src/components/model/model-list-panel.tsx(7865-7883)",
       "src/components/model/model-list-panel.tsx(8113-8131)",
@@ -4228,8 +4138,9 @@
     "fr-FR": "En pause",
     "ko-KR": "일시 중지됨",
     "$files": [
-      "src/components/model/custom-model-add-card.tsx(8006-8013)",
+      "src/components/model/custom-model-add-card.tsx(8232-8239)",
       "src/components/model/model-list-panel.tsx(17063-17070)",
+      "src/components/model/custom-model-add-card.tsx(8006-8013)",
       "src/components/model/custom-model-add-card.tsx(8027-8034)",
       "src/components/model/model-list-panel.tsx(17045-17052)",
       "src/components/model/model-list-panel.tsx(16569-16576)",
@@ -4251,9 +4162,10 @@
     "fr-FR": "Prêt à télécharger...",
     "ko-KR": "다운로드 준비 완료...",
     "$files": [
-      "src/components/model/custom-model-add-card.tsx(8077-8089)",
+      "src/components/model/custom-model-add-card.tsx(8305-8317)",
       "src/components/model/model-list-panel.tsx(17100-17112)",
       "src/components/model/model-list-panel.tsx(30026-30038)",
+      "src/components/model/custom-model-add-card.tsx(8077-8089)",
       "src/components/model/custom-model-add-card.tsx(8098-8110)",
       "src/components/model/model-list-panel.tsx(17082-17094)",
       "src/components/model/model-list-panel.tsx(30008-30020)",
@@ -4281,8 +4193,9 @@
     "fr-FR": "Téléchargement",
     "ko-KR": "다운로드 중",
     "$files": [
-      "src/components/model/custom-model-add-card.tsx(8114-8122)",
+      "src/components/model/custom-model-add-card.tsx(8343-8351)",
       "src/components/model/model-list-panel.tsx(17119-17127)",
+      "src/components/model/custom-model-add-card.tsx(8114-8122)",
       "src/components/model/custom-model-add-card.tsx(8135-8143)",
       "src/components/model/model-list-panel.tsx(17101-17109)",
       "src/components/model/model-list-panel.tsx(16625-16633)",
@@ -4304,8 +4217,9 @@
     "fr-FR": "Prêt",
     "ko-KR": "준비가 된",
     "$files": [
-      "src/components/model/custom-model-add-card.tsx(8597-8604)",
+      "src/components/model/custom-model-add-card.tsx(8835-8842)",
       "src/components/model/model-list-panel.tsx(17601-17608)",
+      "src/components/model/custom-model-add-card.tsx(8597-8604)",
       "src/components/model/custom-model-add-card.tsx(8618-8625)",
       "src/components/model/model-list-panel.tsx(17583-17590)",
       "src/components/model/model-list-panel.tsx(17107-17114)",
@@ -4327,8 +4241,9 @@
     "fr-FR": "Pas encore téléchargé en local",
     "ko-KR": "아직 로컬에 다운로드되지 않았습니다.",
     "$files": [
-      "src/components/model/custom-model-add-card.tsx(8725-8736)",
+      "src/components/model/custom-model-add-card.tsx(8966-8977)",
       "src/components/model/model-list-panel.tsx(17761-17772)",
+      "src/components/model/custom-model-add-card.tsx(8725-8736)",
       "src/components/model/custom-model-add-card.tsx(8746-8757)",
       "src/components/model/model-list-panel.tsx(17743-17754)",
       "src/components/model/model-list-panel.tsx(17267-17278)",
@@ -4350,8 +4265,9 @@
     "fr-FR": "Confirmer la suppression  ",
     "ko-KR": "삭제 확인",
     "$files": [
-      "src/components/model/custom-model-add-card.tsx(9518-9526)",
+      "src/components/model/custom-model-add-card.tsx(9777-9785)",
       "src/components/model/model-list-panel.tsx(19144-19152)",
+      "src/components/model/custom-model-add-card.tsx(9518-9526)",
       "src/components/model/custom-model-add-card.tsx(9539-9547)",
       "src/components/model/model-list-panel.tsx(19126-19134)",
       "src/components/model/model-list-panel.tsx(18650-18658)",
@@ -4373,8 +4289,9 @@
     "fr-FR": "Confirmer la suppression",
     "ko-KR": "제거 확인",
     "$files": [
-      "src/components/model/custom-model-add-card.tsx(9530-9538)",
+      "src/components/model/custom-model-add-card.tsx(9789-9797)",
       "src/components/model/model-list-panel.tsx(18594-18602)",
+      "src/components/model/custom-model-add-card.tsx(9530-9538)",
       "src/components/model/custom-model-add-card.tsx(9551-9559)",
       "src/components/model/model-list-panel.tsx(18576-18584)",
       "src/components/model/model-list-panel.tsx(18100-18108)",
@@ -4396,12 +4313,15 @@
     "fr-FR": "Annuler",
     "ko-KR": "취소",
     "$files": [
-      "src/components/model/custom-model-add-card.tsx(9891-9897)",
-      "src/components/model/custom-model-add-card.tsx(13323-13329)",
-      "src/components/model/custom-model-add-card.tsx(21069-21075)",
+      "src/components/model/custom-model-add-card.tsx(10159-10165)",
+      "src/components/model/custom-model-add-card.tsx(13673-13679)",
+      "src/components/model/custom-model-add-card.tsx(21622-21628)",
       "src/components/model/model-list-panel.tsx(19517-19523)",
       "src/components/model/model-list-panel.tsx(23126-23132)",
       "src/components/model/model-param-drawer.tsx(31564-31570)",
+      "src/components/model/custom-model-add-card.tsx(9891-9897)",
+      "src/components/model/custom-model-add-card.tsx(13323-13329)",
+      "src/components/model/custom-model-add-card.tsx(21069-21075)",
       "src/components/model/custom-model-add-card.tsx(9912-9918)",
       "src/components/model/custom-model-add-card.tsx(13344-13350)",
       "src/components/model/custom-model-add-card.tsx(21090-21096)",
@@ -4434,6 +4354,7 @@
     "fr-FR": "Supprimer le fichier de modèle physique et libérer de l'espace disque",
     "ko-KR": "물리 모델 파일 삭제 및 디스크 공간 확보",
     "$files": [
+      "src/components/model/custom-model-add-card.tsx(10580-10599)",
       "src/components/model/custom-model-add-card.tsx(10302-10321)",
       "src/components/model/custom-model-add-card.tsx(10323-10342)"
     ],
@@ -4450,8 +4371,9 @@
     "fr-FR": "Supprimer",
     "ko-KR": "삭제",
     "$files": [
-      "src/components/model/custom-model-add-card.tsx(10491-10497)",
+      "src/components/model/custom-model-add-card.tsx(10773-10779)",
       "src/components/model/model-list-panel.tsx(20220-20226)",
+      "src/components/model/custom-model-add-card.tsx(10491-10497)",
       "src/components/model/custom-model-add-card.tsx(10512-10518)",
       "src/components/model/model-list-panel.tsx(20202-20208)",
       "src/components/model/model-list-panel.tsx(19726-19732)",
@@ -4473,6 +4395,7 @@
     "fr-FR": "Supprimer cette enregistrement de modèle personnalisé",
     "ko-KR": "이 사용자 정의 모델 기록 삭제",
     "$files": [
+      "src/components/model/custom-model-add-card.tsx(11111-11125)",
       "src/components/model/custom-model-add-card.tsx(10822-10836)",
       "src/components/model/custom-model-add-card.tsx(10843-10857)"
     ],
@@ -4489,8 +4412,9 @@
     "fr-FR": "Retirer",
     "ko-KR": "제거하다",
     "$files": [
-      "src/components/model/custom-model-add-card.tsx(11006-11012)",
+      "src/components/model/custom-model-add-card.tsx(11299-11305)",
       "src/components/model/model-list-panel.tsx(20811-20817)",
+      "src/components/model/custom-model-add-card.tsx(11006-11012)",
       "src/components/model/custom-model-add-card.tsx(11027-11033)",
       "src/components/model/model-list-panel.tsx(20793-20799)",
       "src/components/model/model-list-panel.tsx(20317-20323)",
@@ -4512,8 +4436,9 @@
     "fr-FR": "Configuration des paramètres",
     "ko-KR": "매개변수 구성",
     "$files": [
-      "src/components/model/custom-model-add-card.tsx(11528-11536)",
+      "src/components/model/custom-model-add-card.tsx(11832-11840)",
       "src/components/model/model-list-panel.tsx(21349-21357)",
+      "src/components/model/custom-model-add-card.tsx(11528-11536)",
       "src/components/model/custom-model-add-card.tsx(11549-11557)",
       "src/components/model/model-list-panel.tsx(21331-21339)",
       "src/components/model/model-list-panel.tsx(20855-20863)",
@@ -4535,9 +4460,10 @@
     "fr-FR": "Replier",
     "ko-KR": "접기",
     "$files": [
-      "src/components/model/custom-model-add-card.tsx(11876-11882)",
+      "src/components/model/custom-model-add-card.tsx(12189-12195)",
       "src/components/model/model-list-panel.tsx(21706-21712)",
       "src/components/model/model-list-panel.tsx(32315-32321)",
+      "src/components/model/custom-model-add-card.tsx(11876-11882)",
       "src/components/model/custom-model-add-card.tsx(11897-11903)",
       "src/components/model/model-list-panel.tsx(21688-21694)",
       "src/components/model/model-list-panel.tsx(32297-32303)",
@@ -4565,8 +4491,9 @@
     "fr-FR": "Avancé",
     "ko-KR": "고급의",
     "$files": [
-      "src/components/model/custom-model-add-card.tsx(12333-12339)",
+      "src/components/model/custom-model-add-card.tsx(12657-12663)",
       "src/components/model/model-list-panel.tsx(22224-22230)",
+      "src/components/model/custom-model-add-card.tsx(12333-12339)",
       "src/components/model/custom-model-add-card.tsx(12354-12360)",
       "src/components/model/model-list-panel.tsx(22206-22212)",
       "src/components/model/model-list-panel.tsx(21730-21736)",
@@ -4588,8 +4515,9 @@
     "fr-FR": "Reprendre",
     "ko-KR": "계속",
     "$files": [
-      "src/components/model/custom-model-add-card.tsx(12705-12711)",
+      "src/components/model/custom-model-add-card.tsx(13040-13046)",
       "src/components/model/model-list-panel.tsx(22577-22583)",
+      "src/components/model/custom-model-add-card.tsx(12705-12711)",
       "src/components/model/custom-model-add-card.tsx(12726-12732)",
       "src/components/model/model-list-panel.tsx(22559-22565)",
       "src/components/model/model-list-panel.tsx(22083-22089)",
@@ -4611,8 +4539,9 @@
     "fr-FR": "Suspendre",
     "ko-KR": "일시 중지",
     "$files": [
-      "src/components/model/custom-model-add-card.tsx(12961-12967)",
+      "src/components/model/custom-model-add-card.tsx(13301-13307)",
       "src/components/model/model-list-panel.tsx(22838-22844)",
+      "src/components/model/custom-model-add-card.tsx(12961-12967)",
       "src/components/model/custom-model-add-card.tsx(12982-12988)",
       "src/components/model/model-list-panel.tsx(22820-22826)",
       "src/components/model/model-list-panel.tsx(22344-22350)",
@@ -4634,8 +4563,9 @@
     "fr-FR": "Réessayer",
     "ko-KR": "재시도",
     "$files": [
-      "src/components/model/custom-model-add-card.tsx(13618-13624)",
+      "src/components/model/custom-model-add-card.tsx(13974-13980)",
       "src/components/model/model-list-panel.tsx(23427-23433)",
+      "src/components/model/custom-model-add-card.tsx(13618-13624)",
       "src/components/model/custom-model-add-card.tsx(13639-13645)",
       "src/components/model/model-list-panel.tsx(23409-23415)",
       "src/components/model/model-list-panel.tsx(22933-22939)",
@@ -4657,8 +4587,9 @@
     "fr-FR": "Démarré",
     "ko-KR": "시작됨",
     "$files": [
-      "src/components/model/custom-model-add-card.tsx(14017-14024)",
+      "src/components/model/custom-model-add-card.tsx(14380-14387)",
       "src/components/model/model-list-panel.tsx(26999-27006)",
+      "src/components/model/custom-model-add-card.tsx(14017-14024)",
       "src/components/model/custom-model-add-card.tsx(14038-14045)",
       "src/components/model/model-list-panel.tsx(26981-26988)",
       "src/components/model/model-list-panel.tsx(26505-26512)",
@@ -4680,8 +4611,9 @@
     "fr-FR": "Activer et démarrer",
     "ko-KR": "활성화 및 시작",
     "$files": [
-      "src/components/model/custom-model-add-card.tsx(14801-14810)",
+      "src/components/model/custom-model-add-card.tsx(15180-15189)",
       "src/components/model/model-list-panel.tsx(27857-27866)",
+      "src/components/model/custom-model-add-card.tsx(14801-14810)",
       "src/components/model/custom-model-add-card.tsx(14822-14831)",
       "src/components/model/model-list-panel.tsx(27839-27848)",
       "src/components/model/model-list-panel.tsx(27363-27372)",
@@ -4703,8 +4635,9 @@
     "fr-FR": "Télécharger le modèle",
     "ko-KR": "모델 다운로드",
     "$files": [
-      "src/components/model/custom-model-add-card.tsx(15217-15225)",
+      "src/components/model/custom-model-add-card.tsx(15608-15616)",
       "src/components/model/model-list-panel.tsx(29232-29240)",
+      "src/components/model/custom-model-add-card.tsx(15217-15225)",
       "src/components/model/custom-model-add-card.tsx(15238-15246)",
       "src/components/model/model-list-panel.tsx(29214-29222)",
       "src/components/model/model-list-panel.tsx(28738-28746)",
@@ -4726,6 +4659,7 @@
     "fr-FR": "Préparation...",
     "ko-KR": "준비 중...",
     "$files": [
+      "src/components/model/custom-model-add-card.tsx(16133-16143)",
       "src/components/model/custom-model-add-card.tsx(15727-15737)",
       "src/components/model/custom-model-add-card.tsx(15748-15758)"
     ],
@@ -4742,6 +4676,7 @@
     "fr-FR": "Téléchargement...",
     "ko-KR": "��운로드 중...",
     "$files": [
+      "src/components/model/custom-model-add-card.tsx(16147-16157)",
       "src/components/model/custom-model-add-card.tsx(15741-15751)",
       "src/components/model/custom-model-add-card.tsx(15762-15772)"
     ],
@@ -4758,6 +4693,7 @@
     "fr-FR": "Ajouté avec succès à la liste des modèles personnalisés",
     "ko-KR": "사용자 정의 모델 목록에 성공적으로 추가됨",
     "$files": [
+      "src/components/model/custom-model-add-card.tsx(18187-18205)",
       "src/components/model/custom-model-add-card.tsx(17718-17736)",
       "src/components/model/custom-model-add-card.tsx(17739-17757)"
     ],
@@ -4774,6 +4710,7 @@
     "fr-FR": "Analyse terminée, ajouté à la liste des modèles personnalisés ci-dessous",
     "ko-KR": "스니핑 완료, 아래 사용자 정의 모델 목록에 추가됨",
     "$files": [
+      "src/components/model/custom-model-add-card.tsx(18255-18276)",
       "src/components/model/custom-model-add-card.tsx(17785-17806)",
       "src/components/model/custom-model-add-card.tsx(17806-17827)"
     ],
@@ -4790,6 +4727,7 @@
     "fr-FR": "Ajouter n'importe quel modèle",
     "ko-KR": "모델 추가",
     "$files": [
+      "src/components/model/custom-model-add-card.tsx(18827-18837)",
       "src/components/model/custom-model-add-card.tsx(18343-18353)",
       "src/components/model/custom-model-add-card.tsx(18364-18374)",
       "src/components/model/custom-model-add-card.tsx(2628-2638)"
@@ -4807,6 +4745,7 @@
     "fr-FR": "Ajoutez librement tout fichier de modèle GGUF hébergé sur ModelScope / HuggingFace, sauvegardez et gérez-les localement et centralisés.",
     "ko-KR": "ModelScope / HuggingFace에 호스팅된 임의의 GGUF 모델 파일을 자유롭게 추가하고 로컬 설정에 저장하여 통합 관리하세요.",
     "$files": [
+      "src/components/model/custom-model-add-card.tsx(18971-19034)",
       "src/components/model/custom-model-add-card.tsx(18484-18547)",
       "src/components/model/custom-model-add-card.tsx(18505-18568)"
     ],
@@ -4823,6 +4762,7 @@
     "fr-FR": "Modèles personnalisés",
     "ko-KR": "개 사용자 정의 모델",
     "$files": [
+      "src/components/model/custom-model-add-card.tsx(19244-19254)",
       "src/components/model/custom-model-add-card.tsx(18752-18762)",
       "src/components/model/custom-model-add-card.tsx(18773-18783)"
     ],
@@ -4839,6 +4779,7 @@
     "fr-FR": "Ajoutez librement les modèles spécifiés",
     "ko-KR": "지정된 모델을 자유롭게 추가",
     "$files": [
+      "src/components/model/custom-model-add-card.tsx(19765-19777)",
       "src/components/model/custom-model-add-card.tsx(19258-19270)",
       "src/components/model/custom-model-add-card.tsx(19279-19291)",
       "src/components/model/custom-model-add-card.tsx(3289-3301)"
@@ -4856,6 +4797,7 @@
     "fr-FR": "Reniflement...",
     "ko-KR": "스니핑 중...",
     "$files": [
+      "src/components/model/custom-model-add-card.tsx(21088-21098)",
       "src/components/model/custom-model-add-card.tsx(20550-20560)",
       "src/components/model/custom-model-add-card.tsx(20571-20581)",
       "src/components/model/custom-model-add-card.tsx(4612-4622)"
@@ -4873,6 +4815,7 @@
     "fr-FR": "Ajouter et renifler",
     "ko-KR": "추가하고 냄새 맡기",
     "$files": [
+      "src/components/model/custom-model-add-card.tsx(21263-21272)",
       "src/components/model/custom-model-add-card.tsx(20720-20729)",
       "src/components/model/custom-model-add-card.tsx(20741-20750)",
       "src/components/model/custom-model-add-card.tsx(4787-4796)"
@@ -4890,6 +4833,7 @@
     "fr-FR": "Les trois formats d'adresse de fichier modèle suivants sont pris en charge :",
     "ko-KR": "다음 세 가지 모델 파일 주소 형식이 지원됩니다.",
     "$files": [
+      "src/components/model/custom-model-add-card.tsx(21967-21986)",
       "src/components/model/custom-model-add-card.tsx(21405-21424)",
       "src/components/model/custom-model-add-card.tsx(21426-21445)",
       "src/components/model/custom-model-add-card.tsx(5473-5492)"
@@ -4907,6 +4851,7 @@
     "fr-FR": "Détection de la taille du fichier modèle et des fichiers de projection dans le même répertoire via le réseau, veuillez patienter...",
     "ko-KR": "네트워크를 통해 동일한 디렉터리에 있는 모델 파일 크기와 투영 파일을 감지하는 중입니다. 잠시 기다려 주십시오...",
     "$files": [
+      "src/components/model/custom-model-add-card.tsx(22583-22616)",
       "src/components/model/custom-model-add-card.tsx(22005-22038)",
       "src/components/model/custom-model-add-card.tsx(22026-22059)",
       "src/components/model/custom-model-add-card.tsx(6073-6106)"
@@ -4924,6 +4869,7 @@
     "fr-FR": "Vous pouvez continuer à ajouter le modèle suivant ou fermer cette fiche.",
     "ko-KR": "계속해서 다음 모델을 추가하거나 이 카드를 닫을 수 있습니다.",
     "$files": [
+      "src/components/model/custom-model-add-card.tsx(23429-23451)",
       "src/components/model/custom-model-add-card.tsx(22830-22852)",
       "src/components/model/custom-model-add-card.tsx(22851-22873)",
       "src/components/model/custom-model-add-card.tsx(6930-6952)"
@@ -4941,6 +4887,7 @@
     "fr-FR": "Modèles personnalisés ajoutés",
     "ko-KR": "추가된 사용자 정의 모델",
     "$files": [
+      "src/components/model/custom-model-add-card.tsx(23878-23891)",
       "src/components/model/custom-model-add-card.tsx(23268-23281)",
       "src/components/model/custom-model-add-card.tsx(23289-23302)"
     ],
@@ -6259,21 +6206,20 @@
     ],
     "$id": 1295
   },
-  "单步最大预测 token 数，增大可提升高命中率下的加速比，但会轻微增加显存压力 (默认: 5)": {
-    "en-US": "The maximum number of predicted tokens in a single step, increasing can increase the acceleration ratio at high hit rates, but it will slightly increase the video memory pressure (default: 5)",
-    "es-ES": "El número máximo de tokens predichos en un solo paso, aumentando puede aumentar la relación de aceleración a altas tasas de aciertos, pero aumentará ligeramente la presión de la memoria de video (predeterminado: 5)",
-    "ar-EG": "الحد الأقصى لعدد الرموز المميزة المتوقعة في خطوة واحدة ، يمكن أن تؤدي الزيادة إلى زيادة نسبة التسارع بمعدلات إصابة عالية ، ولكنها ستزيد قليلا من ضغط ذاكرة الفيديو (الافتراضي: 5)",
-    "pt-PT": "O número máximo de tokens previstos em uma única etapa, aumentando pode aumentar a taxa de aceleração em altas taxas de acerto, mas aumentará ligeiramente a pressão da memória de vídeo (padrão: 5)",
-    "ru-RU": "Максимальное количество предсказанных токенов за один шаг, увеличение которого может увеличить коэффициент ускорения при высокой частоте совпадений, но немного увеличит нагрузку на видеопамять (по умолчанию: 5).",
-    "ja-JP": "単一のステップで予測されるトークンの最大数を増やすと、高いヒット率で加速比が増加しますが、ビデオメモリの圧力がわずかに増加します（デフ",
-    "de-DE": "Die maximale Anzahl der vorhergesagten Token in einem einzigen Schritt, Erhöhen kann das Beschleunigungsverhältnis bei hohen Trefferraten erhöhen, aber es wird den Videospeicherdruck leicht erhöhen (Standard: 5)",
-    "fr-FR": "Le nombre maximum de jetons prédits en une seule étape, l'augmentation peut augmenter le taux d'accélération à des taux de réussite élevés, mais cela augmentera légèrement la pression de la mémoire vidéo (par défaut: 5)",
-    "ko-KR": "단일 단계에서 예측 된 토큰의 최대 수는 높은 적중률에서 가속 비율을 증가시킬 수 있지만 비디오 메모리 압력이 약간 증가합니다(기본값:5)",
+  "单步最大预测 token 数，增大可提升高命中率下的加速比，但会轻微增加显存压力 (默认: 6)": {
+    "en-US": "The maximum number of prediction tokens in a single step. Increasing it can improve the speedup ratio under high hit rates, but will slightly increase the memory pressure (default: 6)",
+    "es-ES": "La cantidad máxima de tokens de predicción en un solo paso. Aumentarlo puede mejorar la tasa de aceleración con altas tasas de aciertos, pero aumentará ligeramente la presión de la memoria (predeterminado: 6)",
+    "ar-EG": "الحد الأقصى لعدد رموز التنبؤ في خطوة واحدة. يمكن أن تؤدي زيادتها إلى تحسين نسبة التسريع في ظل معدلات الضرب العالية، ولكنها ستؤدي إلى زيادة طفيفة في ضغط الذاكرة (الافتراضي: 6)",
+    "pt-PT": "O número máximo de tokens de previsão em uma única etapa. Aumentá-lo pode melhorar a taxa de aceleração sob altas taxas de acerto, mas aumentará ligeiramente a pressão da memória (padrão: 6)",
+    "ru-RU": "Максимальное количество токенов предсказания за один шаг. Увеличение этого значения может улучшить коэффициент ускорения при высокой частоте обращений, но немного увеличит нагрузку на память (по умолчанию: 6).",
+    "ja-JP": "単一ステップの予測トークンの最大数。この値を増やすと、ヒット率が高い場合の速度向上率が向上しますが、メモリ負荷がわずかに増加します (デフォルト: 6)。",
+    "de-DE": "Die maximale Anzahl von Vorhersagetokens in einem einzelnen Schritt. Eine Erhöhung kann das Beschleunigungsverhältnis bei hohen Trefferraten verbessern, erhöht jedoch leicht die Speicherbelastung (Standard: 6).",
+    "fr-FR": "Le nombre maximum de jetons de prédiction en une seule étape. L'augmenter peut améliorer le taux d'accélération en cas de taux de réussite élevés, mais augmentera légèrement la pression sur la mémoire (par défaut : 6)",
+    "ko-KR": "단일 단계의 최대 예측 토큰 수입니다. 이를 늘리면 높은 적중률에서 속도 향상 비율이 향상되지만 메모리 압박이 약간 증가합니다(기본값: 6).",
     "$files": [
-      "src/components/model/model-param-drawer.tsx(12978-13030)",
-      "src/components/model/model-param-drawer.tsx(11115-11167)"
+      "src/components/model/model-param-drawer.tsx(12978-13030)"
     ],
-    "$id": 1296
+    "$id": 1319
   },
   "硬件与计算性能 (Compute & Hardware)": {
     "en-US": "Compute & Hardware",
@@ -6886,6 +6832,111 @@
     ],
     "$id": 811
   },
+  "错误分析与解决建议": {
+    "en-US": "Error analysis and solution suggestions",
+    "es-ES": "Análisis de errores y sugerencias de solución.",
+    "ar-EG": "تحليل الأخطاء واقتراحات الحلول",
+    "pt-PT": "Análise de erros e sugestões de soluções",
+    "ru-RU": "Анализ ошибок и предложения по решению",
+    "ja-JP": "エラー分析と解決策の提案",
+    "de-DE": "Fehleranalyse und Lösungsvorschläge",
+    "fr-FR": "Analyse des erreurs et suggestions de solutions",
+    "ko-KR": "오류 분석 및 해결 방법 제안",
+    "$files": [
+      "src/components/errors/error-analysis-sidebar.tsx(2807-2820)"
+    ],
+    "$id": 637
+  },
+  "面向普通用户的引擎错误解读": {
+    "en-US": "Interpretation of engine errors for ordinary users",
+    "es-ES": "Interpretación de errores del motor para usuarios comunes.",
+    "ar-EG": "تفسير أخطاء المحرك للمستخدمين العاديين",
+    "pt-PT": "Interpretação de erros do motor para usuários comuns",
+    "ru-RU": "Расшифровка ошибок двигателя для обычных пользователей",
+    "ja-JP": "一般ユーザー向けのエンジンエラーの解釈",
+    "de-DE": "Interpretation von Motorfehlern für normale Benutzer",
+    "fr-FR": "Interprétation des erreurs du moteur pour les utilisateurs ordinaires",
+    "ko-KR": "일반 사용자를 위한 엔진 오류 해석",
+    "$files": [
+      "src/components/errors/error-analysis-sidebar.tsx(2954-2971)"
+    ],
+    "$id": 638
+  },
+  "关闭": {
+    "en-US": "Closure",
+    "es-ES": "Cierre",
+    "ar-EG": "إنهاء",
+    "pt-PT": "Encerramento",
+    "ru-RU": "закрытие",
+    "ja-JP": "閉鎖",
+    "de-DE": "Schließung",
+    "fr-FR": "Fermeture",
+    "ko-KR": "폐쇄",
+    "$files": [
+      "src/components/errors/error-analysis-sidebar.tsx(3300-3306)"
+    ],
+    "$id": 639
+  },
+  "严重级别": {
+    "en-US": "Severity level",
+    "es-ES": "Nivel de gravedad",
+    "ar-EG": "مستوى الخطورة",
+    "pt-PT": "Nível de gravidade",
+    "ru-RU": "Уровень серьезности",
+    "ja-JP": "重大度レベル",
+    "de-DE": "Schweregrad",
+    "fr-FR": "Niveau de gravité",
+    "ko-KR": "심각도 수준",
+    "$files": [
+      "src/components/errors/error-analysis-sidebar.tsx(3644-3652)"
+    ],
+    "$id": 640
+  },
+  "建议解决方案": {
+    "en-US": "Suggested solution",
+    "es-ES": "Solución recomendada",
+    "ar-EG": "الحلول المقترحة",
+    "pt-PT": "Solução recomendada",
+    "ru-RU": "Рекомендуемое решение",
+    "ja-JP": "提案される解決策",
+    "de-DE": "Empfohlene Lösung",
+    "fr-FR": "Solution recommandée",
+    "ko-KR": "권장 해결 방안",
+    "$files": [
+      "src/components/errors/error-analysis-sidebar.tsx(4932-4942)"
+    ],
+    "$id": 641
+  },
+  "原始错误详情": {
+    "en-US": "Original error details",
+    "es-ES": "Detalles del error original",
+    "ar-EG": "تفاصيل الخطأ الأصلي",
+    "pt-PT": "Detalhes do erro original",
+    "ru-RU": "Подробности исходной ошибки",
+    "ja-JP": "元のエラーの詳細",
+    "de-DE": "Ursprüngliche Fehlerdetails",
+    "fr-FR": "Détails de l'erreur d'origine",
+    "ko-KR": "원래 오류 세부정보",
+    "$files": [
+      "src/components/errors/error-analysis-sidebar.tsx(6002-6012)"
+    ],
+    "$id": 642
+  },
+  "查看运行日志": {
+    "en-US": "View running log",
+    "es-ES": "Ver registro de ejecución",
+    "ar-EG": "عرض سجل التشغيل",
+    "pt-PT": "Ver registro de execução",
+    "ru-RU": "Посмотреть журнал бега",
+    "ja-JP": "実行ログを表示する",
+    "de-DE": "Laufprotokoll ansehen",
+    "fr-FR": "Afficher le journal d'exécution",
+    "ko-KR": "실행 로그 보기",
+    "$files": [
+      "src/components/errors/error-analysis-sidebar.tsx(7404-7414)"
+    ],
+    "$id": 643
+  },
   "路径格式不合法": {
     "en-US": "The path format is illegal",
     "es-ES": "El formato de ruta es ilegal.",
@@ -7035,6 +7086,22 @@
       "src/components/storage/model-storage-config.tsx(4271-4279)"
     ],
     "$id": 821
+  },
+  "单步最大预测 token 数，增大可提升高命中率下的加速比，但会轻微增加显存压力 (默认: 5)": {
+    "en-US": "The maximum number of predicted tokens in a single step, increasing can increase the acceleration ratio at high hit rates, but it will slightly increase the video memory pressure (default: 5)",
+    "es-ES": "El número máximo de tokens predichos en un solo paso, aumentando puede aumentar la relación de aceleración a altas tasas de aciertos, pero aumentará ligeramente la presión de la memoria de video (predeterminado: 5)",
+    "ar-EG": "الحد الأقصى لعدد الرموز المميزة المتوقعة في خطوة واحدة ، يمكن أن تؤدي الزيادة إلى زيادة نسبة التسارع بمعدلات إصابة عالية ، ولكنها ستزيد قليلا من ضغط ذاكرة الفيديو (الافتراضي: 5)",
+    "pt-PT": "O número máximo de tokens previstos em uma única etapa, aumentando pode aumentar a taxa de aceleração em altas taxas de acerto, mas aumentará ligeiramente a pressão da memória de vídeo (padrão: 5)",
+    "ru-RU": "Максимальное количество предсказанных токенов за один шаг, увеличение которого может увеличить коэффициент ускорения при высокой частоте совпадений, но немного увеличит нагрузку на видеопамять (по умолчанию: 5).",
+    "ja-JP": "単一のステップで予測されるトークンの最大数を増やすと、高いヒット率で加速比が増加しますが、ビデオメモリの圧力がわずかに増加します（デフ",
+    "de-DE": "Die maximale Anzahl der vorhergesagten Token in einem einzigen Schritt, Erhöhen kann das Beschleunigungsverhältnis bei hohen Trefferraten erhöhen, aber es wird den Videospeicherdruck leicht erhöhen (Standard: 5)",
+    "fr-FR": "Le nombre maximum de jetons prédits en une seule étape, l'augmentation peut augmenter le taux d'accélération à des taux de réussite élevés, mais cela augmentera légèrement la pression de la mémoire vidéo (par défaut: 5)",
+    "ko-KR": "단일 단계에서 예측 된 토큰의 최대 수는 높은 적중률에서 가속 비율을 증가시킬 수 있지만 비디오 메모리 압력이 약간 증가합니다(기본값:5)",
+    "$files": [
+      "src/components/model/model-param-drawer.tsx(12978-13030)",
+      "src/components/model/model-param-drawer.tsx(11115-11167)"
+    ],
+    "$id": 1296
   },
   "恢复默认": {
     "en-US": "Restore default",
