@@ -1500,8 +1500,8 @@ async fn delete_engine(
     match std::fs::remove_dir_all(&target_dir) {
         Ok(_) => {
             info!("已成功删除引擎目录: {:?}", target_dir);
-            // 重新扫描已安装引擎
-            let _ = state.coordinator.scheduler.scan_installed_engines().await;
+            // 重新扫描已安装引擎（绕过 TTL 缓存，否则前端 30s 内仍会看到已删除的引擎）
+            let _ = state.coordinator.scheduler.refresh_installed_engines().await;
             (StatusCode::OK, Json(json!({ "success": true })))
         }
         Err(e) => {
@@ -2425,8 +2425,8 @@ async fn run_engine_download(
         }
     }
 
-    // 重新扫描已安装引擎
-    let _ = app_state.coordinator.scheduler.scan_installed_engines().await;
+    // 重新扫描已安装引擎（绕过 TTL 缓存，确保新部署的引擎立刻可见）
+    let _ = app_state.coordinator.scheduler.refresh_installed_engines().await;
     info!("[引擎下载] 任务 {} 全部执行完成！引擎已就绪部署。", task_id);
 }
 

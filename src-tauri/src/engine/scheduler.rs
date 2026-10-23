@@ -6,6 +6,7 @@ use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::time::{Duration, Instant};
 use tokio::sync::Mutex;
 use tracing::{error, info, warn};
 
@@ -27,6 +28,18 @@ pub struct InstalledEngine {
     pub build_num: Option<String>,
 }
 
+/// 已安装引擎扫描结果的缓存有效期
+///
+/// 背景（2026-10-22 引擎进程崩溃）：desktop 每 3s 轮询 `GET /api/engine/list`，
+/// 每 2–3s 轮询 `GET /api/engine/status`；后者在 `proc_status != Running` 时也要
+/// 走一次全目录扫描（`engine/mod.rs` 推导 active_backend）。每次扫描要对多个
+/// bin 目录 `read_dir` + 逐项 `exists()`，并逐条打印「发现已安装引擎」——
+/// 崩溃前实测日志里每秒 1–3 轮、最坏 3 轮并发。
+///
+/// 引擎包的安装/删除是低频人工操作，30s 内的扫描结果不会有变化；
+/// 删除引擎、下载部署完成两处已有显式失效点（[`EngineScheduler::refresh_installed_engines`]）。
+const SCAN_CACHE_TTL: Duration = Duration::from_secs(30);
+
 /// 引擎调度器
 pub struct EngineScheduler {
     /// 安装目录下的引擎 bin 目录列表（仅自身安装树）
@@ -38,6 +51,12 @@ pub struct EngineScheduler {
     current_engine: Mutex<Option<InstalledEngine>>,
     /// 当前已降级的层级（防止反复降级）
     degraded_tier: Mutex<Option<AccelerationTier>>,
+    /// 已安装引擎扫描缓存：(采样时刻, 扫描结果)
+    ///
+    /// 用 `std::sync::Mutex` 而非 tokio 版：扫描全程是同步文件系统调用，
+    /// 锁在整个扫描期间持有即可顺带实现单飞（并发请求只扫一次，其余排队取同一份结果），
+    /// 避免高频轮询把 CPU 与磁盘 I/O 打满。
+    scan_cache: std::sync::Mutex<Option<(Instant, Vec<InstalledEngine>)>>,
 }
 
 impl EngineScheduler {
@@ -47,6 +66,7 @@ impl EngineScheduler {
             compliance,
             current_engine: Mutex::new(None),
             degraded_tier: Mutex::new(None),
+            scan_cache: std::sync::Mutex::new(None),
         }
     }
 
@@ -55,9 +75,47 @@ impl EngineScheduler {
         &self.bin_dirs
     }
 
-    /// 扫描允许目录中已安装的引擎（安装目录 bin_dir + 用户数据热更新目录）
-    /// 目录命名规范：llama-b{build}-bin-{platform}-{backend}-{arch}/
+    /// 扫描允许目录中已安装的引擎（带 30s TTL 缓存 + 单飞）
+    ///
+    /// 高频轮询路径（`/api/engine/list`、`/api/engine/status`）一律走这里；
+    /// 需要读到磁盘最新状态时用 [`EngineScheduler::refresh_installed_engines`]。
     pub async fn scan_installed_engines(&self) -> Vec<InstalledEngine> {
+        self.installed_engines(false)
+    }
+
+    /// 强制重新扫描并刷新缓存（引擎安装/删除/更新完成后必须调用）
+    ///
+    /// 不调用也不会出错，只是最多 [`SCAN_CACHE_TTL`] 内可能读到旧结果。
+    pub async fn refresh_installed_engines(&self) -> Vec<InstalledEngine> {
+        self.installed_engines(true)
+    }
+
+    /// 缓存读写 + 单飞扫描
+    ///
+    /// 锁覆盖整个扫描过程：并发调用只有第一个真正扫盘，其余在锁上排队后直接命中
+    /// 刚写入的缓存。Mutex 中毒时取回内部值继续用（扫描不会留下不一致的中间态）。
+    fn installed_engines(&self, force: bool) -> Vec<InstalledEngine> {
+        let mut guard = self.scan_cache.lock().unwrap_or_else(|e| e.into_inner());
+
+        if !force {
+            if let Some((at, cached)) = guard.as_ref() {
+                if at.elapsed() < SCAN_CACHE_TTL {
+                    return cached.clone();
+                }
+            }
+        }
+
+        let engines = self.scan_installed_engines_uncached();
+        *guard = Some((Instant::now(), engines.clone()));
+        engines
+    }
+
+    /// 实际执行磁盘扫描（安装目录 bin_dir + 用户数据热更新目录）
+    /// 目录命名规范：llama-b{build}-bin-{platform}-{backend}-{arch}/
+    ///
+    /// 仅供缓存层在未命中时调用 —— 直接调用会绕过 TTL 与单飞，把全目录扫描重新
+    /// 暴露给高频轮询路径。
+    fn scan_installed_engines_uncached(&self) -> Vec<InstalledEngine> {
         let server_name = if cfg!(windows) {
             "llama-server.exe"
         } else {
@@ -128,6 +186,8 @@ impl EngineScheduler {
                     .find(|seg| seg.starts_with('b') && seg.len() > 1 && seg[1..].parse::<u64>().is_ok())
                     .map(|s| s[1..].to_string());
 
+                // 仅在缓存未命中（真正扫盘）时打印，命中缓存不产生日志 —— 否则
+                // 3s 轮询会把这条日志刷成每秒数行，掩盖真正的故障信号
                 info!("发现已安装引擎: {} (层级: {:?}, 路径: {:?})", dir_name, tier, binary_path);
 
                 engines.push(InstalledEngine {
@@ -426,6 +486,91 @@ mod tests {
         assert_eq!(test_engines[0].tier, AccelerationTier::Cuda);
         assert_eq!(test_engines[1].tier, AccelerationTier::Vulkan);
         assert_eq!(test_engines[2].tier, AccelerationTier::Cpu);
+    }
+
+    /// 扫描结果按 TTL 缓存：磁盘新增引擎在 TTL 内不可见，refresh 后立即可见
+    ///
+    /// 这是 2026-10-22 崩溃治理的核心约束 —— 高频轮询不得反复扫盘。
+    #[tokio::test]
+    async fn test_scan_cache_serves_within_ttl() {
+        let tmp = TempDir::new().unwrap();
+        let bin_dir = tmp.path().to_path_buf();
+        create_fake_engine(&bin_dir, "llama-b11095-bin-win-cpu-x64");
+
+        let scheduler = EngineScheduler::new(vec![bin_dir.clone()], DriverComplianceService::new());
+        assert_eq!(scheduler.scan_installed_engines().await.len(), 1, "首次扫描应发现 1 个引擎");
+
+        // 磁盘上新增一个引擎，但缓存未过期
+        create_fake_engine(&bin_dir, "llama-b11095-bin-win-vulkan-x64");
+        assert_eq!(
+            scheduler.scan_installed_engines().await.len(),
+            1,
+            "TTL 内必须命中缓存，不得重新扫盘"
+        );
+
+        // 强制刷新后立即可见，且排序仍为 GPU 优先
+        let refreshed = scheduler.refresh_installed_engines().await;
+        assert_eq!(refreshed.len(), 2, "refresh 后应看到新增引擎");
+        assert_eq!(refreshed[0].tier, AccelerationTier::Vulkan, "Vulkan 应排在 CPU 之前");
+
+        // refresh 同样回写缓存，后续普通扫描继续命中同一份结果
+        assert_eq!(scheduler.scan_installed_engines().await.len(), 2);
+    }
+
+    /// 删除引擎目录后，TTL 内普通扫描仍返回旧结果；refresh 后立即消失
+    ///
+    /// 对齐 `/api/engine/delete` 的实现：删除成功后必须显式 refresh，否则前端 30s 内
+    /// 仍会看到已删除的引擎条目。
+    #[tokio::test]
+    async fn test_scan_cache_requires_refresh_after_delete() {
+        let tmp = TempDir::new().unwrap();
+        let bin_dir = tmp.path().to_path_buf();
+        create_fake_engine(&bin_dir, "llama-b11095-bin-win-cpu-x64");
+        create_fake_engine(&bin_dir, "llama-b11095-bin-win-vulkan-x64");
+
+        let scheduler = EngineScheduler::new(vec![bin_dir.clone()], DriverComplianceService::new());
+        assert_eq!(scheduler.scan_installed_engines().await.len(), 2);
+
+        std::fs::remove_dir_all(bin_dir.join("llama-b11095-bin-win-vulkan-x64")).unwrap();
+        assert_eq!(
+            scheduler.scan_installed_engines().await.len(),
+            2,
+            "TTL 内不应感知磁盘删除"
+        );
+        assert_eq!(
+            scheduler.refresh_installed_engines().await.len(),
+            1,
+            "refresh 后应只剩 1 个引擎"
+        );
+    }
+
+    /// 并发扫描不得死锁/重复扫盘：8 路并发只应产生一份一致结果
+    ///
+    /// 缓存锁覆盖整个扫描过程（单飞），并发调用在锁上排队后直接命中刚写入的结果。
+    #[tokio::test]
+    async fn test_scan_cache_is_single_flight_under_concurrency() {
+        let tmp = TempDir::new().unwrap();
+        let bin_dir = tmp.path().to_path_buf();
+        create_fake_engine(&bin_dir, "llama-b11095-bin-win-cpu-x64");
+
+        let scheduler =
+            Arc::new(EngineScheduler::new(vec![bin_dir.clone()], DriverComplianceService::new()));
+
+        let mut handles = Vec::new();
+        for _ in 0..8 {
+            let s = Arc::clone(&scheduler);
+            handles.push(tokio::spawn(async move { s.scan_installed_engines().await }));
+        }
+
+        for h in handles {
+            let engines = h.await.expect("并发扫描任务不应 panic");
+            assert_eq!(engines.len(), 1, "并发扫描应返回一致结果");
+        }
+
+        // 并发结束后缓存已就绪：磁盘新增目录在 TTL 内仍不可见
+        create_fake_engine(&bin_dir, "llama-b11095-bin-win-vulkan-x64");
+        assert_eq!(scheduler.scan_installed_engines().await.len(), 1);
+        assert_eq!(scheduler.refresh_installed_engines().await.len(), 2);
     }
 
     #[test]

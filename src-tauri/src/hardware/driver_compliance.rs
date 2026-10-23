@@ -5,6 +5,8 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::sync::OnceLock;
+use std::time::{Duration, Instant};
 use tokio::sync::Mutex;
 use tracing::{info, warn};
 
@@ -214,9 +216,62 @@ impl DriverComplianceService {
     }
 }
 
+/// NVIDIA 驱动探测结果的进程级缓存
+///
+/// 背景（2026-10-22 崩溃）：`GET /api/engine/list` 被 desktop 每 3 秒轮询一次，
+/// 该接口每次都会调用 `detect_nvidia_driver_info()`。探测路径含
+/// `LoadLibraryA("nvcuda.dll")` → `transmute` 成函数指针 → `cuDriverGetVersion` → `FreeLibrary`
+/// 的 unsafe FFI，崩溃前实测每秒被触发 1–3 次（并发）。
+/// 驱动版本在一次运行期内不会变化，无需每次重探。
+///
+/// 缓存策略：成功结果缓存 60s；失败结果只缓存 10s，避免 nvidia-smi 临时不可用
+/// 把「无驱动」固化整整一分钟。整个探测过程持锁串行化 —— 并发进入 FFI 路径
+/// 是本次崩溃最可疑的诱因，排队等一次结果远好于并发 LoadLibrary/FreeLibrary。
+static NVIDIA_DRIVER_PROBE: OnceLock<Mutex<Option<(Instant, (Option<f64>, Option<f64>))>>> =
+    OnceLock::new();
+
+/// 探测成功时的缓存有效期（驱动版本运行期不变）
+const DRIVER_PROBE_TTL_OK: Duration = Duration::from_secs(60);
+/// 探测失败（含 nvidia-smi 不可用）时的缓存有效期
+const DRIVER_PROBE_TTL_FAIL: Duration = Duration::from_secs(10);
+/// 单次 nvidia-smi 探测的超时上限
+///
+/// 探测已被互斥锁串行化，一旦 nvidia-smi 卡住会连带拖住后续所有 `/api/engine/list`
+/// 请求；超时后直接走 nvcuda.dll 回退，宁可拿不到精确驱动版本也不能阻塞 HTTP 服务。
+const DRIVER_PROBE_TIMEOUT: Duration = Duration::from_secs(5);
+
 /// 检测 Windows/Linux 环境下 NVIDIA 显卡驱动主版本与 CUDA 最大版本号
-/// 优先使用内存中快速加载 nvcuda.dll 的 cuDriverGetVersion 探查（<1ms），失败时回退至 nvidia-smi
+///
+/// 带进程级缓存与串行化，供高频轮询路径（`/api/engine/list`、`/api/engine/status`）安全调用。
 pub async fn detect_nvidia_driver_info() -> (Option<f64>, Option<f64>) {
+    if !cfg!(windows) && !cfg!(target_os = "linux") {
+        return (None, None);
+    }
+
+    let cell = NVIDIA_DRIVER_PROBE.get_or_init(|| Mutex::new(None));
+    let mut guard = cell.lock().await;
+
+    if let Some((at, cached)) = guard.as_ref() {
+        let ttl = if cached.0.is_some() || cached.1.is_some() {
+            DRIVER_PROBE_TTL_OK
+        } else {
+            DRIVER_PROBE_TTL_FAIL
+        };
+        if at.elapsed() < ttl {
+            return *cached;
+        }
+    }
+
+    let fresh = detect_nvidia_driver_info_uncached().await;
+    *guard = Some((Instant::now(), fresh));
+    fresh
+}
+
+/// 实际执行探测（nvidia-smi 优先，失败回退 nvcuda.dll 的 cuDriverGetVersion）
+///
+/// 仅供 [`detect_nvidia_driver_info`] 在缓存失效时调用 —— 外部一律走带缓存的入口，
+/// 否则会把 unsafe FFI 重新暴露给高频轮询路径。
+async fn detect_nvidia_driver_info_uncached() -> (Option<f64>, Option<f64>) {
     if !cfg!(windows) && !cfg!(target_os = "linux") {
         return (None, None);
     }
@@ -225,7 +280,10 @@ pub async fn detect_nvidia_driver_info() -> (Option<f64>, Option<f64>) {
     let mut smi_cmd = tokio::process::Command::new("nvidia-smi");
     // 抑制 nvidia-smi 控制台窗口闪烁
     crate::win_proc::apply_no_window(&mut smi_cmd);
-    if let Ok(output) = smi_cmd.output().await {
+    // 超时后连子进程一起回收，避免残留僵尸 nvidia-smi
+    smi_cmd.kill_on_drop(true);
+    let smi_output = tokio::time::timeout(DRIVER_PROBE_TIMEOUT, smi_cmd.output()).await;
+    if let Ok(Ok(output)) = smi_output {
         let text = String::from_utf8_lossy(&output.stdout).to_string();
         let driver_re = regex::Regex::new(r"Driver Version:\s*(\d+\.?\d*)").ok();
         let cuda_re = regex::Regex::new(r"CUDA Version:\s*(\d+\.?\d*)").ok();
@@ -462,6 +520,49 @@ mod tests {
         );
         assert!(msg.contains("驱动"), "消息应提示更新驱动: {}", msg);
         assert!(msg.contains("VULKAN"));
+    }
+
+    /// NVIDIA 驱动探测走进程级缓存：命中缓存时不得再进入 nvidia-smi / nvcuda.dll FFI
+    ///
+    /// 该探测被 `/api/engine/list` 每 3s 触发一次，且内含 unsafe `LoadLibraryA` 调用，
+    /// 是 2026-10-22 引擎进程崩溃（0xC0000005 @ firefly-ai-engine.exe）最可疑的诱因，
+    /// 必须保证高频/并发调用下只探一次。
+    #[tokio::test]
+    async fn driver_probe_hits_process_cache() {
+        if !cfg!(windows) && !cfg!(target_os = "linux") {
+            return;
+        }
+
+        let cell = NVIDIA_DRIVER_PROBE.get_or_init(|| Mutex::new(None));
+        // 哨兵值：真实机器上不可能正好是这个组合，用于证明「没有重新探测」
+        let sentinel = (Some(555.0_f64), Some(12.4_f64));
+
+        // 1. 新鲜缓存 → 直接返回缓存值，时间戳保持不变（未重新探测）
+        let seeded_at = Instant::now();
+        *cell.lock().await = Some((seeded_at, sentinel));
+        assert_eq!(detect_nvidia_driver_info().await, sentinel, "命中缓存应返回缓存值");
+        let at_after_hit = cell.lock().await.as_ref().map(|(at, _)| *at).unwrap();
+        assert_eq!(at_after_hit, seeded_at, "命中缓存时不得重新探测");
+
+        // 2. 缓存过期（超过成功 TTL）→ 重新探测并刷新时间戳
+        let expired_at = Instant::now() - DRIVER_PROBE_TTL_OK - Duration::from_secs(1);
+        *cell.lock().await = Some((expired_at, sentinel));
+        let refreshed = detect_nvidia_driver_info().await;
+        let at_after_refresh = cell.lock().await.as_ref().map(|(at, _)| *at).unwrap();
+        assert!(
+            at_after_refresh > expired_at,
+            "缓存过期后必须重新探测并回写时间戳"
+        );
+
+        // 3. 重新探测的结果已回写缓存，紧接着再调一次应直接命中
+        assert_eq!(
+            detect_nvidia_driver_info().await,
+            refreshed,
+            "探测结果应已回写缓存，后续调用保持一致"
+        );
+
+        // 清理，避免影响同进程内其它用例
+        *cell.lock().await = None;
     }
 }
 
