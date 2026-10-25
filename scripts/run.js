@@ -64,12 +64,25 @@ if (!env.ESBUILD_BINARY_PATH && process.platform === 'win32') {
   }
 }
 
+// 注入 Node.js 内存上限兜底（4GB），防止大型前端构建/Vite 插件在多任务并发或内存压力下 OOM
+if (!env.NODE_OPTIONS || !env.NODE_OPTIONS.includes('--max-old-space-size')) {
+  env.NODE_OPTIONS = `${env.NODE_OPTIONS || ''} --max-old-space-size=4096`.trim()
+}
+
 const cmd = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
-const child = spawn(cmd, ['exec', ...args], {
-  stdio: 'inherit',
-  env,
-  shell: true,
-  cwd: path.resolve(__dirname, '..')
-})
+const isWin = process.platform === 'win32'
+// Windows 下避免传 args 数组 + shell: true 触发 DEP0190 告警
+const child = isWin
+  ? spawn(`${cmd} exec ${args.map(a => (a.includes(' ') ? `"${a}"` : a)).join(' ')}`, {
+      stdio: 'inherit',
+      env,
+      shell: true,
+      cwd: path.resolve(__dirname, '..')
+    })
+  : spawn(cmd, ['exec', ...args], {
+      stdio: 'inherit',
+      env,
+      cwd: path.resolve(__dirname, '..')
+    })
 
 child.on('exit', code => process.exit(code || 0))
