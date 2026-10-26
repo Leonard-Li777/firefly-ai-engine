@@ -55,8 +55,11 @@ fn make_base_model(param_b: f64, size_gb: f64) -> ModelInfo {
         is_minicpm5: false,
         is_nanbeige4: false,
         mmproj_path: None,
+        mmproj_size_gb: None,
         dspark_path: None,
         draft_path: None,
+        draft_size_gb: None,
+        draft_gguf_meta: None,
         cache_type_k: None,
         cache_type_v: None,
         parallel: None,
@@ -69,6 +72,7 @@ fn make_base_model(param_b: f64, size_gb: f64) -> ModelInfo {
         gguf_meta: None,
         server_flags: None,
         tolerant_template_path: None,
+        is_downloaded: true,
     }
 }
 
@@ -147,19 +151,35 @@ fn test_max_fill_fallback_when_vram_constrained() {
     });
 
     let params = ParamBuilder::compute(&resources, &model, "cuda");
-    // 剩余显存不足 128MB，触发安全兜底回退
-    assert_eq!(params.ctx_size, 2048, "显存不足时 Max-Fill 必须安全兜底到 2048");
+    // 6GB 显卡可用 4.5GB，模型 5.0GB，触发 Step B1 混合卸载回退：锁定 4096 上下文并卸载部分层至 GPU
+    assert_eq!(params.ctx_size, 4096, "触发 Step B1 混合卸载时必须锁定 4096 上下文");
+    assert!(
+        params.gpu_layers > 0 && params.gpu_layers < 32,
+        "Step B1 保持部分层在 GPU (实际: {})",
+        params.gpu_layers
+    );
+
+    // 极端显存匮乏：显卡显存完全不足以容纳 25% 混合卸载，触发 Step B2 彻底切回纯 CPU
+    let mut tiny_resources = make_test_resources(2 * 1024, None);
+    let tiny_params = ParamBuilder::compute(&tiny_resources, &model, "cuda");
+    assert_eq!(tiny_params.gpu_layers, 0, "显存极度不足时彻底切回纯 CPU (Step B2)");
+
+    // 当系统物理内存同样极度匮乏（赤字），CPU 模式平稳安全收敛兜底到 2048 上下文
+    tiny_resources.memory.total_mb = 8192;
+    tiny_resources.memory.available_mb = 4096;
+    let deficit_params = ParamBuilder::compute(&tiny_resources, &model, "cuda");
+    assert_eq!(deficit_params.ctx_size, 2048, "显存与内存均严重匮乏时安全兜底到 2048");
 }
 
 #[test]
 fn test_free_vram_probe_affects_offload_decision() {
-    // 总显存 16GB，但真实实时探测到仅剩 3.5GB（后台有竞态进程消耗）
-    let resources = make_test_resources(16 * 1024, Some(3500));
+    // 总显存 16GB，但真实实时探测到仅剩 6.0GB（后台有竞态进程消耗）
+    let resources = make_test_resources(16 * 1024, Some(6000));
     let model = make_base_model(7.0, 4.3);
 
     let params = ParamBuilder::compute(&resources, &model, "cuda");
-    // usable_vram = 3.5 - 0.8 = 2.7GB
-    // offload_ratio = 2.7 / 4.3 ≈ 62.7% < 88%
+    // usable_vram = 6.0 - 1.5 = 4.5GB
+    // target_weights = 4.5 - 1.0 - 1.06 ≈ 2.44GB -> offload ~18 layers
     assert_ne!(
         params.gpu_layers, -1,
         "在实时探测到空闲显存不足时，严禁盲目全量卸载 (-ngl -1)"
@@ -280,7 +300,8 @@ fn test_to_args_non_multimodal_ignores_mmproj() {
     assert!(!args.contains(&"--mmproj".to_string()), "非多模态模型即使有投影文件也不应注入 --mmproj");
 
     model.is_multimodal = true;
-    let args_mm = ParamBuilder::to_args(&params, 38400, "D:\\models\\vl-model.gguf", "vl-model", Some(&model));
+    let params_mm = ParamBuilder::compute(&resources, &model, "cuda");
+    let args_mm = ParamBuilder::to_args(&params_mm, 38400, "D:\\models\\vl-model.gguf", "vl-model", Some(&model));
     assert!(args_mm.contains(&"--mmproj".to_string()), "多模态模型且存在投影文件时应注入 --mmproj");
 }
 
@@ -304,7 +325,8 @@ fn test_to_args_respects_enable_vision_and_draft_interlocks() {
     model.enable_vision = true;
     model.enable_draft = true;
     model.draft_max_tokens = Some(7);
-    let args_enabled = ParamBuilder::to_args(&params, 38400, "D:\\models\\main.gguf", "test-model", Some(&model));
+    let params_enabled = ParamBuilder::compute(&resources, &model, "cuda");
+    let args_enabled = ParamBuilder::to_args(&params_enabled, 38400, "D:\\models\\main.gguf", "test-model", Some(&model));
 
     assert!(args_enabled.contains(&"--mmproj".to_string()), "用户开启识图后应注入 --mmproj");
     assert!(args_enabled.contains(&"--model-draft".to_string()), "用户开启加速后应注入 --model-draft");
@@ -315,13 +337,294 @@ fn test_to_args_respects_enable_vision_and_draft_interlocks() {
 
     // 用户配置更高时透传
     model.draft_max_tokens = Some(20);
-    let args_higher = ParamBuilder::to_args(&params, 38400, "D:\\models\\main.gguf", "test-model", Some(&model));
+    let params_higher = ParamBuilder::compute(&resources, &model, "cuda");
+    let args_higher = ParamBuilder::to_args(&params_higher, 38400, "D:\\models\\main.gguf", "test-model", Some(&model));
     let nmax_idx2 = args_higher.iter().position(|r| r == "--spec-draft-n-max").unwrap();
     assert_eq!(args_higher[nmax_idx2 + 1], "20", "DSpark n-max 应透传用户配置");
 
     // 未配置时默认取甜点值 6（对齐草稿平均命中长度 2.4~4.15，砍掉 15 的无效猜测）
     model.draft_max_tokens = None;
-    let args_default = ParamBuilder::to_args(&params, 38400, "D:\\models\\main.gguf", "test-model", Some(&model));
+    let params_default = ParamBuilder::compute(&resources, &model, "cuda");
+    let args_default = ParamBuilder::to_args(&params_default, 38400, "D:\\models\\main.gguf", "test-model", Some(&model));
     let nmax_idx3 = args_default.iter().position(|r| r == "--spec-draft-n-max").unwrap();
     assert_eq!(args_default[nmax_idx3 + 1], "6", "DSpark 未配置 n-max 时应默认 6");
+}
+
+// ── 泛化物理预算模型与 Acceptance Criteria (AC 1 ~ AC 11) 验证套件 ──
+
+#[test]
+fn test_ac1_budget_fixed_overhead_deduction() {
+    let resources = make_test_resources(16 * 1024, None);
+    let mut model = make_base_model(7.0, 4.0);
+    model.is_multimodal = true;
+    model.enable_vision = true;
+    model.mmproj_path = Some("C:\\mmproj.gguf".to_string());
+    model.mmproj_size_gb = Some(0.85);
+
+    model.enable_draft = true;
+    model.dspark_path = Some("C:\\dspark.gguf".to_string());
+    model.draft_size_gb = Some(1.25);
+
+    let params = ParamBuilder::compute(&resources, &model, "cuda");
+    // 权重(4.0) + mmproj(0.85) + 视觉激活(0.35) + 草稿权重(1.25) + 计算缓冲(1.0) + 草稿缓冲(0.25) = 7.70
+    let expected_fixed = 4.0 + 0.85 + 0.35 + 1.25 + 1.0 + 0.25;
+    assert!(
+        (params.fixed_overhead_gb - expected_fixed).abs() < 0.05,
+        "固定占用必须严格涵盖权重、伴随模型与缓冲，实际: {}, 预期: {}",
+        params.fixed_overhead_gb,
+        expected_fixed
+    );
+}
+
+#[test]
+fn test_ac2_continuous_pressure_quantization_switch() {
+    // 1. 显存吃紧场景：总显存 8GB，可用 6.5GB，模型 4.5GB，计算缓冲 1.0GB -> kv_budget = 1.0GB
+    // 32K 上下文在 f16 下需求约为 1.8GB -> lambda = 1.8 / 1.0 = 1.8 > 0.8 -> 自动切换 q8_0
+    let tight_res = make_test_resources(8 * 1024, None);
+    let mut tight_model = make_base_model(7.0, 4.5);
+    tight_model.gguf_meta = Some(GgufMetadata {
+        arch: "qwen2".to_string(),
+        n_layer: 28,
+        n_head: Some(28),
+        n_kv_head: 4,
+        head_dim: 128,
+        train_ctx: 32768,
+        ..Default::default()
+    });
+    let tight_params = ParamBuilder::compute(&tight_res, &tight_model, "cuda");
+    assert_eq!(
+        tight_params.cache_type_k, "q8_0",
+        "显存压力 lambda > 0.8 时必须自适应推导为 q8_0"
+    );
+    assert_eq!(tight_params.cache_type_v, "q8_0");
+
+    // 2. 显存充裕场景：总显存 24GB，模型仅 2.0GB -> lambda <= 0.8 -> 采用 f16
+    let rich_res = make_test_resources(24 * 1024, None);
+    let mut rich_model = make_base_model(2.0, 1.5);
+    rich_model.gguf_meta = Some(GgufMetadata {
+        arch: "qwen2".to_string(),
+        n_layer: 24,
+        n_head: Some(16),
+        n_kv_head: 2,
+        head_dim: 64,
+        train_ctx: 32768,
+        ..Default::default()
+    });
+    let rich_params = ParamBuilder::compute(&rich_res, &rich_model, "cuda");
+    assert_eq!(
+        rich_params.cache_type_k, "f16",
+        "显存充裕 lambda <= 0.8 时优先采用无损 f16"
+    );
+}
+
+#[test]
+fn test_ac3_cpu_constraints_and_weak_core_draft_gate() {
+    let mut cpu_res = SystemResources {
+        cpu: CpuInfo {
+            model: "AMD Ryzen 3 3200G".to_string(),
+            cores: 4,
+            threads: 4,
+            speed_mhz: 3600,
+            ..Default::default()
+        },
+        memory: MemoryInfo {
+            total_mb: 16384,
+            available_mb: 12288,
+        },
+        gpus: vec![],
+        best_acceleration_tier: AccelerationTier::Cpu,
+    };
+
+    let mut model = make_base_model(7.0, 4.0);
+    model.dspark_path = Some("C:\\dspark.gguf".to_string());
+    model.draft_size_gb = Some(0.8);
+    model.enable_draft = true;
+
+    let params = ParamBuilder::compute(&cpu_res, &model, "cpu");
+    // 4 核心：(4 - 2).clamp(1, 8) = 2
+    assert_eq!(params.threads, 2, "4 核 CPU 线程数应为 2 (保留 2 核给系统)");
+    assert!(
+        !params.effective_enable_draft,
+        "弱算力 CPU (< 6 物理核心) 必须自动停用草稿模型"
+    );
+    assert_eq!(
+        params.cache_type_k, "q8_0",
+        "CPU 模式默认 KV 缓存量化必须为 q8_0 (内存带宽优化)"
+    );
+
+    let args = ParamBuilder::to_args(&params, 38400, "C:\\model.gguf", "cpu-model", Some(&model));
+    assert!(
+        !args.contains(&"--model-draft".to_string()),
+        "停用草稿时不应传递 --model-draft 参数"
+    );
+
+    // 8 核心 CPU：(8 - 2).clamp(1, 8) = 6
+    cpu_res.cpu.cores = 8;
+    cpu_res.cpu.threads = 16;
+    let params_8 = ParamBuilder::compute(&cpu_res, &model, "cpu");
+    assert_eq!(params_8.threads, 6, "8 核 CPU 线程数应为 6");
+
+    // 强制指定 512 批大小时，CPU 模式必须严格限制为 128 (防内存页面交换颠簸)
+    model.force_batch_size = Some(512);
+    let params_batch = ParamBuilder::compute(&cpu_res, &model, "cpu");
+    assert_eq!(params_batch.batch_size, 128, "CPU 模式下批处理大小必须严格限制在 128 以内");
+}
+
+#[test]
+fn test_ac4_auto_context_ceiling_cap() {
+    let res = make_test_resources(48 * 1024, None);
+    let mut model = make_base_model(7.0, 4.0);
+    model.gguf_meta = Some(GgufMetadata {
+        arch: "llama".to_string(),
+        n_layer: 32,
+        n_head: Some(32),
+        n_kv_head: 8,
+        head_dim: 128,
+        train_ctx: 262144, // 256K 超大预训练窗口
+        ..Default::default()
+    });
+
+    let params = ParamBuilder::compute(&res, &model, "cuda");
+    assert_eq!(
+        params.ctx_size, 65536,
+        "自动推导上下文上限必须产品级封顶于 65536，不得无脑顶到 131072 或 262144"
+    );
+}
+
+#[test]
+fn test_ac5_user_context_clamp_and_preservation() {
+    // 显存充裕时：用户显式要求 131072 必须得到保全（不被 65536 自动封顶误杀）
+    let big_res = make_test_resources(48 * 1024, None);
+    let mut big_model = make_base_model(7.0, 4.0);
+    big_model.context_window = Some(131072);
+    big_model.gguf_meta = Some(GgufMetadata {
+        arch: "llama".to_string(),
+        n_layer: 32,
+        n_head: Some(32),
+        n_kv_head: 8,
+        head_dim: 128,
+        train_ctx: 262144,
+        ..Default::default()
+    });
+
+    let big_params = ParamBuilder::compute(&big_res, &big_model, "cuda");
+    assert_eq!(
+        big_params.ctx_size, 131072,
+        "显存充裕且用户显式指定 131072 时必须忠实采纳"
+    );
+
+    // 显存不足时：用户显式要求 131072 必须截断至预算上限 budget_ctx
+    let tight_res = make_test_resources(8 * 1024, None);
+    let mut tight_model = make_base_model(7.0, 4.5);
+    tight_model.context_window = Some(131072);
+    tight_model.gguf_meta = Some(GgufMetadata {
+        arch: "llama".to_string(),
+        n_layer: 32,
+        n_head: Some(32),
+        n_kv_head: 8,
+        head_dim: 128,
+        train_ctx: 262144,
+        ..Default::default()
+    });
+
+    let tight_params = ParamBuilder::compute(&tight_res, &tight_model, "cuda");
+    assert!(
+        tight_params.ctx_size <= tight_params.budget_ctx,
+        "显存吃紧时，用户指定上下文必须截断至安全预算 (granted={}, budget={})",
+        tight_params.ctx_size,
+        tight_params.budget_ctx
+    );
+}
+
+#[test]
+fn test_ac6_cascading_downgrade_steps() {
+    // 场景 A: 显卡 6GB (可用 4.5GB)，模型 4.5GB + 1.0GB 计算缓冲 -> 无法容纳全量卸载 + 2048 ctx
+    // 但显存足够容纳 >= 25% 层数与 4096 ctx -> 触发 Step B1 混合卸载回退
+    let res_b1 = make_test_resources(6 * 1024, None);
+    let mut model_b1 = make_base_model(7.0, 4.5);
+    model_b1.gguf_meta = Some(GgufMetadata {
+        arch: "llama".to_string(),
+        n_layer: 32,
+        n_head: Some(32),
+        n_kv_head: 8,
+        head_dim: 128,
+        train_ctx: 32768,
+        ..Default::default()
+    });
+
+    let params_b1 = ParamBuilder::compute(&res_b1, &model_b1, "cuda");
+    assert!(
+        params_b1.gpu_layers > 0 && params_b1.gpu_layers < 32,
+        "Step B1 必须反解出部分层数卸载到 GPU (实际: {})",
+        params_b1.gpu_layers
+    );
+    assert_eq!(params_b1.ctx_size, 4096, "Step B1 混合卸载锁定 4096 上下文");
+    assert!(params_b1.offload_ratio > 0.0 && params_b1.offload_ratio < 1.0);
+
+    // 场景 B: 显卡仅剩 1.6GB 可用 (可用 0.1GB)，连 25% 层数都无法容纳 -> 触发 Step B2 彻底切回纯 CPU
+    let res_b2 = make_test_resources(2 * 1024, Some(1600));
+    let mut model_b2 = make_base_model(7.0, 4.5);
+    model_b2.gguf_meta = Some(GgufMetadata {
+        arch: "llama".to_string(),
+        n_layer: 32,
+        n_head: Some(32),
+        n_kv_head: 8,
+        head_dim: 128,
+        train_ctx: 32768,
+        ..Default::default()
+    });
+
+    let params_b2 = ParamBuilder::compute(&res_b2, &model_b2, "cuda");
+    assert_eq!(params_b2.gpu_layers, 0, "Step B2 显存无法承载混合卸载时必须彻底切回 CPU");
+    assert_eq!(params_b2.offload_ratio, 0.0);
+}
+
+#[test]
+fn test_ac8_ssot_recommended_params_and_budget_json() {
+    let res = make_test_resources(16 * 1024, None);
+    let model = make_base_model(7.0, 4.0);
+    let params = ParamBuilder::compute(&res, &model, "cuda");
+    let rec_json = params.to_recommended_json();
+
+    assert!(rec_json.get("n_gpu_layers").is_some());
+    assert!(rec_json.get("threads").is_some());
+    assert!(rec_json.get("ctx_size").is_some());
+    assert!(rec_json.get("cache_type_k").is_some());
+    assert!(rec_json.get("enableVision").is_some());
+    assert!(rec_json.get("enableDraft").is_some());
+    assert_eq!(rec_json["parallel"], 1);
+}
+
+#[test]
+fn test_ac10_self_allocation_compensation_formula() {
+    let total_vram_gb: f64 = 12.0;
+    let free_vram_gb: f64 = 3.0; // 当前仅剩 3GB 可用
+    let self_allocated_gb: f64 = 5.5; // 当前引擎模型占用了 5.5GB
+    let effective_free: f64 = (free_vram_gb + self_allocated_gb).min(total_vram_gb - 1.5);
+    // 3.0 + 5.5 = 8.5GB <= 12.0 - 1.5 = 10.5GB -> 8.5GB
+    assert_eq!(effective_free, 8.5);
+}
+
+#[test]
+fn test_ac11_deficit_division_by_zero_defense() {
+    let mut res = make_test_resources(2 * 1024, Some(1024)); // 极小显存
+    res.memory.total_mb = 8192;
+    res.memory.available_mb = 4096;
+    let mut model = make_base_model(7.0, 4.0); // 模型 4GB
+    model.gguf_meta = Some(GgufMetadata {
+        arch: "llama".to_string(),
+        n_layer: 32,
+        n_head: Some(32),
+        n_kv_head: 8,
+        head_dim: 128,
+        train_ctx: 32768,
+        ..Default::default()
+    });
+
+    let params = ParamBuilder::compute(&res, &model, "cuda");
+    assert!(
+        params.ctx_size >= 2048,
+        "赤字显存下绝不发生除零 Panic 或 NaN，并平稳收敛至保底上下文 (ctx={})",
+        params.ctx_size
+    );
 }

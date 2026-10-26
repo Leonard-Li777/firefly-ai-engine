@@ -5,6 +5,7 @@ import {
   DownloadProgressEvent,
   DownloadTaskSummary,
   RuntimeParams,
+  ModelParamsResponse,
   StartModelDownloadOptions,
   UiIntentConsumeResponse
 } from './types'
@@ -417,8 +418,31 @@ export class MockApiClient implements IEngineApiClient {
     return { success: true }
   }
 
-  async getModelParams(modelId: string): Promise<RuntimeParams | undefined> {
-    return this.mockModelCustomParams.get(modelId)
+  async getModelParams(modelId: string): Promise<ModelParamsResponse> {
+    const params = this.mockModelCustomParams.get(modelId)
+    return {
+      params,
+      recommended: {
+        n_gpu_layers: -1,
+        threads: 4,
+        ctx_size: 32768,
+        batch_size: 1024,
+        ubatch_size: 256,
+        cache_type_k: 'q8_0',
+        cache_type_v: 'q8_0',
+        parallel: 1,
+        enableVision: true,
+        enableDraft: true,
+        draftMaxTokens: 6,
+      },
+      budget: {
+        budget_ctx: 32768,
+        max_train_ctx: 131072,
+        usable_memory_gb: 10.0,
+        fixed_overhead_gb: 4.0,
+        tier: 'cuda',
+      },
+    }
   }
 
   async addCustomModel(url: string): Promise<ModelItem> {

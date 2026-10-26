@@ -3,7 +3,8 @@ import {
   EngineStatusResponse,
   EngineItem,
   ModelItem,
-  RuntimeParams
+  RuntimeParams,
+  ModelParamsResponse
 } from '../api/types'
 import { engineApiClient } from '../api/provider'
 import { RegionDetectionResult, regionDetector } from '../lib/region-detector'
@@ -58,7 +59,7 @@ interface EngineStoreState {
   rescanModels: () => Promise<void>
   updateRuntimeParams: (params: Partial<RuntimeParams>) => Promise<boolean>
   saveModelParams: (modelId: string, params: RuntimeParams) => Promise<boolean>
-  getModelParams: (modelId: string) => Promise<RuntimeParams | undefined>
+  getModelParams: (modelId: string) => Promise<ModelParamsResponse | undefined>
   addCustomModel: (url: string) => Promise<{ ok: boolean; error?: string }>
   deleteModel: (modelId: string, localPath?: string) => Promise<boolean>
   removeCustomModel: (modelId: string) => Promise<boolean>

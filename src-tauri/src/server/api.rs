@@ -21,6 +21,7 @@ use tokio::sync::Mutex;
 use tracing::{error, info, warn};
 
 use crate::config::CustomModelEntry;
+use crate::engine::param_builder::ParamBuilder;
 use crate::engine::EngineCoordinator;
 
 use super::custom_model;
@@ -3385,14 +3386,115 @@ async fn save_model_params(
 }
 
 /// GET /api/models/params
-/// 查询特定模型的专属启动配置
+/// 查询特定模型的专属启动配置与推荐配置 (SSOT)
 async fn get_model_params(
     State(state): State<AppState>,
     Query(query): Query<GetModelParamsQuery>,
 ) -> impl IntoResponse {
-    let config = state.coordinator.config.lock().await;
-    let found = config.model_custom_params.get(&query.model_id).cloned();
-    Json(json!({ "success": true, "params": found }))
+    let (found, preferred_backend) = {
+        let config = state.coordinator.config.lock().await;
+        (
+            config.model_custom_params.get(&query.model_id).cloned(),
+            config.preferred_backend.clone(),
+        )
+    };
+
+    // 探测硬件与当前介质池
+    let mut resources = match state.coordinator.hardware.detect(false).await {
+        Ok(r) => r,
+        Err(e) => {
+            warn!("获取推荐参数时硬件探测失败: {}", e);
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "success": false, "error": format!("硬件探测失败: {}", e) })),
+            )
+                .into_response();
+        }
+    };
+
+    // 运行态自占用回补 (Self-Allocation Compensation)
+    let is_running_this_model = if query.model_id.trim().is_empty() {
+        false
+    } else {
+        let running = state.coordinator.running_model.lock().await;
+        let active_name = state.coordinator.active_model_name.lock().await;
+        active_name.as_deref().map(|n| n.eq_ignore_ascii_case(&query.model_id)).unwrap_or(false)
+            || running.as_deref().map(|r| {
+                let r_stem = std::path::Path::new(r).file_stem().and_then(|s| s.to_str()).unwrap_or("");
+                r_stem.eq_ignore_ascii_case(&query.model_id) || r == &query.model_id
+            }).unwrap_or(false)
+    };
+
+    if is_running_this_model {
+        if let Some(ref last_params) = *state.coordinator.last_runtime_params.lock().await {
+            let self_allocated_gb = last_params.fixed_overhead_gb + (last_params.usable_memory_gb - last_params.fixed_overhead_gb).max(0.0) * (last_params.ctx_size as f64 / last_params.budget_ctx.max(1) as f64).min(1.0);
+            if last_params.is_cpu_mode {
+                let total_ram_mb = resources.memory.total_mb;
+                let avail_ram_mb = resources.memory.available_mb;
+                let self_ram_mb = (self_allocated_gb * 1024.0) as u64;
+                // 系统可用内存上限物理受限于总内存，不可在此提前二次扣除 reserve_mb 导致失真
+                resources.memory.available_mb = (avail_ram_mb + self_ram_mb).min(total_ram_mb);
+            } else if let Some(gpu) = resources.gpus.iter_mut().find(|g| !g.is_integrated) {
+                let total_mb = gpu.memory_mb;
+                let free_mb = gpu.memory_free_mb.unwrap_or(total_mb);
+                let self_mb = (self_allocated_gb * 1024.0) as u64;
+                let max_usable_mb = total_mb.saturating_sub(1536);
+                gpu.memory_free_mb = Some((free_mb + self_mb).min(max_usable_mb));
+            }
+        }
+    }
+
+    let selected_engine = state.coordinator.scheduler.select_engine(&resources, preferred_backend.as_deref()).await.ok();
+    let tier = selected_engine.as_ref().map(|e| e.tier.clone()).unwrap_or_else(|| resources.best_acceleration_tier.clone());
+    let backend_str = tier.as_str();
+
+    match state.coordinator.resolve_model_info(&query.model_id).await {
+        Ok(model_info) => {
+            let file_exists = model_info.is_downloaded;
+            let params = ParamBuilder::compute(&resources, &model_info, backend_str);
+            let recommended = params.to_recommended_json();
+            let budget = if file_exists {
+                serde_json::json!({
+                    "budget_ctx": params.budget_ctx,
+                    "max_train_ctx": params.max_train_ctx,
+                    "usable_memory_gb": params.usable_memory_gb,
+                    "fixed_overhead_gb": params.fixed_overhead_gb,
+                    "tier": backend_str
+                })
+            } else {
+                serde_json::Value::Null
+            };
+            Json(json!({
+                "success": true,
+                "params": found,
+                "recommended": recommended,
+                "budget": budget
+            }))
+            .into_response()
+        }
+        Err(e) => {
+            warn!("resolve_model_info 失败: {}", e);
+            Json(json!({
+                "success": true,
+                "params": found,
+                "recommended": serde_json::json!({
+                    "n_gpu_layers": -1,
+                    "threads": 4,
+                    "ctx_size": 4096,
+                    "batch_size": 512,
+                    "ubatch_size": 256,
+                    "cache_type_k": "f16",
+                    "cache_type_v": "f16",
+                    "parallel": 1,
+                    "enableVision": true,
+                    "enableDraft": true,
+                    "draftMaxTokens": 6
+                }),
+                "budget": serde_json::Value::Null
+            }))
+            .into_response()
+        }
+    }
 }
 
 /// POST /api/models/custom/add

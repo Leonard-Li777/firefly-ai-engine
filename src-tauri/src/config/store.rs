@@ -120,7 +120,7 @@ pub struct ModelCustomParams {
     pub repeat_penalty: f64,
 
     /// 是否加载识图多模态投影（默认 true）
-    #[serde(default = "default_enable_vision", rename = "enableVision", alias = "enable_vision")]
+    #[serde(default = "default_enable_vision", rename = "enableVision", alias = "enable_vision", alias = "enableMmproj", alias = "enable_mmproj")]
     pub enable_vision: Option<bool>,
     /// 是否加载投机加速草稿模型（默认 true）
     #[serde(default = "default_enable_draft", rename = "enableDraft", alias = "enable_draft")]

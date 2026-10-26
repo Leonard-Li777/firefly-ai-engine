@@ -70,8 +70,23 @@ export interface RuntimeParams {
 
   // 伴随模型控制与微调（新增）
   enableVision?: boolean       // 是否加载识图多模态投影（默认 true）
+  enableMmproj?: boolean       // 别名兼容
   enableDraft?: boolean        // 是否加载投机加速草稿模型（默认 true）
   draftMaxTokens?: number      // 投机预测最大步数（默认 6——DSpark 甜点值；2026-10-20 取消 15 下限，命中率低时 15 个候选大部分作废）
+}
+
+export interface ModelBudgetInfo {
+  budget_ctx: number
+  max_train_ctx: number
+  usable_memory_gb: number
+  fixed_overhead_gb: number
+  tier: string
+}
+
+export interface ModelParamsResponse {
+  params?: RuntimeParams | null
+  recommended: RuntimeParams
+  budget?: ModelBudgetInfo | null
 }
 
 export interface StartModelDownloadOptions {

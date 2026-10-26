@@ -25,8 +25,62 @@ pub struct EngineParams {
     pub flash_attention: bool,
     /// 是否为 CPU 模式
     pub is_cpu_mode: bool,
+    /// 显存/内存卸载比率
+    #[serde(default)]
+    pub offload_ratio: f64,
+    /// 真实生效的 Key 缓存量化精度 ("f16" | "q8_0" | "q4_0")
+    #[serde(default = "default_cache_type_str")]
+    pub cache_type_k: String,
+    /// 真实生效的 Value 缓存量化精度 ("f16" | "q8_0" | "q4_0")
+    #[serde(default = "default_cache_type_str")]
+    pub cache_type_v: String,
+    /// 最终生效的草稿模型挂载决断
+    #[serde(default = "default_true")]
+    pub effective_enable_draft: bool,
+    /// 最终生效的多模态投影挂载决断
+    #[serde(default = "default_true")]
+    pub effective_enable_vision: bool,
+    /// 显存/内存预算可承载的上下文上限
+    #[serde(default)]
+    pub budget_ctx: u32,
+    /// 模型的最大训练上下文
+    #[serde(default)]
+    pub max_train_ctx: u32,
+    /// 当前硬件池可用安全容量（GB）
+    #[serde(default, rename = "usable_memory_gb")]
+    pub usable_memory_gb: f64,
+    /// 当前硬件池固定常驻占用（GB）
+    #[serde(default)]
+    pub fixed_overhead_gb: f64,
     /// 说明（调试用）
     pub description: String,
+}
+
+impl EngineParams {
+    /// 转换为前端所需的推荐参数 JSON 结构（对应 RuntimeParams）
+    pub fn to_recommended_json(&self) -> serde_json::Value {
+        serde_json::json!({
+            "n_gpu_layers": self.gpu_layers,
+            "threads": self.threads,
+            "ctx_size": self.ctx_size,
+            "batch_size": self.batch_size,
+            "ubatch_size": self.ubatch_size,
+            "cache_type_k": self.cache_type_k,
+            "cache_type_v": self.cache_type_v,
+            "parallel": 1,
+            "enableVision": self.effective_enable_vision,
+            "enableDraft": self.effective_enable_draft,
+            "draftMaxTokens": 6
+        })
+    }
+}
+
+fn default_cache_type_str() -> String {
+    "f16".to_string()
+}
+
+fn default_true() -> bool {
+    true
 }
 
 /// 模型信息（用于参数计算）
@@ -65,10 +119,19 @@ pub struct ModelInfo {
     pub is_nanbeige4: bool,
     /// 多模态投影器路径（--mmproj）
     pub mmproj_path: Option<String>,
+    /// 多模态投影器文件体积（GB）。投影器与视觉塔同样常驻显存，必须计入预算，
+    /// 否则「开了识图就 OOM」——历史上预算公式完全忽略此项。
+    pub mmproj_size_gb: Option<f64>,
     /// DSpark 草稿模型路径（--model-draft + --spec-type draft-dspark）
     pub dspark_path: Option<String>,
     /// MTP 或普通草稿模型路径（--model-draft + --spec-type draft-mtp）
     pub draft_path: Option<String>,
+    /// 草稿模型文件体积（GB）。草稿模型会被全量卸载到显存（--gpu-layers-draft -1），
+    /// 其权重必须计入预算。
+    pub draft_size_gb: Option<f64>,
+    /// 草稿模型 GGUF 元数据。草稿模型按 --ctx-size **独立分配一份 KV 缓存**，
+    /// 必须按它自己的层数/头数核算，不能沿用主模型口径（历史上正是漏算这 1.25 GiB 导致 OOM）。
+    pub draft_gguf_meta: Option<crate::engine::gguf_parser::GgufMetadata>,
     /// KV 缓存 Key 量化类型 ("f16", "q8_0", "q4_0")
     pub cache_type_k: Option<String>,
     /// KV 缓存 Value 量化类型 ("f16", "q8_0", "q4_0")
@@ -93,6 +156,8 @@ pub struct ModelInfo {
     pub server_flags: Option<crate::engine::flag_detector::ServerFeatureFlags>,
     /// 思考模式宽容 Jinja 模板路径（若需要注入 --chat-template-file）
     pub tolerant_template_path: Option<String>,
+    /// 模型文件是否已在本地下载就绪
+    pub is_downloaded: bool,
 }
 
 impl ModelInfo {
@@ -155,6 +220,50 @@ impl ModelInfo {
     }
 }
 
+/// 显存安全预留（GB）
+///
+/// 历史值为 0.8 GiB，且按「整卡可用」估算，导致预算看起来装得下、实际一跑就 OOM
+/// （前科：RTX 3060 12GB + MiniCPM-V 1B，128k f16 下加载后余量仅 2.4 GiB）。
+/// Windows DWM、浏览器、其它 Electron 进程与驱动常驻 1~2 GiB，故提高到 1.5 GiB。
+pub const VRAM_SAFETY_RESERVE_GB: f64 = 1.5;
+
+/// 计算缓冲 + CUDA/ROCm context 的经验占用（GB）
+///
+/// llama.cpp 的 compute buffer（graph / KQ 矩阵 / 中间张量）不体现在权重与 KV 里，
+/// 但会随 ctx 与 ubatch 增长。预算公式此前完全未计此项，是 OOM 的第二大成因。
+pub const COMPUTE_BUFFER_GB: f64 = 1.0;
+
+/// 自动推导上下文的产品上限
+///
+/// 历史 cap 直接取 `train_ctx.min(131072)`：只要可用显存 ≥7.3 GiB 就会一路顶到 131072，
+/// 12GB 级显卡配小模型必然被塞满长上下文。产品侧文件分析场景 64k 已远超实际需要，
+/// 故把自动推导上限收到 65536；用户显式指定时仍可突破（但须过预算闸）。
+pub const AUTO_CTX_CEILING: u32 = 65536;
+
+/// 自动推导上下文的下限（低于此值模型基本不可用）
+pub const AUTO_CTX_FLOOR: u32 = 2048;
+
+/// 【四大内存池化抽象】
+/// 承载介质池枚举
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MemoryPoolKind {
+    Dgpu,
+    AppleSilicon,
+    Igpu,
+    Cpu,
+}
+
+/// 预算计划输入载体
+pub struct BudgetPlan {
+    pub pool: MemoryPoolKind,
+    pub usable_memory_gb: f64,
+    pub initial_gpu_layers: i32,
+    pub default_batch: (u32, u32),
+    pub supports_fa: bool,
+    pub base_compute_buf_gb: f64,
+    pub description_prefix: String,
+}
+
 /// 参数计算器（无状态，纯函数式）
 pub struct ParamBuilder;
 
@@ -197,7 +306,8 @@ impl ParamBuilder {
         let type_bytes = |t: &str| -> f64 {
             match t.to_lowercase().as_str() {
                 "q4_0" | "q4_1" => 0.5,
-                "q8_0" => 1.0,
+                // block_q8_0: 32 个 int8 权重 (32B) + 1 个 fp16 scale 因子 (2B) = 34B / 32 elems = 1.0625 Bytes/elem
+                "q8_0" => 1.0625,
                 _ => 2.0, // 默认 f16 为 2 字节
             }
         };
@@ -217,153 +327,394 @@ impl ParamBuilder {
         re_raise.replace_all(&cleaned, "").to_string()
     }
 
-    /// 【CPU 模式】
-    fn cpu_params(resources: &SystemResources, model: &ModelInfo, _backend: &str) -> EngineParams {
-        let train_ctx = model.train_context_size().min(131072);
-        let batch_size = model.force_batch_size.unwrap_or(128).min(128);
-        // 严格约束：ubatch <= batch
-        let ubatch_size = model.force_ubatch_size.unwrap_or(128).min(batch_size);
-        let ctx_size = model.context_window.unwrap_or(4096).min(train_ctx);
-        let threads = Self::compute_threads(&resources.cpu);
-
-        info!(
-            "CPU 模式参数: ngl=0, batch={}, ubatch={}, ctx={}, threads={}",
-            batch_size, ubatch_size, ctx_size, threads
-        );
-
-        EngineParams {
-            gpu_layers: 0,
-            batch_size,
-            ubatch_size,
-            ctx_size,
-            threads,
-            flash_attention: false,
-            is_cpu_mode: true,
-            description: "CPU 纯软件推理模式".to_string(),
-        }
-    }
-
-    /// 【Apple Silicon Metal UMA】
-    /// 统一内存架构：预留 3GB 给系统，其余最大化 GPU 卸载
-    fn apple_silicon_params(
+    /// 全介质统一内存物理预算求解器（第一性原理数学模型）
+    fn solve_plan(
         resources: &SystemResources,
         model: &ModelInfo,
-        _vram_mb: u64,
-        _backend: &str,
+        plan: BudgetPlan,
+        backend: &str,
     ) -> EngineParams {
-        let total_mem_gb = resources.memory.total_gb();
-        let model_size_gb = model.effective_size_gb();
+        let is_cpu_pool = plan.pool == MemoryPoolKind::Cpu;
         let total_layers = model.effective_layers();
-        let train_ctx = model.train_context_size().min(131072);
-
-        // 预留 3GB 给系统和前台应用
-        let usable_mem = (total_mem_gb - 3.0).max(2.0);
-
-        let gpu_layers = if model_size_gb <= usable_mem {
-            -1 // 全量 GPU 加速
-        } else {
-            let offload_ratio = usable_mem / model_size_gb;
-            (total_layers as f64 * offload_ratio).floor().max(8.0) as i32
-        };
-
-        let final_gpu_layers = model.force_gpu_layers.unwrap_or(gpu_layers);
-        let batch_size = model.force_batch_size.unwrap_or(1024);
-        let raw_ubatch = model.force_ubatch_size.unwrap_or(512);
-        // 核心约束：ubatch <= batch
-        let ubatch_size = raw_ubatch.min(batch_size);
-
-        let ctx_size = if let Some(user_ctx) = model.context_window {
-            user_ctx.clamp(512, train_ctx)
-        } else {
-            train_ctx.min(32768).max(4096)
-        };
+        let model_size_gb = model.effective_size_gb();
+        let raw_train_ctx = model.train_context_size();
+        let target_ctx = raw_train_ctx.min(AUTO_CTX_CEILING);
 
         let threads = Self::compute_threads(&resources.cpu);
-        // Apple Silicon Metal 全系支持 Flash Attention
-        let flash_attention = true;
+
+        // 伴随模型（识图 mmproj 与投机加速 draft）跨介质互锁状态
+        let has_draft_file = model.dspark_path.is_some() || model.draft_path.is_some();
+        let cpu_draft_allowed = !is_cpu_pool || (resources.cpu.cores >= 6);
+        let mut effective_enable_draft = model.enable_draft && has_draft_file && cpu_draft_allowed;
+        if is_cpu_pool && has_draft_file && model.enable_draft && !cpu_draft_allowed {
+            info!(
+                cores = resources.cpu.cores,
+                "纯 CPU 模式下物理核心数 < 6，自动关停草稿模型加速以防线程竞争拖慢整体吞吐"
+            );
+        }
+
+        let effective_enable_vision = model.is_multimodal && model.enable_vision && model.mmproj_path.is_some();
+
+        // 固定常驻开销 (Fixed Overhead): 权重 + 草稿权重 + 投影器与视觉激活峰值 + 动态计算缓冲
+        let mmproj_gb = if effective_enable_vision {
+            model.mmproj_size_gb.unwrap_or(0.0) + 0.35 // 额外预留 0.35 GiB 专用于 MiniCPM-V 等切片前向视觉 Patch 激活缓冲
+        } else {
+            0.0
+        };
+
+        let mut draft_weights_gb = if effective_enable_draft {
+            model.draft_size_gb.unwrap_or(0.0)
+        } else {
+            0.0
+        };
+
+        let mut compute_buf = plan.base_compute_buf_gb + if effective_enable_draft { 0.25 } else { 0.0 };
+        let mut final_gpu_layers = model.force_gpu_layers.unwrap_or(plan.initial_gpu_layers);
+
+        // 单 Token 显存/内存开销辅助函数
+        let compute_token_bytes = |cache_k: &str, cache_v: &str, ngl: i32, draft_on: bool| -> (u64, u64, u64) {
+            let ngl_for_calc = if is_cpu_pool || ngl == 0 {
+                total_layers // CPU 纯软推理下全量层数 KV 均常驻系统 RAM
+            } else if ngl == -1 {
+                total_layers
+            } else {
+                ngl.max(0) as u32
+            };
+            let main_b = model
+                .gguf_meta
+                .as_ref()
+                .map(|meta| Self::compute_kv_cache_bytes_per_token(meta, cache_k, cache_v, ngl_for_calc))
+                .unwrap_or(0);
+            let draft_b = if draft_on {
+                if let Some(ref dmeta) = model.draft_gguf_meta {
+                    Self::compute_kv_cache_bytes_per_token(dmeta, cache_k, cache_v, dmeta.n_layer)
+                } else {
+                    // 若草稿模型物理文件存在但 GGUF 解析失败/缺失，按 8 层、2 头、head_dim 256 兜底核算
+                    let fallback_meta = crate::engine::gguf_parser::GgufMetadata {
+                        n_layer: 8,
+                        n_kv_head: 2,
+                        head_dim: 256,
+                        ..Default::default()
+                    };
+                    Self::compute_kv_cache_bytes_per_token(&fallback_meta, cache_k, cache_v, 8)
+                }
+            } else {
+                0
+            };
+            (main_b.saturating_add(draft_b), main_b, draft_b)
+        };
+
+        let mut weights_on_gpu_gb = if is_cpu_pool || final_gpu_layers == 0 {
+            model_size_gb
+        } else if final_gpu_layers == -1 {
+            model_size_gb
+        } else {
+            model_size_gb * (final_gpu_layers.max(0) as f64 / total_layers.max(1) as f64)
+        };
+
+        let mut fixed_overhead_gb = weights_on_gpu_gb + draft_weights_gb + mmproj_gb + compute_buf;
+        let mut kv_budget_bytes = (plan.usable_memory_gb - fixed_overhead_gb).max(0.0) * 1024.0 * 1024.0 * 1024.0;
+
+        // 内存压力指数 λ（带除零与赤字防御）：λ = Demand_f16 / M_kv_budget
+        let (f16_bpt, _, _) = compute_token_bytes("f16", "f16", final_gpu_layers, effective_enable_draft);
+        let demand_f16 = (target_ctx as f64) * (f16_bpt as f64);
+        let lambda = if kv_budget_bytes <= 0.0 {
+            f64::INFINITY
+        } else {
+            demand_f16 / kv_budget_bytes
+        };
+
+        // 选定量化精度（用户指定优先；否则按连续压力指数自适应推导；CPU 模式默认优化带宽取 q8_0）
+        let user_specified_k = model.cache_type_k.clone();
+        let user_specified_v = model.cache_type_v.clone();
+        let (mut cache_k, mut cache_v): (String, String) = if let (Some(k), Some(v)) = (user_specified_k.as_deref(), user_specified_v.as_deref()) {
+            (k.to_string(), v.to_string())
+        } else if let Some(k) = user_specified_k.as_deref() {
+            (k.to_string(), k.to_string())
+        } else if is_cpu_pool {
+            let vk = if plan.supports_fa { "q8_0" } else { "f16" };
+            ("q8_0".to_string(), vk.to_string())
+        } else if lambda > 0.8 {
+            let vk = if plan.supports_fa { "q8_0" } else { "f16" };
+            ("q8_0".to_string(), vk.to_string())
+        } else {
+            ("f16".to_string(), "f16".to_string())
+        };
+
+        let (mut bytes_per_token, mut main_bpt, mut draft_bpt) =
+            compute_token_bytes(&cache_k, &cache_v, final_gpu_layers, effective_enable_draft);
+
+        let mut budget_tokens = if bytes_per_token > 0 {
+            ((kv_budget_bytes as u64 / bytes_per_token) / 256 * 256) as u32
+        } else {
+            0
+        };
+
+        // 渐进式 Pre-clamp 降级梯度状态机（梯次卸载与混合卸载）
+        // 若可用预算不足 2048 或固定开销超标，按物理梯度平滑收缩
+        if budget_tokens < 2048 || plan.usable_memory_gb < fixed_overhead_gb {
+            // Step 0: 精度降级（若当前为 f16 且用户未显式锁定）
+            if user_specified_k.is_none() && cache_k == "f16" {
+                cache_k = "q8_0".to_string();
+                cache_v = if plan.supports_fa { "q8_0" } else { "f16" }.to_string();
+                let (bpt, mb, db) = compute_token_bytes(&cache_k, &cache_v, final_gpu_layers, effective_enable_draft);
+                bytes_per_token = bpt; main_bpt = mb; draft_bpt = db;
+                budget_tokens = if bytes_per_token > 0 {
+                    ((kv_budget_bytes as u64 / bytes_per_token) / 256 * 256) as u32
+                } else {
+                    0
+                };
+            }
+
+            // Step A: 关停伴随草稿模型（若仍不足 2048 且草稿处于开启状态）
+            if (budget_tokens < 2048 || plan.usable_memory_gb < fixed_overhead_gb) && effective_enable_draft {
+                effective_enable_draft = false;
+                draft_weights_gb = 0.0;
+                compute_buf = plan.base_compute_buf_gb;
+                fixed_overhead_gb = weights_on_gpu_gb + draft_weights_gb + mmproj_gb + compute_buf;
+                kv_budget_bytes = (plan.usable_memory_gb - fixed_overhead_gb).max(0.0) * 1024.0 * 1024.0 * 1024.0;
+                let (bpt, mb, db) = compute_token_bytes(&cache_k, &cache_v, final_gpu_layers, effective_enable_draft);
+                bytes_per_token = bpt; main_bpt = mb; draft_bpt = db;
+                budget_tokens = if bytes_per_token > 0 {
+                    ((kv_budget_bytes as u64 / bytes_per_token) / 256 * 256) as u32
+                } else {
+                    0
+                };
+                info!("显存吃紧，Pre-clamp 降级自动关停草稿模型以释放显存 (KV 预算重新评估)");
+            }
+
+            // Step B1 & Step B2: GPU 混合卸载回退 或 切纯 CPU
+            let mut cut_to_cpu = false;
+            if (budget_tokens < 2048 || plan.usable_memory_gb < fixed_overhead_gb) && !is_cpu_pool && model.force_gpu_layers.is_none() {
+                let bytes_per_layer = model.gguf_meta.as_ref().map(|meta| {
+                    let n_kv_head = if meta.n_kv_head > 0 { meta.n_kv_head } else { 8 };
+                    let head_dim = if meta.head_dim > 0 { meta.head_dim } else { 128 };
+                    let bk = if cache_k == "q8_0" { 1.0625 } else { 2.0 };
+                    let bv = if cache_v == "q8_0" { 1.0625 } else { 2.0 };
+                    (n_kv_head as f64) * (head_dim as f64) * (bk + bv)
+                }).unwrap_or(0.0);
+                let kv_4096_gb = (4096.0 * bytes_per_layer * total_layers as f64) / (1024.0 * 1024.0 * 1024.0);
+                let available_for_weights = plan.usable_memory_gb - mmproj_gb - compute_buf - kv_4096_gb;
+                if available_for_weights > 0.0 && model_size_gb > 0.0 {
+                    let ngl_partial = ((total_layers as f64) * (available_for_weights / model_size_gb)).floor() as i32;
+                    let min_partial_layers = ((total_layers as f64) * 0.25).ceil() as i32;
+                    if ngl_partial >= min_partial_layers {
+                        final_gpu_layers = ngl_partial;
+                        budget_tokens = 4096;
+                        weights_on_gpu_gb = model_size_gb * (ngl_partial as f64 / total_layers.max(1) as f64);
+                        fixed_overhead_gb = weights_on_gpu_gb + draft_weights_gb + mmproj_gb + compute_buf;
+                        info!(
+                            ngl_partial,
+                            min_partial_layers,
+                            "显存不足全量卸载，触发 Step B1 混合卸载线性回退，锁定 4096 ctx 并卸载 {} 层",
+                            ngl_partial
+                        );
+                    } else {
+                        cut_to_cpu = true;
+                    }
+                } else {
+                    cut_to_cpu = true;
+                }
+            }
+
+            if cut_to_cpu {
+                info!("GPU 显存极度匮乏无法容纳保底 25% 层数与 4096 上下文，触发 Step B2 彻底切回纯 CPU 软件推理模式");
+                return Self::cpu_params(resources, model, backend);
+            }
+        }
+
+        // 最终上下文输出与安全夹界
+        let budget_ctx = if bytes_per_token == 0 {
+            if is_cpu_pool {
+                4096
+            } else if plan.usable_memory_gb < 4.0 {
+                2048
+            } else if plan.usable_memory_gb < 8.0 {
+                4096
+            } else {
+                8192
+            }
+        } else {
+            budget_tokens.clamp(AUTO_CTX_FLOOR, raw_train_ctx)
+        };
+
+        let final_ctx = if let Some(user_ctx) = model.context_window {
+            let capped = user_ctx.clamp(512, raw_train_ctx).min(budget_ctx);
+            if capped < user_ctx {
+                warn!(
+                    requested = user_ctx,
+                    granted = capped,
+                    budget = budget_ctx,
+                    "用户指定的上下文长度超出显存/内存预算，已自动下调；可降低 KV 量化(q8_0)或关闭识图/草稿来释放显存"
+                );
+            }
+            capped
+        } else {
+            budget_ctx.min(AUTO_CTX_CEILING)
+        };
+
+        // 批处理大小与微批约束 (ubatch <= batch；CPU 模式严格封顶 128/64 防页面交换颠簸)
+        let batch_size = if is_cpu_pool {
+            model.force_batch_size.unwrap_or(128).min(128)
+        } else {
+            model.force_batch_size.unwrap_or(plan.default_batch.0)
+        };
+        let raw_ubatch = if is_cpu_pool {
+            model.force_ubatch_size.unwrap_or(64).min(batch_size)
+        } else {
+            model.force_ubatch_size.unwrap_or(plan.default_batch.1).min(batch_size)
+        };
+        let final_ubatch = raw_ubatch.min(batch_size);
+
+        let offload_ratio = if is_cpu_pool || final_gpu_layers == 0 {
+            0.0
+        } else if final_gpu_layers == -1 {
+            1.0
+        } else {
+            (final_gpu_layers.max(0) as f64 / total_layers.max(1) as f64).min(1.0)
+        };
 
         info!(
-            "Apple Silicon Metal (UMA: {:.1}GB, 模型: {:.2}GB, 层数: {}) → ngl={}, batch={}, ubatch={}, ctx={}, fa={}",
-            total_mem_gb, model_size_gb, total_layers, final_gpu_layers, batch_size, ubatch_size, ctx_size, flash_attention
+            "全介质物理预算明细 [{:?}]: 可用 {:.2}G | 固定占用 {:.2}G(权重 {:.2} + 草稿 {:.2} + 投影器 {:.2} + 计算缓冲 {:.2}) | KV 额度 {:.2}G | KV/token {}B(主 {} + 草稿 {}) | 预算上限 {} tokens | 最终 ctx {}",
+            plan.pool,
+            plan.usable_memory_gb,
+            fixed_overhead_gb,
+            weights_on_gpu_gb,
+            draft_weights_gb,
+            mmproj_gb,
+            compute_buf,
+            (plan.usable_memory_gb - fixed_overhead_gb).max(0.0),
+            bytes_per_token,
+            main_bpt,
+            draft_bpt,
+            budget_ctx,
+            final_ctx
         );
 
         EngineParams {
             gpu_layers: final_gpu_layers,
             batch_size,
-            ubatch_size,
-            ctx_size,
+            ubatch_size: final_ubatch,
+            ctx_size: final_ctx,
             threads,
-            flash_attention,
-            is_cpu_mode: false,
-            description: format!(
-                "Apple Silicon Metal UMA ({:.1}GB 内存, 模型 {:.2}GB, {}层)",
-                total_mem_gb, model_size_gb, total_layers
-            ),
+            flash_attention: plan.supports_fa,
+            is_cpu_mode: final_gpu_layers == 0 || is_cpu_pool,
+            offload_ratio,
+            cache_type_k: cache_k,
+            cache_type_v: cache_v,
+            effective_enable_draft,
+            effective_enable_vision,
+            budget_ctx,
+            max_train_ctx: raw_train_ctx,
+            usable_memory_gb: plan.usable_memory_gb,
+            fixed_overhead_gb,
+            description: format!("{} (卸载率 {:.0}%)", plan.description_prefix, offload_ratio * 100.0),
         }
     }
 
-    /// 【集成显卡 / 核显 iGPU】
-    /// 核显受带宽约束，安全可用显存折算
+    /// 【CPU 模式：纯软件推理物理内存池】
+    fn cpu_params(resources: &SystemResources, model: &ModelInfo, backend: &str) -> EngineParams {
+        let total_ram_gb = resources.memory.total_gb();
+        let avail_ram_gb = resources.memory.available_mb as f64 / 1024.0;
+        let reserve_gb = 2.5_f64.max(total_ram_gb * 0.25);
+        let usable_mem = (avail_ram_gb - reserve_gb).max(0.0);
+        let model_size_gb = model.effective_size_gb();
+
+        let plan = BudgetPlan {
+            pool: MemoryPoolKind::Cpu,
+            usable_memory_gb: usable_mem,
+            initial_gpu_layers: 0,
+            default_batch: (128, 64),
+            supports_fa: false,
+            base_compute_buf_gb: 0.3,
+            description_prefix: format!(
+                "CPU 纯软件推理模式 (内存可用 {:.1}GB, 预留 {:.1}GB, 模型 {:.2}GB)",
+                usable_mem, reserve_gb, model_size_gb
+            ),
+        };
+
+        Self::solve_plan(resources, model, plan, backend)
+    }
+
+    /// 【Apple Silicon Metal UMA 统一内存池】
+    fn apple_silicon_params(
+        resources: &SystemResources,
+        model: &ModelInfo,
+        _vram_mb: u64,
+        backend: &str,
+    ) -> EngineParams {
+        let total_mem_gb = resources.memory.total_gb();
+        let model_size_gb = model.effective_size_gb();
+        let total_layers = model.effective_layers();
+
+        let usable_mem = (total_mem_gb - 3.0).max(2.0);
+
+        let initial_gpu_layers = if model_size_gb <= usable_mem {
+            -1
+        } else {
+            let offload_ratio = usable_mem / model_size_gb;
+            (total_layers as f64 * offload_ratio).floor().max(8.0) as i32
+        };
+
+        let plan = BudgetPlan {
+            pool: MemoryPoolKind::AppleSilicon,
+            usable_memory_gb: usable_mem,
+            initial_gpu_layers,
+            default_batch: (1024, 512),
+            supports_fa: true,
+            base_compute_buf_gb: COMPUTE_BUFFER_GB,
+            description_prefix: format!(
+                "Apple Silicon Metal UMA ({:.1}GB 内存, 可用 {:.1}GB, 模型 {:.2}GB, {}层)",
+                total_mem_gb, usable_mem, model_size_gb, total_layers
+            ),
+        };
+
+        Self::solve_plan(resources, model, plan, backend)
+    }
+
+    /// 【集成显卡 / 核显 iGPU 共享显存池】
     fn igpu_params(
         resources: &SystemResources,
         model: &ModelInfo,
         vram_mb: u64,
-        _backend: &str,
+        backend: &str,
     ) -> EngineParams {
         let vram_gb = vram_mb as f64 / 1024.0;
+        let total_ram_gb = resources.memory.total_gb();
         let model_size_gb = model.effective_size_gb();
         let total_layers = model.effective_layers();
-        let train_ctx = model.train_context_size().min(131072);
 
-        // 核显安全可用显存：min(3.5, max(1.8, vram * 0.7))
-        let usable_vram = vram_gb.mul_add(0.7, 0.0).max(1.8).min(3.5);
+        let usable_vram = (3.5_f64.max(total_ram_gb * 0.45)).min(1.8_f64.max(vram_gb * 0.7));
         let offload_ratio = if model_size_gb > 0.0 {
             usable_vram / model_size_gb
         } else {
             1.0
         };
 
-        let gpu_layers = if offload_ratio >= 0.85 || model_size_gb <= 2.0 {
-            -1 // 轻量模型全量 GPU
+        let initial_gpu_layers = if offload_ratio >= 0.85 || model_size_gb <= 2.0 {
+            -1
         } else {
             let target = (total_layers as f64 * offload_ratio).floor() as i32;
-            target.max(8).min(16) // 8~16 层
+            target.max(8).min(16)
         };
 
-        let final_gpu_layers = model.force_gpu_layers.unwrap_or(gpu_layers);
-        let batch_size = model.force_batch_size.unwrap_or(512);
-        let raw_ubatch = model.force_ubatch_size.unwrap_or(256);
-        // 核心约束：ubatch <= batch
-        let ubatch_size = raw_ubatch.min(batch_size);
-        let ctx_size = model.context_window.unwrap_or(4096).min(train_ctx);
-        let threads = Self::compute_threads(&resources.cpu);
-
-        // 核显不支持 Flash Attention（Vulkan 后端不支持）
-        let flash_attention = false;
-
-        info!(
-            "集成显卡/核显 (VRAM: {:.1}GB, 可用: {:.1}GB, 模型: {:.2}GB, 层数: {}, 容纳比: {:.0}%) → ngl={}, batch={}, ubatch={}, ctx={}",
-            vram_gb, usable_vram, model_size_gb, total_layers, offload_ratio * 100.0,
-            final_gpu_layers, batch_size, ubatch_size, ctx_size
-        );
-
-        EngineParams {
-            gpu_layers: final_gpu_layers,
-            batch_size,
-            ubatch_size,
-            ctx_size,
-            threads,
-            flash_attention,
-            is_cpu_mode: false,
-            description: format!(
+        let plan = BudgetPlan {
+            pool: MemoryPoolKind::Igpu,
+            usable_memory_gb: usable_vram,
+            initial_gpu_layers,
+            default_batch: (512, 256),
+            supports_fa: false,
+            base_compute_buf_gb: 0.6,
+            description_prefix: format!(
                 "集成显卡 iGPU (可用 {:.1}GB, 模型 {:.2}GB, {}层)",
                 usable_vram, model_size_gb, total_layers
             ),
-        }
+        };
+
+        Self::solve_plan(resources, model, plan, backend)
     }
 
-    /// 【独立显卡 dGPU】
-    /// 精准压榨 VRAM，预留 0.8GB 缓冲，结合 GGUF 与实时显存推导 Max-Fill
+    /// 【独立显卡 dGPU 独立显存池】
     fn dgpu_params(
         resources: &SystemResources,
         model: &ModelInfo,
@@ -373,16 +724,10 @@ impl ParamBuilder {
         let vram_gb = vram_mb as f64 / 1024.0;
         let model_size_gb = model.effective_size_gb();
         let total_layers = model.effective_layers();
-        let train_ctx = model.train_context_size().min(131072);
 
-        // 可用显存：若实时探测到了 memory_free_mb，优先使用真实剩余空闲（更准确）；否则回退至总显存
         let primary_gpu = resources.primary_gpu();
         let free_vram_gb = primary_gpu.and_then(|g| g.memory_free_gb());
-        let usable_vram = if let Some(free_gb) = free_vram_gb {
-            (free_gb - 0.8).max(0.0)
-        } else {
-            (vram_gb - 0.8).max(0.0)
-        };
+        let usable_vram = (free_vram_gb.unwrap_or(vram_gb) - VRAM_SAFETY_RESERVE_GB).max(0.0);
 
         let offload_ratio = if model_size_gb > 0.0 {
             usable_vram / model_size_gb
@@ -390,103 +735,46 @@ impl ParamBuilder {
             1.0
         };
 
-        let gpu_layers = if offload_ratio >= 0.88 {
-            -1 // 88% 以上全量卸载
+        let initial_gpu_layers = if offload_ratio >= 0.88 {
+            -1
         } else {
             let target = (total_layers as f64 * offload_ratio).floor() as i32;
             if target >= 6 { target } else { 0 }
         };
 
-        let final_gpu_layers = model.force_gpu_layers.unwrap_or(gpu_layers);
-
-        // 计算上下文窗口 Max-Fill
-        let ctx_size = if let Some(user_ctx) = model.context_window {
-            user_ctx.clamp(512, train_ctx)
-        } else if let Some(ref meta) = model.gguf_meta {
-            let cache_k = model.cache_type_k.as_deref().unwrap_or("f16");
-            let cache_v = model.cache_type_v.as_deref().unwrap_or("f16");
-            let ngl_for_calc = if final_gpu_layers == -1 {
-                total_layers
-            } else {
-                final_gpu_layers.max(0) as u32
-            };
-
-            if ngl_for_calc == 0 {
-                4096.min(train_ctx)
-            } else {
-                let bytes_per_token = Self::compute_kv_cache_bytes_per_token(meta, cache_k, cache_v, ngl_for_calc);
-                let weights_on_gpu_gb = if final_gpu_layers == -1 {
-                    model_size_gb
-                } else {
-                    model_size_gb * (ngl_for_calc as f64 / total_layers.max(1) as f64)
-                };
-
-                let remaining_vram_bytes = ((usable_vram - weights_on_gpu_gb).max(0.0) * 1024.0 * 1024.0 * 1024.0) as u64;
-
-                if bytes_per_token > 0 && remaining_vram_bytes > (128 * 1024 * 1024) {
-                    let max_tokens = (remaining_vram_bytes / bytes_per_token) as u32;
-                    let aligned_tokens = (max_tokens / 256) * 256;
-                    aligned_tokens.clamp(2048, train_ctx)
-                } else {
-                    2048.min(train_ctx)
-                }
-            }
-        } else {
-            if vram_gb < 4.0 {
-                2048
-            } else if vram_gb < 8.0 {
-                4096
-            } else {
-                8192
-            }
-        };
-
-        // 根据 VRAM 大小确定批大小
-        let (batch_size, raw_ubatch) = if vram_gb < 4.0 {
+        let default_batch = if vram_gb < 4.0 {
             (512u32, 256u32)
-        } else if vram_gb < 8.0 {
-            (1024u32, 512u32)
+        } else if vram_gb < 16.0 {
+            (1024u32, 256u32)
         } else {
             (2048u32, 512u32)
         };
 
-        let final_batch = model.force_batch_size.unwrap_or(batch_size);
-        let final_raw_ubatch = model.force_ubatch_size.unwrap_or(raw_ubatch);
-        // 核心安全约束：ubatch_size 严禁 > batch_size（防 0xC0000005 崩溃）
-        let final_ubatch = final_raw_ubatch.min(final_batch);
-
-        let threads = Self::compute_threads(&resources.cpu);
-
-        // Flash Attention 判断（使用主 GPU 名称）
         let gpu_name = primary_gpu.map(|g| g.name.as_str()).unwrap_or("");
-        let flash_attention = crate::hardware::is_flash_attention_supported(backend, gpu_name);
+        let supports_fa = crate::hardware::is_flash_attention_supported(backend, gpu_name);
 
-        info!(
-            "独立显卡 dGPU (VRAM: {:.1}GB, 可用: {:.1}GB, 模型: {:.2}GB, 层数: {}, 容纳比: {:.0}%) → ngl={}, batch={}, ubatch={}, ctx={}, fa={}",
-            vram_gb, usable_vram, model_size_gb, total_layers, offload_ratio * 100.0,
-            final_gpu_layers, final_batch, final_ubatch, ctx_size, flash_attention
-        );
-
-        EngineParams {
-            gpu_layers: final_gpu_layers,
-            batch_size: final_batch,
-            ubatch_size: final_ubatch,
-            ctx_size,
-            threads,
-            flash_attention,
-            is_cpu_mode: final_gpu_layers == 0,
-            description: format!(
-                "独立显卡 dGPU ({:.1}GB VRAM, 模型 {:.2}GB, {}层, 容纳率 {:.0}%)",
-                vram_gb, model_size_gb, total_layers, offload_ratio * 100.0
+        let plan = BudgetPlan {
+            pool: MemoryPoolKind::Dgpu,
+            usable_memory_gb: usable_vram,
+            initial_gpu_layers,
+            default_batch,
+            supports_fa,
+            base_compute_buf_gb: COMPUTE_BUFFER_GB,
+            description_prefix: format!(
+                "独立显卡 dGPU ({:.1}GB VRAM, 可用 {:.1}GB, 模型 {:.2}GB, {}层)",
+                vram_gb, usable_vram, model_size_gb, total_layers
             ),
-        }
+        };
+
+        Self::solve_plan(resources, model, plan, backend)
     }
 
     /// 计算安全的 CPU 线程数
-    /// 规则：保留 2 个核心给系统，线程数控制在 2~8 之间
+    /// 调度方程：T_cpu = max(1, min(8, P_physical - 2))
+    /// 保留 2 个核心给系统与前台渲染，线程数控制在 1~8 之间
     fn compute_threads(cpu: &crate::hardware::gpu_info::CpuInfo) -> u32 {
-        let physical_cores = cpu.cores.max(1);
-        physical_cores.saturating_sub(2).max(2).min(8)
+        let p = cpu.cores.max(1);
+        (p as i32 - 2).clamp(1, 8) as u32
     }
 
     /// 将参数转换为 llama-server 命令行参数列表（1:1 对等桌面端完整参数生成）
@@ -506,9 +794,10 @@ impl ParamBuilder {
             model_path.to_string(),
         ];
 
-        // 多模态投影器 --mmproj（双重互锁：模型明确为多模态 + 文件存在 + 用户未关闭识图）
-        if let Some(info) = model_info {
-            if info.is_multimodal && info.enable_vision {
+        // 多模态投影器 --mmproj（双重互锁：模型明确为多模态 + 文件存在 + 用户未关闭识图 + 预算求解生效）
+        let should_vision = params.effective_enable_vision && model_info.map(|i| i.is_multimodal && i.enable_vision).unwrap_or(true);
+        if should_vision {
+            if let Some(info) = model_info {
                 if let Some(ref mmproj) = info.mmproj_path {
                     args.extend(["--mmproj".to_string(), mmproj.clone()]);
                 }
@@ -534,8 +823,9 @@ impl ParamBuilder {
         }
 
         // ── 语言模型（生成）模式 ──
-        if let Some(info) = model_info {
-            if info.enable_draft {
+        let should_draft = params.effective_enable_draft && model_info.map(|i| i.enable_draft).unwrap_or(true);
+        if should_draft {
+            if let Some(info) = model_info {
                 // MTP / 常规草稿模型默认步数
                 let draft_max = info.draft_max_tokens.unwrap_or(6);
                 // DSpark 投机采样
@@ -604,13 +894,21 @@ impl ParamBuilder {
         ]);
 
         // KV 缓存量化 (--cache-type-k, --cache-type-v)
-        let cache_k = model_info.and_then(|i| i.cache_type_k.clone()).unwrap_or_else(|| "f16".to_string());
-        let cache_v = model_info.and_then(|i| i.cache_type_v.clone()).unwrap_or_else(|| "f16".to_string());
+        let cache_k = if !params.cache_type_k.is_empty() {
+            &params.cache_type_k
+        } else {
+            model_info.and_then(|i| i.cache_type_k.as_deref()).unwrap_or("f16")
+        };
+        let cache_v = if !params.cache_type_v.is_empty() {
+            &params.cache_type_v
+        } else {
+            model_info.and_then(|i| i.cache_type_v.as_deref()).unwrap_or("f16")
+        };
         args.extend([
             "--cache-type-k".to_string(),
-            cache_k,
+            cache_k.to_string(),
             "--cache-type-v".to_string(),
-            cache_v,
+            cache_v.to_string(),
         ]);
 
         // 并发槽位 (--parallel)
@@ -813,8 +1111,11 @@ mod tests {
             is_minicpm5: false,
             is_nanbeige4: false,
             mmproj_path: None,
+            mmproj_size_gb: None,
             dspark_path: None,
+            draft_size_gb: None,
             draft_path: None,
+            draft_gguf_meta: None,
             cache_type_k: None,
             cache_type_v: None,
             parallel: None,
@@ -827,6 +1128,7 @@ mod tests {
             gguf_meta: None,
             server_flags: None,
             tolerant_template_path: None,
+            is_downloaded: true,
         }
     }
 

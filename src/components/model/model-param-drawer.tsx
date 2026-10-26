@@ -14,10 +14,10 @@ import {
   Sparkles,
   Layers
 } from 'lucide-react'
-import { ModelItem, RuntimeParams } from '../../api/types'
+import { ModelItem, RuntimeParams, ModelBudgetInfo } from '../../api/types'
 import { useEngineStore } from '../../stores/engine-store'
 import { t } from '../../languages'
-import { DEFAULT_MODEL_PARAMS, saveModelCustomParams, calculateRecommendedParams } from '../../lib/model-param-storage'
+import { DEFAULT_MODEL_PARAMS, getModelCustomParams, clearModelCustomParams, calculateRecommendedParams } from '../../lib/model-param-storage'
 import { Button } from '../ui/button'
 import { Slider } from '../ui/slider'
 import { Checkbox } from '../ui/checkbox'
@@ -76,10 +76,22 @@ export const ModelParamDrawer: React.FC<ModelParamDrawerProps> = ({
   const [params, setParams] = useState<RuntimeParams>(DEFAULT_MODEL_PARAMS)
   // 当前已持久化保存的参数基准（用于脏检查比对与保存按钮高亮/置灰控制）
   const [savedParams, setSavedParams] = useState<RuntimeParams | null>(null)
+  const [backendRecommended, setBackendRecommended] = useState<RuntimeParams | null>(null)
+  const [backendBudget, setBackendBudget] = useState<ModelBudgetInfo | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [savedSuccess, setSavedSuccess] = useState(false)
   const [showRestartPrompt, setShowRestartPrompt] = useState(false)
   const [isRestarting, setIsRestarting] = useState(false)
+
+  // 有效推荐配置：后端 SSOT 优先，无后端推荐时以本地启发式配置兜底
+  const effectiveRecommended = backendRecommended ?? recommendedParams
+
+  // 上下文滑块动态上限与压力比率
+  const maxContextSize = Math.min(131072, Math.max(32768, backendBudget?.max_train_ctx ?? 32768))
+  const pressureRatio = React.useMemo(() => {
+    if (!backendBudget || !backendBudget.budget_ctx) return 0
+    return params.ctx_size / backendBudget.budget_ctx
+  }, [backendBudget, params.ctx_size])
 
   // 当 Drawer 打开或模型变更时，初始加载参数：优先读取后端已保存配置，未保存时初始采用智能推荐配置
   useEffect(() => {
@@ -87,17 +99,36 @@ export const ModelParamDrawer: React.FC<ModelParamDrawerProps> = ({
     let isCancelled = false
 
     const loadParams = async () => {
-      // 1. 先尝试从后端 config.json 获取该模型持久化参数
-      const backendSaved = await getModelParams(model.id)
+      // 1. 先尝试从后端获取该模型持久化参数、SSOT 智能推荐与预算
+      const resp = await getModelParams(model.id)
       if (isCancelled) return
 
+      const fetchedRecommended = resp?.recommended ?? null
+      const fetchedBudget = resp?.budget ?? null
+      setBackendRecommended(fetchedRecommended)
+      setBackendBudget(fetchedBudget)
+
+      const baseRecommended = fetchedRecommended ?? recommendedParams
+
       let initial: RuntimeParams
+      const backendSaved = resp?.params
       if (backendSaved && Object.keys(backendSaved).length > 0) {
         // 已有已保存自定义配置：以智能推荐配置为底合并已保存参数
-        initial = { ...recommendedParams, ...runtimeParams, ...backendSaved }
+        initial = { ...baseRecommended, ...runtimeParams, ...backendSaved }
       } else {
-        // 初始使用智能推荐配置
-        initial = { ...recommendedParams }
+        // 尝试从 legacy localStorage 中平滑迁移 (Read-Migrate-Purge)
+        const legacySaved = getModelCustomParams(model.id)
+        if (legacySaved && Object.keys(legacySaved).length > 0) {
+          initial = { ...baseRecommended, ...runtimeParams, ...legacySaved }
+          // 异步迁移至后端并清理 localStorage
+          saveModelParams(model.id, initial).catch(err => {
+            console.warn('迁移本地历史配置至后端失败:', err)
+          })
+          clearModelCustomParams(model.id)
+        } else {
+          // 初始使用智能推荐配置
+          initial = { ...baseRecommended }
+        }
       }
       setParams(initial)
       setSavedParams(initial)
@@ -110,7 +141,7 @@ export const ModelParamDrawer: React.FC<ModelParamDrawerProps> = ({
     return () => {
       isCancelled = true
     }
-  }, [isOpen, model, getModelParams, runtimeParams, recommendedParams])
+  }, [isOpen, model, getModelParams, runtimeParams, recommendedParams, saveModelParams])
 
   // 脏检查：当前编辑中的 params 与已保存持久化参数基准比对
   const isDirty = React.useMemo(() => {
@@ -141,12 +172,12 @@ export const ModelParamDrawer: React.FC<ModelParamDrawerProps> = ({
 
   // 恢复当前硬件智能推荐（恢复自适应最佳超参，需用户主动点击保存才持久化）
   const handleResetRecommended = () => {
-    setParams({ ...recommendedParams })
+    setParams({ ...effectiveRecommended })
   }
 
-  // 伴随模型能力判定（多模态识图与 DSpark 投机加速）
-  const hasVisionCapability = Boolean(model?.isMultiModal || model?.mmproj)
-  const hasDraftCapability = Boolean(model?.dspark)
+  // 伴随模型能力判定（多模态识图与 DSpark 投机加速，覆盖 mmprojLocalPath 与 draftLocalPath）
+  const hasVisionCapability = Boolean(model?.isMultiModal || model?.mmproj || model?.mmprojLocalPath)
+  const hasDraftCapability = Boolean(model?.dspark || model?.draftLocalPath)
   const hasCompanionModels = hasVisionCapability || hasDraftCapability
 
   // 保存参数
@@ -159,10 +190,7 @@ export const ModelParamDrawer: React.FC<ModelParamDrawerProps> = ({
         ubatch_size: Math.min(params.ubatch_size, params.batch_size)
       }
 
-      // 1. 同步保存至前端 LocalStorage 缓存
-      saveModelCustomParams(model.id, safeParams)
-
-      // 2. 持久化至后端 config.json
+      // 持久化至后端 SSOT config.json
       await saveModelParams(model.id, safeParams)
 
       // 3. 更新已保存基准，使保存按钮重回未修改（置灰）态
@@ -355,7 +383,7 @@ export const ModelParamDrawer: React.FC<ModelParamDrawerProps> = ({
                     <span className="font-bold text-foreground">{t('GPU 卸载层数')}</span>
                     <span className="font-mono text-muted-foreground">(-ngl)</span>
                     <span className="text-[10px] text-primary/80 bg-primary/10 px-1.5 py-0.5 rounded font-mono">
-                      {t('硬件推荐')}: {recommendedParams.n_gpu_layers === -1 ? t('全量卸载 (-1)') : recommendedParams.n_gpu_layers}
+                      {t('硬件推荐')}: {effectiveRecommended.n_gpu_layers === -1 ? t('全量卸载 (-1)') : effectiveRecommended.n_gpu_layers}
                     </span>
                   </div>
                   <span className="font-mono font-bold text-primary">
@@ -381,7 +409,7 @@ export const ModelParamDrawer: React.FC<ModelParamDrawerProps> = ({
                     <span className="font-bold text-foreground">{t('CPU 推理线程数')}</span>
                     <span className="font-mono text-muted-foreground">(-t, threads)</span>
                     <span className="text-[10px] text-primary/80 bg-primary/10 px-1.5 py-0.5 rounded font-mono">
-                      {t('硬件推荐')}: {recommendedParams.threads}
+                      {t('硬件推荐')}: {effectiveRecommended.threads}
                     </span>
                   </div>
                   <span className="font-mono font-bold text-primary">{params.threads}</span>
@@ -405,7 +433,7 @@ export const ModelParamDrawer: React.FC<ModelParamDrawerProps> = ({
                     <span className="font-bold text-foreground">{t('Prompt 批处理大小')}</span>
                     <span className="font-mono text-muted-foreground">(-b, batch_size)</span>
                     <span className="text-[10px] text-primary/80 bg-primary/10 px-1.5 py-0.5 rounded font-mono">
-                      {t('硬件推荐')}: {recommendedParams.batch_size}
+                      {t('硬件推荐')}: {effectiveRecommended.batch_size}
                     </span>
                   </div>
                   <span className="font-mono font-bold text-primary">{params.batch_size}</span>
@@ -429,7 +457,7 @@ export const ModelParamDrawer: React.FC<ModelParamDrawerProps> = ({
                     <span className="font-bold text-foreground">{t('物理微批大小')}</span>
                     <span className="font-mono text-muted-foreground">(-ub, ubatch_size)</span>
                     <span className="text-[10px] text-primary/80 bg-primary/10 px-1.5 py-0.5 rounded font-mono">
-                      {t('硬件推荐')}: {recommendedParams.ubatch_size}
+                      {t('硬件推荐')}: {effectiveRecommended.ubatch_size}
                     </span>
                   </div>
                   <span className="font-mono font-bold text-primary">{params.ubatch_size}</span>
@@ -463,21 +491,76 @@ export const ModelParamDrawer: React.FC<ModelParamDrawerProps> = ({
                     <span className="font-bold text-foreground">{t('上下文长度')}</span>
                     <span className="font-mono text-muted-foreground">(-c, ctx_size)</span>
                     <span className="text-[10px] text-primary/80 bg-primary/10 px-1.5 py-0.5 rounded font-mono">
-                      {t('硬件推荐')}: {recommendedParams.ctx_size}
+                      {t('硬件推荐')}: {effectiveRecommended.ctx_size}
                     </span>
+                    {backendBudget?.budget_ctx && (
+                      <span className="text-[10px] text-muted-foreground bg-muted/80 px-1.5 py-0.5 rounded font-mono">
+                        {t('安全预算')}: {backendBudget.budget_ctx}
+                      </span>
+                    )}
                   </div>
                   <span className="font-mono font-bold text-primary">{params.ctx_size}</span>
                 </div>
                 <Slider
                   value={params.ctx_size}
                   min={1024}
-                  max={32768}
+                  max={maxContextSize}
                   step={1024}
                   onChange={val => setParams(p => ({ ...p, ctx_size: val }))}
                 />
                 <p className="text-[11px] text-muted-foreground/80">
                   {t('最大记忆窗口大小。较长的上下文会显著增加显存占用。')}
                 </p>
+
+                {/* 预算压力指示条 */}
+                {backendBudget && backendBudget.budget_ctx > 0 && (
+                  <div className="pt-2 space-y-1.5 border-t border-border/30">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-muted-foreground">
+                        {t('显存/内存预算压力')}:
+                      </span>
+                      <span className={`font-mono font-bold ${
+                        pressureRatio <= 0.8
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : pressureRatio <= 1.0
+                          ? 'text-amber-600 dark:text-amber-400'
+                          : 'text-destructive dark:text-destructive'
+                      }`}>
+                        {pressureRatio <= 0.8
+                          ? t('充裕 (<=80%)')
+                          : pressureRatio <= 1.0
+                          ? t('承压优化 (80%~100%)')
+                          : t('超额 (>100%)')}
+                      </span>
+                    </div>
+                    <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                      <div
+                        className={`h-full transition-all duration-300 rounded-full ${
+                          pressureRatio <= 0.8
+                            ? 'bg-emerald-500'
+                            : pressureRatio <= 1.0
+                            ? 'bg-amber-500'
+                            : 'bg-destructive'
+                        }`}
+                        style={{ width: `${Math.min(100, Math.round(pressureRatio * 100))}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* 超额告警卡片 */}
+                {Boolean(backendBudget?.budget_ctx && params.ctx_size > backendBudget.budget_ctx) && (
+                  <div className="mt-2 p-2.5 rounded-lg border border-destructive/40 bg-destructive/10 text-destructive text-[11px] flex items-start gap-2 animate-in fade-in">
+                    <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                    <div>
+                      <div className="font-bold">{t('超过当前硬件安全预算')}</div>
+                      <div className="text-destructive/90 leading-tight mt-0.5">
+                        {t('当前设定上下文')} ({params.ctx_size}) {t('超过推荐预算')} ({backendBudget?.budget_ctx})。
+                        {t('启动时引擎将自动截断或进行显存降级以避免崩溃。')}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* 6. KV 缓存量化 */}

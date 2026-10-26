@@ -1,5 +1,5 @@
 import { HttpEngineApiClient, IEngineApiClient } from './client'
-import { StartModelDownloadOptions } from './types'
+import { StartModelDownloadOptions, ModelParamsResponse } from './types'
 import { mockApiClient } from './mock-client'
 
 /**
@@ -94,7 +94,7 @@ class FallbackEngineApiClient implements IEngineApiClient {
     return this.withFallback('saveModelParams', () => this.inner.saveModelParams(modelId, params), () => mockApiClient.saveModelParams(modelId, params))
   }
 
-  async getModelParams(modelId: string) {
+  async getModelParams(modelId: string): Promise<ModelParamsResponse> {
     return this.withFallback('getModelParams', () => this.inner.getModelParams(modelId), () => mockApiClient.getModelParams(modelId))
   }
 

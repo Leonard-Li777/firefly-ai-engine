@@ -675,63 +675,6 @@ impl EngineCoordinator {
             *self.active_model_name.lock().await = resolved_model_name.clone();
         }
 
-        // 判定当前模型是否为多模态模型：
-        // 权威检查模型元数据/自定义模型配置，若 isMultiModal: false 则绝不挂载投影模型！
-        let is_multimodal = detect_model_is_multimodal(
-            &model_path,
-            active_model_lock.as_deref(),
-            resolved_model_name.as_deref().or(active_name_lock.as_deref()),
-            &custom_models,
-            &model_meta_dirs,
-        );
-
-        // 仅当模型为多模态模型时，才自动探测同级或 models_dir 目录下的多模态投影器 mmproj；
-        // 若当前模型 isMultiModal: false，即使同目录或存储目录存在投影模型，启动时也绝不加载
-        let detected_mmproj = if is_multimodal {
-            let parent_dir = model_path.parent();
-            all_ggufs.iter().find(|(p, name)| {
-                let n_lower = name.to_lowercase();
-                n_lower.contains("mmproj") && (p.parent() == parent_dir || p.parent() == Some(&models_dir))
-            }).map(|(p, _)| p.to_string_lossy().to_string())
-        } else {
-            None
-        };
-
-        // 自动探测同级或 models_dir 目录下的 DSpark 投机加速草稿模型
-        let detected_dspark = {
-            let parent_dir = model_path.parent();
-            all_ggufs.iter().find(|(p, name)| {
-                let n_lower = name.to_lowercase();
-                (n_lower.contains("dspark") || n_lower.contains("draft"))
-                    && !n_lower.contains("mmproj")
-                    && (p.parent() == parent_dir || p.parent() == Some(&models_dir))
-            }).map(|(p, _)| p.to_string_lossy().to_string())
-        };
-
-        let model_size_gb = std::fs::metadata(&model_path).map(|m| m.len() as f64 / (1024.0 * 1024.0 * 1024.0)).unwrap_or(1.0);
-        let model_lower = model_str.to_lowercase();
-        let is_minicpm5 = model_lower.contains("minicpm5")
-            || model_alias.to_lowercase().contains("minicpm5")
-            || active_model_lock.as_deref().unwrap_or("").to_lowercase().contains("minicpm5");
-        let is_nanbeige4 = model_lower.contains("nanbeige4")
-            || model_alias.to_lowercase().contains("nanbeige4")
-            || active_model_lock.as_deref().unwrap_or("").to_lowercase().contains("nanbeige4");
-
-        // 1. 解析 GGUF 二进制头部元数据（提取真实架构、层数、KV头数、训练上下文）
-        let gguf_meta = match GgufMetadata::parse_file(&model_path) {
-            Ok(m) => {
-                tracing::info!(
-                    "GGUF 元数据解析成功: arch={}, layers={}, kv_heads={}, head_dim={}, train_ctx={}",
-                    m.arch, m.n_layer, m.n_kv_head, m.head_dim, m.train_ctx
-                );
-                Some(m)
-            }
-            Err(e) => {
-                tracing::warn!("GGUF 头部元数据解析失败 (将安全回退): {}", e);
-                None
-            }
-        };
-
         // 2. 实时探测 NVIDIA 可用空闲显存（毫秒级）
         let mut resources = resources;
         if let Some(primary_gpu) = resources.gpus.first_mut() {
@@ -756,95 +699,25 @@ impl EngineCoordinator {
             }
         });
 
-        // 4. 探活 llama-server 命令行能力开关
+        // 4. 解析 ModelInfo 并注入 server_flags
+        let mut model_info = self.resolve_model_info(&model_str).await?;
         let server_flags = Some(crate::engine::FlagDetector::detect(&selected_engine.binary_path).await);
-
-        let (user_model_params, custom_layers, custom_ctx, enable_thinking) = {
-            let config = self.config.lock().await;
-            // 尝试通过活跃模型名、别名、文件名 stem 或原始 key 查找配置
-            let found = config.model_custom_params.get(&model_str)
-                .or_else(|| active_name_lock.as_ref().and_then(|n| config.model_custom_params.get(n)))
-                .or_else(|| config.model_custom_params.get(&fallback_stem))
-                .cloned();
-            (found, config.custom_gpu_layers, config.custom_context_window, config.enable_thinking)
-        };
-
-        // 5. 思考模式宽容 Jinja 模板按需生成（当且仅当开启思考模式且原生模板含交替报错时生成）
-        let tolerant_template_path = if enable_thinking {
-            if let Some(ref meta) = gguf_meta {
-                if meta.has_strict_role_alternation {
-                    if let Some(ref raw_template) = meta.chat_template {
-                        let tolerant_content = ParamBuilder::sanitize_tolerant_jinja(raw_template);
-                        let tolerant_file = model_path.with_extension("tolerant.jinja");
-                        if let Err(e) = std::fs::write(&tolerant_file, &tolerant_content) {
-                            tracing::warn!("写入宽容 Jinja 模板失败: {}", e);
-                            None
-                        } else {
-                            tracing::info!("生成宽容 Jinja 模板就绪: {:?}", tolerant_file);
-                            Some(tolerant_file.to_string_lossy().to_string())
-                        }
-                    } else {
-                        None
-                    }
-                } else {
-                    None
-                }
-            } else {
-                None
-            }
-        } else {
-            None
-        };
-
-        let force_gpu_layers = user_model_params.as_ref().map(|p| p.n_gpu_layers).or(custom_layers);
-        let context_window = user_model_params.as_ref().map(|p| p.ctx_size).or(custom_ctx);
-        let force_batch_size = user_model_params.as_ref().map(|p| p.batch_size);
-        let force_ubatch_size = user_model_params.as_ref().map(|p| p.ubatch_size);
-        let enable_vision = user_model_params.as_ref().and_then(|p| p.enable_vision).unwrap_or(true);
-        let enable_draft = user_model_params.as_ref().and_then(|p| p.enable_draft).unwrap_or(true);
-        let draft_max_tokens = user_model_params.as_ref().and_then(|p| p.draft_max_tokens);
-
-        let model_info = ModelInfo {
-            param_b: if model_size_gb < 1.0 { 0.8 } else if model_size_gb < 2.0 { 1.5 } else { 2.5 },
-            size_gb: model_size_gb,
-            quantization: "Q4_K_M".to_string(),
-            is_multimodal: is_multimodal && detected_mmproj.is_some(),
-            enable_vision,
-            enable_draft,
-            draft_max_tokens,
-            context_window,
-            force_gpu_layers,
-            force_batch_size,
-            force_ubatch_size,
-            force_cpu: selected_engine.tier == crate::hardware::gpu_info::AccelerationTier::Cpu,
-            enable_thinking,
-            is_minicpm5,
-            is_nanbeige4,
-            mmproj_path: detected_mmproj,
-            dspark_path: detected_dspark,
-            draft_path: None,
-            cache_type_k: user_model_params.as_ref().map(|p| p.cache_type_k.clone()),
-            cache_type_v: user_model_params.as_ref().map(|p| p.cache_type_v.clone()),
-            parallel: user_model_params.as_ref().map(|p| p.parallel),
-            temp: user_model_params.as_ref().map(|p| p.temp),
-            top_p: user_model_params.as_ref().map(|p| p.top_p),
-            top_k: user_model_params.as_ref().map(|p| p.top_k),
-            repeat_penalty: user_model_params.as_ref().map(|p| p.repeat_penalty),
-            is_embedding: model_str.to_lowercase().contains("wemm") || model_str.to_lowercase().contains("embedding"),
-            is_production: !cfg!(debug_assertions),
-            gguf_meta,
-            server_flags,
-            tolerant_template_path,
-        };
+        model_info.server_flags = server_flags;
+        model_info.force_cpu = selected_engine.tier == crate::hardware::gpu_info::AccelerationTier::Cpu;
 
         let backend_str = selected_engine.tier.as_str();
         let mut params = ParamBuilder::compute(&resources, &model_info, backend_str);
 
         // 如果用户配置了线程数，覆盖 ParamBuilder 计算的 threads
-        if let Some(ref ump) = user_model_params {
-            if ump.threads > 0 {
-                params.threads = ump.threads;
-            }
+        let user_threads = {
+            let config = self.config.lock().await;
+            config.model_custom_params.get(&model_str)
+                .or_else(|| active_name_lock.as_ref().and_then(|n| config.model_custom_params.get(n)))
+                .or_else(|| config.model_custom_params.get(&fallback_stem))
+                .and_then(|p| if p.threads > 0 { Some(p.threads) } else { None })
+        };
+        if let Some(ut) = user_threads {
+            params.threads = ut;
         }
 
         // 端口隔离：llama-server 使用独立内部端口，避免与 Axum HTTP 网关冲突
@@ -892,19 +765,242 @@ impl EngineCoordinator {
         tracing::info!("引擎服务已停止");
         Ok(())
     }
+
+    /// 根据 model_id 解析物理文件；若未下载，基于元数据构建保底 ModelInfo。
+    /// （单一事实源 SSOT，供 start_engine 与 GET /api/models/params 共同复用）
+    pub async fn resolve_model_info(&self, model_id: &str) -> anyhow::Result<ModelInfo> {
+        let (models_dir, custom_models) = {
+            let config = self.config.lock().await;
+            (config.models_dir.clone(), config.custom_models.clone())
+        };
+
+        let all_ggufs = crate::server::api::collect_all_ggufs(&models_dir);
+        let model_path_opt = crate::server::api::find_model_file(model_id, &models_dir, &all_ggufs);
+
+        if let Some(model_path) = model_path_opt {
+            let model_str = model_path.to_string_lossy().to_string();
+            let fallback_stem = model_path
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap_or("default")
+                .to_string();
+
+            let model_meta_dirs = crate::resource_scope::allowed_install_model_meta_dirs(None);
+            let resolved_model_name = resolve_model_name_by_path(
+                &model_path,
+                Some(model_id),
+                &custom_models,
+                &model_meta_dirs,
+            );
+            let model_alias = resolved_model_name
+                .clone()
+                .unwrap_or_else(|| fallback_stem.clone());
+
+            let (user_model_params, custom_layers, custom_ctx, enable_thinking) = {
+                let config = self.config.lock().await;
+                let found = config.model_custom_params.get(&model_str)
+                    .or_else(|| config.model_custom_params.get(model_id))
+                    .or_else(|| resolved_model_name.as_ref().and_then(|n| config.model_custom_params.get(n)))
+                    .or_else(|| config.model_custom_params.get(&fallback_stem))
+                    .cloned();
+                (found, config.custom_gpu_layers, config.custom_context_window, config.enable_thinking)
+            };
+
+            let enable_vision = user_model_params.as_ref().and_then(|p| p.enable_vision).unwrap_or(true);
+            let enable_draft = user_model_params.as_ref().and_then(|p| p.enable_draft).unwrap_or(true);
+
+            let declared_multimodal = resolve_model_multimodal_declaration(
+                &model_path,
+                Some(model_id),
+                resolved_model_name.as_deref(),
+                &custom_models,
+                &model_meta_dirs,
+            );
+
+            let detected_mmproj = if enable_vision && declared_multimodal != Some(false) {
+                scan_mmproj_candidate(&all_ggufs, &model_path, &models_dir)
+            } else {
+                None
+            };
+            let is_multimodal = detected_mmproj.is_some() || declared_multimodal == Some(true);
+
+            let detected_dspark = {
+                let parent_dir = model_path.parent();
+                all_ggufs.iter().find(|(p, name)| {
+                    let n_lower = name.to_lowercase();
+                    (n_lower.contains("dspark") || n_lower.contains("draft"))
+                        && !n_lower.contains("mmproj")
+                        && (p.parent() == parent_dir || p.parent() == Some(&models_dir))
+                }).map(|(p, _)| p.to_string_lossy().to_string())
+            };
+
+            let model_size_gb = std::fs::metadata(&model_path)
+                .map(|m| m.len() as f64 / (1024.0 * 1024.0 * 1024.0))
+                .unwrap_or(1.0);
+
+            let model_lower = model_str.to_lowercase();
+            let is_minicpm5 = model_lower.contains("minicpm5") || model_alias.to_lowercase().contains("minicpm5");
+            let is_nanbeige4 = model_lower.contains("nanbeige4") || model_alias.to_lowercase().contains("nanbeige4");
+
+            let gguf_meta = GgufMetadata::parse_file(&model_path).ok();
+
+            let tolerant_template_path = if enable_thinking {
+                if let Some(ref meta) = gguf_meta {
+                    if meta.has_strict_role_alternation {
+                        if let Some(ref raw_template) = meta.chat_template {
+                            let tolerant_content = ParamBuilder::sanitize_tolerant_jinja(raw_template);
+                            let tolerant_file = model_path.with_extension("tolerant.jinja");
+                            if let Err(e) = std::fs::write(&tolerant_file, &tolerant_content) {
+                                tracing::warn!("写入宽容 Jinja 模板失败: {}", e);
+                                None
+                            } else {
+                                tracing::info!("生成宽容 Jinja 模板就绪: {:?}", tolerant_file);
+                                Some(tolerant_file.to_string_lossy().to_string())
+                            }
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            } else {
+                None
+            };
+
+            let force_gpu_layers = user_model_params.as_ref().map(|p| p.n_gpu_layers).or(custom_layers);
+            let context_window = user_model_params.as_ref().map(|p| p.ctx_size).or(custom_ctx);
+            let force_batch_size = user_model_params.as_ref().map(|p| p.batch_size);
+            let force_ubatch_size = user_model_params.as_ref().map(|p| p.ubatch_size);
+            let draft_max_tokens = user_model_params.as_ref().and_then(|p| p.draft_max_tokens);
+
+            let param_b = if let Some(ref meta) = gguf_meta {
+                if meta.n_layer >= 36 { 7.0 } else if meta.n_layer >= 28 { 4.0 } else if model_size_gb < 1.0 { 0.8 } else if model_size_gb < 2.0 { 1.5 } else { 2.5 }
+            } else if model_size_gb < 1.0 {
+                0.8
+            } else if model_size_gb < 2.0 {
+                1.5
+            } else if model_size_gb < 5.0 {
+                4.0
+            } else {
+                7.0
+            };
+
+            Ok(ModelInfo {
+                param_b,
+                size_gb: model_size_gb,
+                quantization: "Q4_K_M".to_string(),
+                is_multimodal,
+                enable_vision,
+                enable_draft,
+                draft_max_tokens,
+                context_window,
+                force_gpu_layers,
+                force_batch_size,
+                force_ubatch_size,
+                force_cpu: false,
+                enable_thinking,
+                is_minicpm5,
+                is_nanbeige4,
+                mmproj_path: detected_mmproj.clone(),
+                mmproj_size_gb: detected_mmproj.as_ref().and_then(|p| file_size_gb(p)),
+                dspark_path: detected_dspark.clone(),
+                draft_size_gb: detected_dspark.as_ref().and_then(|p| file_size_gb(p)),
+                draft_path: None,
+                draft_gguf_meta: detected_dspark.as_ref().and_then(|p| GgufMetadata::parse_file(p).ok()),
+                cache_type_k: user_model_params.as_ref().map(|p| p.cache_type_k.clone()),
+                cache_type_v: user_model_params.as_ref().map(|p| p.cache_type_v.clone()),
+                parallel: user_model_params.as_ref().map(|p| p.parallel),
+                temp: user_model_params.as_ref().map(|p| p.temp),
+                top_p: user_model_params.as_ref().map(|p| p.top_p),
+                top_k: user_model_params.as_ref().map(|p| p.top_k),
+                repeat_penalty: user_model_params.as_ref().map(|p| p.repeat_penalty),
+                is_embedding: model_str.to_lowercase().contains("wemm") || model_str.to_lowercase().contains("embedding"),
+                is_production: !cfg!(debug_assertions),
+                gguf_meta,
+                server_flags: None,
+                tolerant_template_path,
+                is_downloaded: true,
+            })
+        } else {
+            // 未下载模型：构建保底 ModelInfo（AC 8: 未下载模型返回轻量 recommended，budget 为 null）
+            let (user_model_params, custom_layers, custom_ctx, enable_thinking) = {
+                let config = self.config.lock().await;
+                let found = config.model_custom_params.get(model_id).cloned();
+                (found, config.custom_gpu_layers, config.custom_context_window, config.enable_thinking)
+            };
+            let enable_vision = user_model_params.as_ref().and_then(|p| p.enable_vision).unwrap_or(true);
+            let enable_draft = user_model_params.as_ref().and_then(|p| p.enable_draft).unwrap_or(true);
+            let force_gpu_layers = user_model_params.as_ref().map(|p| p.n_gpu_layers).or(custom_layers);
+            let context_window = user_model_params.as_ref().map(|p| p.ctx_size).or(custom_ctx);
+            let force_batch_size = user_model_params.as_ref().map(|p| p.batch_size);
+            let force_ubatch_size = user_model_params.as_ref().map(|p| p.ubatch_size);
+            let draft_max_tokens = user_model_params.as_ref().and_then(|p| p.draft_max_tokens);
+
+            Ok(ModelInfo {
+                param_b: 1.5,
+                size_gb: 2.0,
+                quantization: "Q4_K_M".to_string(),
+                is_multimodal: false,
+                enable_vision,
+                enable_draft,
+                draft_max_tokens,
+                context_window,
+                force_gpu_layers,
+                force_batch_size,
+                force_ubatch_size,
+                force_cpu: false,
+                enable_thinking,
+                is_minicpm5: false,
+                is_nanbeige4: false,
+                mmproj_path: None,
+                mmproj_size_gb: None,
+                dspark_path: None,
+                draft_size_gb: None,
+                draft_path: None,
+                draft_gguf_meta: None,
+                cache_type_k: user_model_params.as_ref().map(|p| p.cache_type_k.clone()),
+                cache_type_v: user_model_params.as_ref().map(|p| p.cache_type_v.clone()),
+                parallel: user_model_params.as_ref().map(|p| p.parallel),
+                temp: user_model_params.as_ref().map(|p| p.temp),
+                top_p: user_model_params.as_ref().map(|p| p.top_p),
+                top_k: user_model_params.as_ref().map(|p| p.top_k),
+                repeat_penalty: user_model_params.as_ref().map(|p| p.repeat_penalty),
+                is_embedding: model_id.to_lowercase().contains("wemm") || model_id.to_lowercase().contains("embedding"),
+                is_production: !cfg!(debug_assertions),
+                gguf_meta: None,
+                server_flags: None,
+                tolerant_template_path: None,
+                is_downloaded: false,
+            })
+        }
+    }
 }
 
 /// 判断当前启动模型是否为多模态模型
 /// 1. 优先比对用户自定义模型列表（通过 ID 或文件名命中，以其 mmproj_file_name 判定）
 /// 2. 匹配预设模型元数据文件（model_{lang}.json），若命中则以预设的 isMultiModal 为权威依据
 /// 3. 若均未命中（未知本地模型），检查文件名是否具备明确多模态特征（如含 vl、vision）
-pub fn detect_model_is_multimodal(
+/// 解析「模型元数据对是否多模态的显式声明」。
+///
+/// - `Some(true)`  —— 目录/自定义配置显式声明为多模态
+/// - `Some(false)` —— 显式声明为纯文本（**只有这种情况才允许否决 mmproj 挂载**）
+/// - `None`        —— 未收录 / 无法判定
+///
+/// 必须区分 `Some(false)` 与 `None`：历史实现把「未收录」也当成 false，
+/// 于是自命名或非官方仓库模型（如 `MiniCPM-V-4.7-1B-CRACK`）明明下载了 mmproj，
+/// 却因文件名不含 `-vl` 被判为非多模态 ⇒ 视觉塔不加载；而 `/api/models`
+/// 又按「文件是否存在」返回 `isMultiModal: true`，Footer 于是谎报「支持: 图片」。
+/// 用户裁定：默认下载（自带 mmproj）即应默认识图，只有显式声明纯文本才否决。
+pub fn resolve_model_multimodal_declaration(
     model_path: &std::path::Path,
     active_id: Option<&str>,
     active_name: Option<&str>,
     custom_models: &[crate::config::CustomModelEntry],
     meta_dirs: &[std::path::PathBuf],
-) -> bool {
+) -> Option<bool> {
     let file_name = model_path
         .file_name()
         .and_then(|n| n.to_str())
@@ -917,7 +1013,7 @@ pub fn detect_model_is_multimodal(
         if custom.file_name.eq_ignore_ascii_case(&file_name)
             || active_id.map(|id| id.eq_ignore_ascii_case(&custom.id)).unwrap_or(false)
         {
-            return custom.mmproj_file_name.is_some();
+            return Some(custom.mmproj_file_name.is_some());
         }
     }
 
@@ -963,7 +1059,9 @@ pub fn detect_model_is_multimodal(
                                     && (name_lower.contains(id_tail)
                                         || name_lower.replace(".gguf", "").contains(&id_tail.replace("-gguf", ""))))
                             {
-                                return m.get("isMultiModal").and_then(|v| v.as_bool()).unwrap_or(false);
+                                return Some(
+                                    m.get("isMultiModal").and_then(|v| v.as_bool()).unwrap_or(false),
+                                );
                             }
                         }
                     }
@@ -972,8 +1070,74 @@ pub fn detect_model_is_multimodal(
         }
     }
 
-    // 3. 兜底：未匹配到任何预设或自定义模型，检查名称是否含明确多模态特征
+    // 3. 未匹配到任何预设或自定义模型：元数据层面「无法判定」，返回 None。
+    //    由调用方按「物理 mmproj 文件是否存在」决定（默认下载自带投影器 ⇒ 默认识图）。
+    None
+}
+
+/// 元数据是否声明为多模态（保留旧语义：未收录时用名称特征兜底）。
+///
+/// 注意：返回 `false` 只代表「没有声明为多模态」，**不可**据此否决 mmproj 挂载 ——
+/// 加载路径请用 `resolve_model_multimodal_declaration`，以区分「显式纯文本」与「未收录」。
+pub fn detect_model_is_multimodal(
+    model_path: &std::path::Path,
+    active_id: Option<&str>,
+    active_name: Option<&str>,
+    custom_models: &[crate::config::CustomModelEntry],
+    meta_dirs: &[std::path::PathBuf],
+) -> bool {
+    if let Some(declared) = resolve_model_multimodal_declaration(
+        model_path,
+        active_id,
+        active_name,
+        custom_models,
+        meta_dirs,
+    ) {
+        return declared;
+    }
+    // 兜底：名称含明确多模态特征
+    let name_lower = model_path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("")
+        .to_lowercase();
     name_lower.contains("-vl") || name_lower.contains("_vl") || name_lower.contains("vision")
+}
+
+/// 扫描当前模型的多模态投影器（mmproj）物理文件。
+///
+/// 优先同目录匹配（一个模型配一个投影器，语义确定）；仅当模型存储目录下**唯一**存在
+/// 一个 mmproj 时才跨目录采纳 —— 避免模型目录里其它模型的投影器被误挂到当前模型上。
+pub fn scan_mmproj_candidate(
+    all_ggufs: &[(std::path::PathBuf, String)],
+    model_path: &std::path::Path,
+    models_dir: &std::path::Path,
+) -> Option<String> {
+    let parent_dir = model_path.parent();
+    let is_mmproj = |name: &str| name.to_lowercase().contains("mmproj");
+
+    if let Some((p, _)) = all_ggufs
+        .iter()
+        .find(|(p, n)| is_mmproj(n) && p.parent() == parent_dir)
+    {
+        return Some(p.to_string_lossy().to_string());
+    }
+
+    let in_models_dir: Vec<&(std::path::PathBuf, String)> = all_ggufs
+        .iter()
+        .filter(|(p, n)| is_mmproj(n) && p.parent() == Some(models_dir))
+        .collect();
+    if in_models_dir.len() == 1 {
+        return Some(in_models_dir[0].0.to_string_lossy().to_string());
+    }
+    None
+}
+
+/// 读取文件体积（GB），用于显存预算；读取失败返回 None
+pub fn file_size_gb(path: &str) -> Option<f64> {
+    std::fs::metadata(path)
+        .ok()
+        .map(|m| m.len() as f64 / (1024.0 * 1024.0 * 1024.0))
 }
 
 /// 根据模型物理路径反查规范的模型中文/展示名称（优先从自定义模型和预设模型元数据中检索）

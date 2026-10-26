@@ -5,6 +5,7 @@ import {
   DownloadProgressEvent,
   DownloadTaskSummary,
   RuntimeParams,
+  ModelParamsResponse,
   StartModelDownloadOptions,
   UiIntentConsumeResponse
 } from './types'
@@ -104,9 +105,9 @@ export interface IEngineApiClient {
   saveModelParams(modelId: string, params: RuntimeParams): Promise<{ success: boolean }>
 
   /**
-   * 从后端 config.json 读取模型专属启动参数
+   * 从后端 config.json 读取模型专属启动参数与自适应推荐参数 (SSOT)
    */
-  getModelParams(modelId: string): Promise<RuntimeParams | undefined>
+  getModelParams(modelId: string): Promise<ModelParamsResponse>
 
   /**
    * 自由添加任意模型：提交托管站点 URL，后端解析并网络嗅探大小后返回标准模型条目
@@ -417,10 +418,9 @@ export class HttpEngineApiClient implements IEngineApiClient {
     })
   }
 
-  async getModelParams(modelId: string): Promise<RuntimeParams | undefined> {
+  async getModelParams(modelId: string): Promise<ModelParamsResponse> {
     await this.ensureReady()
-    const data = await this.requestJson<{ params?: RuntimeParams }>(`/api/models/params?modelId=${encodeURIComponent(modelId)}`)
-    return data.params
+    return await this.requestJson<ModelParamsResponse>(`/api/models/params?modelId=${encodeURIComponent(modelId)}`)
   }
 
   async addCustomModel(url: string): Promise<ModelItem> {
