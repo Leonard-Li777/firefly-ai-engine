@@ -406,5 +406,14 @@ export default  {
     "1314": "Restore conservative configuration",
     "1315": "The current parameters are consistent with the saved configuration without any modification",
     "1316": "Save the currently modified model startup parameters",
-    "1319": "The maximum number of prediction tokens in a single step. Increasing it can improve the speedup ratio under high hit rates, but will slightly increase the memory pressure (default: 6)"
+    "1319": "The maximum number of prediction tokens in a single step. Increasing it can improve the speedup ratio under high hit rates, but will slightly increase the memory pressure (default: 6)",
+    "1328": "Security budget",
+    "1329": "Video memory/memory budget pressure",
+    "1330": "Abundant (<=80%)",
+    "1331": "Pressure optimization (80%~100%)",
+    "1332": "Excess (>100%)",
+    "1333": "Exceed current hardware security budget",
+    "1334": "Current setting context",
+    "1335": "Exceed recommended budget",
+    "1336": "The engine will automatically truncate or downgrade video memory on startup to avoid crashes."
 }

@@ -406,5 +406,14 @@ export default  {
     "1314": "Konservative Konfiguration wiederherstellen",
     "1315": "Die aktuellen Parameter stimmen ohne Änderung mit der gespeicherten Konfiguration überein",
     "1316": "Speichern der aktuell geänderten Modellstartparameter",
-    "1319": "Die maximale Anzahl von Vorhersagetokens in einem einzelnen Schritt. Eine Erhöhung kann das Beschleunigungsverhältnis bei hohen Trefferraten verbessern, erhöht jedoch leicht die Speicherbelastung (Standard: 6)."
+    "1319": "Die maximale Anzahl von Vorhersagetokens in einem einzelnen Schritt. Eine Erhöhung kann das Beschleunigungsverhältnis bei hohen Trefferraten verbessern, erhöht jedoch leicht die Speicherbelastung (Standard: 6).",
+    "1328": "Sicherheitsbudget",
+    "1329": "Druck auf Videospeicher/Speicherbudget",
+    "1330": "Reichlich (<=80 %)",
+    "1331": "Druckoptimierung (80 % ~ 100 %)",
+    "1332": "Überschuss (>100 %)",
+    "1333": "Überschreiten Sie das aktuelle Hardware-Sicherheitsbudget",
+    "1334": "Aktuellen Einstellungskontext",
+    "1335": "Überschreiten Sie das empfohlene Budget",
+    "1336": "Die Engine kürzt oder stuft den Videospeicher beim Start automatisch ein, um Abstürze zu vermeiden."
 }

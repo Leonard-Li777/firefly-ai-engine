@@ -406,5 +406,14 @@ export default  {
     "1314": "Restaurar a configuração conservadora",
     "1315": "Os parâmetros atuais são consistentes com a configuração salva sem qualquer modificação",
     "1316": "Guardar os parâmetros de arranque do modelo actualmente modificados",
-    "1319": "O número máximo de tokens de previsão em uma única etapa. Aumentá-lo pode melhorar a taxa de aceleração sob altas taxas de acerto, mas aumentará ligeiramente a pressão da memória (padrão: 6)"
+    "1319": "O número máximo de tokens de previsão em uma única etapa. Aumentá-lo pode melhorar a taxa de aceleração sob altas taxas de acerto, mas aumentará ligeiramente a pressão da memória (padrão: 6)",
+    "1328": "Orçamento de segurança",
+    "1329": "Pressão de memória de vídeo/orçamento de memória",
+    "1330": "Abundante (<=80%)",
+    "1331": "Otimização de pressão (80%~100%)",
+    "1332": "Excesso (>100%)",
+    "1333": "Exceder o orçamento atual de segurança de hardware",
+    "1334": "Contexto de configuração atual",
+    "1335": "Exceder o orçamento recomendado",
+    "1336": "O mecanismo truncará ou fará downgrade automaticamente da memória de vídeo na inicialização para evitar travamentos."
 }

@@ -406,5 +406,14 @@ export default  {
     "1314": "Restaurar configuración conservadora",
     "1315": "Los parámetros actuales son consistentes con la configuración guardada sin ninguna modificación",
     "1316": "Guarde los parámetros de inicio del modelo modificados actualmente",
-    "1319": "La cantidad máxima de tokens de predicción en un solo paso. Aumentarlo puede mejorar la tasa de aceleración con altas tasas de aciertos, pero aumentará ligeramente la presión de la memoria (predeterminado: 6)"
+    "1319": "La cantidad máxima de tokens de predicción en un solo paso. Aumentarlo puede mejorar la tasa de aceleración con altas tasas de aciertos, pero aumentará ligeramente la presión de la memoria (predeterminado: 6)",
+    "1328": "Presupuesto de seguridad",
+    "1329": "Memoria de vídeo/presión del presupuesto de memoria",
+    "1330": "Abundante (<=80%)",
+    "1331": "Optimización de la presión (80%~100%)",
+    "1332": "Exceso (>100%)",
+    "1333": "Superar el presupuesto actual de seguridad de hardware",
+    "1334": "Contexto de configuración actual",
+    "1335": "Superar el presupuesto recomendado",
+    "1336": "El motor truncará o degradará automáticamente la memoria de video al iniciarse para evitar fallas."
 }

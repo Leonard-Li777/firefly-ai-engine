@@ -406,5 +406,14 @@ export default  {
     "1314": "Restaurer la configuration conservatrice",
     "1315": "Les paramètres actuels sont cohérents avec la configuration enregistrée sans aucune modification",
     "1316": "Enregistrer les paramètres de démarrage du modèle actuellement modifiés",
-    "1319": "Le nombre maximum de jetons de prédiction en une seule étape. L'augmenter peut améliorer le taux d'accélération en cas de taux de réussite élevés, mais augmentera légèrement la pression sur la mémoire (par défaut : 6)"
+    "1319": "Le nombre maximum de jetons de prédiction en une seule étape. L'augmenter peut améliorer le taux d'accélération en cas de taux de réussite élevés, mais augmentera légèrement la pression sur la mémoire (par défaut : 6)",
+    "1328": "Budget de sécurité",
+    "1329": "Pression sur la mémoire vidéo/le budget mémoire",
+    "1330": "Abondant (<=80%)",
+    "1331": "Optimisation de la pression (80 % ~ 100 %)",
+    "1332": "Excédent (>100%)",
+    "1333": "Dépasser le budget actuel de sécurité matérielle",
+    "1334": "Contexte actuel",
+    "1335": "Dépasser le budget recommandé",
+    "1336": "Le moteur tronquera ou dégradera automatiquement la mémoire vidéo au démarrage pour éviter les plantages."
 }
