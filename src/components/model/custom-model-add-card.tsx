@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react'
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import {
   Plus,
   Link2,
@@ -429,7 +429,11 @@ const CustomModelRowItem: React.FC<CustomModelRowProps> = ({ model, onOpenConfig
  * 2. 下方直接展示用户已添加的全部自定义模型（不区分 ModelScope / HuggingFace Tab），并支持下载/启动/配置/移除。
  */
 export const CustomModelAddCard: React.FC = () => {
-  const { models, addCustomModel } = useEngineStore()
+  // 细粒度订阅：整取 store 会让本卡片跟随引擎状态轮询（每 2.5s）无谓重渲染
+  const models = useEngineStore(s => s.models)
+  const addCustomModel = useEngineStore(s => s.addCustomModel)
+  const activeModelKey = useEngineStore(s => s.activeModelKey)
+  const engineRunStatus = useEngineStore(s => s.engineStatus?.status)
 
   // 展开输入行状态
   const [expanded, setExpanded] = useState(false)
@@ -440,6 +444,8 @@ export const CustomModelAddCard: React.FC = () => {
 
   // 模型专属参数侧边栏抽屉状态
   const [drawerModel, setDrawerModel] = useState<ModelItem | null>(null)
+  /** 抽屉关闭回调保持引用稳定，否则 ModelParamDrawer 的 React.memo 会失效 */
+  const handleCloseDrawer = useCallback(() => setDrawerModel(null), [])
 
   // 筛选出所有用户自定义模型（不分 Tab，统一展示）
   const customModels = useMemo(() => {
@@ -634,12 +640,11 @@ export const CustomModelAddCard: React.FC = () => {
         model={drawerModel}
         isCurrentRunning={
           drawerModel
-            ? useEngineStore.getState().activeModelKey === `${drawerModel.id}@${drawerModel.source}` &&
-              (useEngineStore.getState().engineStatus?.status === 'ready' ||
-                useEngineStore.getState().engineStatus?.status === 'processing')
+            ? activeModelKey === `${drawerModel.id}@${drawerModel.source}` &&
+              (engineRunStatus === 'ready' || engineRunStatus === 'processing')
             : false
         }
-        onClose={() => setDrawerModel(null)}
+        onClose={handleCloseDrawer}
       />
     </Card>
   )

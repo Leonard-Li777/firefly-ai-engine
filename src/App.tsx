@@ -45,24 +45,27 @@ export const App: React.FC = () => {
   // 阿拉伯语为 RTL 书写方向，其余语言均为 LTR
   const dir: 'ltr' | 'rtl' = i18nScope.activeLanguage === 'ar-EG' ? 'rtl' : 'ltr'
   const activeDownloadsCount = useModelDownloadStore(s => s.activeDownloadsCount)
-  const {
-    engineStatus,
-    error: storeError,
-    fetchEngineStatus,
-    fetchEngineList,
-    fetchModels,
-    runRegionDetection,
-    startEngine
-  } = useEngineStore()
+  // 细粒度订阅：App 是整棵组件树的根，若整取 store，引擎状态轮询（每 2.5s 一次）会让
+  // 整个应用树无条件重渲染一次，正在进行的交互（如参数抽屉里的勾选、滑块拖拽）会排队等待，
+  // 表现为「点击反应慢」。这里只订阅用到的原始值，引用恒定则根组件不重渲染。
+  const storeError = useEngineStore(s => s.error)
+  const fetchEngineStatus = useEngineStore(s => s.fetchEngineStatus)
+  const fetchEngineList = useEngineStore(s => s.fetchEngineList)
+  const fetchModels = useEngineStore(s => s.fetchModels)
+  const runRegionDetection = useEngineStore(s => s.runRegionDetection)
+  const startEngine = useEngineStore(s => s.startEngine)
+  const engineStatusValue = useEngineStore(s => s.engineStatus?.status)
+  const enginePort = useEngineStore(s => s.engineStatus?.port)
+  const engineStatusLastError = useEngineStore(s => s.engineStatus?.last_error ?? null)
 
   // 侧边栏展示用原始错误（引擎 last_error 优先，其次 store 错误）
   const rawError = useMemo(
-    () => engineStatus?.last_error || storeError || null,
-    [engineStatus?.last_error, storeError]
+    () => engineStatusLastError || storeError || null,
+    [engineStatusLastError, storeError]
   )
 
   // 引擎侧记录的新错误（不含前端操作产生的 storeError）——用于自动展开错误面板
-  const engineLastError = engineStatus?.last_error || null
+  const engineLastError = engineStatusLastError
 
   // 顶层分层 Tab：
   // 1: 'dashboard' (概览仪表板)
@@ -222,7 +225,7 @@ export const App: React.FC = () => {
         <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap justify-end shrink-0">
           {/* 服务状态指示：根据真实状态区分展示（就绪/处理中/启动中/启动失败/未启动） */}
           {(() => {
-            const st = engineStatus?.status
+            const st = engineStatusValue
             const isProcessing = st === 'processing'
             const isReady = st === 'ready'
             const isOnline = isReady || isProcessing
@@ -247,9 +250,9 @@ export const App: React.FC = () => {
                     ? 'bg-muted-foreground/50'
                     : 'bg-amber-400 opacity-75'
             const statusText = isReady
-              ? `${t('就绪')} (${engineStatus?.port || 38400})`
+              ? `${t('就绪')} (${enginePort || 38400})`
               : isProcessing
-                ? `${t('处理中...')} (${engineStatus?.port || 38400})`
+                ? `${t('处理中...')} (${enginePort || 38400})`
                 : isError
                   ? t('启动失败')
                   : isStopped
@@ -258,7 +261,7 @@ export const App: React.FC = () => {
             return (
               <div
                 className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-bold shrink-0 ${chipCls}`}
-                title={engineStatus?.last_error || undefined}
+                title={engineStatusLastError || undefined}
               >
                 <span className={`relative flex h-2 w-2 shrink-0 ${isOnline || isError || !isStopped ? '' : 'opacity-100'}`}>
                   {isOnline || isError || !isStopped ? (

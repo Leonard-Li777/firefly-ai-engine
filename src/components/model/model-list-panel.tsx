@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import {
   Download,
   Check,
@@ -166,11 +166,12 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isActiveModel
   const [isActivating, setIsActivating] = useState(false)
 
   // 「激活并启动」：读取引擎状态判断当前模型是否已启动/启动中，并触发切换+启动
-  const engineStatus = useEngineStore(s => s.engineStatus)
+  // 只订阅用到的原始状态值：整取 engineStatus 会让每一行模型卡片跟随 2.5s 轮询全量重渲染
+  const engineRunStatusForRow = useEngineStore(s => s.engineStatus?.status)
   const activateAndStart = useEngineStore(s => s.activateAndStart)
   const [isStartLaunching, setIsStartLaunching] = useState(false)
-  const isEngineReady = engineStatus?.status === 'ready' || engineStatus?.status === 'processing'
-  const isEngineStarting = engineStatus?.status === 'starting' || engineStatus?.status === 'model_loading'
+  const isEngineReady = engineRunStatusForRow === 'ready' || engineRunStatusForRow === 'processing'
+  const isEngineStarting = engineRunStatusForRow === 'starting' || engineRunStatusForRow === 'model_loading'
   // 运行态判定必须锚定「进程内实际运行的模型」（isActiveModel），而非「槽位已激活」（isCurrent）：
   // 语言槽与嵌入槽可同时为「已激活」，但进程同一时刻只运行一个模型，
   // 若用 isCurrent 判定会把另一槽位的模型也误标为「已启动」。
@@ -811,10 +812,27 @@ export interface ModelListPanelProps {
 }
 
 export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focusSource }) => {
-  const { models, fetchModels, activeModelKey, activeLanguageModelKey, activeEmbeddingModelKey, switchModel, engineStatus, engineList, fetchEngineList, lastAddedSource } = useEngineStore()
+  // 细粒度订阅：绝不整取 store。引擎状态由 Footer 每 2.5s 静默轮询刷新，
+  // 整取会让整个模型列表（含全部卡片与抽屉）跟随每次轮询全量重渲染，
+  // 主线程被占满后参数抽屉里勾选项的点击响应会被明显拖慢。
+  const models = useEngineStore(s => s.models)
+  const fetchModels = useEngineStore(s => s.fetchModels)
+  const activeModelKey = useEngineStore(s => s.activeModelKey)
+  const activeLanguageModelKey = useEngineStore(s => s.activeLanguageModelKey)
+  const activeEmbeddingModelKey = useEngineStore(s => s.activeEmbeddingModelKey)
+  const switchModel = useEngineStore(s => s.switchModel)
+  const engineList = useEngineStore(s => s.engineList)
+  const fetchEngineList = useEngineStore(s => s.fetchEngineList)
+  const lastAddedSource = useEngineStore(s => s.lastAddedSource)
+  // engineStatus 里只用到三个原始值，按原始值订阅（Object.is 比较）而非订阅整个状态对象
+  const currentModelPath = useEngineStore(s => s.engineStatus?.current_model)
+  const engineRunStatus = useEngineStore(s => s.engineStatus?.status)
+  const totalVramGB = useEngineStore(s => s.engineStatus?.hardware?.total_vram_gb)
   const [activeSource, setActiveSource] = useState<ModelSource>(focusSource || 'modelscope')
   const [showRecommendedOnly, setShowRecommendedOnly] = useState<boolean>(true)
   const [drawerModel, setDrawerModel] = useState<ModelItem | null>(null)
+  /** 抽屉关闭回调必须保持引用稳定，否则 ModelParamDrawer 的 React.memo 会失效（父级每次重渲染都会重跑整个抽屉） */
+  const handleCloseDrawer = useCallback(() => setDrawerModel(null), [])
   /** 当前处于呼吸高亮状态的模型行 key（`${id}@${source}`） */
   const [highlightedKey, setHighlightedKey] = useState<string | null>(null)
   const listContainerRef = React.useRef<HTMLDivElement | null>(null)
@@ -949,7 +967,7 @@ export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focu
       if (clearTimer) clearTimeout(clearTimer)
     }
   }, [focusModel, activeSource, safeModels, showRecommendedOnly])
-  const userVramGB = engineStatus?.hardware?.total_vram_gb
+  const userVramGB = totalVramGB
 
   // 按渠道和推荐过滤，并执行超标计算与加权排序后，分为三组：
   // 已下载 / 待下载（未下载且显存够用）/ 显存不足不可下载
@@ -1017,7 +1035,7 @@ export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focu
     // 此时直接用同一套 matchEngineModel 与 current_model 比对，保证与首页 / Footer 判定口径一致。
     const isActiveModel =
       Boolean(model.isDownloaded) &&
-      (activeModelKey === modelKey || matchEngineModel(model, engineStatus?.current_model))
+      (activeModelKey === modelKey || matchEngineModel(model, currentModelPath))
 
     return (
       <ModelRowItem
@@ -1271,11 +1289,11 @@ export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focu
         isCurrentRunning={
           drawerModel
             ? (activeModelKey === `${drawerModel.id}@${drawerModel.source}` ||
-                matchEngineModel(drawerModel, engineStatus?.current_model)) &&
-            (engineStatus?.status === 'ready' || engineStatus?.status === 'processing')
+                matchEngineModel(drawerModel, currentModelPath)) &&
+            (engineRunStatus === 'ready' || engineRunStatus === 'processing')
             : false
         }
-        onClose={() => setDrawerModel(null)}
+        onClose={handleCloseDrawer}
       />
     </Card>
   )

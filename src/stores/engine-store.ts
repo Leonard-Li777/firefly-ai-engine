@@ -29,6 +29,25 @@ function matchCurrentModel(model: ModelItem, currentModel: string): boolean {
   return matchEngineModel(model, currentModel)
 }
 
+/**
+ * 运行时参数浅比较（RuntimeParams 为扁平结构）。
+ *
+ * 用途：引擎状态轮询（Footer 每 2.5s 一次）返回的 `runtime_params` 每次都是后端 JSON
+ * 反序列化出的全新对象，若无条件覆盖 store，`runtimeParams` 的引用会每 2.5s 抖动一次，
+ * 所有以它为依赖的 UI（模型参数抽屉、仪表盘）都会被无谓重算 / 重渲染。
+ */
+function isRuntimeParamsEqual(a?: RuntimeParams | null, b?: RuntimeParams | null): boolean {
+  if (a === b) return true
+  if (!a || !b) return false
+  const keys = new Set([...Object.keys(a), ...Object.keys(b)])
+  const ra = a as unknown as Record<string, unknown>
+  const rb = b as unknown as Record<string, unknown>
+  for (const key of keys) {
+    if (ra[key] !== rb[key]) return false
+  }
+  return true
+}
+
 interface EngineStoreState {
   // 状态数据
   engineStatus: EngineStatusResponse | null
@@ -103,10 +122,16 @@ export const useEngineStore = create<EngineStoreState>((set, get) => ({
       const resolvedDir = status.models_dir
         ? resolveToAbsolutePath(status.models_dir)
         : get().modelsDir
+      // 内容未变则保留旧引用，避免轮询把 runtimeParams 的引用每 2.5s 抖一次（见 isRuntimeParamsEqual 注释）
+      const prevRuntimeParams = get().runtimeParams
+      const nextRuntimeParams =
+        status.runtime_params && !isRuntimeParamsEqual(status.runtime_params, prevRuntimeParams)
+          ? status.runtime_params
+          : prevRuntimeParams
       set({
         engineStatus: status,
         modelsDir: resolvedDir,
-        runtimeParams: status.runtime_params || get().runtimeParams,
+        runtimeParams: nextRuntimeParams,
         ...(silent ? {} : { loading: false })
       })
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 import {
   X,
   Settings2,
@@ -53,22 +54,23 @@ function areParamsEqual(a: RuntimeParams | null, b: RuntimeParams | null): boole
   )
 }
 
-export const ModelParamDrawer: React.FC<ModelParamDrawerProps> = ({
+const ModelParamDrawerInner: React.FC<ModelParamDrawerProps> = ({
   isOpen,
   model,
   isCurrentRunning,
   onClose
 }) => {
-  const {
-    runtimeParams,
-    saveModelParams,
-    getModelParams,
-    startEngine,
-    stopEngine,
-    engineStatus
-  } = useEngineStore()
+  // 细粒度订阅：绝不整取 store。
+  // 引擎状态由 Footer 每 2.5s 静默轮询刷新，整取会让本抽屉（20+ 滑块与三组卡片）
+  // 跟随每一次轮询全量重渲染，主线程被占满后点击勾选的响应就会被明显拖慢。
+  const runtimeParams = useEngineStore(s => s.runtimeParams)
+  const saveModelParams = useEngineStore(s => s.saveModelParams)
+  const startEngine = useEngineStore(s => s.startEngine)
+  const stopEngine = useEngineStore(s => s.stopEngine)
+  // 硬件信息每轮询都是全新对象引用（后端 JSON 反序列化），用 useShallow 按字段内容比较，
+  // 只有显存/核显标记/线程/加速层级真正变化时才重渲染与重算推荐值。
+  const hardware = useEngineStore(useShallow(s => s.engineStatus?.hardware ?? null))
 
-  const hardware = engineStatus?.hardware
   const recommendedParams = React.useMemo(() => {
     return calculateRecommendedParams(model, hardware)
   }, [model, hardware])
@@ -93,14 +95,27 @@ export const ModelParamDrawer: React.FC<ModelParamDrawerProps> = ({
     return params.ctx_size / backendBudget.budget_ctx
   }, [backendBudget, params.ctx_size])
 
-  // 当 Drawer 打开或模型变更时，初始加载参数：优先读取后端已保存配置，未保存时初始采用智能推荐配置
+  // 加载逻辑只认「抽屉打开」与「模型切换」两个触发源。
+  // 严禁把 runtimeParams / recommendedParams / hardware 放进依赖数组：
+  // 引擎状态由 Footer 每 2.5s 静默轮询，后端返回的 runtime_params 与 hardware 每次都是新对象引用，
+  // 一旦这些易变值进入依赖，effect 就会在用户点击勾选之后重新请求 /api/models/params
+  // 并 setParams(initial) 把用户刚改的勾选覆盖回持久化值——表现为「勾选项点了没反应 /
+  // 要连点好几次 / 反应很慢」。易变值改为在 effect 执行时从 store 快照读取，依赖数组保持恒定。
+  const modelId = model?.id ?? null
+
   useEffect(() => {
-    if (!isOpen || !model) return
+    if (!isOpen || !modelId) return
     let isCancelled = false
 
     const loadParams = async () => {
+      // 读取执行时刻的最新快照（而非渲染闭包里的旧值），避免依赖抖动
+      const { getModelParams: fetchParams, saveModelParams: persistParams, runtimeParams: liveRuntimeParams } =
+        useEngineStore.getState()
+      const hardwareSnapshot = useEngineStore.getState().engineStatus?.hardware ?? null
+      const localRecommended = calculateRecommendedParams(model, hardwareSnapshot)
+
       // 1. 先尝试从后端获取该模型持久化参数、SSOT 智能推荐与预算
-      const resp = await getModelParams(model.id)
+      const resp = await fetchParams(modelId)
       if (isCancelled) return
 
       const fetchedRecommended = resp?.recommended ?? null
@@ -108,23 +123,23 @@ export const ModelParamDrawer: React.FC<ModelParamDrawerProps> = ({
       setBackendRecommended(fetchedRecommended)
       setBackendBudget(fetchedBudget)
 
-      const baseRecommended = fetchedRecommended ?? recommendedParams
+      const baseRecommended = fetchedRecommended ?? localRecommended
 
       let initial: RuntimeParams
       const backendSaved = resp?.params
       if (backendSaved && Object.keys(backendSaved).length > 0) {
         // 已有已保存自定义配置：以智能推荐配置为底合并已保存参数
-        initial = { ...baseRecommended, ...runtimeParams, ...backendSaved }
+        initial = { ...baseRecommended, ...liveRuntimeParams, ...backendSaved }
       } else {
         // 尝试从 legacy localStorage 中平滑迁移 (Read-Migrate-Purge)
-        const legacySaved = getModelCustomParams(model.id)
+        const legacySaved = getModelCustomParams(modelId)
         if (legacySaved && Object.keys(legacySaved).length > 0) {
-          initial = { ...baseRecommended, ...runtimeParams, ...legacySaved }
+          initial = { ...baseRecommended, ...liveRuntimeParams, ...legacySaved }
           // 异步迁移至后端并清理 localStorage
-          saveModelParams(model.id, initial).catch(err => {
+          persistParams(modelId, initial).catch(err => {
             console.warn('迁移本地历史配置至后端失败:', err)
           })
-          clearModelCustomParams(model.id)
+          clearModelCustomParams(modelId)
         } else {
           // 初始使用智能推荐配置
           initial = { ...baseRecommended }
@@ -141,7 +156,7 @@ export const ModelParamDrawer: React.FC<ModelParamDrawerProps> = ({
     return () => {
       isCancelled = true
     }
-  }, [isOpen, model, getModelParams, runtimeParams, recommendedParams, saveModelParams])
+  }, [isOpen, modelId])
 
   // 脏检查：当前编辑中的 params 与已保存持久化参数基准比对
   const isDirty = React.useMemo(() => {
@@ -826,3 +841,12 @@ export const ModelParamDrawer: React.FC<ModelParamDrawerProps> = ({
     </div>
   )
 }
+
+/**
+ * 抽屉内部持有 20+ 滑块与大量交互状态，用 memo 隔离父级重渲染：
+ * 模型列表会因下载进度、引擎状态轮询等原因高频重渲染，父级一旦重渲染
+ * 就会把整抽屉（全部滑块与卡片）重跑一遍，直接拖慢勾选项的点击响应。
+ * 调用方需保证 onClose 等回调引用稳定（useCallback），否则 memo 失效。
+ */
+export const ModelParamDrawer = React.memo(ModelParamDrawerInner)
+ModelParamDrawer.displayName = 'ModelParamDrawer'
