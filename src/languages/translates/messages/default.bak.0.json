@@ -450,263 +450,6 @@
     ],
     "$id": 460
   },
-  "引擎更新并部署成功": {
-    "en-US": "Engine updated and deployed successfully",
-    "es-ES": "Motor actualizado e implementado correctamente",
-    "ar-EG": "تم تحديث المحرك ونشره بنجاح",
-    "pt-PT": "Mecanismo atualizado e implantado com sucesso",
-    "ru-RU": "Движок обновлен и успешно развернут.",
-    "ja-JP": "エンジンが正常に更新され、デプロイされました",
-    "de-DE": "Engine wurde erfolgreich aktualisiert und bereitgestellt",
-    "fr-FR": "Moteur mis à jour et déployé avec succès",
-    "ko-KR": "엔진이 업데이트되고 성공적으로 배포되었습니다.",
-    "$files": [
-      "src/hooks/use-engine-download.ts(2333-2346)"
-    ],
-    "$id": 461
-  },
-  "下载未正常完成": {
-    "en-US": "Download did not complete normally",
-    "es-ES": "La descarga no se completó normalmente",
-    "ar-EG": "لم يكتمل التنزيل بشكل طبيعي",
-    "pt-PT": "O download não foi concluído normalmente",
-    "ru-RU": "Загрузка не завершилась нормально",
-    "ja-JP": "ダウンロードが正常に完了しませんでした",
-    "de-DE": "Der Download wurde nicht normal abgeschlossen",
-    "fr-FR": "Le téléchargement ne s'est pas terminé normalement",
-    "ko-KR": "다운로드가 정상적으로 완료되지 않았습니다",
-    "$files": [
-      "src/hooks/use-engine-download.ts(2390-2401)"
-    ],
-    "$id": 462
-  },
-  "引擎下载失败": {
-    "en-US": "Engine download failed",
-    "es-ES": "Falló la descarga del motor",
-    "ar-EG": "فشل تنزيل المحرك",
-    "pt-PT": "Falha no download do mecanismo",
-    "ru-RU": "Загрузка движка не удалась",
-    "ja-JP": "エンジンのダウンロードに失敗しました",
-    "de-DE": "Der Engine-Download ist fehlgeschlagen",
-    "fr-FR": "Échec du téléchargement du moteur",
-    "ko-KR": "엔진 다운로드 실패",
-    "$files": [
-      "src/hooks/use-engine-download.ts(2517-2527)"
-    ],
-    "$id": 463
-  },
-  "获取引擎状态失败": {
-    "en-US": "Failed to get engine status",
-    "es-ES": "No se pudo obtener el estado del motor",
-    "ar-EG": "فشل في الحصول على حالة المحرك",
-    "pt-PT": "Falha ao obter o status do mecanismo",
-    "ru-RU": "Не удалось получить статус двигателя",
-    "ja-JP": "エンジンステータスの取得に失敗しました",
-    "de-DE": "Der Motorstatus konnte nicht abgerufen werden",
-    "fr-FR": "Impossible d'obtenir l'état du moteur",
-    "ko-KR": "엔진 상태를 가져오지 못했습니다.",
-    "$files": [
-      "src/stores/engine-store.ts(6955-6967)",
-      "src/stores/engine-store.ts(6038-6050)",
-      "src/stores/engine-store.ts(6160-6172)",
-      "src/stores/engine-store.ts(5780-5792)",
-      "src/stores/engine-store.ts(6164-6176)"
-    ],
-    "$id": 520
-  },
-  "已成功切换引擎": {
-    "en-US": "Engine switched successfully",
-    "es-ES": "El motor se cambió correctamente",
-    "ar-EG": "تم تبديل المحرك بنجاح",
-    "pt-PT": "Motor trocado com sucesso",
-    "ru-RU": "Двигатель успешно переключился",
-    "ja-JP": "エンジンが正常に切り替わりました",
-    "de-DE": "Motor erfolgreich umgeschaltet",
-    "fr-FR": "Moteur commuté avec succès",
-    "ko-KR": "엔진이 성공적으로 전환되었습니다",
-    "$files": [
-      "src/stores/engine-store.ts(12790-12801)",
-      "src/stores/engine-store.ts(11873-11884)",
-      "src/stores/engine-store.ts(12130-12141)",
-      "src/stores/engine-store.ts(11488-11499)",
-      "src/stores/engine-store.ts(11872-11883)",
-      "src/stores/engine-store.ts(11807-11818)"
-    ],
-    "$id": 521
-  },
-  "切换引擎失败": {
-    "en-US": "Failed to switch engine",
-    "es-ES": "No se pudo cambiar de motor",
-    "ar-EG": "فشل في تبديل المحرك",
-    "pt-PT": "Falha ao trocar de motor",
-    "ru-RU": "Не удалось переключить двигатель",
-    "ja-JP": "エンジンの切り替えに失敗しました",
-    "de-DE": "Motorwechsel fehlgeschlagen",
-    "fr-FR": "Impossible de changer de moteur",
-    "ko-KR": "엔진을 전환하지 못했습니다.",
-    "$files": [
-      "src/stores/engine-store.ts(12878-12888)",
-      "src/stores/engine-store.ts(11961-11971)",
-      "src/stores/engine-store.ts(12221-12231)",
-      "src/stores/engine-store.ts(11579-11589)",
-      "src/stores/engine-store.ts(11963-11973)",
-      "src/stores/engine-store.ts(11898-11908)"
-    ],
-    "$id": 522
-  },
-  "切换引擎异常": {
-    "en-US": "Switching engine abnormality",
-    "es-ES": "Anormalidad al cambiar el motor",
-    "ar-EG": "تبديل خلل في المحرك",
-    "pt-PT": "Anormalidade na troca do motor",
-    "ru-RU": "Неисправность переключения двигателя",
-    "ja-JP": "スイッチングエンジン異常",
-    "de-DE": "Anomalie beim Schalten des Motors",
-    "fr-FR": "Anomalie de commutation du moteur",
-    "ko-KR": "스위칭 엔진 이상",
-    "$files": [
-      "src/stores/engine-store.ts(12998-13008)",
-      "src/stores/engine-store.ts(12081-12091)",
-      "src/stores/engine-store.ts(12345-12355)",
-      "src/stores/engine-store.ts(11703-11713)",
-      "src/stores/engine-store.ts(12087-12097)",
-      "src/stores/engine-store.ts(12022-12032)"
-    ],
-    "$id": 523
-  },
-  "添加模型失败": {
-    "en-US": "Failed to add model",
-    "es-ES": "No se pudo agregar el modelo",
-    "ar-EG": "فشلت إضافة النموذج",
-    "pt-PT": "Falha ao adicionar modelo",
-    "ru-RU": "Не удалось добавить модель",
-    "ja-JP": "モデルの追加に失敗しました",
-    "de-DE": "Modell konnte nicht hinzugefügt werden",
-    "fr-FR": "Échec de l'ajout du modèle",
-    "ko-KR": "모델을 추가하지 못했습니다.",
-    "$files": [
-      "src/stores/engine-store.ts(16741-16751)",
-      "src/components/model/custom-model-add-card.tsx(18757-18767)",
-      "src/stores/engine-store.ts(15824-15834)",
-      "src/components/model/custom-model-add-card.tsx(18371-18381)",
-      "src/stores/engine-store.ts(16214-16224)",
-      "src/stores/engine-store.ts(15572-15582)",
-      "src/components/model/custom-model-add-card.tsx(17898-17908)",
-      "src/stores/engine-store.ts(15956-15966)",
-      "src/components/model/custom-model-add-card.tsx(17919-17929)",
-      "src/stores/engine-store.ts(15816-15826)",
-      "src/components/model/custom-model-add-card.tsx(2238-2248)",
-      "src/stores/engine-store.ts(15751-15761)"
-    ],
-    "$id": 524
-  },
-  "删除模型失败": {
-    "en-US": "Failed to delete model",
-    "es-ES": "No se pudo eliminar el modelo",
-    "ar-EG": "فشل في حذف النموذج",
-    "pt-PT": "Falha ao excluir modelo",
-    "ru-RU": "Не удалось удалить модель.",
-    "ja-JP": "モデルの削除に失敗しました",
-    "de-DE": "Modell konnte nicht gelöscht werden",
-    "fr-FR": "Échec de la suppression du modèle",
-    "ko-KR": "모델을 삭제하지 못했습니다.",
-    "$files": [
-      "src/stores/engine-store.ts(17877-17887)",
-      "src/stores/engine-store.ts(16960-16970)",
-      "src/stores/engine-store.ts(17378-17388)",
-      "src/stores/engine-store.ts(16736-16746)",
-      "src/stores/engine-store.ts(17120-17130)",
-      "src/stores/engine-store.ts(16980-16990)",
-      "src/stores/engine-store.ts(16915-16925)"
-    ],
-    "$id": 525
-  },
-  "移除模型失败": {
-    "en-US": "Failed to remove model",
-    "es-ES": "No se pudo eliminar el modelo",
-    "ar-EG": "فشل في إزالة النموذج",
-    "pt-PT": "Falha ao remover modelo",
-    "ru-RU": "Не удалось удалить модель.",
-    "ja-JP": "モデルの削除に失敗しました",
-    "de-DE": "Modell konnte nicht entfernt werden",
-    "fr-FR": "Échec de la suppression du modèle",
-    "ko-KR": "모델을 삭제하지 못했습니다.",
-    "$files": [
-      "src/stores/engine-store.ts(18967-18977)",
-      "src/stores/engine-store.ts(18050-18060)",
-      "src/stores/engine-store.ts(18496-18506)",
-      "src/stores/engine-store.ts(17854-17864)",
-      "src/stores/engine-store.ts(18238-18248)",
-      "src/stores/engine-store.ts(18098-18108)",
-      "src/stores/engine-store.ts(18033-18043)"
-    ],
-    "$id": 526
-  },
-  "模型下载并校验完成！已就绪使用。": {
-    "en-US": "Model download and verification completed! Ready to use.",
-    "es-ES": "¡Descarga y verificación del modelo completadas! Preparado para usar.",
-    "ar-EG": "تم الانتهاء من تنزيل النموذج والتحقق منه! جاهز للاستخدام.",
-    "pt-PT": "Download e verificação do modelo concluídos! Pronto para usar.",
-    "ru-RU": "Загрузка и проверка модели завершены! Готов к использованию.",
-    "ja-JP": "モデルのダウンロードと検証が完了しました。すぐに使用できます。",
-    "de-DE": "Modell-Download und Verifizierung abgeschlossen! Gebrauchsfertig.",
-    "fr-FR": "Téléchargement du modèle et vérification terminée ! Prêt à l'emploi.",
-    "ko-KR": "모델 다운로드 및 검증 완료! 사용할 준비가 되었습니다.",
-    "$files": [
-      "src/stores/model-download-store.ts(7290-7310)",
-      "src/stores/model-download-store.ts(7076-7096)",
-      "src/stores/model-download-store.ts(6436-6456)"
-    ],
-    "$id": 1211
-  },
-  "下载失败": {
-    "en-US": "Download failed",
-    "es-ES": "Error al descargar",
-    "ar-EG": "فشل التنزيل",
-    "pt-PT": "Falha na transferência",
-    "ru-RU": "Ошибка загрузки",
-    "ja-JP": "ダウンロードに失敗しました",
-    "de-DE": "Download fehlgeschlagen",
-    "fr-FR": "Échec du téléchargement",
-    "ko-KR": "다운로드 실패",
-    "$files": [
-      "src/stores/model-download-store.ts(7567-7575)",
-      "src/components/model/custom-model-add-card.tsx(8585-8593)",
-      "src/components/model/model-list-panel.tsx(17441-17449)",
-      "src/components/model/custom-model-add-card.tsx(8572-8580)",
-      "src/components/model/model-list-panel.tsx(17348-17356)",
-      "src/stores/model-download-store.ts(7348-7356)",
-      "src/components/model/custom-model-add-card.tsx(8339-8347)",
-      "src/components/model/custom-model-add-card.tsx(8360-8368)",
-      "src/components/model/model-list-panel.tsx(17330-17338)",
-      "src/components/model/model-list-panel.tsx(16854-16862)",
-      "src/stores/model-download-store.ts(6708-6716)",
-      "src/components/model/model-list-panel.tsx(16978-16986)",
-      "src/components/model/model-list-panel.tsx(16595-16603)",
-      "src/components/model/model-list-panel.tsx(16427-16435)",
-      "src/hooks/use-model-download.ts(5533-5541)",
-      "src/components/model/model-list-panel.tsx(16352-16360)"
-    ],
-    "$id": 464
-  },
-  "发起模型下载失败": {
-    "en-US": "Failed to initiate model download",
-    "es-ES": "No se pudo iniciar la descarga del modelo",
-    "ar-EG": "فشل بدء تنزيل النموذج",
-    "pt-PT": "Falha ao iniciar o download do modelo",
-    "ru-RU": "Не удалось начать загрузку модели.",
-    "ja-JP": "モデルのダウンロードを開始できませんでした",
-    "de-DE": "Modell-Download konnte nicht gestartet werden",
-    "fr-FR": "Échec du lancement du téléchargement du modèle",
-    "ko-KR": "모델 다운로드를 시작하지 못했습니다.",
-    "$files": [
-      "src/stores/model-download-store.ts(8302-8314)",
-      "src/stores/model-download-store.ts(8056-8068)",
-      "src/stores/model-download-store.ts(7416-7428)",
-      "src/hooks/use-model-download.ts(5960-5972)"
-    ],
-    "$id": 465
-  },
   "显存不足": {
     "en-US": "Insufficient VRAM",
     "es-ES": "Memoria de video insuficiente",
@@ -1544,6 +1287,263 @@
     ],
     "$id": 519
   },
+  "引擎更新并部署成功": {
+    "en-US": "Engine updated and deployed successfully",
+    "es-ES": "Motor actualizado e implementado correctamente",
+    "ar-EG": "تم تحديث المحرك ونشره بنجاح",
+    "pt-PT": "Mecanismo atualizado e implantado com sucesso",
+    "ru-RU": "Движок обновлен и успешно развернут.",
+    "ja-JP": "エンジンが正常に更新され、デプロイされました",
+    "de-DE": "Engine wurde erfolgreich aktualisiert und bereitgestellt",
+    "fr-FR": "Moteur mis à jour et déployé avec succès",
+    "ko-KR": "엔진이 업데이트되고 성공적으로 배포되었습니다.",
+    "$files": [
+      "src/hooks/use-engine-download.ts(2333-2346)"
+    ],
+    "$id": 461
+  },
+  "下载未正常完成": {
+    "en-US": "Download did not complete normally",
+    "es-ES": "La descarga no se completó normalmente",
+    "ar-EG": "لم يكتمل التنزيل بشكل طبيعي",
+    "pt-PT": "O download não foi concluído normalmente",
+    "ru-RU": "Загрузка не завершилась нормально",
+    "ja-JP": "ダウンロードが正常に完了しませんでした",
+    "de-DE": "Der Download wurde nicht normal abgeschlossen",
+    "fr-FR": "Le téléchargement ne s'est pas terminé normalement",
+    "ko-KR": "다운로드가 정상적으로 완료되지 않았습니다",
+    "$files": [
+      "src/hooks/use-engine-download.ts(2390-2401)"
+    ],
+    "$id": 462
+  },
+  "引擎下载失败": {
+    "en-US": "Engine download failed",
+    "es-ES": "Falló la descarga del motor",
+    "ar-EG": "فشل تنزيل المحرك",
+    "pt-PT": "Falha no download do mecanismo",
+    "ru-RU": "Загрузка движка не удалась",
+    "ja-JP": "エンジンのダウンロードに失敗しました",
+    "de-DE": "Der Engine-Download ist fehlgeschlagen",
+    "fr-FR": "Échec du téléchargement du moteur",
+    "ko-KR": "엔진 다운로드 실패",
+    "$files": [
+      "src/hooks/use-engine-download.ts(2517-2527)"
+    ],
+    "$id": 463
+  },
+  "获取引擎状态失败": {
+    "en-US": "Failed to get engine status",
+    "es-ES": "No se pudo obtener el estado del motor",
+    "ar-EG": "فشل في الحصول على حالة المحرك",
+    "pt-PT": "Falha ao obter o status do mecanismo",
+    "ru-RU": "Не удалось получить статус двигателя",
+    "ja-JP": "エンジンステータスの取得に失敗しました",
+    "de-DE": "Der Motorstatus konnte nicht abgerufen werden",
+    "fr-FR": "Impossible d'obtenir l'état du moteur",
+    "ko-KR": "엔진 상태를 가져오지 못했습니다.",
+    "$files": [
+      "src/stores/engine-store.ts(6955-6967)",
+      "src/stores/engine-store.ts(6038-6050)",
+      "src/stores/engine-store.ts(6160-6172)",
+      "src/stores/engine-store.ts(5780-5792)",
+      "src/stores/engine-store.ts(6164-6176)"
+    ],
+    "$id": 520
+  },
+  "已成功切换引擎": {
+    "en-US": "Engine switched successfully",
+    "es-ES": "El motor se cambió correctamente",
+    "ar-EG": "تم تبديل المحرك بنجاح",
+    "pt-PT": "Motor trocado com sucesso",
+    "ru-RU": "Двигатель успешно переключился",
+    "ja-JP": "エンジンが正常に切り替わりました",
+    "de-DE": "Motor erfolgreich umgeschaltet",
+    "fr-FR": "Moteur commuté avec succès",
+    "ko-KR": "엔진이 성공적으로 전환되었습니다",
+    "$files": [
+      "src/stores/engine-store.ts(12790-12801)",
+      "src/stores/engine-store.ts(11873-11884)",
+      "src/stores/engine-store.ts(12130-12141)",
+      "src/stores/engine-store.ts(11488-11499)",
+      "src/stores/engine-store.ts(11872-11883)",
+      "src/stores/engine-store.ts(11807-11818)"
+    ],
+    "$id": 521
+  },
+  "切换引擎失败": {
+    "en-US": "Failed to switch engine",
+    "es-ES": "No se pudo cambiar de motor",
+    "ar-EG": "فشل في تبديل المحرك",
+    "pt-PT": "Falha ao trocar de motor",
+    "ru-RU": "Не удалось переключить двигатель",
+    "ja-JP": "エンジンの切り替えに失敗しました",
+    "de-DE": "Motorwechsel fehlgeschlagen",
+    "fr-FR": "Impossible de changer de moteur",
+    "ko-KR": "엔진을 전환하지 못했습니다.",
+    "$files": [
+      "src/stores/engine-store.ts(12878-12888)",
+      "src/stores/engine-store.ts(11961-11971)",
+      "src/stores/engine-store.ts(12221-12231)",
+      "src/stores/engine-store.ts(11579-11589)",
+      "src/stores/engine-store.ts(11963-11973)",
+      "src/stores/engine-store.ts(11898-11908)"
+    ],
+    "$id": 522
+  },
+  "切换引擎异常": {
+    "en-US": "Switching engine abnormality",
+    "es-ES": "Anormalidad al cambiar el motor",
+    "ar-EG": "تبديل خلل في المحرك",
+    "pt-PT": "Anormalidade na troca do motor",
+    "ru-RU": "Неисправность переключения двигателя",
+    "ja-JP": "スイッチングエンジン異常",
+    "de-DE": "Anomalie beim Schalten des Motors",
+    "fr-FR": "Anomalie de commutation du moteur",
+    "ko-KR": "스위칭 엔진 이상",
+    "$files": [
+      "src/stores/engine-store.ts(12998-13008)",
+      "src/stores/engine-store.ts(12081-12091)",
+      "src/stores/engine-store.ts(12345-12355)",
+      "src/stores/engine-store.ts(11703-11713)",
+      "src/stores/engine-store.ts(12087-12097)",
+      "src/stores/engine-store.ts(12022-12032)"
+    ],
+    "$id": 523
+  },
+  "添加模型失败": {
+    "en-US": "Failed to add model",
+    "es-ES": "No se pudo agregar el modelo",
+    "ar-EG": "فشلت إضافة النموذج",
+    "pt-PT": "Falha ao adicionar modelo",
+    "ru-RU": "Не удалось добавить модель",
+    "ja-JP": "モデルの追加に失敗しました",
+    "de-DE": "Modell konnte nicht hinzugefügt werden",
+    "fr-FR": "Échec de l'ajout du modèle",
+    "ko-KR": "모델을 추가하지 못했습니다.",
+    "$files": [
+      "src/stores/engine-store.ts(16741-16751)",
+      "src/components/model/custom-model-add-card.tsx(18757-18767)",
+      "src/stores/engine-store.ts(15824-15834)",
+      "src/components/model/custom-model-add-card.tsx(18371-18381)",
+      "src/stores/engine-store.ts(16214-16224)",
+      "src/stores/engine-store.ts(15572-15582)",
+      "src/components/model/custom-model-add-card.tsx(17898-17908)",
+      "src/stores/engine-store.ts(15956-15966)",
+      "src/components/model/custom-model-add-card.tsx(17919-17929)",
+      "src/stores/engine-store.ts(15816-15826)",
+      "src/components/model/custom-model-add-card.tsx(2238-2248)",
+      "src/stores/engine-store.ts(15751-15761)"
+    ],
+    "$id": 524
+  },
+  "删除模型失败": {
+    "en-US": "Failed to delete model",
+    "es-ES": "No se pudo eliminar el modelo",
+    "ar-EG": "فشل في حذف النموذج",
+    "pt-PT": "Falha ao excluir modelo",
+    "ru-RU": "Не удалось удалить модель.",
+    "ja-JP": "モデルの削除に失敗しました",
+    "de-DE": "Modell konnte nicht gelöscht werden",
+    "fr-FR": "Échec de la suppression du modèle",
+    "ko-KR": "모델을 삭제하지 못했습니다.",
+    "$files": [
+      "src/stores/engine-store.ts(17877-17887)",
+      "src/stores/engine-store.ts(16960-16970)",
+      "src/stores/engine-store.ts(17378-17388)",
+      "src/stores/engine-store.ts(16736-16746)",
+      "src/stores/engine-store.ts(17120-17130)",
+      "src/stores/engine-store.ts(16980-16990)",
+      "src/stores/engine-store.ts(16915-16925)"
+    ],
+    "$id": 525
+  },
+  "移除模型失败": {
+    "en-US": "Failed to remove model",
+    "es-ES": "No se pudo eliminar el modelo",
+    "ar-EG": "فشل في إزالة النموذج",
+    "pt-PT": "Falha ao remover modelo",
+    "ru-RU": "Не удалось удалить модель.",
+    "ja-JP": "モデルの削除に失敗しました",
+    "de-DE": "Modell konnte nicht entfernt werden",
+    "fr-FR": "Échec de la suppression du modèle",
+    "ko-KR": "모델을 삭제하지 못했습니다.",
+    "$files": [
+      "src/stores/engine-store.ts(18967-18977)",
+      "src/stores/engine-store.ts(18050-18060)",
+      "src/stores/engine-store.ts(18496-18506)",
+      "src/stores/engine-store.ts(17854-17864)",
+      "src/stores/engine-store.ts(18238-18248)",
+      "src/stores/engine-store.ts(18098-18108)",
+      "src/stores/engine-store.ts(18033-18043)"
+    ],
+    "$id": 526
+  },
+  "模型下载并校验完成！已就绪使用。": {
+    "en-US": "Model download and verification completed! Ready to use.",
+    "es-ES": "¡Descarga y verificación del modelo completadas! Preparado para usar.",
+    "ar-EG": "تم الانتهاء من تنزيل النموذج والتحقق منه! جاهز للاستخدام.",
+    "pt-PT": "Download e verificação do modelo concluídos! Pronto para usar.",
+    "ru-RU": "Загрузка и проверка модели завершены! Готов к использованию.",
+    "ja-JP": "モデルのダウンロードと検証が完了しました。すぐに使用できます。",
+    "de-DE": "Modell-Download und Verifizierung abgeschlossen! Gebrauchsfertig.",
+    "fr-FR": "Téléchargement du modèle et vérification terminée ! Prêt à l'emploi.",
+    "ko-KR": "모델 다운로드 및 검증 완료! 사용할 준비가 되었습니다.",
+    "$files": [
+      "src/stores/model-download-store.ts(7290-7310)",
+      "src/stores/model-download-store.ts(7076-7096)",
+      "src/stores/model-download-store.ts(6436-6456)"
+    ],
+    "$id": 1211
+  },
+  "下载失败": {
+    "en-US": "Download failed",
+    "es-ES": "Error al descargar",
+    "ar-EG": "فشل التنزيل",
+    "pt-PT": "Falha na transferência",
+    "ru-RU": "Ошибка загрузки",
+    "ja-JP": "ダウンロードに失敗しました",
+    "de-DE": "Download fehlgeschlagen",
+    "fr-FR": "Échec du téléchargement",
+    "ko-KR": "다운로드 실패",
+    "$files": [
+      "src/stores/model-download-store.ts(7567-7575)",
+      "src/components/model/custom-model-add-card.tsx(8585-8593)",
+      "src/components/model/model-list-panel.tsx(17441-17449)",
+      "src/components/model/custom-model-add-card.tsx(8572-8580)",
+      "src/components/model/model-list-panel.tsx(17348-17356)",
+      "src/stores/model-download-store.ts(7348-7356)",
+      "src/components/model/custom-model-add-card.tsx(8339-8347)",
+      "src/components/model/custom-model-add-card.tsx(8360-8368)",
+      "src/components/model/model-list-panel.tsx(17330-17338)",
+      "src/components/model/model-list-panel.tsx(16854-16862)",
+      "src/stores/model-download-store.ts(6708-6716)",
+      "src/components/model/model-list-panel.tsx(16978-16986)",
+      "src/components/model/model-list-panel.tsx(16595-16603)",
+      "src/components/model/model-list-panel.tsx(16427-16435)",
+      "src/hooks/use-model-download.ts(5533-5541)",
+      "src/components/model/model-list-panel.tsx(16352-16360)"
+    ],
+    "$id": 464
+  },
+  "发起模型下载失败": {
+    "en-US": "Failed to initiate model download",
+    "es-ES": "No se pudo iniciar la descarga del modelo",
+    "ar-EG": "فشل بدء تنزيل النموذج",
+    "pt-PT": "Falha ao iniciar o download do modelo",
+    "ru-RU": "Не удалось начать загрузку модели.",
+    "ja-JP": "モデルのダウンロードを開始できませんでした",
+    "de-DE": "Modell-Download konnte nicht gestartet werden",
+    "fr-FR": "Échec du lancement du téléchargement du modèle",
+    "ko-KR": "모델 다운로드를 시작하지 못했습니다.",
+    "$files": [
+      "src/stores/model-download-store.ts(8302-8314)",
+      "src/stores/model-download-store.ts(8056-8068)",
+      "src/stores/model-download-store.ts(7416-7428)",
+      "src/hooks/use-model-download.ts(5960-5972)"
+    ],
+    "$id": 465
+  },
   "服务未就绪": {
     "en-US": "Service not ready",
     "es-ES": "Servicio no listo",
@@ -2011,698 +2011,6 @@
       "src/components/api/third-party-api-view.tsx(6606-6641)"
     ],
     "$id": 548
-  },
-  "未选定": {
-    "en-US": "Not selected",
-    "es-ES": "No seleccionado",
-    "ar-EG": "لم يتم التحديد",
-    "pt-PT": "Não selecionado",
-    "ru-RU": "Не выбрано",
-    "ja-JP": "未選択",
-    "de-DE": "Nicht ausgewählt",
-    "fr-FR": "Non sélectionné",
-    "ko-KR": "선택되지 않음",
-    "$files": [
-      "src/components/dashboard/dashboard-view.tsx(2588-2595)",
-      "src/components/dashboard/dashboard-view.tsx(2435-2442)"
-    ],
-    "$id": 557
-  },
-  "AI 推理服务已成功启动！": {
-    "en-US": "The AI ​​inference service has been successfully launched!",
-    "es-ES": "¡El servicio de inferencia de IA se ha lanzado con éxito!",
-    "ar-EG": "تم إطلاق خدمة الاستدلال بالذكاء الاصطناعي بنجاح!",
-    "pt-PT": "O serviço de inferência de IA foi lançado com sucesso!",
-    "ru-RU": "Сервис AI-вывода успешно запущен!",
-    "ja-JP": "AI推論サービスが無事スタートしました！",
-    "de-DE": "Der KI-Inferenzdienst wurde erfolgreich gestartet!",
-    "fr-FR": "Le service d'inférence IA a été lancé avec succès !",
-    "ko-KR": "AI 추론 서비스가 성공적으로 출시되었습니다!",
-    "$files": [
-      "src/components/dashboard/dashboard-view.tsx(4616-4633)",
-      "src/components/dashboard/dashboard-view.tsx(4137-4154)"
-    ],
-    "$id": 558
-  },
-  "启动失败，请检查模型文件或端口占用": {
-    "en-US": "Startup failed, please check the model file or port occupation",
-    "es-ES": "El inicio falló, verifique el archivo del modelo o la ocupación del puerto",
-    "ar-EG": "فشل بدء التشغيل، يرجى التحقق من ملف النموذج أو إشغال المنفذ",
-    "pt-PT": "Falha na inicialização, verifique o arquivo do modelo ou a ocupação da porta",
-    "ru-RU": "Ошибка запуска. Проверьте файл модели или занятость порта.",
-    "ja-JP": "起動に失敗しました。モデル ファイルまたはポートの占有を確認してください。",
-    "de-DE": "Der Start ist fehlgeschlagen. Bitte überprüfen Sie die Modelldatei oder die Portbelegung",
-    "fr-FR": "Le démarrage a échoué, veuillez vérifier le fichier modèle ou l'occupation du port",
-    "ko-KR": "시작에 실패했습니다. 모델 파일이나 포트 점유를 확인하세요.",
-    "$files": [
-      "src/components/dashboard/dashboard-view.tsx(4739-4760)",
-      "src/components/dashboard/dashboard-view.tsx(4260-4281)"
-    ],
-    "$id": 559
-  },
-  "启动服务失败": {
-    "en-US": "Failed to start service",
-    "es-ES": "No se pudo iniciar el servicio",
-    "ar-EG": "فشل في بدء الخدمة",
-    "pt-PT": "Falha ao iniciar o serviço",
-    "ru-RU": "Не удалось запустить службу",
-    "ja-JP": "サービスの開始に失敗しました",
-    "de-DE": "Der Dienst konnte nicht gestartet werden",
-    "fr-FR": "Échec du démarrage du service",
-    "ko-KR": "서비스를 시작하지 못했습니다.",
-    "$files": [
-      "src/components/dashboard/dashboard-view.tsx(4823-4833)",
-      "src/components/dashboard/dashboard-view.tsx(4344-4354)"
-    ],
-    "$id": 560
-  },
-  "启动异常": {
-    "en-US": "Startup exception",
-    "es-ES": "Excepción de inicio",
-    "ar-EG": "استثناء بدء التشغيل",
-    "pt-PT": "Exceção de inicialização",
-    "ru-RU": "Исключение при запуске",
-    "ja-JP": "起動例外",
-    "de-DE": "Startausnahme",
-    "fr-FR": "Exception de démarrage",
-    "ko-KR": "시작 예외",
-    "$files": [
-      "src/components/dashboard/dashboard-view.tsx(4922-4930)",
-      "src/components/dashboard/dashboard-view.tsx(4989-4997)",
-      "src/components/dashboard/dashboard-view.tsx(4443-4451)",
-      "src/components/dashboard/dashboard-view.tsx(4510-4518)"
-    ],
-    "$id": 561
-  },
-  "AI 推理服务已停止": {
-    "en-US": "AI inference service has been stopped",
-    "es-ES": "El servicio de inferencia de IA ha sido detenido",
-    "ar-EG": "تم إيقاف خدمة الاستدلال بالذكاء الاصطناعي",
-    "pt-PT": "O serviço de inferência de IA foi interrompido",
-    "ru-RU": "Служба вывода ИИ остановлена",
-    "ja-JP": "AI推論サービスを停止しました",
-    "de-DE": "Der KI-Inferenzdienst wurde gestoppt",
-    "fr-FR": "Le service d'inférence IA a été arrêté",
-    "ko-KR": "AI 추론 서비스가 중지되었습니다",
-    "$files": [
-      "src/components/dashboard/dashboard-view.tsx(5226-5240)",
-      "src/components/dashboard/dashboard-view.tsx(4747-4761)"
-    ],
-    "$id": 562
-  },
-  "推理引擎后台服务": {
-    "en-US": "Inference engine background service",
-    "es-ES": "Servicio en segundo plano del motor de inferencia",
-    "ar-EG": "خدمة خلفية محرك الاستدلال",
-    "pt-PT": "Serviço de segundo plano do mecanismo de inferência",
-    "ru-RU": "Фоновая служба механизма вывода",
-    "ja-JP": "推論エンジンのバックグラウンドサービス",
-    "de-DE": "Hintergrunddienst der Inferenz-Engine",
-    "fr-FR": "Service d'arrière-plan du moteur d'inférence",
-    "ko-KR": "추론 엔진 백그라운드 서비스",
-    "$files": [
-      "src/components/dashboard/dashboard-view.tsx(6342-6354)",
-      "src/components/dashboard/dashboard-view.tsx(5853-5865)"
-    ],
-    "$id": 563
-  },
-  "运行中 (就绪)": {
-    "en-US": "Running (ready)",
-    "es-ES": "Corriendo (listo)",
-    "ar-EG": "قيد التشغيل (جاهز)",
-    "pt-PT": "Correndo (pronto)",
-    "ru-RU": "Бег (готов)",
-    "ja-JP": "実行中（準備完了）",
-    "de-DE": "Laufen (bereit)",
-    "fr-FR": "En cours d'exécution (prêt)",
-    "ko-KR": "실행중(준비)",
-    "$files": [
-      "src/components/dashboard/dashboard-view.tsx(7710-7722)",
-      "src/components/dashboard/dashboard-view.tsx(6821-6833)"
-    ],
-    "$id": 564
-  },
-  "正在启动...": {
-    "en-US": "Starting...",
-    "es-ES": "A partir de...",
-    "ar-EG": "جارٍ البدء...",
-    "pt-PT": "Começando...",
-    "ru-RU": "Начало...",
-    "ja-JP": "起動...",
-    "de-DE": "Beginnt...",
-    "fr-FR": "Départ...",
-    "ko-KR": "시작 중...",
-    "$files": [
-      "src/components/dashboard/dashboard-view.tsx(7787-7798)",
-      "src/components/dashboard/dashboard-view.tsx(6898-6909)"
-    ],
-    "$id": 565
-  },
-  "异常": {
-    "en-US": "Abnormal",
-    "es-ES": "Anómalo",
-    "ar-EG": "غير طبيعي",
-    "pt-PT": "Anormal",
-    "ru-RU": "Аномальное",
-    "ja-JP": "異常な",
-    "de-DE": "Fehlerhaft",
-    "fr-FR": "Anormale",
-    "ko-KR": "비정상",
-    "$files": [
-      "src/components/dashboard/dashboard-view.tsx(7878-7884)",
-      "src/components/dashboard/dashboard-view.tsx(6989-6995)"
-    ],
-    "$id": 566
-  },
-  "已停止": {
-    "en-US": "Stopped",
-    "es-ES": "Interrumpido",
-    "ar-EG": "توقف",
-    "pt-PT": "Parou",
-    "ru-RU": "Остановлено",
-    "ja-JP": "停止しました",
-    "de-DE": "Angehalten",
-    "fr-FR": "Arrêté",
-    "ko-KR": "중지됨",
-    "$files": [
-      "src/components/dashboard/dashboard-view.tsx(7915-7922)",
-      "src/components/dashboard/dashboard-view.tsx(7026-7033)"
-    ],
-    "$id": 567
-  },
-  "核心 llama.cpp 推理进程，提供 OpenAI 兼容的 HTTP 接口响应": {
-    "en-US": "The core llama.cpp inference process provides OpenAI-compatible HTTP interface responses",
-    "es-ES": "El proceso de inferencia central llama.cpp proporciona respuestas de interfaz HTTP compatibles con OpenAI",
-    "ar-EG": "توفر عملية الاستدلال الأساسية llama.cpp استجابات واجهة HTTP المتوافقة مع OpenAI",
-    "pt-PT": "O processo principal de inferência llama.cpp fornece respostas de interface HTTP compatíveis com OpenAI",
-    "ru-RU": "Основной процесс вывода llama.cpp предоставляет ответы HTTP-интерфейса, совместимого с OpenAI.",
-    "ja-JP": "コアの llama.cpp 推論プロセスは、OpenAI 互換の HTTP インターフェイス応答を提供します。",
-    "de-DE": "Der Kerninferenzprozess llama.cpp stellt OpenAI-kompatible HTTP-Schnittstellenantworten bereit",
-    "fr-FR": "Le processus d'inférence principal llama.cpp fournit des réponses d'interface HTTP compatibles OpenAI",
-    "ko-KR": "핵심 llama.cpp 추론 프로세스는 OpenAI 호환 HTTP 인터페이스 응답을 제공합니다.",
-    "$files": [
-      "src/components/dashboard/dashboard-view.tsx(8084-8129)",
-      "src/components/dashboard/dashboard-view.tsx(7195-7240)"
-    ],
-    "$id": 568
-  },
-  "停止服务": {
-    "en-US": "Stop Service",
-    "es-ES": "Detener servicio",
-    "ar-EG": "إيقاف الخدمة",
-    "pt-PT": "Parar serviço",
-    "ru-RU": "Остановить службу",
-    "ja-JP": "サービスを停止する",
-    "de-DE": "Service stoppen",
-    "fr-FR": "Arrêter le service",
-    "ko-KR": "서비스 중지",
-    "$files": [
-      "src/components/dashboard/dashboard-view.tsx(8895-8903)",
-      "src/components/dashboard/dashboard-view.tsx(8006-8014)"
-    ],
-    "$id": 569
-  },
-  "启动服务": {
-    "en-US": "Start Service",
-    "es-ES": "Iniciar servicio",
-    "ar-EG": "تشغيل الخدمة",
-    "pt-PT": "Iniciar serviço",
-    "ru-RU": "Запустить службу",
-    "ja-JP": "サービス開始",
-    "de-DE": "Service starten",
-    "fr-FR": "Démarrer le service",
-    "ko-KR": "서비스 시작",
-    "$files": [
-      "src/components/dashboard/dashboard-view.tsx(9539-9547)",
-      "src/components/dashboard/dashboard-view.tsx(8650-8658)"
-    ],
-    "$id": 570
-  },
-  "服务启动失败": {
-    "en-US": "Service startup failed",
-    "es-ES": "El inicio del servicio falló",
-    "ar-EG": "فشل بدء تشغيل الخدمة",
-    "pt-PT": "Falha na inicialização do serviço",
-    "ru-RU": "Запуск службы не удался",
-    "ja-JP": "サービスの起動に失敗しました",
-    "de-DE": "Der Dienststart ist fehlgeschlagen",
-    "fr-FR": "Le démarrage du service a échoué",
-    "ko-KR": "서비스 시작 실패",
-    "$files": [
-      "src/components/dashboard/dashboard-view.tsx(10196-10206)",
-      "src/components/dashboard/dashboard-view.tsx(9307-9317)"
-    ],
-    "$id": 571
-  },
-  "当前模型启动参数": {
-    "en-US": "Current model startup parameters",
-    "es-ES": "Parámetros de inicio del modelo actual",
-    "ar-EG": "معلمات بدء تشغيل النموذج الحالي",
-    "pt-PT": "Parâmetros de inicialização do modelo atual",
-    "ru-RU": "Текущие параметры запуска модели",
-    "ja-JP": "現在のモデルの起動パラメータ",
-    "de-DE": "Aktuelle Modellstartparameter",
-    "fr-FR": "Paramètres de démarrage du modèle actuel",
-    "ko-KR": "현재 모델 시작 매개변수",
-    "$files": [
-      "src/components/dashboard/dashboard-view.tsx(11044-11056)",
-      "src/components/dashboard/dashboard-view.tsx(10155-10167)"
-    ],
-    "$id": 572
-  },
-  "-ngl (GPU 层数)": {
-    "en-US": "-ngl (GPU layer number)",
-    "es-ES": "-ngl (número de capa de GPU)",
-    "ar-EG": "-ngl (رقم طبقة وحدة معالجة الرسومات)",
-    "pt-PT": "-ngl (número da camada GPU)",
-    "ru-RU": "-ngl (номер слоя графического процессора)",
-    "ja-JP": "-ngl (GPU レイヤ番号)",
-    "de-DE": "-ngl (GPU-Layer-Nummer)",
-    "fr-FR": "-ngl (numéro de couche GPU)",
-    "ko-KR": "-ngl(GPU 레이어 번호)",
-    "$files": [
-      "src/components/dashboard/dashboard-view.tsx(11674-11691)",
-      "src/components/dashboard/dashboard-view.tsx(10785-10802)"
-    ],
-    "$id": 573
-  },
-  "-c (上下文窗口)": {
-    "en-US": "-c (context window)",
-    "es-ES": "-c (ventana contextual)",
-    "ar-EG": "-ج (نافذة السياق)",
-    "pt-PT": "-c (janela de contexto)",
-    "ru-RU": "-c (контекстное окно)",
-    "ja-JP": "-c (コンテキストウィンドウ)",
-    "de-DE": "-c (Kontextfenster)",
-    "fr-FR": "-c (fenêtre contextuelle)",
-    "ko-KR": "-c(컨텍스트 창)",
-    "$files": [
-      "src/components/dashboard/dashboard-view.tsx(12134-12148)",
-      "src/components/dashboard/dashboard-view.tsx(11245-11259)"
-    ],
-    "$id": 574
-  },
-  "-t (线程数)": {
-    "en-US": "-t (number of threads)",
-    "es-ES": "-t (número de hilos)",
-    "ar-EG": "-t (عدد المواضيع)",
-    "pt-PT": "-t (número de threads)",
-    "ru-RU": "-t (количество потоков)",
-    "ja-JP": "-t (スレッド数)",
-    "de-DE": "-t (Anzahl der Threads)",
-    "fr-FR": "-t (nombre de threads)",
-    "ko-KR": "-t(스레드 수)",
-    "$files": [
-      "src/components/dashboard/dashboard-view.tsx(12587-12599)",
-      "src/components/dashboard/dashboard-view.tsx(11698-11710)"
-    ],
-    "$id": 575
-  },
-  "-b (Batch Size)": {
-    "en-US": "-b (Batch Size)",
-    "es-ES": "-b (Tamaño de lote)",
-    "ar-EG": "- b (حجم الدفعة)",
-    "pt-PT": "-b (Tamanho do Lote)",
-    "ru-RU": "-b (Размер батча)",
-    "ja-JP": "-b (バッチサイズ)",
-    "de-DE": "-b (Batch-Größe)",
-    "fr-FR": "-b (Taille du lot)",
-    "ko-KR": "-b (배치 크기)",
-    "$files": [
-      "src/components/dashboard/dashboard-view.tsx(13037-13056)",
-      "src/components/dashboard/dashboard-view.tsx(12148-12167)"
-    ],
-    "$id": 576
-  },
-  "-ub (uBatch Size)": {
-    "en-US": "-ub (uBatch Size)",
-    "es-ES": "-ub (Tamaño de uLote)",
-    "ar-EG": "- ub (حجم الدفعة الوحيدة)",
-    "pt-PT": "-ub (Tamanho do uLote)",
-    "ru-RU": "-ub (Размер uBatch)",
-    "ja-JP": "-ub (uバッチサイズ)",
-    "de-DE": "-ub (uBatch-Größe)",
-    "fr-FR": "-ub (Taille du uLot)",
-    "ko-KR": "-ub (u배치 크기)",
-    "$files": [
-      "src/components/dashboard/dashboard-view.tsx(13497-13518)",
-      "src/components/dashboard/dashboard-view.tsx(12608-12629)"
-    ],
-    "$id": 577
-  },
-  "完整启动命令": {
-    "en-US": "Complete startup command",
-    "es-ES": "Comando de inicio completo",
-    "ar-EG": "إكمال أمر بدء التشغيل",
-    "pt-PT": "Comando de inicialização completo",
-    "ru-RU": "Полная команда запуска",
-    "ja-JP": "起動コマンドを完了する",
-    "de-DE": "Vollständiger Startbefehl",
-    "fr-FR": "Commande de démarrage complète",
-    "ko-KR": "시작 명령 완료",
-    "$files": [
-      "src/components/dashboard/dashboard-view.tsx(14246-14256)",
-      "src/components/dashboard/dashboard-view.tsx(13357-13367)"
-    ],
-    "$id": 578
-  },
-  "暂无启动记录，服务启动后将展示完整命令行": {
-    "en-US": "There is no startup record yet. The complete command line will be displayed after the service is started.",
-    "es-ES": "Aún no hay registro de inicio. La línea de comando completa se mostrará después de que se inicie el servicio.",
-    "ar-EG": "لا يوجد سجل بدء التشغيل حتى الآن. سيتم عرض سطر الأوامر الكامل بعد بدء الخدمة.",
-    "pt-PT": "Ainda não há registro de inicialização. A linha de comando completa será exibida após o início do serviço.",
-    "ru-RU": "Записи о запуске пока нет. Полная командная строка будет отображена после запуска службы.",
-    "ja-JP": "まだ起動記録がありません。サービスが開始されると、完全なコマンド ラインが表示されます。",
-    "de-DE": "Es gibt noch keinen Startdatensatz. Die vollständige Befehlszeile wird nach dem Start des Dienstes angezeigt.",
-    "fr-FR": "Il n'y a pas encore d'enregistrement de démarrage. La ligne de commande complète sera affichée après le démarrage du service.",
-    "ko-KR": "아직 시작 기록이 없습니다. 서비스가 시작된 후 전체 명령줄이 표시됩니다.",
-    "$files": [
-      "src/components/dashboard/dashboard-view.tsx(15485-15509)",
-      "src/components/dashboard/dashboard-view.tsx(14596-14620)"
-    ],
-    "$id": 579
-  },
-  "已安装模型": {
-    "en-US": "Installed Models",
-    "es-ES": "Modelos instalados",
-    "ar-EG": "نموذج مثبت",
-    "pt-PT": "Modelos instalados",
-    "ru-RU": "Установленная модель",
-    "ja-JP": "搭載機種",
-    "de-DE": "Installierte Modelle",
-    "fr-FR": "Modèles installés",
-    "ko-KR": "설치된 모델",
-    "$files": [
-      "src/components/dashboard/dashboard-view.tsx(16304-16313)",
-      "src/components/dashboard/dashboard-view.tsx(15415-15424)"
-    ],
-    "$id": 580
-  },
-  "个可用": {
-    "en-US": "Available",
-    "es-ES": "Disponibles",
-    "ar-EG": "متاحاً",
-    "pt-PT": "Disponíveis",
-    "ru-RU": "доступный",
-    "ja-JP": "利用可能",
-    "de-DE": "Verfügbar",
-    "fr-FR": "Disponibles",
-    "ko-KR": "개 사용 가능",
-    "$files": [
-      "src/components/dashboard/dashboard-view.tsx(16649-16656)",
-      "src/components/dashboard/dashboard-view.tsx(15760-15767)"
-    ],
-    "$id": 581
-  },
-  "即时就绪，可无缝热切": {
-    "en-US": "Instantly ready for seamless heating",
-    "es-ES": "Listo al instante para un calentamiento continuo",
-    "ar-EG": "جاهز على الفور للتدفئة السلسة",
-    "pt-PT": "Pronto instantaneamente para aquecimento contínuo",
-    "ru-RU": "Мгновенная готовность к бесперебойному обогреву",
-    "ja-JP": "すぐにシームレスな加熱が可能",
-    "de-DE": "Sofort bereit für nahtloses Erhitzen",
-    "fr-FR": "Prêt instantanément pour un chauffage fluide",
-    "ko-KR": "원활한 난방을 위한 즉각적인 준비",
-    "$files": [
-      "src/components/dashboard/dashboard-view.tsx(16887-16901)",
-      "src/components/dashboard/dashboard-view.tsx(15998-16012)"
-    ],
-    "$id": 582
-  },
-  "当前计算引擎": {
-    "en-US": "Current calculation engine",
-    "es-ES": "Motor de cálculo actual",
-    "ar-EG": "محرك الحساب الحالي",
-    "pt-PT": "Mecanismo de cálculo atual",
-    "ru-RU": "Текущий механизм расчета",
-    "ja-JP": "現在の計算エンジン",
-    "de-DE": "Aktuelle Berechnungs-Engine",
-    "fr-FR": "Moteur de calcul actuel",
-    "ko-KR": "현재 계산 엔진",
-    "$files": [
-      "src/components/dashboard/dashboard-view.tsx(17563-17573)",
-      "src/components/dashboard/dashboard-view.tsx(16674-16684)"
-    ],
-    "$id": 583
-  },
-  "运行中": {
-    "en-US": "Running",
-    "es-ES": "Correr",
-    "ar-EG": "جري",
-    "pt-PT": "Correndo",
-    "ru-RU": "Бег",
-    "ja-JP": "ランニング",
-    "de-DE": "Läuft",
-    "fr-FR": "En cours d'exécution",
-    "ko-KR": "달리기",
-    "$files": [
-      "src/components/dashboard/dashboard-view.tsx(18044-18051)",
-      "src/components/dashboard/dashboard-view.tsx(17155-17162)"
-    ],
-    "$id": 584
-  },
-  "通用加速硬件": {
-    "en-US": "Universal acceleration hardware",
-    "es-ES": "Hardware de aceleración universal",
-    "ar-EG": "أجهزة تسريع عالمية",
-    "pt-PT": "Hardware de aceleração universal",
-    "ru-RU": "Универсальное аппаратное ускорение",
-    "ja-JP": "ユニバーサルアクセラレーションハードウェア",
-    "de-DE": "Universelle Beschleunigungshardware",
-    "fr-FR": "Matériel d'accélération universel",
-    "ko-KR": "범용 가속 하드웨어",
-    "$files": [
-      "src/components/dashboard/dashboard-view.tsx(18237-18247)",
-      "src/components/dashboard/dashboard-view.tsx(17348-17358)"
-    ],
-    "$id": 585
-  },
-  "API 服务监听": {
-    "en-US": "API service monitoring",
-    "es-ES": "Monitoreo de servicios API",
-    "ar-EG": "مراقبة خدمة API",
-    "pt-PT": "Monitoramento de serviço de API",
-    "ru-RU": "Мониторинг API-сервисов",
-    "ja-JP": "APIサービスの監視",
-    "de-DE": "Überwachung von API-Diensten",
-    "fr-FR": "Surveillance des services API",
-    "ko-KR": "API 서비스 모니터링",
-    "$files": [
-      "src/components/dashboard/dashboard-view.tsx(18897-18909)",
-      "src/components/dashboard/dashboard-view.tsx(18008-18020)"
-    ],
-    "$id": 586
-  },
-  "OpenAI 兼容协议": {
-    "en-US": "OpenAI compatible protocol",
-    "es-ES": "Protocolo compatible con OpenAI",
-    "ar-EG": "بروتوكول متوافق مع OpenAI",
-    "pt-PT": "Protocolo compatível com OpenAI",
-    "ru-RU": "OpenAI-совместимый протокол",
-    "ja-JP": "OpenAI互換プロトコル",
-    "de-DE": "OpenAI-kompatibles Protokoll",
-    "fr-FR": "Protocole compatible OpenAI",
-    "ko-KR": "OpenAI 호환 프로토콜",
-    "$files": [
-      "src/components/dashboard/dashboard-view.tsx(19282-19297)",
-      "src/components/dashboard/dashboard-view.tsx(18393-18408)"
-    ],
-    "$id": 587
-  },
-  "GPU 独立显存 (VRAM)": {
-    "en-US": "GPU discrete video memory (VRAM)",
-    "es-ES": "Memoria de vídeo discreta GPU (VRAM)",
-    "ar-EG": "ذاكرة الفيديو المنفصلة GPU (VRAM)",
-    "pt-PT": "Memória de vídeo discreta da GPU (VRAM)",
-    "ru-RU": "Дискретная видеопамять графического процессора (VRAM)",
-    "ja-JP": "GPU ディスクリート ビデオ メモリ (VRAM)",
-    "de-DE": "Diskreter GPU-Videospeicher (VRAM)",
-    "fr-FR": "Mémoire vidéo discrète GPU (VRAM)",
-    "ko-KR": "GPU 개별 비디오 메모리(VRAM)",
-    "$files": [
-      "src/components/dashboard/dashboard-view.tsx(20110-20129)",
-      "src/components/dashboard/dashboard-view.tsx(19221-19240)"
-    ],
-    "$id": 588
-  },
-  "默认图形加速卡": {
-    "en-US": "Default graphics accelerator card",
-    "es-ES": "Tarjeta aceleradora de gráficos predeterminada",
-    "ar-EG": "بطاقة تسريع الرسومات الافتراضية",
-    "pt-PT": "Placa aceleradora gráfica padrão",
-    "ru-RU": "Карта графического ускорителя по умолчанию",
-    "ja-JP": "デフォルトのグラフィックス アクセラレータ カード",
-    "de-DE": "Standard-Grafikbeschleunigerkarte",
-    "fr-FR": "Carte accélératrice graphique par défaut",
-    "ko-KR": "기본 그래픽 가속기 카드",
-    "$files": [
-      "src/components/dashboard/dashboard-view.tsx(20291-20302)",
-      "src/components/dashboard/dashboard-view.tsx(19402-19413)"
-    ],
-    "$id": 589
-  },
-  "已分配水位": {
-    "en-US": "Assigned water level",
-    "es-ES": "Nivel de agua asignado",
-    "ar-EG": "مستوى المياه المخصص",
-    "pt-PT": "Nível de água atribuído",
-    "ru-RU": "Назначенный уровень воды",
-    "ja-JP": "割り当てられた水位",
-    "de-DE": "Zugeordneter Wasserstand",
-    "fr-FR": "Niveau d'eau assigné",
-    "ko-KR": "할당된 수위",
-    "$files": [
-      "src/components/dashboard/dashboard-view.tsx(20705-20714)",
-      "src/components/dashboard/dashboard-view.tsx(19816-19825)"
-    ],
-    "$id": 590
-  },
-  "可用余量": {
-    "en-US": "Available margin",
-    "es-ES": "Margen disponible",
-    "ar-EG": "الهامش المتاح",
-    "pt-PT": "Margem disponível",
-    "ru-RU": "доступная маржа",
-    "ja-JP": "利用可能なマージン",
-    "de-DE": "Verfügbare Marge",
-    "fr-FR": "Marge disponible",
-    "ko-KR": "사용 가능한 마진",
-    "$files": [
-      "src/components/dashboard/dashboard-view.tsx(21216-21224)",
-      "src/components/dashboard/dashboard-view.tsx(23306-23314)",
-      "src/components/dashboard/dashboard-view.tsx(20327-20335)",
-      "src/components/dashboard/dashboard-view.tsx(22417-22425)"
-    ],
-    "$id": 591
-  },
-  "共享系统显存": {
-    "en-US": "Shared system memory",
-    "es-ES": "Memoria del sistema compartida",
-    "ar-EG": "ذاكرة النظام المشتركة",
-    "pt-PT": "Memória compartilhada do sistema",
-    "ru-RU": "Общая системная память",
-    "ja-JP": "共有システムメモリ",
-    "de-DE": "Gemeinsamer Systemspeicher",
-    "fr-FR": "Mémoire système partagée",
-    "ko-KR": "공유 시스템 메모리",
-    "$files": [
-      "src/components/dashboard/dashboard-view.tsx(21450-21460)",
-      "src/components/dashboard/dashboard-view.tsx(20561-20571)"
-    ],
-    "$id": 592
-  },
-  "独立显存": {
-    "en-US": "Independent video memory",
-    "es-ES": "Memoria de vídeo independiente",
-    "ar-EG": "ذاكرة فيديو مستقلة",
-    "pt-PT": "Memória de vídeo independente",
-    "ru-RU": "Независимая видеопамять",
-    "ja-JP": "独立したビデオメモリ",
-    "de-DE": "Unabhängiger Videospeicher",
-    "fr-FR": "Mémoire vidéo indépendante",
-    "ko-KR": "독립 비디오 메모리",
-    "$files": [
-      "src/components/dashboard/dashboard-view.tsx(21464-21472)",
-      "src/components/dashboard/dashboard-view.tsx(20575-20583)"
-    ],
-    "$id": 593
-  },
-  "系统物理内存 (RAM)": {
-    "en-US": "System physical memory (RAM)",
-    "es-ES": "Memoria física del sistema (RAM)",
-    "ar-EG": "الذاكرة الفعلية للنظام (RAM)",
-    "pt-PT": "Memória física do sistema (RAM)",
-    "ru-RU": "Физическая память системы (ОЗУ)",
-    "ja-JP": "システム物理メモリ (RAM)",
-    "de-DE": "Physischer Systemspeicher (RAM)",
-    "fr-FR": "Mémoire physique du système (RAM)",
-    "ko-KR": "시스템 물리적 메모리(RAM)",
-    "$files": [
-      "src/components/dashboard/dashboard-view.tsx(22175-22191)",
-      "src/components/dashboard/dashboard-view.tsx(21286-21302)"
-    ],
-    "$id": 594
-  },
-  "核心": {
-    "en-US": "Core",
-    "es-ES": "Centro",
-    "ar-EG": "جوهر",
-    "pt-PT": "Essencial",
-    "ru-RU": "основной",
-    "ja-JP": "コア",
-    "de-DE": "Kern",
-    "fr-FR": "Cœur",
-    "ko-KR": "핵심",
-    "$files": [
-      "src/components/dashboard/dashboard-view.tsx(22351-22357)",
-      "src/components/dashboard/dashboard-view.tsx(21462-21468)"
-    ],
-    "$id": 595
-  },
-  "线程": {
-    "en-US": "Thread",
-    "es-ES": "Hilo",
-    "ar-EG": "خيط",
-    "pt-PT": "Fio",
-    "ru-RU": "нить",
-    "ja-JP": "糸",
-    "de-DE": "Faden",
-    "fr-FR": "Fil",
-    "ko-KR": "실",
-    "$files": [
-      "src/components/dashboard/dashboard-view.tsx(22402-22408)",
-      "src/components/dashboard/dashboard-view.tsx(21513-21519)"
-    ],
-    "$id": 596
-  },
-  "中央处理器": {
-    "en-US": "CPU",
-    "es-ES": "UPC",
-    "ar-EG": "وحدة المعالجة المركزية",
-    "pt-PT": "CPU",
-    "ru-RU": "Процессор",
-    "ja-JP": "CPU",
-    "de-DE": "CPU",
-    "fr-FR": "Processeur",
-    "ko-KR": "CPU",
-    "$files": [
-      "src/components/dashboard/dashboard-view.tsx(22414-22423)",
-      "src/components/dashboard/dashboard-view.tsx(21525-21534)"
-    ],
-    "$id": 597
-  },
-  "已使用容量": {
-    "en-US": "Used capacity",
-    "es-ES": "Capacidad usada",
-    "ar-EG": "القدرة المستخدمة",
-    "pt-PT": "Capacidade usada",
-    "ru-RU": "Используемая мощность",
-    "ja-JP": "使用容量",
-    "de-DE": "Genutzte Kapazität",
-    "fr-FR": "Capacité utilisée",
-    "ko-KR": "사용 용량",
-    "$files": [
-      "src/components/dashboard/dashboard-view.tsx(22825-22834)",
-      "src/components/dashboard/dashboard-view.tsx(21936-21945)"
-    ],
-    "$id": 598
-  },
-  "系统统一调度": {
-    "en-US": "System unified scheduling",
-    "es-ES": "Programación unificada del sistema",
-    "ar-EG": "نظام جدولة موحدة",
-    "pt-PT": "Agendamento unificado do sistema",
-    "ru-RU": "Единая система планирования",
-    "ja-JP": "システム統合スケジューリング",
-    "de-DE": "Systemeinheitliche Planung",
-    "fr-FR": "Planification unifiée du système",
-    "ko-KR": "시스템 통합 스케줄링",
-    "$files": [
-      "src/components/dashboard/dashboard-view.tsx(23517-23527)",
-      "src/components/dashboard/dashboard-view.tsx(22628-22638)"
-    ],
-    "$id": 599
   },
   "{modelInfo} 启动中...": {
     "en-US": "{modelInfo} Starting...",
@@ -3770,6 +3078,1314 @@
       "src/components/hardware/hardware-card.tsx(7515-7521)"
     ],
     "$id": 658
+  },
+  "未选定": {
+    "en-US": "Not selected",
+    "es-ES": "No seleccionado",
+    "ar-EG": "لم يتم التحديد",
+    "pt-PT": "Não selecionado",
+    "ru-RU": "Не выбрано",
+    "ja-JP": "未選択",
+    "de-DE": "Nicht ausgewählt",
+    "fr-FR": "Non sélectionné",
+    "ko-KR": "선택되지 않음",
+    "$files": [
+      "src/components/dashboard/dashboard-view.tsx(2588-2595)",
+      "src/components/dashboard/dashboard-view.tsx(2435-2442)"
+    ],
+    "$id": 557
+  },
+  "AI 推理服务已成功启动！": {
+    "en-US": "The AI ​​inference service has been successfully launched!",
+    "es-ES": "¡El servicio de inferencia de IA se ha lanzado con éxito!",
+    "ar-EG": "تم إطلاق خدمة الاستدلال بالذكاء الاصطناعي بنجاح!",
+    "pt-PT": "O serviço de inferência de IA foi lançado com sucesso!",
+    "ru-RU": "Сервис AI-вывода успешно запущен!",
+    "ja-JP": "AI推論サービスが無事スタートしました！",
+    "de-DE": "Der KI-Inferenzdienst wurde erfolgreich gestartet!",
+    "fr-FR": "Le service d'inférence IA a été lancé avec succès !",
+    "ko-KR": "AI 추론 서비스가 성공적으로 출시되었습니다!",
+    "$files": [
+      "src/components/dashboard/dashboard-view.tsx(4616-4633)",
+      "src/components/dashboard/dashboard-view.tsx(4137-4154)"
+    ],
+    "$id": 558
+  },
+  "启动失败，请检查模型文件或端口占用": {
+    "en-US": "Startup failed, please check the model file or port occupation",
+    "es-ES": "El inicio falló, verifique el archivo del modelo o la ocupación del puerto",
+    "ar-EG": "فشل بدء التشغيل، يرجى التحقق من ملف النموذج أو إشغال المنفذ",
+    "pt-PT": "Falha na inicialização, verifique o arquivo do modelo ou a ocupação da porta",
+    "ru-RU": "Ошибка запуска. Проверьте файл модели или занятость порта.",
+    "ja-JP": "起動に失敗しました。モデル ファイルまたはポートの占有を確認してください。",
+    "de-DE": "Der Start ist fehlgeschlagen. Bitte überprüfen Sie die Modelldatei oder die Portbelegung",
+    "fr-FR": "Le démarrage a échoué, veuillez vérifier le fichier modèle ou l'occupation du port",
+    "ko-KR": "시작에 실패했습니다. 모델 파일이나 포트 점유를 확인하세요.",
+    "$files": [
+      "src/components/dashboard/dashboard-view.tsx(4739-4760)",
+      "src/components/dashboard/dashboard-view.tsx(4260-4281)"
+    ],
+    "$id": 559
+  },
+  "启动服务失败": {
+    "en-US": "Failed to start service",
+    "es-ES": "No se pudo iniciar el servicio",
+    "ar-EG": "فشل في بدء الخدمة",
+    "pt-PT": "Falha ao iniciar o serviço",
+    "ru-RU": "Не удалось запустить службу",
+    "ja-JP": "サービスの開始に失敗しました",
+    "de-DE": "Der Dienst konnte nicht gestartet werden",
+    "fr-FR": "Échec du démarrage du service",
+    "ko-KR": "서비스를 시작하지 못했습니다.",
+    "$files": [
+      "src/components/dashboard/dashboard-view.tsx(4823-4833)",
+      "src/components/dashboard/dashboard-view.tsx(4344-4354)"
+    ],
+    "$id": 560
+  },
+  "启动异常": {
+    "en-US": "Startup exception",
+    "es-ES": "Excepción de inicio",
+    "ar-EG": "استثناء بدء التشغيل",
+    "pt-PT": "Exceção de inicialização",
+    "ru-RU": "Исключение при запуске",
+    "ja-JP": "起動例外",
+    "de-DE": "Startausnahme",
+    "fr-FR": "Exception de démarrage",
+    "ko-KR": "시작 예외",
+    "$files": [
+      "src/components/dashboard/dashboard-view.tsx(4922-4930)",
+      "src/components/dashboard/dashboard-view.tsx(4989-4997)",
+      "src/components/dashboard/dashboard-view.tsx(4443-4451)",
+      "src/components/dashboard/dashboard-view.tsx(4510-4518)"
+    ],
+    "$id": 561
+  },
+  "AI 推理服务已停止": {
+    "en-US": "AI inference service has been stopped",
+    "es-ES": "El servicio de inferencia de IA ha sido detenido",
+    "ar-EG": "تم إيقاف خدمة الاستدلال بالذكاء الاصطناعي",
+    "pt-PT": "O serviço de inferência de IA foi interrompido",
+    "ru-RU": "Служба вывода ИИ остановлена",
+    "ja-JP": "AI推論サービスを停止しました",
+    "de-DE": "Der KI-Inferenzdienst wurde gestoppt",
+    "fr-FR": "Le service d'inférence IA a été arrêté",
+    "ko-KR": "AI 추론 서비스가 중지되었습니다",
+    "$files": [
+      "src/components/dashboard/dashboard-view.tsx(5226-5240)",
+      "src/components/dashboard/dashboard-view.tsx(4747-4761)"
+    ],
+    "$id": 562
+  },
+  "推理引擎后台服务": {
+    "en-US": "Inference engine background service",
+    "es-ES": "Servicio en segundo plano del motor de inferencia",
+    "ar-EG": "خدمة خلفية محرك الاستدلال",
+    "pt-PT": "Serviço de segundo plano do mecanismo de inferência",
+    "ru-RU": "Фоновая служба механизма вывода",
+    "ja-JP": "推論エンジンのバックグラウンドサービス",
+    "de-DE": "Hintergrunddienst der Inferenz-Engine",
+    "fr-FR": "Service d'arrière-plan du moteur d'inférence",
+    "ko-KR": "추론 엔진 백그라운드 서비스",
+    "$files": [
+      "src/components/dashboard/dashboard-view.tsx(6342-6354)",
+      "src/components/dashboard/dashboard-view.tsx(5853-5865)"
+    ],
+    "$id": 563
+  },
+  "运行中 (就绪)": {
+    "en-US": "Running (ready)",
+    "es-ES": "Corriendo (listo)",
+    "ar-EG": "قيد التشغيل (جاهز)",
+    "pt-PT": "Correndo (pronto)",
+    "ru-RU": "Бег (готов)",
+    "ja-JP": "実行中（準備完了）",
+    "de-DE": "Laufen (bereit)",
+    "fr-FR": "En cours d'exécution (prêt)",
+    "ko-KR": "실행중(준비)",
+    "$files": [
+      "src/components/dashboard/dashboard-view.tsx(7710-7722)",
+      "src/components/dashboard/dashboard-view.tsx(6821-6833)"
+    ],
+    "$id": 564
+  },
+  "正在启动...": {
+    "en-US": "Starting...",
+    "es-ES": "A partir de...",
+    "ar-EG": "جارٍ البدء...",
+    "pt-PT": "Começando...",
+    "ru-RU": "Начало...",
+    "ja-JP": "起動...",
+    "de-DE": "Beginnt...",
+    "fr-FR": "Départ...",
+    "ko-KR": "시작 중...",
+    "$files": [
+      "src/components/dashboard/dashboard-view.tsx(7787-7798)",
+      "src/components/dashboard/dashboard-view.tsx(6898-6909)"
+    ],
+    "$id": 565
+  },
+  "异常": {
+    "en-US": "Abnormal",
+    "es-ES": "Anómalo",
+    "ar-EG": "غير طبيعي",
+    "pt-PT": "Anormal",
+    "ru-RU": "Аномальное",
+    "ja-JP": "異常な",
+    "de-DE": "Fehlerhaft",
+    "fr-FR": "Anormale",
+    "ko-KR": "비정상",
+    "$files": [
+      "src/components/dashboard/dashboard-view.tsx(7878-7884)",
+      "src/components/dashboard/dashboard-view.tsx(6989-6995)"
+    ],
+    "$id": 566
+  },
+  "已停止": {
+    "en-US": "Stopped",
+    "es-ES": "Interrumpido",
+    "ar-EG": "توقف",
+    "pt-PT": "Parou",
+    "ru-RU": "Остановлено",
+    "ja-JP": "停止しました",
+    "de-DE": "Angehalten",
+    "fr-FR": "Arrêté",
+    "ko-KR": "중지됨",
+    "$files": [
+      "src/components/dashboard/dashboard-view.tsx(7915-7922)",
+      "src/components/dashboard/dashboard-view.tsx(7026-7033)"
+    ],
+    "$id": 567
+  },
+  "核心 llama.cpp 推理进程，提供 OpenAI 兼容的 HTTP 接口响应": {
+    "en-US": "The core llama.cpp inference process provides OpenAI-compatible HTTP interface responses",
+    "es-ES": "El proceso de inferencia central llama.cpp proporciona respuestas de interfaz HTTP compatibles con OpenAI",
+    "ar-EG": "توفر عملية الاستدلال الأساسية llama.cpp استجابات واجهة HTTP المتوافقة مع OpenAI",
+    "pt-PT": "O processo principal de inferência llama.cpp fornece respostas de interface HTTP compatíveis com OpenAI",
+    "ru-RU": "Основной процесс вывода llama.cpp предоставляет ответы HTTP-интерфейса, совместимого с OpenAI.",
+    "ja-JP": "コアの llama.cpp 推論プロセスは、OpenAI 互換の HTTP インターフェイス応答を提供します。",
+    "de-DE": "Der Kerninferenzprozess llama.cpp stellt OpenAI-kompatible HTTP-Schnittstellenantworten bereit",
+    "fr-FR": "Le processus d'inférence principal llama.cpp fournit des réponses d'interface HTTP compatibles OpenAI",
+    "ko-KR": "핵심 llama.cpp 추론 프로세스는 OpenAI 호환 HTTP 인터페이스 응답을 제공합니다.",
+    "$files": [
+      "src/components/dashboard/dashboard-view.tsx(8084-8129)",
+      "src/components/dashboard/dashboard-view.tsx(7195-7240)"
+    ],
+    "$id": 568
+  },
+  "停止服务": {
+    "en-US": "Stop Service",
+    "es-ES": "Detener servicio",
+    "ar-EG": "إيقاف الخدمة",
+    "pt-PT": "Parar serviço",
+    "ru-RU": "Остановить службу",
+    "ja-JP": "サービスを停止する",
+    "de-DE": "Service stoppen",
+    "fr-FR": "Arrêter le service",
+    "ko-KR": "서비스 중지",
+    "$files": [
+      "src/components/dashboard/dashboard-view.tsx(8895-8903)",
+      "src/components/dashboard/dashboard-view.tsx(8006-8014)"
+    ],
+    "$id": 569
+  },
+  "启动服务": {
+    "en-US": "Start Service",
+    "es-ES": "Iniciar servicio",
+    "ar-EG": "تشغيل الخدمة",
+    "pt-PT": "Iniciar serviço",
+    "ru-RU": "Запустить службу",
+    "ja-JP": "サービス開始",
+    "de-DE": "Service starten",
+    "fr-FR": "Démarrer le service",
+    "ko-KR": "서비스 시작",
+    "$files": [
+      "src/components/dashboard/dashboard-view.tsx(9539-9547)",
+      "src/components/dashboard/dashboard-view.tsx(8650-8658)"
+    ],
+    "$id": 570
+  },
+  "服务启动失败": {
+    "en-US": "Service startup failed",
+    "es-ES": "El inicio del servicio falló",
+    "ar-EG": "فشل بدء تشغيل الخدمة",
+    "pt-PT": "Falha na inicialização do serviço",
+    "ru-RU": "Запуск службы не удался",
+    "ja-JP": "サービスの起動に失敗しました",
+    "de-DE": "Der Dienststart ist fehlgeschlagen",
+    "fr-FR": "Le démarrage du service a échoué",
+    "ko-KR": "서비스 시작 실패",
+    "$files": [
+      "src/components/dashboard/dashboard-view.tsx(10196-10206)",
+      "src/components/dashboard/dashboard-view.tsx(9307-9317)"
+    ],
+    "$id": 571
+  },
+  "当前模型启动参数": {
+    "en-US": "Current model startup parameters",
+    "es-ES": "Parámetros de inicio del modelo actual",
+    "ar-EG": "معلمات بدء تشغيل النموذج الحالي",
+    "pt-PT": "Parâmetros de inicialização do modelo atual",
+    "ru-RU": "Текущие параметры запуска модели",
+    "ja-JP": "現在のモデルの起動パラメータ",
+    "de-DE": "Aktuelle Modellstartparameter",
+    "fr-FR": "Paramètres de démarrage du modèle actuel",
+    "ko-KR": "현재 모델 시작 매개변수",
+    "$files": [
+      "src/components/dashboard/dashboard-view.tsx(11044-11056)",
+      "src/components/dashboard/dashboard-view.tsx(10155-10167)"
+    ],
+    "$id": 572
+  },
+  "-ngl (GPU 层数)": {
+    "en-US": "-ngl (GPU layer number)",
+    "es-ES": "-ngl (número de capa de GPU)",
+    "ar-EG": "-ngl (رقم طبقة وحدة معالجة الرسومات)",
+    "pt-PT": "-ngl (número da camada GPU)",
+    "ru-RU": "-ngl (номер слоя графического процессора)",
+    "ja-JP": "-ngl (GPU レイヤ番号)",
+    "de-DE": "-ngl (GPU-Layer-Nummer)",
+    "fr-FR": "-ngl (numéro de couche GPU)",
+    "ko-KR": "-ngl(GPU 레이어 번호)",
+    "$files": [
+      "src/components/dashboard/dashboard-view.tsx(11674-11691)",
+      "src/components/dashboard/dashboard-view.tsx(10785-10802)"
+    ],
+    "$id": 573
+  },
+  "-c (上下文窗口)": {
+    "en-US": "-c (context window)",
+    "es-ES": "-c (ventana contextual)",
+    "ar-EG": "-ج (نافذة السياق)",
+    "pt-PT": "-c (janela de contexto)",
+    "ru-RU": "-c (контекстное окно)",
+    "ja-JP": "-c (コンテキストウィンドウ)",
+    "de-DE": "-c (Kontextfenster)",
+    "fr-FR": "-c (fenêtre contextuelle)",
+    "ko-KR": "-c(컨텍스트 창)",
+    "$files": [
+      "src/components/dashboard/dashboard-view.tsx(12134-12148)",
+      "src/components/dashboard/dashboard-view.tsx(11245-11259)"
+    ],
+    "$id": 574
+  },
+  "-t (线程数)": {
+    "en-US": "-t (number of threads)",
+    "es-ES": "-t (número de hilos)",
+    "ar-EG": "-t (عدد المواضيع)",
+    "pt-PT": "-t (número de threads)",
+    "ru-RU": "-t (количество потоков)",
+    "ja-JP": "-t (スレッド数)",
+    "de-DE": "-t (Anzahl der Threads)",
+    "fr-FR": "-t (nombre de threads)",
+    "ko-KR": "-t(스레드 수)",
+    "$files": [
+      "src/components/dashboard/dashboard-view.tsx(12587-12599)",
+      "src/components/dashboard/dashboard-view.tsx(11698-11710)"
+    ],
+    "$id": 575
+  },
+  "-b (Batch Size)": {
+    "en-US": "-b (Batch Size)",
+    "es-ES": "-b (Tamaño de lote)",
+    "ar-EG": "- b (حجم الدفعة)",
+    "pt-PT": "-b (Tamanho do Lote)",
+    "ru-RU": "-b (Размер батча)",
+    "ja-JP": "-b (バッチサイズ)",
+    "de-DE": "-b (Batch-Größe)",
+    "fr-FR": "-b (Taille du lot)",
+    "ko-KR": "-b (배치 크기)",
+    "$files": [
+      "src/components/dashboard/dashboard-view.tsx(13037-13056)",
+      "src/components/dashboard/dashboard-view.tsx(12148-12167)"
+    ],
+    "$id": 576
+  },
+  "-ub (uBatch Size)": {
+    "en-US": "-ub (uBatch Size)",
+    "es-ES": "-ub (Tamaño de uLote)",
+    "ar-EG": "- ub (حجم الدفعة الوحيدة)",
+    "pt-PT": "-ub (Tamanho do uLote)",
+    "ru-RU": "-ub (Размер uBatch)",
+    "ja-JP": "-ub (uバッチサイズ)",
+    "de-DE": "-ub (uBatch-Größe)",
+    "fr-FR": "-ub (Taille du uLot)",
+    "ko-KR": "-ub (u배치 크기)",
+    "$files": [
+      "src/components/dashboard/dashboard-view.tsx(13497-13518)",
+      "src/components/dashboard/dashboard-view.tsx(12608-12629)"
+    ],
+    "$id": 577
+  },
+  "完整启动命令": {
+    "en-US": "Complete startup command",
+    "es-ES": "Comando de inicio completo",
+    "ar-EG": "إكمال أمر بدء التشغيل",
+    "pt-PT": "Comando de inicialização completo",
+    "ru-RU": "Полная команда запуска",
+    "ja-JP": "起動コマンドを完了する",
+    "de-DE": "Vollständiger Startbefehl",
+    "fr-FR": "Commande de démarrage complète",
+    "ko-KR": "시작 명령 완료",
+    "$files": [
+      "src/components/dashboard/dashboard-view.tsx(14246-14256)",
+      "src/components/dashboard/dashboard-view.tsx(13357-13367)"
+    ],
+    "$id": 578
+  },
+  "暂无启动记录，服务启动后将展示完整命令行": {
+    "en-US": "There is no startup record yet. The complete command line will be displayed after the service is started.",
+    "es-ES": "Aún no hay registro de inicio. La línea de comando completa se mostrará después de que se inicie el servicio.",
+    "ar-EG": "لا يوجد سجل بدء التشغيل حتى الآن. سيتم عرض سطر الأوامر الكامل بعد بدء الخدمة.",
+    "pt-PT": "Ainda não há registro de inicialização. A linha de comando completa será exibida após o início do serviço.",
+    "ru-RU": "Записи о запуске пока нет. Полная командная строка будет отображена после запуска службы.",
+    "ja-JP": "まだ起動記録がありません。サービスが開始されると、完全なコマンド ラインが表示されます。",
+    "de-DE": "Es gibt noch keinen Startdatensatz. Die vollständige Befehlszeile wird nach dem Start des Dienstes angezeigt.",
+    "fr-FR": "Il n'y a pas encore d'enregistrement de démarrage. La ligne de commande complète sera affichée après le démarrage du service.",
+    "ko-KR": "아직 시작 기록이 없습니다. 서비스가 시작된 후 전체 명령줄이 표시됩니다.",
+    "$files": [
+      "src/components/dashboard/dashboard-view.tsx(15485-15509)",
+      "src/components/dashboard/dashboard-view.tsx(14596-14620)"
+    ],
+    "$id": 579
+  },
+  "已安装模型": {
+    "en-US": "Installed Models",
+    "es-ES": "Modelos instalados",
+    "ar-EG": "نموذج مثبت",
+    "pt-PT": "Modelos instalados",
+    "ru-RU": "Установленная модель",
+    "ja-JP": "搭載機種",
+    "de-DE": "Installierte Modelle",
+    "fr-FR": "Modèles installés",
+    "ko-KR": "설치된 모델",
+    "$files": [
+      "src/components/dashboard/dashboard-view.tsx(16304-16313)",
+      "src/components/dashboard/dashboard-view.tsx(15415-15424)"
+    ],
+    "$id": 580
+  },
+  "个可用": {
+    "en-US": "Available",
+    "es-ES": "Disponibles",
+    "ar-EG": "متاحاً",
+    "pt-PT": "Disponíveis",
+    "ru-RU": "доступный",
+    "ja-JP": "利用可能",
+    "de-DE": "Verfügbar",
+    "fr-FR": "Disponibles",
+    "ko-KR": "개 사용 가능",
+    "$files": [
+      "src/components/dashboard/dashboard-view.tsx(16649-16656)",
+      "src/components/dashboard/dashboard-view.tsx(15760-15767)"
+    ],
+    "$id": 581
+  },
+  "即时就绪，可无缝热切": {
+    "en-US": "Instantly ready for seamless heating",
+    "es-ES": "Listo al instante para un calentamiento continuo",
+    "ar-EG": "جاهز على الفور للتدفئة السلسة",
+    "pt-PT": "Pronto instantaneamente para aquecimento contínuo",
+    "ru-RU": "Мгновенная готовность к бесперебойному обогреву",
+    "ja-JP": "すぐにシームレスな加熱が可能",
+    "de-DE": "Sofort bereit für nahtloses Erhitzen",
+    "fr-FR": "Prêt instantanément pour un chauffage fluide",
+    "ko-KR": "원활한 난방을 위한 즉각적인 준비",
+    "$files": [
+      "src/components/dashboard/dashboard-view.tsx(16887-16901)",
+      "src/components/dashboard/dashboard-view.tsx(15998-16012)"
+    ],
+    "$id": 582
+  },
+  "当前计算引擎": {
+    "en-US": "Current calculation engine",
+    "es-ES": "Motor de cálculo actual",
+    "ar-EG": "محرك الحساب الحالي",
+    "pt-PT": "Mecanismo de cálculo atual",
+    "ru-RU": "Текущий механизм расчета",
+    "ja-JP": "現在の計算エンジン",
+    "de-DE": "Aktuelle Berechnungs-Engine",
+    "fr-FR": "Moteur de calcul actuel",
+    "ko-KR": "현재 계산 엔진",
+    "$files": [
+      "src/components/dashboard/dashboard-view.tsx(17563-17573)",
+      "src/components/dashboard/dashboard-view.tsx(16674-16684)"
+    ],
+    "$id": 583
+  },
+  "运行中": {
+    "en-US": "Running",
+    "es-ES": "Correr",
+    "ar-EG": "جري",
+    "pt-PT": "Correndo",
+    "ru-RU": "Бег",
+    "ja-JP": "ランニング",
+    "de-DE": "Läuft",
+    "fr-FR": "En cours d'exécution",
+    "ko-KR": "달리기",
+    "$files": [
+      "src/components/dashboard/dashboard-view.tsx(18044-18051)",
+      "src/components/dashboard/dashboard-view.tsx(17155-17162)"
+    ],
+    "$id": 584
+  },
+  "通用加速硬件": {
+    "en-US": "Universal acceleration hardware",
+    "es-ES": "Hardware de aceleración universal",
+    "ar-EG": "أجهزة تسريع عالمية",
+    "pt-PT": "Hardware de aceleração universal",
+    "ru-RU": "Универсальное аппаратное ускорение",
+    "ja-JP": "ユニバーサルアクセラレーションハードウェア",
+    "de-DE": "Universelle Beschleunigungshardware",
+    "fr-FR": "Matériel d'accélération universel",
+    "ko-KR": "범용 가속 하드웨어",
+    "$files": [
+      "src/components/dashboard/dashboard-view.tsx(18237-18247)",
+      "src/components/dashboard/dashboard-view.tsx(17348-17358)"
+    ],
+    "$id": 585
+  },
+  "API 服务监听": {
+    "en-US": "API service monitoring",
+    "es-ES": "Monitoreo de servicios API",
+    "ar-EG": "مراقبة خدمة API",
+    "pt-PT": "Monitoramento de serviço de API",
+    "ru-RU": "Мониторинг API-сервисов",
+    "ja-JP": "APIサービスの監視",
+    "de-DE": "Überwachung von API-Diensten",
+    "fr-FR": "Surveillance des services API",
+    "ko-KR": "API 서비스 모니터링",
+    "$files": [
+      "src/components/dashboard/dashboard-view.tsx(18897-18909)",
+      "src/components/dashboard/dashboard-view.tsx(18008-18020)"
+    ],
+    "$id": 586
+  },
+  "OpenAI 兼容协议": {
+    "en-US": "OpenAI compatible protocol",
+    "es-ES": "Protocolo compatible con OpenAI",
+    "ar-EG": "بروتوكول متوافق مع OpenAI",
+    "pt-PT": "Protocolo compatível com OpenAI",
+    "ru-RU": "OpenAI-совместимый протокол",
+    "ja-JP": "OpenAI互換プロトコル",
+    "de-DE": "OpenAI-kompatibles Protokoll",
+    "fr-FR": "Protocole compatible OpenAI",
+    "ko-KR": "OpenAI 호환 프로토콜",
+    "$files": [
+      "src/components/dashboard/dashboard-view.tsx(19282-19297)",
+      "src/components/dashboard/dashboard-view.tsx(18393-18408)"
+    ],
+    "$id": 587
+  },
+  "GPU 独立显存 (VRAM)": {
+    "en-US": "GPU discrete video memory (VRAM)",
+    "es-ES": "Memoria de vídeo discreta GPU (VRAM)",
+    "ar-EG": "ذاكرة الفيديو المنفصلة GPU (VRAM)",
+    "pt-PT": "Memória de vídeo discreta da GPU (VRAM)",
+    "ru-RU": "Дискретная видеопамять графического процессора (VRAM)",
+    "ja-JP": "GPU ディスクリート ビデオ メモリ (VRAM)",
+    "de-DE": "Diskreter GPU-Videospeicher (VRAM)",
+    "fr-FR": "Mémoire vidéo discrète GPU (VRAM)",
+    "ko-KR": "GPU 개별 비디오 메모리(VRAM)",
+    "$files": [
+      "src/components/dashboard/dashboard-view.tsx(20110-20129)",
+      "src/components/dashboard/dashboard-view.tsx(19221-19240)"
+    ],
+    "$id": 588
+  },
+  "默认图形加速卡": {
+    "en-US": "Default graphics accelerator card",
+    "es-ES": "Tarjeta aceleradora de gráficos predeterminada",
+    "ar-EG": "بطاقة تسريع الرسومات الافتراضية",
+    "pt-PT": "Placa aceleradora gráfica padrão",
+    "ru-RU": "Карта графического ускорителя по умолчанию",
+    "ja-JP": "デフォルトのグラフィックス アクセラレータ カード",
+    "de-DE": "Standard-Grafikbeschleunigerkarte",
+    "fr-FR": "Carte accélératrice graphique par défaut",
+    "ko-KR": "기본 그래픽 가속기 카드",
+    "$files": [
+      "src/components/dashboard/dashboard-view.tsx(20291-20302)",
+      "src/components/dashboard/dashboard-view.tsx(19402-19413)"
+    ],
+    "$id": 589
+  },
+  "已分配水位": {
+    "en-US": "Assigned water level",
+    "es-ES": "Nivel de agua asignado",
+    "ar-EG": "مستوى المياه المخصص",
+    "pt-PT": "Nível de água atribuído",
+    "ru-RU": "Назначенный уровень воды",
+    "ja-JP": "割り当てられた水位",
+    "de-DE": "Zugeordneter Wasserstand",
+    "fr-FR": "Niveau d'eau assigné",
+    "ko-KR": "할당된 수위",
+    "$files": [
+      "src/components/dashboard/dashboard-view.tsx(20705-20714)",
+      "src/components/dashboard/dashboard-view.tsx(19816-19825)"
+    ],
+    "$id": 590
+  },
+  "可用余量": {
+    "en-US": "Available margin",
+    "es-ES": "Margen disponible",
+    "ar-EG": "الهامش المتاح",
+    "pt-PT": "Margem disponível",
+    "ru-RU": "доступная маржа",
+    "ja-JP": "利用可能なマージン",
+    "de-DE": "Verfügbare Marge",
+    "fr-FR": "Marge disponible",
+    "ko-KR": "사용 가능한 마진",
+    "$files": [
+      "src/components/dashboard/dashboard-view.tsx(21216-21224)",
+      "src/components/dashboard/dashboard-view.tsx(23306-23314)",
+      "src/components/dashboard/dashboard-view.tsx(20327-20335)",
+      "src/components/dashboard/dashboard-view.tsx(22417-22425)"
+    ],
+    "$id": 591
+  },
+  "共享系统显存": {
+    "en-US": "Shared system memory",
+    "es-ES": "Memoria del sistema compartida",
+    "ar-EG": "ذاكرة النظام المشتركة",
+    "pt-PT": "Memória compartilhada do sistema",
+    "ru-RU": "Общая системная память",
+    "ja-JP": "共有システムメモリ",
+    "de-DE": "Gemeinsamer Systemspeicher",
+    "fr-FR": "Mémoire système partagée",
+    "ko-KR": "공유 시스템 메모리",
+    "$files": [
+      "src/components/dashboard/dashboard-view.tsx(21450-21460)",
+      "src/components/dashboard/dashboard-view.tsx(20561-20571)"
+    ],
+    "$id": 592
+  },
+  "独立显存": {
+    "en-US": "Independent video memory",
+    "es-ES": "Memoria de vídeo independiente",
+    "ar-EG": "ذاكرة فيديو مستقلة",
+    "pt-PT": "Memória de vídeo independente",
+    "ru-RU": "Независимая видеопамять",
+    "ja-JP": "独立したビデオメモリ",
+    "de-DE": "Unabhängiger Videospeicher",
+    "fr-FR": "Mémoire vidéo indépendante",
+    "ko-KR": "독립 비디오 메모리",
+    "$files": [
+      "src/components/dashboard/dashboard-view.tsx(21464-21472)",
+      "src/components/dashboard/dashboard-view.tsx(20575-20583)"
+    ],
+    "$id": 593
+  },
+  "系统物理内存 (RAM)": {
+    "en-US": "System physical memory (RAM)",
+    "es-ES": "Memoria física del sistema (RAM)",
+    "ar-EG": "الذاكرة الفعلية للنظام (RAM)",
+    "pt-PT": "Memória física do sistema (RAM)",
+    "ru-RU": "Физическая память системы (ОЗУ)",
+    "ja-JP": "システム物理メモリ (RAM)",
+    "de-DE": "Physischer Systemspeicher (RAM)",
+    "fr-FR": "Mémoire physique du système (RAM)",
+    "ko-KR": "시스템 물리적 메모리(RAM)",
+    "$files": [
+      "src/components/dashboard/dashboard-view.tsx(22175-22191)",
+      "src/components/dashboard/dashboard-view.tsx(21286-21302)"
+    ],
+    "$id": 594
+  },
+  "核心": {
+    "en-US": "Core",
+    "es-ES": "Centro",
+    "ar-EG": "جوهر",
+    "pt-PT": "Essencial",
+    "ru-RU": "основной",
+    "ja-JP": "コア",
+    "de-DE": "Kern",
+    "fr-FR": "Cœur",
+    "ko-KR": "핵심",
+    "$files": [
+      "src/components/dashboard/dashboard-view.tsx(22351-22357)",
+      "src/components/dashboard/dashboard-view.tsx(21462-21468)"
+    ],
+    "$id": 595
+  },
+  "线程": {
+    "en-US": "Thread",
+    "es-ES": "Hilo",
+    "ar-EG": "خيط",
+    "pt-PT": "Fio",
+    "ru-RU": "нить",
+    "ja-JP": "糸",
+    "de-DE": "Faden",
+    "fr-FR": "Fil",
+    "ko-KR": "실",
+    "$files": [
+      "src/components/dashboard/dashboard-view.tsx(22402-22408)",
+      "src/components/dashboard/dashboard-view.tsx(21513-21519)"
+    ],
+    "$id": 596
+  },
+  "中央处理器": {
+    "en-US": "CPU",
+    "es-ES": "UPC",
+    "ar-EG": "وحدة المعالجة المركزية",
+    "pt-PT": "CPU",
+    "ru-RU": "Процессор",
+    "ja-JP": "CPU",
+    "de-DE": "CPU",
+    "fr-FR": "Processeur",
+    "ko-KR": "CPU",
+    "$files": [
+      "src/components/dashboard/dashboard-view.tsx(22414-22423)",
+      "src/components/dashboard/dashboard-view.tsx(21525-21534)"
+    ],
+    "$id": 597
+  },
+  "已使用容量": {
+    "en-US": "Used capacity",
+    "es-ES": "Capacidad usada",
+    "ar-EG": "القدرة المستخدمة",
+    "pt-PT": "Capacidade usada",
+    "ru-RU": "Используемая мощность",
+    "ja-JP": "使用容量",
+    "de-DE": "Genutzte Kapazität",
+    "fr-FR": "Capacité utilisée",
+    "ko-KR": "사용 용량",
+    "$files": [
+      "src/components/dashboard/dashboard-view.tsx(22825-22834)",
+      "src/components/dashboard/dashboard-view.tsx(21936-21945)"
+    ],
+    "$id": 598
+  },
+  "系统统一调度": {
+    "en-US": "System unified scheduling",
+    "es-ES": "Programación unificada del sistema",
+    "ar-EG": "نظام جدولة موحدة",
+    "pt-PT": "Agendamento unificado do sistema",
+    "ru-RU": "Единая система планирования",
+    "ja-JP": "システム統合スケジューリング",
+    "de-DE": "Systemeinheitliche Planung",
+    "fr-FR": "Planification unifiée du système",
+    "ko-KR": "시스템 통합 스케줄링",
+    "$files": [
+      "src/components/dashboard/dashboard-view.tsx(23517-23527)",
+      "src/components/dashboard/dashboard-view.tsx(22628-22638)"
+    ],
+    "$id": 599
+  },
+  "条": {
+    "en-US": "Strip",
+    "es-ES": "Banda",
+    "ar-EG": "يجرد",
+    "pt-PT": "Tira",
+    "ru-RU": "полоска",
+    "ja-JP": "ストリップ",
+    "de-DE": "Streifen",
+    "fr-FR": "Bande",
+    "ko-KR": "조각",
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(10501-10506)",
+      "src/components/logs/engine-logs-view.tsx(26107-26112)"
+    ],
+    "$id": 659
+  },
+  "全部": {
+    "en-US": "All",
+    "es-ES": "Todo",
+    "ar-EG": "الكل",
+    "pt-PT": "Todos",
+    "ru-RU": "Все",
+    "ja-JP": "すべて",
+    "de-DE": "Alle",
+    "fr-FR": "Tous",
+    "ko-KR": "전체",
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(11278-11284)"
+    ],
+    "$id": 660
+  },
+  "错误": {
+    "en-US": "Mistake",
+    "es-ES": "Error",
+    "ar-EG": "خطأ",
+    "pt-PT": "Erro",
+    "ru-RU": "ошибка",
+    "ja-JP": "間違い",
+    "de-DE": "Fehler",
+    "fr-FR": "Erreur",
+    "ko-KR": "실수",
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(11830-11836)"
+    ],
+    "$id": 661
+  },
+  "警告": {
+    "en-US": "Warn",
+    "es-ES": "Advertir",
+    "ar-EG": "تحذير",
+    "pt-PT": "Avisar",
+    "ru-RU": "предупреждать",
+    "ja-JP": "警告する",
+    "de-DE": "Warnen",
+    "fr-FR": "Avertir",
+    "ko-KR": "경고하다",
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(12640-12646)"
+    ],
+    "$id": 662
+  },
+  "搜索日志...": {
+    "en-US": "Search logs...",
+    "es-ES": "Buscar registros...",
+    "ar-EG": "سجلات البحث...",
+    "pt-PT": "Registros de pesquisa...",
+    "ru-RU": "Поиск в журналах...",
+    "ja-JP": "ログを検索...",
+    "de-DE": "Protokolle durchsuchen...",
+    "fr-FR": "Rechercher des journaux...",
+    "ko-KR": "로그 검색...",
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(13402-13413)"
+    ],
+    "$id": 663
+  },
+  "搜索": {
+    "en-US": "Search",
+    "es-ES": "Buscar",
+    "ar-EG": "يبحث",
+    "pt-PT": "Procurar",
+    "ru-RU": "поиск",
+    "ja-JP": "検索",
+    "de-DE": "Suchen",
+    "fr-FR": "Recherche",
+    "ko-KR": "찾다",
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(14184-14190)"
+    ],
+    "$id": 664
+  },
+  "当前：默认展开多行排版": {
+    "en-US": "Current: Expand multi-line layout by default",
+    "es-ES": "Actual: Expandir el diseño de varias líneas de forma predeterminada",
+    "ar-EG": "الحالي: قم بتوسيع التخطيط متعدد الأسطر بشكل افتراضي",
+    "pt-PT": "Atual: Expanda o layout multilinha por padrão",
+    "ru-RU": "Текущее: расширение многострочного макета по умолчанию.",
+    "ja-JP": "現在: デフォルトで複数行レイアウトを展開します",
+    "de-DE": "Aktuell: Mehrzeiliges Layout standardmäßig erweitern",
+    "fr-FR": "Actuel : développer la disposition multiligne par défaut",
+    "ko-KR": "현재: 기본적으로 여러 줄 레이아웃 확장",
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(14808-14823)"
+    ],
+    "$id": 665
+  },
+  "当前：默认单行省略": {
+    "en-US": "Current: single line omitted by default",
+    "es-ES": "Actual: línea única omitida de forma predeterminada",
+    "ar-EG": "الحالي: تم حذف سطر واحد بشكل افتراضي",
+    "pt-PT": "Atual: linha única omitida por padrão",
+    "ru-RU": "Текущий: по умолчанию одна строка опущена.",
+    "ja-JP": "現在: デフォルトでは単一行が省略されます",
+    "de-DE": "Aktuell: Einzelzeile wird standardmäßig weggelassen",
+    "fr-FR": "Actuel : une seule ligne omise par défaut",
+    "ko-KR": "현재: 기본적으로 한 줄 생략",
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(14827-14840)"
+    ],
+    "$id": 666
+  },
+  "多行展开": {
+    "en-US": "Expand multiple lines",
+    "es-ES": "Expandir varias líneas",
+    "ar-EG": "توسيع خطوط متعددة",
+    "pt-PT": "Expandir várias linhas",
+    "ru-RU": "Развернуть несколько строк",
+    "ja-JP": "複数行を展開する",
+    "de-DE": "Erweitern Sie mehrere Zeilen",
+    "fr-FR": "Développer plusieurs lignes",
+    "ko-KR": "여러 줄 확장",
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(15163-15171)"
+    ],
+    "$id": 667
+  },
+  "单行折叠": {
+    "en-US": "Single row fold",
+    "es-ES": "Pliegue de una hilera",
+    "ar-EG": "أضعاف صف واحد",
+    "pt-PT": "Dobra de linha única",
+    "ru-RU": "Складка в один ряд",
+    "ja-JP": "単列折り",
+    "de-DE": "Einreihiger Falz",
+    "fr-FR": "Pliage à une seule rangée",
+    "ko-KR": "단일 행 접기",
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(15175-15183)"
+    ],
+    "$id": 668
+  },
+  "复制全量": {
+    "en-US": "Copy full amount",
+    "es-ES": "Copiar el importe total",
+    "ar-EG": "نسخ المبلغ كاملا",
+    "pt-PT": "Copie o valor total",
+    "ru-RU": "Копировать полную сумму",
+    "ja-JP": "全額コピー",
+    "de-DE": "Gesamtbetrag kopieren",
+    "fr-FR": "Copier le montant total",
+    "ko-KR": "전액 복사",
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(15858-15866)"
+    ],
+    "$id": 669
+  },
+  "清空日志": {
+    "en-US": "Clear log",
+    "es-ES": "Borrar registro",
+    "ar-EG": "مسح السجل",
+    "pt-PT": "Limpar registro",
+    "ru-RU": "Очистить журнал",
+    "ja-JP": "ログをクリアする",
+    "de-DE": "Protokoll löschen",
+    "fr-FR": "Effacer le journal",
+    "ko-KR": "로그 지우기",
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(16358-16366)"
+    ],
+    "$id": 670
+  },
+  "跳至最新日志": {
+    "en-US": "Skip to latest log",
+    "es-ES": "Saltar al último registro",
+    "ar-EG": "انتقل إلى أحدث سجل",
+    "pt-PT": "Pular para o último registro",
+    "ru-RU": "Перейти к последнему журналу",
+    "ja-JP": "最新のログにスキップ",
+    "de-DE": "Zum neuesten Protokoll springen",
+    "fr-FR": "Passer au dernier journal",
+    "ko-KR": "최신 로그로 건너뛰기",
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(16752-16762)"
+    ],
+    "$id": 671
+  },
+  "无匹配日志": {
+    "en-US": "No matching log",
+    "es-ES": "No hay registros coincidentes",
+    "ar-EG": "لا يوجد سجل مطابق",
+    "pt-PT": "Nenhum registro correspondente",
+    "ru-RU": "Нет соответствующего журнала",
+    "ja-JP": "一致するログがありません",
+    "de-DE": "Kein passendes Protokoll",
+    "fr-FR": "Aucun journal correspondant",
+    "ko-KR": "일치하는 로그가 없습니다.",
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(17426-17435)"
+    ],
+    "$id": 672
+  },
+  "暂无日志，等待服务启动...": {
+    "en-US": "No logs yet, waiting for the service to start...",
+    "es-ES": "Aún no hay registros, esperando que se inicie el servicio...",
+    "ar-EG": "لا توجد سجلات حتى الآن، في انتظار بدء الخدمة...",
+    "pt-PT": "Ainda não há registros, aguardando o início do serviço...",
+    "ru-RU": "Журналов пока нет, ждем запуска службы...",
+    "ja-JP": "まだログがありません。サービスの開始を待っています...",
+    "de-DE": "Noch keine Protokolle, ich warte auf den Start des Dienstes ...",
+    "fr-FR": "Pas de logs pour l'instant, j'attends le démarrage du service...",
+    "ko-KR": "아직 로그가 없습니다. 서비스 시작을 기다리는 중입니다...",
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(17439-17457)"
+    ],
+    "$id": 673
+  },
+  "启动命令 (Launch Command)": {
+    "en-US": "Launch Command",
+    "es-ES": "Comando de lanzamiento",
+    "ar-EG": "إطلاق الأمر",
+    "pt-PT": "Comando de lançamento",
+    "ru-RU": "Команда запуска",
+    "ja-JP": "起動コマンド",
+    "de-DE": "Befehl starten",
+    "fr-FR": "Commande de lancement",
+    "ko-KR": "발사 명령",
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(18752-18777)"
+    ],
+    "$id": 674
+  },
+  "点击切换换行状态": {
+    "en-US": "Click to switch line wrapping status",
+    "es-ES": "Haga clic para cambiar el estado de ajuste de línea",
+    "ar-EG": "انقر لتبديل حالة التفاف الخط",
+    "pt-PT": "Clique para mudar o status de quebra de linha",
+    "ru-RU": "Нажмите, чтобы переключить статус переноса строк",
+    "ja-JP": "クリックして行折り返しステータスを切り替えます",
+    "de-DE": "Klicken Sie, um den Zeilenumbruchstatus zu ändern",
+    "fr-FR": "Cliquez pour changer l'état de retour à la ligne",
+    "ko-KR": "줄 바꿈 상태를 전환하려면 클릭하세요.",
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(19333-19345)"
+    ],
+    "$id": 675
+  },
+  "分行排版": {
+    "en-US": "Branch layout",
+    "es-ES": "Diseño de sucursales",
+    "ar-EG": "تخطيط الفرع",
+    "pt-PT": "Layout da filial",
+    "ru-RU": "Схема филиала",
+    "ja-JP": "支店レイアウト",
+    "de-DE": "Filiallayout",
+    "fr-FR": "Disposition des succursales",
+    "ko-KR": "지점 레이아웃",
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(19417-19425)"
+    ],
+    "$id": 676
+  },
+  "单行紧凑": {
+    "en-US": "Single row compact",
+    "es-ES": "Compacto de una hilera",
+    "ar-EG": "صف واحد مدمج",
+    "pt-PT": "Compacto de linha única",
+    "ru-RU": "Однорядный компактный",
+    "ja-JP": "単列コンパクト",
+    "de-DE": "Einreihig kompakt",
+    "fr-FR": "Compacte à une rangée",
+    "ko-KR": "단일 행 컴팩트",
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(19429-19437)"
+    ],
+    "$id": 677
+  },
+  "切换为单行紧凑格式": {
+    "en-US": "Switch to single-line compact format",
+    "es-ES": "Cambiar al formato compacto de una sola línea",
+    "ar-EG": "قم بالتبديل إلى التنسيق المضغوط ذو السطر الواحد",
+    "pt-PT": "Mude para o formato compacto de linha única",
+    "ru-RU": "Переключиться на однострочный компактный формат",
+    "ja-JP": "単一行のコンパクト形式に切り替える",
+    "de-DE": "Wechseln Sie zum einzeiligen Kompaktformat",
+    "fr-FR": "Passer au format compact monoligne",
+    "ko-KR": "단일 라인 압축 형식으로 전환",
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(20017-20030)"
+    ],
+    "$id": 678
+  },
+  "切换为多行按参数格式": {
+    "en-US": "Switch to multi-line by parameter format",
+    "es-ES": "Cambiar a formato multilínea por parámetro",
+    "ar-EG": "قم بالتبديل إلى متعدد الأسطر حسب تنسيق المعلمة",
+    "pt-PT": "Mudar para multilinha por formato de parâmetro",
+    "ru-RU": "Переключиться на многострочный формат по параметрам",
+    "ja-JP": "パラメータ形式で複数行に切り替える",
+    "de-DE": "Wechseln Sie zum mehrzeiligen Parameterformat",
+    "fr-FR": "Passer au format multiligne par paramètre",
+    "ko-KR": "매개변수 형식으로 여러 줄로 전환",
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(20034-20048)"
+    ],
+    "$id": 679
+  },
+  "单行": {
+    "en-US": "Single line",
+    "es-ES": "Sola linea",
+    "ar-EG": "سطر واحد",
+    "pt-PT": "Linha única",
+    "ru-RU": "одна строка",
+    "ja-JP": "単線",
+    "de-DE": "Einzelne Zeile",
+    "fr-FR": "Une seule ligne",
+    "ko-KR": "한 줄",
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(20301-20307)"
+    ],
+    "$id": 680
+  },
+  "换行": {
+    "en-US": "Newline",
+    "es-ES": "Nueva línea",
+    "ar-EG": "السطر الجديد",
+    "pt-PT": "Nova linha",
+    "ru-RU": "новая строка",
+    "ja-JP": "改行",
+    "de-DE": "Zeilenumbruch",
+    "fr-FR": "Nouvelle ligne",
+    "ko-KR": "개행",
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(20561-20567)"
+    ],
+    "$id": 681
+  },
+  "复制命令": {
+    "en-US": "Copy command",
+    "es-ES": "Comando de copia",
+    "ar-EG": "أمر النسخ",
+    "pt-PT": "Comando de cópia",
+    "ru-RU": "команда копирования",
+    "ja-JP": "コピーコマンド",
+    "de-DE": "Kopierbefehl",
+    "fr-FR": "Commande de copie",
+    "ko-KR": "복사 명령",
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(21853-21861)"
+    ],
+    "$id": 682
+  },
+  "点击自动展开完整启动命令": {
+    "en-US": "Click to automatically expand the complete startup command",
+    "es-ES": "Haga clic para expandir automáticamente el comando de inicio completo",
+    "ar-EG": "انقر لتوسيع أمر بدء التشغيل الكامل تلقائيًا",
+    "pt-PT": "Clique para expandir automaticamente o comando de inicialização completo",
+    "ru-RU": "Нажмите, чтобы автоматически развернуть полную команду запуска.",
+    "ja-JP": "クリックすると完全な起動コマンドが自動的に展開されます",
+    "de-DE": "Klicken Sie, um den vollständigen Startbefehl automatisch zu erweitern",
+    "fr-FR": "Cliquez pour développer automatiquement la commande de démarrage complète",
+    "ko-KR": "전체 시작 명령을 자동으로 확장하려면 클릭하세요.",
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(22461-22477)"
+    ],
+    "$id": 683
+  },
+  "点击折叠为单行": {
+    "en-US": "Click to collapse into a single line",
+    "es-ES": "Haga clic para colapsar en una sola línea",
+    "ar-EG": "انقر لطي في سطر واحد",
+    "pt-PT": "Clique para recolher em uma única linha",
+    "ru-RU": "Нажмите, чтобы свернуть в одну строку",
+    "ja-JP": "クリックすると 1 行に折りたたまれます",
+    "de-DE": "Klicken Sie, um es in eine einzelne Zeile zu verkleinern",
+    "fr-FR": "Cliquez pour réduire en une seule ligne",
+    "ko-KR": "한 줄로 축소하려면 클릭하세요.",
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(22481-22492)"
+    ],
+    "$id": 684
+  },
+  "展开全部": {
+    "en-US": "Show All",
+    "es-ES": "Mostrar todo",
+    "ar-EG": "إظهار الكل",
+    "pt-PT": "Mostrar tudo",
+    "ru-RU": "Показать все",
+    "ja-JP": "すべて展開",
+    "de-DE": "Alles erweitern",
+    "fr-FR": "Tout afficher",
+    "ko-KR": "전체 펼치기",
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(23099-23107)"
+    ],
+    "$id": 685
+  },
+  "点击折叠单行": {
+    "en-US": "Click to collapse a single row",
+    "es-ES": "Haga clic para contraer una sola fila",
+    "ar-EG": "انقر لطي صف واحد",
+    "pt-PT": "Clique para recolher uma única linha",
+    "ru-RU": "Нажмите, чтобы свернуть одну строку",
+    "ja-JP": "クリックして 1 行を折りたたむ",
+    "de-DE": "Klicken Sie, um eine einzelne Zeile auszublenden",
+    "fr-FR": "Cliquez pour réduire une seule ligne",
+    "ko-KR": "단일 행을 접으려면 클릭하세요.",
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(23853-23863)"
+    ],
+    "$id": 686
+  },
+  "自动滚动已开启": {
+    "en-US": "Autoscroll is on",
+    "es-ES": "El desplazamiento automático está activado",
+    "ar-EG": "التمرير التلقائي قيد التشغيل",
+    "pt-PT": "A rolagem automática está ativada",
+    "ru-RU": "Автопрокрутка включена",
+    "ja-JP": "自動スクロールがオンになっています",
+    "de-DE": "Autoscroll ist aktiviert",
+    "fr-FR": "Le défilement automatique est activé",
+    "ko-KR": "자동스크롤이 켜져 있습니다.",
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(25825-25836)"
+    ],
+    "$id": 687
+  },
+  "自动滚动已暂停（向下滚动可恢复）": {
+    "en-US": "Autoscroll paused (scroll down to resume)",
+    "es-ES": "Desplazamiento automático pausado (desplácese hacia abajo para reanudar)",
+    "ar-EG": "تم إيقاف التمرير التلقائي مؤقتًا (قم بالتمرير لأسفل للاستئناف)",
+    "pt-PT": "Rolagem automática pausada (role para baixo para continuar)",
+    "ru-RU": "Автопрокрутка приостановлена ​​(прокрутите вниз, чтобы возобновить)",
+    "ja-JP": "自動スクロールが一時停止されました (再開するには下にスクロールします)",
+    "de-DE": "Autoscroll angehalten (zum Fortsetzen nach unten scrollen)",
+    "fr-FR": "Défilement automatique en pause (faites défiler vers le bas pour reprendre)",
+    "ko-KR": "자동스크롤이 일시중지됨(다시 시작하려면 아래로 스크롤)",
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(25924-25944)"
+    ],
+    "$id": 688
+  },
+  "条日志": {
+    "en-US": "Logs",
+    "es-ES": "Registros",
+    "ar-EG": "سجلات",
+    "pt-PT": "Registros",
+    "ru-RU": "журналы",
+    "ja-JP": "ログ",
+    "de-DE": "Protokolle",
+    "fr-FR": "Journaux",
+    "ko-KR": "로그",
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(26136-26143)"
+    ],
+    "$id": 689
+  },
+  "路径格式不合法": {
+    "en-US": "The path format is illegal",
+    "es-ES": "El formato de ruta es ilegal.",
+    "ar-EG": "تنسيق المسار غير قانوني",
+    "pt-PT": "O formato do caminho é ilegal",
+    "ru-RU": "Формат пути недопустим",
+    "ja-JP": "パスの形式が不正です",
+    "de-DE": "Das Pfadformat ist ungültig",
+    "fr-FR": "Le format du chemin est illégal",
+    "ko-KR": "경로 형식이 잘못되었습니다.",
+    "$files": [
+      "src/components/storage/model-storage-config.tsx(1175-1186)"
+    ],
+    "$id": 812
+  },
+  "模型存储目录已成功更改并已刷新扫描模型！": {
+    "en-US": "The model storage directory has been successfully changed and the scanned model has been refreshed!",
+    "es-ES": "¡El directorio de almacenamiento del modelo se cambió correctamente y el modelo escaneado se actualizó!",
+    "ar-EG": "تم تغيير دليل تخزين النموذج بنجاح وتم تحديث النموذج الممسوح ضوئيًا!",
+    "pt-PT": "O diretório de armazenamento do modelo foi alterado com sucesso e o modelo digitalizado foi atualizado!",
+    "ru-RU": "Каталог хранения модели успешно изменен и отсканированная модель обновлена!",
+    "ja-JP": "モデル保存ディレクトリが正常に変更され、スキャンされたモデルが更新されました。",
+    "de-DE": "Das Modellspeicherverzeichnis wurde erfolgreich geändert und das gescannte Modell wurde aktualisiert!",
+    "fr-FR": "Le répertoire de stockage du modèle a été modifié avec succès et le modèle numérisé a été actualisé !",
+    "ko-KR": "모델 저장 디렉터리가 성공적으로 변경되었으며 스캔한 모델이 새로 고쳐졌습니다!",
+    "$files": [
+      "src/components/storage/model-storage-config.tsx(1410-1434)"
+    ],
+    "$id": 813
+  },
+  "更改存储目录失败，请检查目录权限。": {
+    "en-US": "Failed to change storage directory, please check directory permissions.",
+    "es-ES": "No se pudo cambiar el directorio de almacenamiento; verifique los permisos del directorio.",
+    "ar-EG": "فشل تغيير دليل التخزين، يرجى التحقق من أذونات الدليل.",
+    "pt-PT": "Falha ao alterar o diretório de armazenamento. Verifique as permissões do diretório.",
+    "ru-RU": "Не удалось изменить каталог хранения. Проверьте права доступа к каталогу.",
+    "ja-JP": "ストレージ ディレクトリの変更に失敗しました。ディレクトリのアクセス許可を確認してください。",
+    "de-DE": "Das Speicherverzeichnis konnte nicht geändert werden. Bitte überprüfen Sie die Verzeichnisberechtigungen.",
+    "fr-FR": "Échec de la modification du répertoire de stockage, veuillez vérifier les autorisations du répertoire.",
+    "ko-KR": "저장소 디렉터리를 변경하지 못했습니다. 디렉터리 권한을 확인하세요.",
+    "$files": [
+      "src/components/storage/model-storage-config.tsx(1547-1568)"
+    ],
+    "$id": 814
+  },
+  "请输入自定义模型存储目录的绝对路径:": {
+    "en-US": "Please enter the absolute path to the custom model storage directory:",
+    "es-ES": "Ingrese la ruta absoluta al directorio de almacenamiento del modelo personalizado:",
+    "ar-EG": "الرجاء إدخال المسار المطلق إلى دليل تخزين النموذج المخصص:",
+    "pt-PT": "Insira o caminho absoluto para o diretório de armazenamento do modelo personalizado:",
+    "ru-RU": "Введите абсолютный путь к каталогу хранения пользовательской модели:",
+    "ja-JP": "カスタム モデルの保存ディレクトリへの絶対パスを入力してください:",
+    "de-DE": "Bitte geben Sie den absoluten Pfad zum Speicherverzeichnis des benutzerdefinierten Modells ein:",
+    "fr-FR": "Veuillez saisir le chemin absolu du répertoire de stockage du modèle personnalisé :",
+    "ko-KR": "맞춤 모델 저장소 디렉터리의 절대 경로를 입력하세요.",
+    "$files": [
+      "src/components/storage/model-storage-config.tsx(2210-2232)"
+    ],
+    "$id": 815
+  },
+  "模型存储目录自定义配置": {
+    "en-US": "Model storage directory custom configuration",
+    "es-ES": "Configuración personalizada del directorio de almacenamiento de modelos",
+    "ar-EG": "التكوين المخصص لدليل تخزين النموذج",
+    "pt-PT": "Configuração customizada do diretório de armazenamento de modelo",
+    "ru-RU": "Пользовательская конфигурация каталога хранения модели",
+    "ja-JP": "モデル格納ディレクトリのカスタム構成",
+    "de-DE": "Benutzerdefinierte Konfiguration des Modellspeicherverzeichnisses",
+    "fr-FR": "Configuration personnalisée du répertoire de stockage du modèle",
+    "ko-KR": "모델 스토리지 디렉터리 사용자 정의 구성",
+    "$files": [
+      "src/components/storage/model-storage-config.tsx(2781-2796)"
+    ],
+    "$id": 816
+  },
+  "自定义大容量磁盘存放目录，避免占用系统盘空间。更改后将即时扫描该目录下的 GGUF 模型。": {
+    "en-US": "Customize the large-capacity disk storage directory to avoid occupying system disk space. GGUF models in this directory will be scanned immediately after changes are made.",
+    "es-ES": "Personalice el directorio de almacenamiento en disco de gran capacidad para evitar ocupar espacio en el disco del sistema. Los modelos GGUF en este directorio se escanearán inmediatamente después de realizar los cambios.",
+    "ar-EG": "قم بتخصيص دليل تخزين القرص ذو السعة الكبيرة لتجنب احتلال مساحة قرص النظام. سيتم فحص نماذج GGUF الموجودة في هذا الدليل فورًا بعد إجراء التغييرات.",
+    "pt-PT": "Personalize o diretório de armazenamento em disco de grande capacidade para evitar ocupar espaço em disco do sistema. Os modelos GGUF neste diretório serão verificados imediatamente após as alterações serem feitas.",
+    "ru-RU": "Настройте каталог дискового хранилища большой емкости, чтобы не занимать место на системном диске. Модели GGUF в этом каталоге будут проверены сразу после внесения изменений.",
+    "ja-JP": "大容量ディスクストレージディレクトリをカスタマイズして、システムディスクスペースを占有しないようにします。このディレクトリ内の GGUF モデルは、変更が加えられた直後にスキャンされます。",
+    "de-DE": "Passen Sie das Festplattenspeicherverzeichnis mit großer Kapazität an, um zu vermeiden, dass Systemspeicherplatz belegt wird. GGUF-Modelle in diesem Verzeichnis werden sofort gescannt, nachdem Änderungen vorgenommen wurden.",
+    "fr-FR": "Personnalisez le répertoire de stockage sur disque de grande capacité pour éviter d'occuper l'espace disque du système. Les modèles GGUF de ce répertoire seront analysés immédiatement après les modifications.",
+    "ko-KR": "시스템 디스크 공간을 차지하지 않도록 대용량 디스크 저장 디렉터리를 사용자 정의하세요. 이 디렉터리의 GGUF 모델은 변경 후 즉시 검색됩니다.",
+    "$files": [
+      "src/components/storage/model-storage-config.tsx(2930-2979)"
+    ],
+    "$id": 817
+  },
+  "点击右侧“浏览”选择模型存储目录": {
+    "en-US": "Click \"Browse\" on the right to select the model storage directory",
+    "es-ES": "Haga clic en \"Examinar\" a la derecha para seleccionar el directorio de almacenamiento del modelo.",
+    "ar-EG": "انقر فوق \"استعراض\" على اليمين لتحديد دليل تخزين النموذج",
+    "pt-PT": "Clique em \"Procurar\" à direita para selecionar o diretório de armazenamento do modelo",
+    "ru-RU": "Нажмите «Обзор» справа, чтобы выбрать каталог хранения модели.",
+    "ja-JP": "右側の「参照」をクリックしてモデル保存ディレクトリを選択します。",
+    "de-DE": "Klicken Sie rechts auf „Durchsuchen“, um das Modellspeicherverzeichnis auszuwählen",
+    "fr-FR": "Cliquez sur \"Parcourir\" à droite pour sélectionner le répertoire de stockage du modèle",
+    "ko-KR": "모델 저장 디렉터리를 선택하려면 오른쪽의 \"찾아보기\"를 클릭하세요.",
+    "$files": [
+      "src/components/storage/model-storage-config.tsx(3229-3249)"
+    ],
+    "$id": 818
+  },
+  "迁移中...": {
+    "en-US": "Migrating...",
+    "es-ES": "Migrando...",
+    "ar-EG": "الهجرة...",
+    "pt-PT": "Migrando...",
+    "ru-RU": "Миграция...",
+    "ja-JP": "移行中...",
+    "de-DE": "Migration...",
+    "fr-FR": "Migration...",
+    "ko-KR": "마이그레이션 중...",
+    "$files": [
+      "src/components/storage/model-storage-config.tsx(3831-3841)"
+    ],
+    "$id": 819
+  },
+  "浏览": {
+    "en-US": "Browse  ",
+    "es-ES": "Examinar",
+    "ar-EG": "استعراض  ",
+    "pt-PT": "Procurar",
+    "ru-RU": "Обзор",
+    "ja-JP": "ブラウズ",
+    "de-DE": "Durchsuchen",
+    "fr-FR": "Parcourir",
+    "ko-KR": "찾아보기",
+    "$files": [
+      "src/components/storage/model-storage-config.tsx(3845-3851)"
+    ],
+    "$id": 820
+  },
+  "重新扫描": {
+    "en-US": "Rescan",
+    "es-ES": "Volver a escanear",
+    "ar-EG": "إعادة المسح",
+    "pt-PT": "Digitalizar novamente",
+    "ru-RU": "Повторное сканирование",
+    "ja-JP": "再スキャン",
+    "de-DE": "Erneut scannen",
+    "fr-FR": "Nouvelle analyse",
+    "ko-KR": "다시 스캔",
+    "$files": [
+      "src/components/storage/model-storage-config.tsx(4271-4279)"
+    ],
+    "$id": 821
   },
   "剩余约 {value} 秒": {
     "en-US": "About {value} seconds remaining",
@@ -6913,622 +7529,6 @@
       "src/components/model/model-param-drawer.tsx(23012-23020)"
     ],
     "$id": 811
-  },
-  "路径格式不合法": {
-    "en-US": "The path format is illegal",
-    "es-ES": "El formato de ruta es ilegal.",
-    "ar-EG": "تنسيق المسار غير قانوني",
-    "pt-PT": "O formato do caminho é ilegal",
-    "ru-RU": "Формат пути недопустим",
-    "ja-JP": "パスの形式が不正です",
-    "de-DE": "Das Pfadformat ist ungültig",
-    "fr-FR": "Le format du chemin est illégal",
-    "ko-KR": "경로 형식이 잘못되었습니다.",
-    "$files": [
-      "src/components/storage/model-storage-config.tsx(1175-1186)"
-    ],
-    "$id": 812
-  },
-  "模型存储目录已成功更改并已刷新扫描模型！": {
-    "en-US": "The model storage directory has been successfully changed and the scanned model has been refreshed!",
-    "es-ES": "¡El directorio de almacenamiento del modelo se cambió correctamente y el modelo escaneado se actualizó!",
-    "ar-EG": "تم تغيير دليل تخزين النموذج بنجاح وتم تحديث النموذج الممسوح ضوئيًا!",
-    "pt-PT": "O diretório de armazenamento do modelo foi alterado com sucesso e o modelo digitalizado foi atualizado!",
-    "ru-RU": "Каталог хранения модели успешно изменен и отсканированная модель обновлена!",
-    "ja-JP": "モデル保存ディレクトリが正常に変更され、スキャンされたモデルが更新されました。",
-    "de-DE": "Das Modellspeicherverzeichnis wurde erfolgreich geändert und das gescannte Modell wurde aktualisiert!",
-    "fr-FR": "Le répertoire de stockage du modèle a été modifié avec succès et le modèle numérisé a été actualisé !",
-    "ko-KR": "모델 저장 디렉터리가 성공적으로 변경되었으며 스캔한 모델이 새로 고쳐졌습니다!",
-    "$files": [
-      "src/components/storage/model-storage-config.tsx(1410-1434)"
-    ],
-    "$id": 813
-  },
-  "更改存储目录失败，请检查目录权限。": {
-    "en-US": "Failed to change storage directory, please check directory permissions.",
-    "es-ES": "No se pudo cambiar el directorio de almacenamiento; verifique los permisos del directorio.",
-    "ar-EG": "فشل تغيير دليل التخزين، يرجى التحقق من أذونات الدليل.",
-    "pt-PT": "Falha ao alterar o diretório de armazenamento. Verifique as permissões do diretório.",
-    "ru-RU": "Не удалось изменить каталог хранения. Проверьте права доступа к каталогу.",
-    "ja-JP": "ストレージ ディレクトリの変更に失敗しました。ディレクトリのアクセス許可を確認してください。",
-    "de-DE": "Das Speicherverzeichnis konnte nicht geändert werden. Bitte überprüfen Sie die Verzeichnisberechtigungen.",
-    "fr-FR": "Échec de la modification du répertoire de stockage, veuillez vérifier les autorisations du répertoire.",
-    "ko-KR": "저장소 디렉터리를 변경하지 못했습니다. 디렉터리 권한을 확인하세요.",
-    "$files": [
-      "src/components/storage/model-storage-config.tsx(1547-1568)"
-    ],
-    "$id": 814
-  },
-  "请输入自定义模型存储目录的绝对路径:": {
-    "en-US": "Please enter the absolute path to the custom model storage directory:",
-    "es-ES": "Ingrese la ruta absoluta al directorio de almacenamiento del modelo personalizado:",
-    "ar-EG": "الرجاء إدخال المسار المطلق إلى دليل تخزين النموذج المخصص:",
-    "pt-PT": "Insira o caminho absoluto para o diretório de armazenamento do modelo personalizado:",
-    "ru-RU": "Введите абсолютный путь к каталогу хранения пользовательской модели:",
-    "ja-JP": "カスタム モデルの保存ディレクトリへの絶対パスを入力してください:",
-    "de-DE": "Bitte geben Sie den absoluten Pfad zum Speicherverzeichnis des benutzerdefinierten Modells ein:",
-    "fr-FR": "Veuillez saisir le chemin absolu du répertoire de stockage du modèle personnalisé :",
-    "ko-KR": "맞춤 모델 저장소 디렉터리의 절대 경로를 입력하세요.",
-    "$files": [
-      "src/components/storage/model-storage-config.tsx(2210-2232)"
-    ],
-    "$id": 815
-  },
-  "模型存储目录自定义配置": {
-    "en-US": "Model storage directory custom configuration",
-    "es-ES": "Configuración personalizada del directorio de almacenamiento de modelos",
-    "ar-EG": "التكوين المخصص لدليل تخزين النموذج",
-    "pt-PT": "Configuração customizada do diretório de armazenamento de modelo",
-    "ru-RU": "Пользовательская конфигурация каталога хранения модели",
-    "ja-JP": "モデル格納ディレクトリのカスタム構成",
-    "de-DE": "Benutzerdefinierte Konfiguration des Modellspeicherverzeichnisses",
-    "fr-FR": "Configuration personnalisée du répertoire de stockage du modèle",
-    "ko-KR": "모델 스토리지 디렉터리 사용자 정의 구성",
-    "$files": [
-      "src/components/storage/model-storage-config.tsx(2781-2796)"
-    ],
-    "$id": 816
-  },
-  "自定义大容量磁盘存放目录，避免占用系统盘空间。更改后将即时扫描该目录下的 GGUF 模型。": {
-    "en-US": "Customize the large-capacity disk storage directory to avoid occupying system disk space. GGUF models in this directory will be scanned immediately after changes are made.",
-    "es-ES": "Personalice el directorio de almacenamiento en disco de gran capacidad para evitar ocupar espacio en el disco del sistema. Los modelos GGUF en este directorio se escanearán inmediatamente después de realizar los cambios.",
-    "ar-EG": "قم بتخصيص دليل تخزين القرص ذو السعة الكبيرة لتجنب احتلال مساحة قرص النظام. سيتم فحص نماذج GGUF الموجودة في هذا الدليل فورًا بعد إجراء التغييرات.",
-    "pt-PT": "Personalize o diretório de armazenamento em disco de grande capacidade para evitar ocupar espaço em disco do sistema. Os modelos GGUF neste diretório serão verificados imediatamente após as alterações serem feitas.",
-    "ru-RU": "Настройте каталог дискового хранилища большой емкости, чтобы не занимать место на системном диске. Модели GGUF в этом каталоге будут проверены сразу после внесения изменений.",
-    "ja-JP": "大容量ディスクストレージディレクトリをカスタマイズして、システムディスクスペースを占有しないようにします。このディレクトリ内の GGUF モデルは、変更が加えられた直後にスキャンされます。",
-    "de-DE": "Passen Sie das Festplattenspeicherverzeichnis mit großer Kapazität an, um zu vermeiden, dass Systemspeicherplatz belegt wird. GGUF-Modelle in diesem Verzeichnis werden sofort gescannt, nachdem Änderungen vorgenommen wurden.",
-    "fr-FR": "Personnalisez le répertoire de stockage sur disque de grande capacité pour éviter d'occuper l'espace disque du système. Les modèles GGUF de ce répertoire seront analysés immédiatement après les modifications.",
-    "ko-KR": "시스템 디스크 공간을 차지하지 않도록 대용량 디스크 저장 디렉터리를 사용자 정의하세요. 이 디렉터리의 GGUF 모델은 변경 후 즉시 검색됩니다.",
-    "$files": [
-      "src/components/storage/model-storage-config.tsx(2930-2979)"
-    ],
-    "$id": 817
-  },
-  "点击右侧“浏览”选择模型存储目录": {
-    "en-US": "Click \"Browse\" on the right to select the model storage directory",
-    "es-ES": "Haga clic en \"Examinar\" a la derecha para seleccionar el directorio de almacenamiento del modelo.",
-    "ar-EG": "انقر فوق \"استعراض\" على اليمين لتحديد دليل تخزين النموذج",
-    "pt-PT": "Clique em \"Procurar\" à direita para selecionar o diretório de armazenamento do modelo",
-    "ru-RU": "Нажмите «Обзор» справа, чтобы выбрать каталог хранения модели.",
-    "ja-JP": "右側の「参照」をクリックしてモデル保存ディレクトリを選択します。",
-    "de-DE": "Klicken Sie rechts auf „Durchsuchen“, um das Modellspeicherverzeichnis auszuwählen",
-    "fr-FR": "Cliquez sur \"Parcourir\" à droite pour sélectionner le répertoire de stockage du modèle",
-    "ko-KR": "모델 저장 디렉터리를 선택하려면 오른쪽의 \"찾아보기\"를 클릭하세요.",
-    "$files": [
-      "src/components/storage/model-storage-config.tsx(3229-3249)"
-    ],
-    "$id": 818
-  },
-  "迁移中...": {
-    "en-US": "Migrating...",
-    "es-ES": "Migrando...",
-    "ar-EG": "الهجرة...",
-    "pt-PT": "Migrando...",
-    "ru-RU": "Миграция...",
-    "ja-JP": "移行中...",
-    "de-DE": "Migration...",
-    "fr-FR": "Migration...",
-    "ko-KR": "마이그레이션 중...",
-    "$files": [
-      "src/components/storage/model-storage-config.tsx(3831-3841)"
-    ],
-    "$id": 819
-  },
-  "浏览": {
-    "en-US": "Browse  ",
-    "es-ES": "Examinar",
-    "ar-EG": "استعراض  ",
-    "pt-PT": "Procurar",
-    "ru-RU": "Обзор",
-    "ja-JP": "ブラウズ",
-    "de-DE": "Durchsuchen",
-    "fr-FR": "Parcourir",
-    "ko-KR": "찾아보기",
-    "$files": [
-      "src/components/storage/model-storage-config.tsx(3845-3851)"
-    ],
-    "$id": 820
-  },
-  "重新扫描": {
-    "en-US": "Rescan",
-    "es-ES": "Volver a escanear",
-    "ar-EG": "إعادة المسح",
-    "pt-PT": "Digitalizar novamente",
-    "ru-RU": "Повторное сканирование",
-    "ja-JP": "再スキャン",
-    "de-DE": "Erneut scannen",
-    "fr-FR": "Nouvelle analyse",
-    "ko-KR": "다시 스캔",
-    "$files": [
-      "src/components/storage/model-storage-config.tsx(4271-4279)"
-    ],
-    "$id": 821
-  },
-  "条": {
-    "en-US": "Strip",
-    "es-ES": "Banda",
-    "ar-EG": "يجرد",
-    "pt-PT": "Tira",
-    "ru-RU": "полоска",
-    "ja-JP": "ストリップ",
-    "de-DE": "Streifen",
-    "fr-FR": "Bande",
-    "ko-KR": "조각",
-    "$files": [
-      "src/components/logs/engine-logs-view.tsx(10501-10506)",
-      "src/components/logs/engine-logs-view.tsx(26107-26112)"
-    ],
-    "$id": 659
-  },
-  "全部": {
-    "en-US": "All",
-    "es-ES": "Todo",
-    "ar-EG": "الكل",
-    "pt-PT": "Todos",
-    "ru-RU": "Все",
-    "ja-JP": "すべて",
-    "de-DE": "Alle",
-    "fr-FR": "Tous",
-    "ko-KR": "전체",
-    "$files": [
-      "src/components/logs/engine-logs-view.tsx(11278-11284)"
-    ],
-    "$id": 660
-  },
-  "错误": {
-    "en-US": "Mistake",
-    "es-ES": "Error",
-    "ar-EG": "خطأ",
-    "pt-PT": "Erro",
-    "ru-RU": "ошибка",
-    "ja-JP": "間違い",
-    "de-DE": "Fehler",
-    "fr-FR": "Erreur",
-    "ko-KR": "실수",
-    "$files": [
-      "src/components/logs/engine-logs-view.tsx(11830-11836)"
-    ],
-    "$id": 661
-  },
-  "警告": {
-    "en-US": "Warn",
-    "es-ES": "Advertir",
-    "ar-EG": "تحذير",
-    "pt-PT": "Avisar",
-    "ru-RU": "предупреждать",
-    "ja-JP": "警告する",
-    "de-DE": "Warnen",
-    "fr-FR": "Avertir",
-    "ko-KR": "경고하다",
-    "$files": [
-      "src/components/logs/engine-logs-view.tsx(12640-12646)"
-    ],
-    "$id": 662
-  },
-  "搜索日志...": {
-    "en-US": "Search logs...",
-    "es-ES": "Buscar registros...",
-    "ar-EG": "سجلات البحث...",
-    "pt-PT": "Registros de pesquisa...",
-    "ru-RU": "Поиск в журналах...",
-    "ja-JP": "ログを検索...",
-    "de-DE": "Protokolle durchsuchen...",
-    "fr-FR": "Rechercher des journaux...",
-    "ko-KR": "로그 검색...",
-    "$files": [
-      "src/components/logs/engine-logs-view.tsx(13402-13413)"
-    ],
-    "$id": 663
-  },
-  "搜索": {
-    "en-US": "Search",
-    "es-ES": "Buscar",
-    "ar-EG": "يبحث",
-    "pt-PT": "Procurar",
-    "ru-RU": "поиск",
-    "ja-JP": "検索",
-    "de-DE": "Suchen",
-    "fr-FR": "Recherche",
-    "ko-KR": "찾다",
-    "$files": [
-      "src/components/logs/engine-logs-view.tsx(14184-14190)"
-    ],
-    "$id": 664
-  },
-  "当前：默认展开多行排版": {
-    "en-US": "Current: Expand multi-line layout by default",
-    "es-ES": "Actual: Expandir el diseño de varias líneas de forma predeterminada",
-    "ar-EG": "الحالي: قم بتوسيع التخطيط متعدد الأسطر بشكل افتراضي",
-    "pt-PT": "Atual: Expanda o layout multilinha por padrão",
-    "ru-RU": "Текущее: расширение многострочного макета по умолчанию.",
-    "ja-JP": "現在: デフォルトで複数行レイアウトを展開します",
-    "de-DE": "Aktuell: Mehrzeiliges Layout standardmäßig erweitern",
-    "fr-FR": "Actuel : développer la disposition multiligne par défaut",
-    "ko-KR": "현재: 기본적으로 여러 줄 레이아웃 확장",
-    "$files": [
-      "src/components/logs/engine-logs-view.tsx(14808-14823)"
-    ],
-    "$id": 665
-  },
-  "当前：默认单行省略": {
-    "en-US": "Current: single line omitted by default",
-    "es-ES": "Actual: línea única omitida de forma predeterminada",
-    "ar-EG": "الحالي: تم حذف سطر واحد بشكل افتراضي",
-    "pt-PT": "Atual: linha única omitida por padrão",
-    "ru-RU": "Текущий: по умолчанию одна строка опущена.",
-    "ja-JP": "現在: デフォルトでは単一行が省略されます",
-    "de-DE": "Aktuell: Einzelzeile wird standardmäßig weggelassen",
-    "fr-FR": "Actuel : une seule ligne omise par défaut",
-    "ko-KR": "현재: 기본적으로 한 줄 생략",
-    "$files": [
-      "src/components/logs/engine-logs-view.tsx(14827-14840)"
-    ],
-    "$id": 666
-  },
-  "多行展开": {
-    "en-US": "Expand multiple lines",
-    "es-ES": "Expandir varias líneas",
-    "ar-EG": "توسيع خطوط متعددة",
-    "pt-PT": "Expandir várias linhas",
-    "ru-RU": "Развернуть несколько строк",
-    "ja-JP": "複数行を展開する",
-    "de-DE": "Erweitern Sie mehrere Zeilen",
-    "fr-FR": "Développer plusieurs lignes",
-    "ko-KR": "여러 줄 확장",
-    "$files": [
-      "src/components/logs/engine-logs-view.tsx(15163-15171)"
-    ],
-    "$id": 667
-  },
-  "单行折叠": {
-    "en-US": "Single row fold",
-    "es-ES": "Pliegue de una hilera",
-    "ar-EG": "أضعاف صف واحد",
-    "pt-PT": "Dobra de linha única",
-    "ru-RU": "Складка в один ряд",
-    "ja-JP": "単列折り",
-    "de-DE": "Einreihiger Falz",
-    "fr-FR": "Pliage à une seule rangée",
-    "ko-KR": "단일 행 접기",
-    "$files": [
-      "src/components/logs/engine-logs-view.tsx(15175-15183)"
-    ],
-    "$id": 668
-  },
-  "复制全量": {
-    "en-US": "Copy full amount",
-    "es-ES": "Copiar el importe total",
-    "ar-EG": "نسخ المبلغ كاملا",
-    "pt-PT": "Copie o valor total",
-    "ru-RU": "Копировать полную сумму",
-    "ja-JP": "全額コピー",
-    "de-DE": "Gesamtbetrag kopieren",
-    "fr-FR": "Copier le montant total",
-    "ko-KR": "전액 복사",
-    "$files": [
-      "src/components/logs/engine-logs-view.tsx(15858-15866)"
-    ],
-    "$id": 669
-  },
-  "清空日志": {
-    "en-US": "Clear log",
-    "es-ES": "Borrar registro",
-    "ar-EG": "مسح السجل",
-    "pt-PT": "Limpar registro",
-    "ru-RU": "Очистить журнал",
-    "ja-JP": "ログをクリアする",
-    "de-DE": "Protokoll löschen",
-    "fr-FR": "Effacer le journal",
-    "ko-KR": "로그 지우기",
-    "$files": [
-      "src/components/logs/engine-logs-view.tsx(16358-16366)"
-    ],
-    "$id": 670
-  },
-  "跳至最新日志": {
-    "en-US": "Skip to latest log",
-    "es-ES": "Saltar al último registro",
-    "ar-EG": "انتقل إلى أحدث سجل",
-    "pt-PT": "Pular para o último registro",
-    "ru-RU": "Перейти к последнему журналу",
-    "ja-JP": "最新のログにスキップ",
-    "de-DE": "Zum neuesten Protokoll springen",
-    "fr-FR": "Passer au dernier journal",
-    "ko-KR": "최신 로그로 건너뛰기",
-    "$files": [
-      "src/components/logs/engine-logs-view.tsx(16752-16762)"
-    ],
-    "$id": 671
-  },
-  "无匹配日志": {
-    "en-US": "No matching log",
-    "es-ES": "No hay registros coincidentes",
-    "ar-EG": "لا يوجد سجل مطابق",
-    "pt-PT": "Nenhum registro correspondente",
-    "ru-RU": "Нет соответствующего журнала",
-    "ja-JP": "一致するログがありません",
-    "de-DE": "Kein passendes Protokoll",
-    "fr-FR": "Aucun journal correspondant",
-    "ko-KR": "일치하는 로그가 없습니다.",
-    "$files": [
-      "src/components/logs/engine-logs-view.tsx(17426-17435)"
-    ],
-    "$id": 672
-  },
-  "暂无日志，等待服务启动...": {
-    "en-US": "No logs yet, waiting for the service to start...",
-    "es-ES": "Aún no hay registros, esperando que se inicie el servicio...",
-    "ar-EG": "لا توجد سجلات حتى الآن، في انتظار بدء الخدمة...",
-    "pt-PT": "Ainda não há registros, aguardando o início do serviço...",
-    "ru-RU": "Журналов пока нет, ждем запуска службы...",
-    "ja-JP": "まだログがありません。サービスの開始を待っています...",
-    "de-DE": "Noch keine Protokolle, ich warte auf den Start des Dienstes ...",
-    "fr-FR": "Pas de logs pour l'instant, j'attends le démarrage du service...",
-    "ko-KR": "아직 로그가 없습니다. 서비스 시작을 기다리는 중입니다...",
-    "$files": [
-      "src/components/logs/engine-logs-view.tsx(17439-17457)"
-    ],
-    "$id": 673
-  },
-  "启动命令 (Launch Command)": {
-    "en-US": "Launch Command",
-    "es-ES": "Comando de lanzamiento",
-    "ar-EG": "إطلاق الأمر",
-    "pt-PT": "Comando de lançamento",
-    "ru-RU": "Команда запуска",
-    "ja-JP": "起動コマンド",
-    "de-DE": "Befehl starten",
-    "fr-FR": "Commande de lancement",
-    "ko-KR": "발사 명령",
-    "$files": [
-      "src/components/logs/engine-logs-view.tsx(18752-18777)"
-    ],
-    "$id": 674
-  },
-  "点击切换换行状态": {
-    "en-US": "Click to switch line wrapping status",
-    "es-ES": "Haga clic para cambiar el estado de ajuste de línea",
-    "ar-EG": "انقر لتبديل حالة التفاف الخط",
-    "pt-PT": "Clique para mudar o status de quebra de linha",
-    "ru-RU": "Нажмите, чтобы переключить статус переноса строк",
-    "ja-JP": "クリックして行折り返しステータスを切り替えます",
-    "de-DE": "Klicken Sie, um den Zeilenumbruchstatus zu ändern",
-    "fr-FR": "Cliquez pour changer l'état de retour à la ligne",
-    "ko-KR": "줄 바꿈 상태를 전환하려면 클릭하세요.",
-    "$files": [
-      "src/components/logs/engine-logs-view.tsx(19333-19345)"
-    ],
-    "$id": 675
-  },
-  "分行排版": {
-    "en-US": "Branch layout",
-    "es-ES": "Diseño de sucursales",
-    "ar-EG": "تخطيط الفرع",
-    "pt-PT": "Layout da filial",
-    "ru-RU": "Схема филиала",
-    "ja-JP": "支店レイアウト",
-    "de-DE": "Filiallayout",
-    "fr-FR": "Disposition des succursales",
-    "ko-KR": "지점 레이아웃",
-    "$files": [
-      "src/components/logs/engine-logs-view.tsx(19417-19425)"
-    ],
-    "$id": 676
-  },
-  "单行紧凑": {
-    "en-US": "Single row compact",
-    "es-ES": "Compacto de una hilera",
-    "ar-EG": "صف واحد مدمج",
-    "pt-PT": "Compacto de linha única",
-    "ru-RU": "Однорядный компактный",
-    "ja-JP": "単列コンパクト",
-    "de-DE": "Einreihig kompakt",
-    "fr-FR": "Compacte à une rangée",
-    "ko-KR": "단일 행 컴팩트",
-    "$files": [
-      "src/components/logs/engine-logs-view.tsx(19429-19437)"
-    ],
-    "$id": 677
-  },
-  "切换为单行紧凑格式": {
-    "en-US": "Switch to single-line compact format",
-    "es-ES": "Cambiar al formato compacto de una sola línea",
-    "ar-EG": "قم بالتبديل إلى التنسيق المضغوط ذو السطر الواحد",
-    "pt-PT": "Mude para o formato compacto de linha única",
-    "ru-RU": "Переключиться на однострочный компактный формат",
-    "ja-JP": "単一行のコンパクト形式に切り替える",
-    "de-DE": "Wechseln Sie zum einzeiligen Kompaktformat",
-    "fr-FR": "Passer au format compact monoligne",
-    "ko-KR": "단일 라인 압축 형식으로 전환",
-    "$files": [
-      "src/components/logs/engine-logs-view.tsx(20017-20030)"
-    ],
-    "$id": 678
-  },
-  "切换为多行按参数格式": {
-    "en-US": "Switch to multi-line by parameter format",
-    "es-ES": "Cambiar a formato multilínea por parámetro",
-    "ar-EG": "قم بالتبديل إلى متعدد الأسطر حسب تنسيق المعلمة",
-    "pt-PT": "Mudar para multilinha por formato de parâmetro",
-    "ru-RU": "Переключиться на многострочный формат по параметрам",
-    "ja-JP": "パラメータ形式で複数行に切り替える",
-    "de-DE": "Wechseln Sie zum mehrzeiligen Parameterformat",
-    "fr-FR": "Passer au format multiligne par paramètre",
-    "ko-KR": "매개변수 형식으로 여러 줄로 전환",
-    "$files": [
-      "src/components/logs/engine-logs-view.tsx(20034-20048)"
-    ],
-    "$id": 679
-  },
-  "单行": {
-    "en-US": "Single line",
-    "es-ES": "Sola linea",
-    "ar-EG": "سطر واحد",
-    "pt-PT": "Linha única",
-    "ru-RU": "одна строка",
-    "ja-JP": "単線",
-    "de-DE": "Einzelne Zeile",
-    "fr-FR": "Une seule ligne",
-    "ko-KR": "한 줄",
-    "$files": [
-      "src/components/logs/engine-logs-view.tsx(20301-20307)"
-    ],
-    "$id": 680
-  },
-  "换行": {
-    "en-US": "Newline",
-    "es-ES": "Nueva línea",
-    "ar-EG": "السطر الجديد",
-    "pt-PT": "Nova linha",
-    "ru-RU": "новая строка",
-    "ja-JP": "改行",
-    "de-DE": "Zeilenumbruch",
-    "fr-FR": "Nouvelle ligne",
-    "ko-KR": "개행",
-    "$files": [
-      "src/components/logs/engine-logs-view.tsx(20561-20567)"
-    ],
-    "$id": 681
-  },
-  "复制命令": {
-    "en-US": "Copy command",
-    "es-ES": "Comando de copia",
-    "ar-EG": "أمر النسخ",
-    "pt-PT": "Comando de cópia",
-    "ru-RU": "команда копирования",
-    "ja-JP": "コピーコマンド",
-    "de-DE": "Kopierbefehl",
-    "fr-FR": "Commande de copie",
-    "ko-KR": "복사 명령",
-    "$files": [
-      "src/components/logs/engine-logs-view.tsx(21853-21861)"
-    ],
-    "$id": 682
-  },
-  "点击自动展开完整启动命令": {
-    "en-US": "Click to automatically expand the complete startup command",
-    "es-ES": "Haga clic para expandir automáticamente el comando de inicio completo",
-    "ar-EG": "انقر لتوسيع أمر بدء التشغيل الكامل تلقائيًا",
-    "pt-PT": "Clique para expandir automaticamente o comando de inicialização completo",
-    "ru-RU": "Нажмите, чтобы автоматически развернуть полную команду запуска.",
-    "ja-JP": "クリックすると完全な起動コマンドが自動的に展開されます",
-    "de-DE": "Klicken Sie, um den vollständigen Startbefehl automatisch zu erweitern",
-    "fr-FR": "Cliquez pour développer automatiquement la commande de démarrage complète",
-    "ko-KR": "전체 시작 명령을 자동으로 확장하려면 클릭하세요.",
-    "$files": [
-      "src/components/logs/engine-logs-view.tsx(22461-22477)"
-    ],
-    "$id": 683
-  },
-  "点击折叠为单行": {
-    "en-US": "Click to collapse into a single line",
-    "es-ES": "Haga clic para colapsar en una sola línea",
-    "ar-EG": "انقر لطي في سطر واحد",
-    "pt-PT": "Clique para recolher em uma única linha",
-    "ru-RU": "Нажмите, чтобы свернуть в одну строку",
-    "ja-JP": "クリックすると 1 行に折りたたまれます",
-    "de-DE": "Klicken Sie, um es in eine einzelne Zeile zu verkleinern",
-    "fr-FR": "Cliquez pour réduire en une seule ligne",
-    "ko-KR": "한 줄로 축소하려면 클릭하세요.",
-    "$files": [
-      "src/components/logs/engine-logs-view.tsx(22481-22492)"
-    ],
-    "$id": 684
-  },
-  "展开全部": {
-    "en-US": "Show All",
-    "es-ES": "Mostrar todo",
-    "ar-EG": "إظهار الكل",
-    "pt-PT": "Mostrar tudo",
-    "ru-RU": "Показать все",
-    "ja-JP": "すべて展開",
-    "de-DE": "Alles erweitern",
-    "fr-FR": "Tout afficher",
-    "ko-KR": "전체 펼치기",
-    "$files": [
-      "src/components/logs/engine-logs-view.tsx(23099-23107)"
-    ],
-    "$id": 685
-  },
-  "点击折叠单行": {
-    "en-US": "Click to collapse a single row",
-    "es-ES": "Haga clic para contraer una sola fila",
-    "ar-EG": "انقر لطي صف واحد",
-    "pt-PT": "Clique para recolher uma única linha",
-    "ru-RU": "Нажмите, чтобы свернуть одну строку",
-    "ja-JP": "クリックして 1 行を折りたたむ",
-    "de-DE": "Klicken Sie, um eine einzelne Zeile auszublenden",
-    "fr-FR": "Cliquez pour réduire une seule ligne",
-    "ko-KR": "단일 행을 접으려면 클릭하세요.",
-    "$files": [
-      "src/components/logs/engine-logs-view.tsx(23853-23863)"
-    ],
-    "$id": 686
-  },
-  "自动滚动已开启": {
-    "en-US": "Autoscroll is on",
-    "es-ES": "El desplazamiento automático está activado",
-    "ar-EG": "التمرير التلقائي قيد التشغيل",
-    "pt-PT": "A rolagem automática está ativada",
-    "ru-RU": "Автопрокрутка включена",
-    "ja-JP": "自動スクロールがオンになっています",
-    "de-DE": "Autoscroll ist aktiviert",
-    "fr-FR": "Le défilement automatique est activé",
-    "ko-KR": "자동스크롤이 켜져 있습니다.",
-    "$files": [
-      "src/components/logs/engine-logs-view.tsx(25825-25836)"
-    ],
-    "$id": 687
-  },
-  "自动滚动已暂停（向下滚动可恢复）": {
-    "en-US": "Autoscroll paused (scroll down to resume)",
-    "es-ES": "Desplazamiento automático pausado (desplácese hacia abajo para reanudar)",
-    "ar-EG": "تم إيقاف التمرير التلقائي مؤقتًا (قم بالتمرير لأسفل للاستئناف)",
-    "pt-PT": "Rolagem automática pausada (role para baixo para continuar)",
-    "ru-RU": "Автопрокрутка приостановлена ​​(прокрутите вниз, чтобы возобновить)",
-    "ja-JP": "自動スクロールが一時停止されました (再開するには下にスクロールします)",
-    "de-DE": "Autoscroll angehalten (zum Fortsetzen nach unten scrollen)",
-    "fr-FR": "Défilement automatique en pause (faites défiler vers le bas pour reprendre)",
-    "ko-KR": "자동스크롤이 일시중지됨(다시 시작하려면 아래로 스크롤)",
-    "$files": [
-      "src/components/logs/engine-logs-view.tsx(25924-25944)"
-    ],
-    "$id": 688
-  },
-  "条日志": {
-    "en-US": "Logs",
-    "es-ES": "Registros",
-    "ar-EG": "سجلات",
-    "pt-PT": "Registros",
-    "ru-RU": "журналы",
-    "ja-JP": "ログ",
-    "de-DE": "Protokolle",
-    "fr-FR": "Journaux",
-    "ko-KR": "로그",
-    "$files": [
-      "src/components/logs/engine-logs-view.tsx(26136-26143)"
-    ],
-    "$id": 689
   },
   "单步最大预测 token 数，增大可提升高命中率下的加速比，但会轻微增加显存压力 (默认: 5)": {
     "en-US": "The maximum number of predicted tokens in a single step, increasing can increase the acceleration ratio at high hit rates, but it will slightly increase the video memory pressure (default: 5)",
