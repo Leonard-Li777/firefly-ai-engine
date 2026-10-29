@@ -243,6 +243,18 @@ pub const AUTO_CTX_CEILING: u32 = 65536;
 /// 自动推导上下文的下限（低于此值模型基本不可用）
 pub const AUTO_CTX_FLOOR: u32 = 2048;
 
+/// 视觉模型（挂载识图投影）的上下文下限
+///
+/// 纯文本模型 2048 仍能完成短提示词推理，但一次多模态请求的中转成本远高于纯文本：
+/// 实测 MiniCPM-V 系列一张 800px 图片 ≈ 0.9K~1.2K 视觉 token，命名/打标类系统提示词
+/// 本身已占约 1.5K tokens，加起来 2.4K+ 已经越过 2048（事故现场：
+/// `request (2469 tokens) exceeds the available context size (2048 tokens)`，
+/// 引擎按内存预算落到 2048 兜底，桌面端直接 400 失败）。
+///
+/// 因此视觉模型即便在内存/显存双赤字、只能走纯 CPU 池的极端场景，也保底按 4096 加载：
+/// 1B 级模型 4096 上下文的 KV 缓存仅数十 MB，代价远低于「识图永远失败」。
+pub const VISION_CTX_FLOOR: u32 = 4096;
+
 /// 【四大内存池化抽象】
 /// 承载介质池枚举
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -354,6 +366,16 @@ impl ParamBuilder {
         }
 
         let effective_enable_vision = model.is_multimodal && model.enable_vision && model.mmproj_path.is_some();
+
+        // 可用上下文下限（单一事实源）：视觉模型必须容纳得下一次识图请求，
+        // 否则「能加载」但「永远用不了」——宁可多占数十 MB KV，也不把视觉能力降级成摆设。
+        // 不得越过模型自身预训练窗口（老模型 train_ctx 可能只有 2048/4096）。
+        let ctx_floor = if effective_enable_vision {
+            VISION_CTX_FLOOR
+        } else {
+            AUTO_CTX_FLOOR
+        }
+        .min(raw_train_ctx);
 
         // 固定常驻开销 (Fixed Overhead): 权重 + 草稿权重 + 投影器与视觉激活峰值 + 动态计算缓冲
         let mmproj_gb = if effective_enable_vision {
@@ -525,7 +547,7 @@ impl ParamBuilder {
 
         // 最终上下文输出与安全夹界
         let budget_ctx = if bytes_per_token == 0 {
-            if is_cpu_pool {
+            let heuristic = if is_cpu_pool {
                 4096
             } else if plan.usable_memory_gb < 4.0 {
                 2048
@@ -533,10 +555,22 @@ impl ParamBuilder {
                 4096
             } else {
                 8192
-            }
+            };
+            heuristic.max(ctx_floor).min(raw_train_ctx)
         } else {
-            budget_tokens.clamp(AUTO_CTX_FLOOR, raw_train_ctx)
+            budget_tokens.clamp(ctx_floor, raw_train_ctx)
         };
+
+        // 可观测性红线：物理预算不足以容纳下限时，必须显式告警，不得静默地
+        // 「预算说装不下，却按下限加载」——否则识图请求 400 将无从归因。
+        if budget_tokens < ctx_floor {
+            warn!(
+                budget_tokens,
+                granted = ctx_floor,
+                vision = effective_enable_vision,
+                "物理预算不足以下限，按最低可用上下文加载（视觉模型保底 4096，否则无法容纳一次识图请求）"
+            );
+        }
 
         let final_ctx = if let Some(user_ctx) = model.context_window {
             let capped = user_ctx.clamp(512, raw_train_ctx).min(budget_ctx);

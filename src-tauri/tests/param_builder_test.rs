@@ -579,6 +579,63 @@ fn test_ac6_cascading_downgrade_steps() {
     assert_eq!(params_b2.offload_ratio, 0.0);
 }
 
+/// 回归（2026-10-29 识图 400）：视觉模型在物理预算赤字下必须保底 4096 上下文。
+///
+/// 事故现场：RTX 3060 + MiniCPM-V 4.7 1B，系统内存已用 27.9/31.8GB，引擎按 CPU 池预留公式
+/// 算出 usable=0 → budget_tokens=0 → 旧逻辑 clamp 到 AUTO_CTX_FLOOR(2048)，llama-server 以
+/// 2048 启动；而一次识图请求本身就要 2.4K+ tokens（系统提示词约 1.5K + 800px 图片约 1K），
+/// 被 `exceed_context_size` 直接拒绝。视觉模型的下限必须是「装得下一次识图请求」的 4096。
+#[test]
+fn test_vision_model_floor_never_below_one_image_request() {
+    let mut res = make_test_resources(2 * 1024, Some(1024));
+    res.memory.total_mb = 8192;
+    res.memory.available_mb = 4096; // 可用内存 < 25% 预留 → CPU 池预算归零
+
+    let mut vision = make_base_model(1.0, 1.0);
+    vision.is_multimodal = true;
+    vision.mmproj_path = Some("D:/models/mmproj-f16.gguf".to_string());
+    vision.mmproj_size_gb = Some(0.7);
+    vision.gguf_meta = Some(GgufMetadata {
+        arch: "minicpmv".to_string(),
+        n_layer: 24,
+        n_head: Some(8),
+        n_kv_head: 2,
+        head_dim: 128,
+        train_ctx: 32768,
+        ..Default::default()
+    });
+
+    let params = ParamBuilder::compute(&res, &vision, "cuda");
+    assert!(
+        params.effective_enable_vision,
+        "挂载 mmproj 的模型必须走视觉预算路径"
+    );
+    assert_eq!(
+        params.ctx_size, 4096,
+        "视觉模型在物理赤字下也必须保底 4096，否则识图请求永远 400（实际 {}）",
+        params.ctx_size
+    );
+    assert!(params.ctx_size <= params.max_train_ctx);
+
+    // 纯文本模型的 2048 保底口径由 test_max_fill_fallback_when_vram_constrained 锁定，此处不重复。
+    // 这里只确认：视觉下限不会越过模型自身的预训练窗口。
+    let mut tiny_ctx = vision.clone();
+    tiny_ctx.gguf_meta = Some(GgufMetadata {
+        arch: "minicpmv".to_string(),
+        n_layer: 24,
+        n_head: Some(8),
+        n_kv_head: 2,
+        head_dim: 128,
+        train_ctx: 2048,
+        ..Default::default()
+    });
+    let tiny_params = ParamBuilder::compute(&res, &tiny_ctx, "cuda");
+    assert_eq!(
+        tiny_params.ctx_size, 2048,
+        "视觉下限不得越过预训练窗口（train_ctx=2048 时仍取 2048）"
+    );
+}
+
 #[test]
 fn test_ac8_ssot_recommended_params_and_budget_json() {
     let res = make_test_resources(16 * 1024, None);
