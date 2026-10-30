@@ -12,6 +12,8 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use tracing::{debug, warn};
 
+use crate::engine::process_guard::ProcessStatus;
+
 /// 代理状态（目标端口可动态变化）
 #[derive(Clone)]
 pub struct ProxyState {
@@ -99,6 +101,40 @@ fn is_inference_request(path: &str) -> bool {
         || p.starts_with("infill")
 }
 
+/// 反代在「目标端口尚未注册」（`target_port == None`）时的拒绝语义。
+///
+/// 背景（2026-10-30 事故）：宿主进程重启后 `target_port` 恒为 `None`，而响应体无条件
+/// 返回 `AI engine is starting`，把「推理服务从未启动」说成「正在加载中」，排查方向被
+/// 直接引向 llama-server（它其实压根没被启动，日志空白 87 分钟）。此处按 `ProcessGuard`
+/// 的真实状态分流：
+///
+/// - `Stopped`：宿主在线但推理服务从未启动 → 503 + `engine_service_stopped`
+/// - `Starting`：模型加载中 → 503 + `engine_starting`（保持原文案，兼容既有重试策略）
+/// - `Failed`：启动失败已落库 → **500** + `engine_failed`。不得用 503：客户端
+///   `isTransientInfraError` 会按 `status === 503` 无条件判瞬态，导致文件无限 pending
+///   重试、故障永不上浮（违反「故障必须显式暴露」红线）
+/// - `Running`：`target_port` 为 `None` 时理论不可达，归入 `engine_starting` 兜底
+/// - `None`（协调器未注入，仅测试路径）：回退 `engine_starting`，保持兼容
+fn rejection(status: Option<&ProcessStatus>) -> (StatusCode, &'static str, &'static str) {
+    match status {
+        Some(ProcessStatus::Stopped) => (
+            StatusCode::SERVICE_UNAVAILABLE,
+            "AI engine service is not started",
+            "engine_service_stopped",
+        ),
+        Some(ProcessStatus::Failed) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "AI engine failed to start, check engine logs",
+            "engine_failed",
+        ),
+        Some(ProcessStatus::Starting) | Some(ProcessStatus::Running) | None => (
+            StatusCode::SERVICE_UNAVAILABLE,
+            "AI engine is starting, please try again",
+            "engine_starting",
+        ),
+    }
+}
+
 /// 代理 handler：将所有 /v1/* 与 WebUI 请求转发到 llama-server
 pub async fn proxy_handler(
     State(state): State<ProxyState>,
@@ -121,12 +157,28 @@ pub async fn proxy_handler(
     };
 
     let Some(port) = target_port else {
-        warn!("llama-server 尚未就绪，反代请求被拒绝");
+        // 宿主进程可能活着但推理服务从未启动：按真实状态分流，禁止一律谎报 "starting"
+        let coordinator = {
+            let guard = state.coordinator.lock().await;
+            guard.clone()
+        };
+        let proc_status = match coordinator {
+            Some(c) => Some(c.guard.status().await),
+            None => None,
+        };
+        let (http_status, message, error_code) = rejection(proc_status.as_ref());
+        warn!(
+            "llama-server 尚未就绪，反代请求被拒绝: proc_status={:?}, code={}",
+            proc_status, error_code
+        );
         return Response::builder()
-            .status(StatusCode::SERVICE_UNAVAILABLE)
+            .status(http_status)
             .header("content-type", "application/json")
             .body(Body::from(
-                r#"{"error":{"message":"AI engine is starting, please try again","code":503}}"#,
+                serde_json::json!({
+                    "error": { "message": message, "code": error_code }
+                })
+                .to_string(),
             ))
             .unwrap();
     };
@@ -243,4 +295,42 @@ fn error_response(status: StatusCode, msg: &str) -> Response<Body> {
             status.as_u16()
         )))
         .unwrap()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// 四态映射必须精确：`Stopped` 不得谎报 starting，`Failed` 必须 500（否则被客户端判瞬态）
+    #[test]
+    fn rejection_maps_each_process_status() {
+        let (status, message, code) = rejection(Some(&ProcessStatus::Stopped));
+        assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE);
+        assert_eq!(code, "engine_service_stopped");
+        assert!(
+            !message.contains("starting"),
+            "「推理服务从未启动」不得谎报为「正在启动」，否则排查方向被引向 llama-server"
+        );
+
+        let (status, _, code) = rejection(Some(&ProcessStatus::Failed));
+        assert_eq!(
+            status,
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Failed 必须是 500：客户端按 status===503 无条件判瞬态，503 会让文件无限 pending 重试"
+        );
+        assert_eq!(code, "engine_failed");
+
+        let (status, _, code) = rejection(Some(&ProcessStatus::Starting));
+        assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE);
+        assert_eq!(code, "engine_starting");
+
+        let (status, _, code) = rejection(Some(&ProcessStatus::Running));
+        assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE);
+        assert_eq!(code, "engine_starting");
+
+        // 协调器未注入（仅测试路径）：回退 starting，保持兼容
+        let (status, _, code) = rejection(None);
+        assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE);
+        assert_eq!(code, "engine_starting");
+    }
 }
