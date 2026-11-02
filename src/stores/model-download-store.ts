@@ -32,6 +32,7 @@ export interface UseModelDownloadOptions {
   isMultiModal?: boolean
   mmproj?: string
   dspark?: string
+  draftId?: string
   onDownloadStart?: () => void
   onDownloadProgress?: (progress: DownloadProgressEvent) => void
   onDownloadComplete?: () => void
@@ -51,6 +52,7 @@ interface ModelDownloadStoreState {
       isMultiModal?: boolean
       mmproj?: string
       dspark?: string
+      draftId?: string
       onDownloadStart?: () => void
       onDownloadProgress?: (progress: DownloadProgressEvent) => void
       onDownloadComplete?: () => void
@@ -162,6 +164,7 @@ export const useModelDownloadStore = create<ModelDownloadStoreState>((set, get) 
     const isMultiModal = options.isMultiModal !== undefined ? options.isMultiModal : meta?.isMultiModal
     const mmproj = options.mmproj !== undefined ? options.mmproj : meta?.mmproj
     const dspark = options.dspark !== undefined ? options.dspark : meta?.dspark
+    const draftId = options.draftId !== undefined ? options.draftId : meta?.draftId
 
     try {
       const taskSummary = await engineApiClient.startModelDownload(
@@ -172,7 +175,8 @@ export const useModelDownloadStore = create<ModelDownloadStoreState>((set, get) 
           quantization,
           isMultiModal,
           mmproj,
-          dspark
+          dspark,
+          draftId
         },
         (progress: DownloadProgressEvent) => {
           set(state => {

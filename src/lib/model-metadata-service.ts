@@ -31,8 +31,9 @@ const MODEL_REGISTRY: Record<SupportedLanguage, any> = {
 /**
  * 将任意体积字符串（如 "558MB", "1.56GB", "4.37 GB"）转换为 GB 浮点数
  */
-export function parseSizeToGB(sizeStr?: string): number {
-  if (!sizeStr) return 0
+export function parseSizeToGB(sizeStr?: string | number): number {
+  if (typeof sizeStr === 'number') return isNaN(sizeStr) ? 0 : sizeStr
+  if (!sizeStr || typeof sizeStr !== 'string') return 0
   const clean = sizeStr.trim().toUpperCase()
   if (clean.endsWith('GB')) {
     return parseFloat(clean.replace('GB', '').trim()) || 0
@@ -53,8 +54,19 @@ export function parseSizeToGB(sizeStr?: string): number {
  * 计算模型在推理时所需的预估显存 (VRAM)
  * 算法：模型体积 * 1.15 (权重与膨胀冗余) + 0.5GB (基础 KV Cache 上下文 Buffer)，向上取整
  */
-export function estimateRequiredVRAM(totalSizeStr?: string): number {
-  const sizeGB = parseSizeToGB(totalSizeStr)
+export function estimateRequiredVRAM(totalSizeStr?: string): number
+export function estimateRequiredVRAM(mainAndAccelGB: number, mmprojGB?: number): number
+export function estimateRequiredVRAM(
+  sizeOrMain: string | number | undefined,
+  mmprojGB: number = 0
+): number {
+  if (typeof sizeOrMain === 'number') {
+    if (sizeOrMain <= 0 && mmprojGB <= 0) return 2
+    const mainNeeded = sizeOrMain > 0 ? sizeOrMain * 1.15 + 0.5 : 0
+    const visionNeeded = mmprojGB > 0 ? mmprojGB * 1.02 : 0
+    return Math.ceil(mainNeeded + visionNeeded)
+  }
+  const sizeGB = parseSizeToGB(sizeOrMain)
   if (sizeGB <= 0) return 2
   const overheadFactor = 1.15
   const contextBuffer = 0.5
@@ -77,6 +89,10 @@ function normalizeRawModel(raw: any): ModelItem {
     quantization: raw.quantization,
     fileSize: Math.round(sizeGB * 1024 * 1024 * 1024),
     size: raw.totalSize,
+    modelSize: raw.modelSize,
+    mmprojSize: raw.mmprojSize,
+    dsparkSize: raw.dsparkSize,
+    draftSize: raw.draftSize,
     params: raw.parameterSize || '7B',
     parameterSize: raw.parameterSize,
     isMultiModal: Boolean(raw.isMultiModal),

@@ -309,7 +309,8 @@ export class HttpEngineApiClient implements IEngineApiClient {
         quantization: options?.quantization,
         isMultiModal: options?.isMultiModal,
         mmproj: options?.mmproj,
-        dspark: options?.dspark
+        dspark: options?.dspark,
+        draftId: options?.draftId
       })
     })
     const taskId: string = task.taskId

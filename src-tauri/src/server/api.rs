@@ -151,9 +151,11 @@ pub struct StartModelDownloadReq {
     pub source: Option<String>,
     pub force_restart: Option<bool>,
     pub quantization: Option<String>,
+    #[serde(alias = "isMultiModal")]
     pub is_multimodal: Option<bool>,
     pub mmproj: Option<String>,
     pub dspark: Option<String>,
+    pub draft_id: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -461,6 +463,7 @@ pub(crate) fn build_downloader_args(
     is_multimodal: Option<bool>,
     mmproj: Option<&str>,
     dspark: Option<&str>,
+    draft_id: Option<&str>,
 ) -> Vec<String> {
     let mut args = Vec::new();
     let file_flag = if source_flag == "-hf" { "-hff" } else { "-msf" };
@@ -503,7 +506,13 @@ pub(crate) fn build_downloader_args(
         args.push(d.trim().to_string());
     }
 
-    // 4. json 交互协议
+    // 4. draft MTP 伴随模型
+    if let Some(dr) = draft_id.filter(|s| !s.trim().is_empty()) {
+        args.push("--draft".to_string());
+        args.push(dr.trim().to_string());
+    }
+
+    // 5. json 交互协议
     args.push("--json".to_string());
     args
 }
@@ -2493,6 +2502,7 @@ async fn start_model_download(
     let is_multimodal = payload.is_multimodal;
     let mmproj = payload.mmproj.clone();
     let dspark = payload.dspark.clone();
+    let draft_id = payload.draft_id.clone();
 
     // 后台 spawn 真实下载进程
     tokio::spawn(async move {
@@ -2504,6 +2514,7 @@ async fn start_model_download(
             is_multimodal,
             mmproj,
             dspark,
+            draft_id,
             models_dir,
             downloader_path,
             tasks_store,
@@ -2527,6 +2538,7 @@ async fn run_model_download(
     is_multimodal_opt: Option<bool>,
     mmproj: Option<String>,
     dspark: Option<String>,
+    draft_id: Option<String>,
     models_dir: PathBuf,
     downloader_path: PathBuf,
     tasks: DownloadTaskStore,
@@ -2599,6 +2611,7 @@ async fn run_model_download(
         is_multimodal_opt,
         mmproj.as_deref(),
         dspark.as_deref(),
+        draft_id.as_deref(),
     );
     for arg in &downloader_args {
         cmd.arg(arg);
@@ -4499,6 +4512,7 @@ mod tests {
             Some(false),
             None,
             None,
+            None,
         );
         assert_eq!(args_explicit, vec!["-ms", "prism-ml/Ternary-Bonsai-2-27B-gguf:PTQ1_0", "--mmproj", "none", "--json"]);
 
@@ -4508,6 +4522,7 @@ mod tests {
             "prism-ml/Ternary-Bonsai-2-27B-gguf:custom_arbitrary_name.gguf",
             Some("PQ2_0"),
             None, // 缺省为非多模态
+            None,
             None,
             None,
         );
@@ -4521,11 +4536,12 @@ mod tests {
             Some(false),
             None,
             None,
+            None,
         );
         assert_eq!(args_fallback_filename, vec!["-ms", "prism-ml/Ternary-Bonsai-2-27B-gguf:PTQ1_0", "--mmproj", "none", "--json"]);
 
         // 4. 常规量化模型 (如 Q4_K_M)：直接保持 repo:quant 格式
-        let args_qwen = build_downloader_args("-ms", "Qwen/Qwen2.5-7B-Instruct-GGUF:Q4_K_M", None, Some(false), None, None);
+        let args_qwen = build_downloader_args("-ms", "Qwen/Qwen2.5-7B-Instruct-GGUF:Q4_K_M", None, Some(false), None, None, None);
         assert_eq!(args_qwen, vec!["-ms", "Qwen/Qwen2.5-7B-Instruct-GGUF:Q4_K_M", "--mmproj", "none", "--json"]);
 
         // 5. 多模态且显式指定 mmproj 短标签 (如 "f16")
@@ -4536,6 +4552,7 @@ mod tests {
             Some(true),
             Some("f16"),
             Some("DSpark-BF16"),
+            None,
         );
         assert_eq!(args_vl_mmproj, vec![
             "-ms", "OpenBMB/MiniCPM-V-2_6-gguf:Q4_K_M",
@@ -4550,6 +4567,7 @@ mod tests {
             "OpenBMB/MiniCPM-V-2_6-gguf:Q4_K_M",
             None,
             Some(true),
+            None,
             None,
             None,
         );
@@ -4567,6 +4585,7 @@ mod tests {
             Some(false),
             None,
             Some("DSpark-BF16"),
+            None,
         );
         assert_eq!(args_dspark_only, vec![
             "-ms", "OpenBMB/MiniCPM-V-2_6-gguf:Q4_K_M",
@@ -4576,12 +4595,29 @@ mod tests {
         ]);
 
         // 8. Fallback：无模型列表 quantization 且文件名中提取不到量化 tag 时，拆分为精确文件参数 -ms repo -msf file
-        let args_custom = build_downloader_args("-ms", "my-org/my-model:custom_weights.gguf", None, None, None, None);
+        let args_custom = build_downloader_args("-ms", "my-org/my-model:custom_weights.gguf", None, None, None, None, None);
         assert_eq!(args_custom, vec!["-ms", "my-org/my-model", "-msf", "custom_weights.gguf", "--mmproj", "none", "--json"]);
 
         // 9. HuggingFace 来源精确文件名：应使用 -hff
-        let args_hf_file = build_downloader_args("-hf", "my-org/my-model:custom_weights.gguf", None, None, None, None);
+        let args_hf_file = build_downloader_args("-hf", "my-org/my-model:custom_weights.gguf", None, None, None, None, None);
         assert_eq!(args_hf_file, vec!["-hf", "my-org/my-model", "-hff", "custom_weights.gguf", "--mmproj", "none", "--json"]);
+
+        // 10. MTP 草稿模型: 携带 draft_id 参数
+        let args_draft = build_downloader_args(
+            "-hf",
+            "unsloth/gemma-4-E2B-it-qat-MTP-GGUF:UD-Q4_K_XL",
+            None,
+            Some(true),
+            None,
+            None,
+            Some("NicklausCairns/gemma-4-E2B-it-qat-assistant-MTP-Q8_0"),
+        );
+        assert_eq!(args_draft, vec![
+            "-hf", "unsloth/gemma-4-E2B-it-qat-MTP-GGUF:UD-Q4_K_XL",
+            "--mmproj", "auto",
+            "--draft", "NicklausCairns/gemma-4-E2B-it-qat-assistant-MTP-Q8_0",
+            "--json"
+        ]);
     }
 
     /// 验证 is_same_model 正确识别相同/不同模型，防止平滑重启逻辑误判

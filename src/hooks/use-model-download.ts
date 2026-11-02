@@ -59,6 +59,7 @@ export function useModelDownload(
         isMultiModal?: boolean
         mmproj?: string
         dspark?: string
+        draftId?: string
       }
     ) => {
       const finalModelId = targetModelId || initialModelId
@@ -74,6 +75,7 @@ export function useModelDownload(
         isMultiModal: downloadOptions?.isMultiModal ?? optionsRef.current.isMultiModal,
         mmproj: downloadOptions?.mmproj ?? optionsRef.current.mmproj,
         dspark: downloadOptions?.dspark ?? optionsRef.current.dspark,
+        draftId: downloadOptions?.draftId ?? (optionsRef.current as any).draftId,
         onDownloadStart: () => optionsRef.current.onDownloadStart?.(),
         onDownloadProgress: (p) => optionsRef.current.onDownloadProgress?.(p),
         onDownloadComplete: () => optionsRef.current.onDownloadComplete?.(),

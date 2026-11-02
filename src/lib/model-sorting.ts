@@ -1,4 +1,4 @@
-import { ModelItem } from '../api/types'
+import { HardwareSpec, ModelItem } from '../api/types'
 import { parseSizeToGB, estimateRequiredVRAM } from './model-metadata-service'
 
 /**
@@ -11,27 +11,34 @@ import { parseSizeToGB, estimateRequiredVRAM } from './model-metadata-service'
  */
 export function isModelExceedsHardware(
   model: Partial<ModelItem>,
-  userVramGB?: number
+  userVramGB?: number,
+  hardware?: HardwareSpec | null
 ): boolean {
-  // 如果尚未检测到显存，或显存信息未就绪，安全起见默认不判定超标（或按0GB处理）
-  const vram = userVramGB ?? 0
-  const vramReq =
-    model.vramNeededGB ??
-    (model.size ? estimateRequiredVRAM(model.size) : 0)
+  // 1. Apple Silicon Metal 统一内存架构识别
+  const isMetal = hardware?.best_tier === 'metal' || hardware?.current_tier === 'metal'
+  const rawVram = hardware?.total_vram_gb ?? userVramGB ?? 0
+  const totalRam = hardware?.total_ram_gb || 16
 
-  // 1. 如果模型显存需求 <= 2GB，视为 CPU 兼容轻量模型，永远不判定为“显存不足”
+  // 统一内存下即使是核显也有充裕共享显存
+  const effectiveVram = isMetal ? Math.max(rawVram, totalRam * 0.7) : rawVram
+
+  // 2. 基准需求仅以主模型体积为准（minimalNeeded），伴随模型为可选裁剪项
+  const mainGB = parseSizeToGB(model.modelSize || model.size)
+  const vramReq = model.vramNeededGB ?? estimateRequiredVRAM(mainGB, 0)
+
+  // 3. 如果模型显存需求 <= 2GB，视为 CPU 兼容轻量模型，永远不判定为“显存不足”
   if (vramReq <= 2.0) {
     return false
   }
 
-  // 2. 如果显存需求 > 2GB：
-  //    - 如果用户显存 <= 1GB (无独立显卡或纯 CPU 模式)，则视为显存不足
-  //    - 如果用户显存 > 1GB，允许需求在可用显存 1.2 倍以内（动态缓冲安全裕度），超过则判定显存不足
-  if (vram <= 1) {
+  // 4. 如果显存需求 > 2GB：
+  //    - 如果可用显存 <= 1GB (纯 CPU 模式或超老旧核显)，视为显存不足
+  //    - 否则允许需求在可用显存 1.2 倍以内（动态缓冲安全裕度），超过则判定显存不足
+  if (effectiveVram <= 1) {
     return true
   }
 
-  return vramReq > vram * 1.2
+  return vramReq > effectiveVram * 1.2
 }
 
 /**
@@ -97,7 +104,8 @@ export interface EnrichedModelItem extends ModelItem {
  */
 export function sortModels(
   models: ModelItem[],
-  userVramGB?: number
+  userVramGB?: number,
+  hardware?: HardwareSpec | null
 ): EnrichedModelItem[] {
   if (!models || models.length === 0) return []
 
@@ -110,7 +118,7 @@ export function sortModels(
 
   // 补充超标状态与性价比分数
   const enriched: EnrichedModelItem[] = models.map(m => {
-    const isEx = isModelExceedsHardware(m, userVramGB)
+    const isEx = isModelExceedsHardware(m, userVramGB, hardware)
     const cpScore = calculateModelScore(m, minSizeGB, maxSizeGB)
     return {
       ...m,

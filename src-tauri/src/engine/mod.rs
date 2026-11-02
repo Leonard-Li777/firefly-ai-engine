@@ -831,6 +831,39 @@ impl EngineCoordinator {
                     (n_lower.contains("dspark") || n_lower.contains("draft"))
                         && !n_lower.contains("mmproj")
                         && (p.parent() == parent_dir || p.parent() == Some(&models_dir))
+                }).or_else(|| {
+                    // 跨仓库或子目录伴随模型回溯：
+                    // 提取主模型核心家族与版本前缀（精确剥离量化标签如 Q4_K_M / UD-Q4_K_XL，严禁误杀 Qwen / Qwen3.5 等前缀）
+                    let is_quant_tag = |seg: &str| {
+                        let s = seg.to_uppercase();
+                        (s.starts_with('Q') && s.chars().nth(1).map_or(false, |c| c.is_ascii_digit()))
+                            || (s.starts_with("IQ") && s.chars().nth(2).map_or(false, |c| c.is_ascii_digit()))
+                            || s == "UD"
+                            || s.starts_with("UD_")
+                            || s == "F16"
+                            || s == "F32"
+                            || s == "BF16"
+                            || s == "GGUF"
+                    };
+                    let stem_prefix = model_path.file_stem()
+                        .and_then(|s| s.to_str())
+                        .map(|s| {
+                            let clean = s.split(':').next().unwrap_or(s);
+                            let parts: Vec<&str> = clean.split('-')
+                                .filter(|seg| !is_quant_tag(seg))
+                                .take(3)
+                                .collect();
+                            parts.join("-").to_lowercase()
+                        });
+                    all_ggufs.iter().find(|(p, name)| {
+                        let n_lower = name.to_lowercase();
+                        let is_accel = (n_lower.contains("dspark") || n_lower.contains("draft") || n_lower.contains("assistant"))
+                            && !n_lower.contains("mmproj");
+                        if !is_accel { return false; }
+                        // 仅检查伴随文件名称或其所在直接快照目录名，避免对祖先绝对路径做误判
+                        let local_scope = format!("{}/{}", p.parent().and_then(|d| d.file_name()).and_then(|n| n.to_str()).unwrap_or(""), name).to_lowercase();
+                        stem_prefix.as_ref().map_or(false, |prefix| !prefix.is_empty() && local_scope.contains(prefix))
+                    })
                 }).map(|(p, _)| p.to_string_lossy().to_string())
             };
 
@@ -1130,6 +1163,41 @@ pub fn scan_mmproj_candidate(
     if in_models_dir.len() == 1 {
         return Some(in_models_dir[0].0.to_string_lossy().to_string());
     }
+
+    // 跨仓库/跨目录投影器支持：如果主模型目录没有，但在全量中存在与其模型家族与版本匹配的 mmproj
+    let is_quant_tag = |seg: &str| {
+        let s = seg.to_uppercase();
+        (s.starts_with('Q') && s.chars().nth(1).map_or(false, |c| c.is_ascii_digit()))
+            || (s.starts_with("IQ") && s.chars().nth(2).map_or(false, |c| c.is_ascii_digit()))
+            || s == "UD"
+            || s.starts_with("UD_")
+            || s == "F16"
+            || s == "F32"
+            || s == "BF16"
+            || s == "GGUF"
+    };
+    let stem_prefix = model_path.file_stem()
+        .and_then(|s| s.to_str())
+        .map(|s| {
+            let clean = s.split(':').next().unwrap_or(s);
+            let parts: Vec<&str> = clean.split('-')
+                .filter(|seg| !is_quant_tag(seg))
+                .take(3)
+                .collect();
+            parts.join("-").to_lowercase()
+        });
+    if let Some(prefix) = stem_prefix {
+        if !prefix.is_empty() {
+            if let Some((p, _)) = all_ggufs.iter().find(|(p, n)| {
+                if !is_mmproj(n) { return false; }
+                let local_scope = format!("{}/{}", p.parent().and_then(|d| d.file_name()).and_then(|x| x.to_str()).unwrap_or(""), n).to_lowercase();
+                local_scope.contains(&prefix)
+            }) {
+                return Some(p.to_string_lossy().to_string());
+            }
+        }
+    }
+
     None
 }
 

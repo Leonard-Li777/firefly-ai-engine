@@ -44,6 +44,15 @@ import { sortModels, EnrichedModelItem } from '../../lib/model-sorting'
 import { getDisplayRelativeModelPath } from '../../lib/path-utils'
 import { ModelResolver, matchEngineModel } from '../../lib/model-resolver'
 import { ModelParamDrawer } from './model-param-drawer'
+import { useShallow } from 'zustand/react/shallow'
+import { RuntimeParams } from '../../api/types'
+import { recommendComponentsForModel } from '../../lib/model-component-recommender'
+import { ModelDownloadPopover } from './model-download-popover'
+import {
+  DEFAULT_MODEL_PARAMS,
+  getModelCustomParams,
+  saveModelCustomParams
+} from '../../lib/model-param-storage'
 import {
   ModelBubbleGuide,
   hasCompletedModelGuideDownload,
@@ -142,9 +151,45 @@ interface ModelRowProps {
  */
 const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isActiveModel = false, isEx = false, highlighted = false, onActivate, onOpenConfig, onDownloadSubmit }) => {
   const { fetchModels, modelsDir } = useEngineStore()
-  const handleDownloadComplete = React.useCallback(() => {
-    fetchModels()
-  }, [fetchModels])
+  const hardware = useEngineStore(useShallow(s => s.engineStatus?.hardware ?? null))
+  const saveModelParams = useEngineStore(s => s.saveModelParams)
+
+  const splitTriggerRef = React.useRef<HTMLButtonElement>(null)
+  const [isPopoverOpen, setIsPopoverOpen] = React.useState(false)
+  const [anchorRect, setAnchorRect] = React.useState<DOMRect | null>(null)
+
+  const hasMultipleComponents = Boolean(model.mmproj || model.isMultiModal || model.dspark || model.draftId)
+  const rec = React.useMemo(() => recommendComponentsForModel(model, hardware), [model, hardware])
+
+  const handleDownloadComplete = React.useCallback(async () => {
+    try {
+      // 检查当前模型是否拥有识图或加速伴随模型，在落盘后自动将对应开关开启 (Read-Modify-Write)
+      const currentCustom = getModelCustomParams(model.id) || {}
+      let modified = false
+      const nextParams: RuntimeParams = {
+        ...DEFAULT_MODEL_PARAMS,
+        ...currentCustom
+      }
+
+      if ((model.mmproj || model.isMultiModal) && nextParams.enableVision === false) {
+        nextParams.enableVision = true
+        modified = true
+      }
+      if ((model.dspark || model.draftId) && nextParams.enableDraft === false) {
+        nextParams.enableDraft = true
+        modified = true
+      }
+
+      if (modified) {
+        saveModelCustomParams(model.id, nextParams)
+        await saveModelParams(model.id, nextParams)
+      }
+    } catch (e) {
+      console.warn('自动对齐伴随模型超参开关失败:', e)
+    } finally {
+      fetchModels()
+    }
+  }, [model.id, model.mmproj, model.isMultiModal, model.dspark, model.draftId, saveModelParams, fetchModels])
 
   const dlOptions = React.useMemo(() => ({
     source: model.source,
@@ -256,8 +301,12 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isActiveModel
   // 确保无论 model.localPath 是否由后端提前填入，都能从 modelsDir 解析得到有效物理路径及伴随模型状态
   const modelResolution = React.useMemo(() => {
     if (!modelsDir) return null
-    return ModelResolver.resolve(model.id, modelsDir, existingFiles, model.source)
-  }, [model.id, modelsDir, existingFiles, model.source])
+    return ModelResolver.resolve(model.id, modelsDir, existingFiles, model.source, {
+      draftId: model.draftId,
+      mmproj: model.mmproj,
+      dspark: model.dspark
+    })
+  }, [model.id, modelsDir, existingFiles, model.source, model.draftId, model.mmproj, model.dspark])
 
   const resolvedLocalPath = React.useMemo(() => {
     if (model.localPath) return model.localPath
@@ -596,28 +645,33 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isActiveModel
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => startDownload(model.id, { isMultiModal: true, mmproj: model.mmproj, dspark: undefined })}
+                  onClick={() => startDownload(model.id, { isMultiModal: true, mmproj: model.mmproj, dspark: 'none', draftId: 'none' })}
                   disabled={dl.isDownloading}
                   title={t('下载识图多模态投影模型，支持图片理解')}
                   className="h-7.5 text-xs px-3 rounded-lg border-purple-500/50 text-purple-600 dark:text-purple-400 hover:bg-purple-500/10 font-bold flex items-center gap-1 transition-all"
                 >
                   <Eye className="h-3 w-3 shrink-0" />
-                  <span>{t('下载识图模型')}</span>
+                  <span>{model.mmprojSize ? `${t('下载识图模型')} (${model.mmprojSize})` : t('下载识图模型')}</span>
                 </Button>
               )}
 
-              {/* 伴随模型定向补偿下载：主模型成功但加速模型 (dspark) 未落盘时，展示【下载加速模型】 */}
-              {Boolean(model.dspark) && !hasDraftPhysical && (
+              {/* 伴随模型定向补偿下载：主模型成功但加速模型 (dspark 或 draftId) 未落盘时，展示【下载加速模型】 */}
+              {(Boolean(model.dspark) || Boolean(model.draftId)) && !hasDraftPhysical && (
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => startDownload(model.id, { isMultiModal: false, dspark: model.dspark, mmproj: undefined })}
+                  onClick={() => startDownload(model.id, {
+                    isMultiModal: false,
+                    mmproj: 'none',
+                    dspark: model.dspark ? model.dspark : 'none',
+                    draftId: model.draftId ? model.draftId : 'none'
+                  })}
                   disabled={dl.isDownloading}
                   title={t('下载投机采样加速模型，大幅提升推理速度')}
                   className="h-7.5 text-xs px-3 rounded-lg border-emerald-500/50 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 font-bold flex items-center gap-1 transition-all"
                 >
                   <Zap className="h-3 w-3 shrink-0" />
-                  <span>{t('下载加速模型')}</span>
+                  <span>{(model.dsparkSize || model.draftSize) ? `${t('下载加速模型')} (${model.dsparkSize || model.draftSize})` : t('下载加速模型')}</span>
                 </Button>
               )}
 
@@ -688,21 +742,68 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isActiveModel
                   <AlertCircle className="h-3.5 w-3.5 mr-1 text-destructive" />
                   {t('显存不足')}
                 </Button>
+              ) : hasMultipleComponents ? (
+                /* 多组件模型：Split Button 劈裂按钮（左主热区直下一键自适应推荐，右窄下拉箭展开精细 Popover） */
+                <div className="inline-flex items-center rounded-lg border border-border shadow-2xs divide-x divide-border/60 overflow-hidden shrink-0">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    aria-label={t('下载模型')}
+                    className="h-7.5 text-xs px-3 font-bold rounded-none hover:bg-muted transition-colors flex items-center gap-1.5"
+                    onClick={() => {
+                      handleModelDownloadSubmitted()
+                      onDownloadSubmit?.(model.name)
+                      startDownload(model.id, {
+                        isMultiModal: rec.selectedComponents.mmproj,
+                        mmproj: rec.selectedComponents.mmproj ? (model.mmproj || 'auto') : 'none',
+                        dspark: rec.selectedComponents.dspark ? (model.dspark || 'auto') : 'none',
+                        draftId: rec.selectedComponents.draft ? (model.draftId || 'auto') : 'none'
+                      })
+                    }}
+                  >
+                    <Download className="h-3 w-3 mr-0.5 shrink-0" />
+                    <span>{t('下载推荐组合')} ({rec.recommendedTotalSizeStr})</span>
+                  </Button>
+
+                  <button
+                    ref={splitTriggerRef}
+                    type="button"
+                    aria-haspopup="dialog"
+                    aria-expanded={isPopoverOpen}
+                    title={t('自定义下载组件与显存配置')}
+                    className={`h-7.5 px-1.5 flex items-center justify-center transition-colors hover:bg-muted ${
+                      isPopoverOpen ? 'bg-muted text-primary' : 'text-muted-foreground'
+                    }`}
+                    onMouseDown={e => {
+                      // 阻止全局 mousedown 先触发导致 Popover 关闭与随后 click 互斥
+                      e.stopPropagation()
+                    }}
+                    onClick={e => {
+                      e.stopPropagation()
+                      if (!isPopoverOpen && splitTriggerRef.current) {
+                        setAnchorRect(splitTriggerRef.current.getBoundingClientRect())
+                      }
+                      setIsPopoverOpen(prev => !prev)
+                    }}
+                  >
+                    <ChevronDown className={`h-3.5 w-3.5 transition-transform ${isPopoverOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                </div>
               ) : (
+                /* 单文件模型：单一传统按钮，展示单模型体积 */
                 <Button
                   size="sm"
                   variant="outline"
+                  aria-label={t('下载模型')}
                   className="h-7.5 text-xs px-3.5 rounded-lg font-bold border-border hover:border-primary/60 shrink-0"
                   onClick={() => {
-                    // 提交首次模型下载：标记引导完成（气泡此后永久消失，PRD-0043）
                     handleModelDownloadSubmitted()
-                    // 联动下载（PRD-0043）：提交模型下载前联动提交引擎包下载并提示双 tab 进度
                     onDownloadSubmit?.(model.name)
                     startDownload()
                   }}
                 >
                   <Download className="h-3 w-3 mr-1.5 shrink-0" />
-                  {t('下载模型')}
+                  <span>{model.size ? `${t('下载模型')} (${model.size})` : t('下载模型')}</span>
                 </Button>
               )}
 
@@ -711,6 +812,21 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isActiveModel
           )}
         </div>
       </div>
+
+      {hasMultipleComponents && isPopoverOpen && (
+        <ModelDownloadPopover
+          model={model}
+          hardware={hardware}
+          isOpen={isPopoverOpen}
+          anchorRect={anchorRect}
+          onClose={() => setIsPopoverOpen(false)}
+          onConfirmDownload={options => {
+            handleModelDownloadSubmitted()
+            onDownloadSubmit?.(model.name)
+            startDownload(model.id, options)
+          }}
+        />
+      )}
 
       {/* 下载进行中：整行展开进度子区块（文件名+分片、进度条、速率、剩余时间） */}
       {isDownloadingOrPaused && (
@@ -828,6 +944,7 @@ export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focu
   const currentModelPath = useEngineStore(s => s.engineStatus?.current_model)
   const engineRunStatus = useEngineStore(s => s.engineStatus?.status)
   const totalVramGB = useEngineStore(s => s.engineStatus?.hardware?.total_vram_gb)
+  const hardware = useEngineStore(s => s.engineStatus?.hardware ?? null)
   const [activeSource, setActiveSource] = useState<ModelSource>(focusSource || 'modelscope')
   const [showRecommendedOnly, setShowRecommendedOnly] = useState<boolean>(true)
   const [drawerModel, setDrawerModel] = useState<ModelItem | null>(null)
@@ -983,7 +1100,7 @@ export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focu
       if (showRecommendedOnly && !m.recommended && !isFocused) return false
       return true
     })
-    const sorted = sortModels(matched, userVramGB)
+    const sorted = sortModels(matched, userVramGB, hardware)
 
     /** 按 isEmbedding 拆分为两类 */
     const splitGroup = (list: typeof sorted) => ({

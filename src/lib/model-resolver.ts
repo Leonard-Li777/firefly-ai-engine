@@ -26,7 +26,8 @@ export class ModelResolver {
     modelId: string,
     baseDir: string,
     existingFiles?: string[] | string,
-    source?: string
+    source?: string,
+    companionMeta?: { draftId?: string; mmproj?: string; dspark?: string }
   ): ModelResolution | null {
     if (!modelId || !baseDir) return null
 
@@ -70,7 +71,9 @@ export class ModelResolver {
         const msMatched = files.filter(f => f.startsWith(msPrefix))
         const res = this.findGgufInList(modelId, msMatched, cleanTag)
         if (res) {
-          return { ...res, dirType: 'modelscope' }
+          const outRes: ModelResolution = { ...res, dirType: 'modelscope' }
+          this.attachCompanionResolution(outRes, baseDir, actualFiles, actualSource, companionMeta)
+          return outRes
         }
       }
 
@@ -81,7 +84,9 @@ export class ModelResolver {
         const hfMatched = files.filter(f => f.startsWith(hfPrefix))
         const res = this.findGgufInList(modelId, hfMatched, cleanTag)
         if (res) {
-          return { ...res, dirType: 'modern' }
+          const outRes: ModelResolution = { ...res, dirType: 'modern' }
+          this.attachCompanionResolution(outRes, baseDir, actualFiles, actualSource, companionMeta)
+          return outRes
         }
 
         // 3. Legacy 变体: {org}_{repo} 或 {org}--{repo}
@@ -93,7 +98,9 @@ export class ModelResolver {
           const legMatched = files.filter(f => f.startsWith(lp))
           const legRes = this.findGgufInList(modelId, legMatched, cleanTag)
           if (legRes) {
-            return { ...legRes, dirType: 'legacy' }
+            const outRes: ModelResolution = { ...legRes, dirType: 'legacy' }
+            this.attachCompanionResolution(outRes, baseDir, actualFiles, actualSource, companionMeta)
+            return outRes
           }
         }
       }
@@ -108,12 +115,40 @@ export class ModelResolver {
       if (effectiveTag) {
         const rootRes = this.findGgufInList(modelId, rootMatched, effectiveTag)
         if (rootRes) {
-          return { ...rootRes, dirType: 'legacy' }
+          const res: ModelResolution = { ...rootRes, dirType: 'legacy' }
+          this.attachCompanionResolution(res, baseDir, actualFiles, actualSource, companionMeta)
+          return res
         }
       }
     }
 
     return null
+  }
+
+  /**
+   * 跨仓库/分项伴随模型物理路径回溯探测
+   */
+  private static attachCompanionResolution(
+    res: ModelResolution,
+    baseDir: string,
+    actualFiles: string[],
+    actualSource?: string,
+    companionMeta?: { draftId?: string; mmproj?: string; dspark?: string }
+  ): void {
+    if (!companionMeta) return
+    if (!res.mmprojPath && companionMeta.mmproj) {
+      const mmRes = this.resolve(companionMeta.mmproj, baseDir, actualFiles, actualSource)
+      if (mmRes?.modelPath || mmRes?.mmprojPath) {
+        res.mmprojPath = mmRes.modelPath || mmRes.mmprojPath
+      }
+    }
+    if (!res.draftPath && (companionMeta.draftId || companionMeta.dspark)) {
+      const companionId = companionMeta.draftId || companionMeta.dspark!
+      const draftRes = this.resolve(companionId, baseDir, actualFiles, actualSource)
+      if (draftRes?.modelPath || draftRes?.draftPath) {
+        res.draftPath = draftRes.modelPath || draftRes.draftPath
+      }
+    }
   }
 
   /**

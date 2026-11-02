@@ -96,6 +96,7 @@ export interface StartModelDownloadOptions {
   isMultiModal?: boolean       // 多模态门控
   mmproj?: string              // 投影短标签/目标
   dspark?: string              // 草稿短标签/目标
+  draftId?: string             // MTP 草稿模型 ID 门控
 }
 
 export type ModelCustomParams = RuntimeParams
@@ -157,6 +158,10 @@ export interface ModelItem {
   quantization?: string
   fileSize: number
   size?: string
+  modelSize?: string
+  mmprojSize?: string
+  dsparkSize?: string
+  draftSize?: string
   params: string
   parameterSize?: string
   description: string

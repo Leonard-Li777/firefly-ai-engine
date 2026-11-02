@@ -112,7 +112,11 @@ export class UnifiedModelManager {
     const model = this.getModelById(modelId, source)
     const finalSource = source || model?.source || 'huggingface'
 
-    const resolution = ModelResolver.resolve(modelId, baseDir, undefined, finalSource)
+    const resolution = ModelResolver.resolve(modelId, baseDir, undefined, finalSource, {
+      draftId: model?.draftId,
+      mmproj: model?.mmproj,
+      dspark: model?.dspark
+    })
 
     let draftFile: string | undefined
     if (model?.draftLocalPath) {
@@ -202,7 +206,7 @@ export class UnifiedModelManager {
     source?: string,
     mirror: 'cn' | 'global' = 'cn',
     downloadBinaryPath: string = 'llama-model-download.exe',
-    options?: { isMultiModal?: boolean; mmproj?: string; dspark?: string }
+    options?: { isMultiModal?: boolean; mmproj?: string; dspark?: string; draftId?: string }
   ): DownloadStrategy {
     const model = this.getModelById(modelId, source)
     const finalSource = source || model?.source || 'huggingface'
