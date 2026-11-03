@@ -112,8 +112,26 @@ export const initPostHog = async () => {
     debug: !import.meta.env?.PROD,
     // 捕获所有点击、表单提交等行为
     autocapture: true,
-    // 引擎为轻量工具，默认关闭会话录屏
-    disable_session_recording: true,
+    // 引擎工具支持诊断控制台日志录制
+    enable_recording_console_log: true,
+    // 网络请求防抖与批处理配置
+    request_queue_config: {
+      flush_interval_ms: 3000
+    },
+    // 客户端速率限制，留出余量保证平稳上报
+    rate_limiting: {
+      events_per_second: 10,
+      events_burst_limit: 50
+    },
+    // 引擎轻量会话录制参数优化
+    session_recording: {
+      sampleRate: 0.5,
+      captureCanvas: { recordCanvas: false },
+      maskAllInputs: false,
+      maskInputOptions: {
+        password: true
+      }
+    },
     // 禁用性能指标遥测（降低客户端开销）
     capture_performance: false,
     // 开启异常捕获
