@@ -479,3 +479,34 @@ pub async fn atomic_retire_and_remove_dir(dir: &std::path::Path) -> std::io::Res
 
     Ok(())
 }
+
+/// 原生提取指定进程的真实无符号 32 位退出码（保留 NTSTATUS，如 0xC0000005，防止被截断）
+pub fn get_process_raw_exit_code(pid: u32) -> Option<u32> {
+    #[cfg(windows)]
+    {
+        use windows_sys::Win32::Foundation::{CloseHandle, INVALID_HANDLE_VALUE};
+        use windows_sys::Win32::System::Threading::{
+            GetExitCodeProcess, OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION,
+        };
+        unsafe {
+            let handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, pid);
+            if handle.is_null() || handle == INVALID_HANDLE_VALUE {
+                return None;
+            }
+            let mut code: u32 = 0;
+            let ok = GetExitCodeProcess(handle, &mut code);
+            CloseHandle(handle);
+            if ok != 0 {
+                Some(code)
+            } else {
+                None
+            }
+        }
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = pid;
+        None
+    }
+}
+

@@ -144,6 +144,11 @@ fn setup_tray_menu(app: &tauri::AppHandle) {
 /// 构建并运行 Tauri 应用
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // 优先拦截 CLI 冒烟探测参数（--backend-check 或 --probe-backend <name>）
+    // 命中时执行轻量子进程探测并直接退出，严禁进入 Tauri GUI 与主服务初始化
+    if hardware::handle_cli_probe_if_requested() {
+        return;
+    }
     // 初始化 tracing 日志：控制台 + AppData/logs/app.log 双写。
     // 落盘是为了让进程崩溃 / 被重启后仍能回看启动与错误记录（仅控制台输出会随进程一起消失）。
     use tracing_subscriber::fmt::writer::MakeWriterExt;
