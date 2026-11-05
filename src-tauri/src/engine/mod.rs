@@ -133,6 +133,12 @@ pub struct EngineCoordinator {
     pub hardware_cache: Arc<Mutex<Option<(Instant, HardwareSummary)>>>,
     /// 崩溃自愈守护是否已启动（惰性启动，保证只在 Tokio 上下文里 spawn）
     watchdog_started: Arc<std::sync::atomic::AtomicBool>,
+    /// 独立向量嵌入 Worker 子进程守护器（常驻 CPU，零抢占 GPU 显存）
+    pub embedding_guard: Arc<ProcessGuard>,
+    /// 当前在 Embedding Worker 子进程中运行的物理模型绝对路径
+    pub running_embedding_model: Arc<Mutex<Option<String>>>,
+    /// 嵌入 Worker 崩溃自愈看门狗启动状态
+    embedding_watchdog_started: Arc<std::sync::atomic::AtomicBool>,
 }
 
 impl EngineCoordinator {
@@ -157,7 +163,9 @@ impl EngineCoordinator {
         log_dir: Option<PathBuf>,
     ) -> Arc<Self> {
         let scheduler = Arc::new(EngineScheduler::new(bin_dirs.clone(), compliance.clone()));
-        let guard = ProcessGuard::new_with_log_dir(compliance.clone(), log_dir);
+        let guard = ProcessGuard::new_with_log_dir(compliance.clone(), log_dir.clone());
+        let embedding_log_dir = log_dir.as_ref().map(|d| d.join("embedding"));
+        let embedding_guard = ProcessGuard::new_with_log_dir(compliance.clone(), embedding_log_dir);
         let (status_broadcast, _) = tokio::sync::broadcast::channel(32);
 
         let coordinator = Arc::new(EngineCoordinator {
@@ -180,6 +188,9 @@ impl EngineCoordinator {
             last_runtime_params: Arc::new(Mutex::new(None)),
             hardware_cache: Arc::new(Mutex::new(None)),
             watchdog_started: Arc::new(std::sync::atomic::AtomicBool::new(false)),
+            embedding_guard,
+            running_embedding_model: Arc::new(Mutex::new(None)),
+            embedding_watchdog_started: Arc::new(std::sync::atomic::AtomicBool::new(false)),
         });
 
         coordinator
@@ -762,8 +773,235 @@ impl EngineCoordinator {
         let _op_lock = self.operation_lock.lock().await;
         self.guard.stop().await?;
         *self.running_model.lock().await = None;
-        tracing::info!("引擎服务已停止");
+        let _ = self.stop_embedding_worker().await;
+        tracing::info!("引擎服务全部子进程已停止");
         Ok(())
+    }
+
+
+    /// 确保主语言模型 Worker 运行且加载指定目标模型（不干扰 Embedding Worker）
+    pub async fn ensure_language_worker(self: &Arc<Self>, target_model: Option<String>) -> anyhow::Result<()> {
+        let _op_lock = self.operation_lock.lock().await;
+        if let Some(ref m) = target_model {
+            *self.active_model.lock().await = Some(m.clone());
+        }
+        let current_status = self.guard.status().await;
+        let running_m = self.running_model.lock().await.clone();
+
+        if current_status == ProcessStatus::Running {
+            if let (Some(target), Some(running)) = (&target_model, &running_m) {
+                if crate::server::api::is_same_model(target, running) {
+                    return Ok(());
+                }
+            } else if target_model.is_none() && running_m.is_some() {
+                return Ok(());
+            }
+            // 模型不一致需要切换，仅停止语言 Worker，绝对不触碰 Embedding Worker
+            let _ = self.guard.stop().await;
+            *self.running_model.lock().await = None;
+        }
+
+        self.ensure_crash_watchdog();
+        self.start_service_inner().await
+    }
+
+    /// 停止向量嵌入 Worker 子进程
+    pub async fn stop_embedding_worker(&self) -> anyhow::Result<()> {
+        self.proxy_state.unregister_worker(crate::server::proxy::Capability::Embedding).await;
+        *self.running_embedding_model.lock().await = None;
+        self.embedding_guard.stop().await
+    }
+
+    /// 确保独立常驻向量嵌入 Worker 运行且加载指定目标模型（常驻 CPU，零抢占 GPU 显存，不干扰语言 Worker）
+    pub async fn ensure_embedding_worker(self: &Arc<Self>, target_model: Option<String>) -> anyhow::Result<()> {
+        let current_status = self.embedding_guard.status().await;
+        let running_m = self.running_embedding_model.lock().await.clone();
+
+        if current_status == ProcessStatus::Running {
+            if let (Some(target), Some(running)) = (&target_model, &running_m) {
+                if crate::server::api::is_same_model(target, running) {
+                    return Ok(());
+                }
+            } else if target_model.is_none() && running_m.is_some() {
+                return Ok(());
+            }
+            // 模型不一致需要切换，仅停止向量 Worker
+            let _ = self.stop_embedding_worker().await;
+        }
+
+        if current_status == ProcessStatus::Starting {
+            return Ok(());
+        }
+
+        self.ensure_embedding_crash_watchdog();
+        self.start_embedding_worker_inner(target_model).await
+    }
+
+    /// 实际拉起独立常驻 Embedding Worker 子进程
+    async fn start_embedding_worker_inner(&self, target_model: Option<String>) -> anyhow::Result<()> {
+        let models_dir = {
+            let config = self.config.lock().await;
+            config.models_dir.clone()
+        };
+        let all_ggufs = crate::server::api::collect_all_ggufs(&models_dir);
+
+        // 1. 寻找物理模型文件
+        let model_path = if let Some(ref m) = target_model {
+            crate::server::api::find_model_file(m, &models_dir, &all_ggufs)
+                .ok_or_else(|| anyhow::anyhow!("未找到向量模型【{}】对应的物理文件", m))?
+        } else {
+            let active_emb = {
+                let config = self.config.lock().await;
+                config.active_embedding_model.clone()
+            };
+            if let Some(ref m) = active_emb {
+                crate::server::api::find_model_file(m, &models_dir, &all_ggufs)
+                    .unwrap_or_else(|| PathBuf::from(m))
+            } else {
+                all_ggufs.iter().find(|(_, name)| {
+                    let nl = name.to_lowercase();
+                    !nl.contains("mmproj") && (nl.contains("wemm") || nl.contains("embedding") || nl.contains("bge"))
+                })
+                .map(|(p, _)| p.clone())
+                .ok_or_else(|| anyhow::anyhow!("未检测到可用的嵌入向量 (Embedding) 模型，请先下载 WeMM 或 bge 向量模型"))?
+            }
+        };
+
+        if !model_path.exists() {
+            return Err(anyhow::anyhow!("向量模型文件不存在: {}", model_path.display()));
+        }
+
+        let model_str = model_path.to_string_lossy().to_string();
+        let model_alias = model_path
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or("embedding-model")
+            .to_string();
+
+        // 2. 选择 CPU / 通用引擎二进制
+        let resources = self.hardware.detect(false).await
+            .map_err(|e| anyhow::anyhow!("硬件探测失败: {}", e))?;
+        let selected_engine = match self.scheduler.select_engine(&resources, Some("cpu")).await {
+            Ok(eng) => eng,
+            Err(_) => self.scheduler.select_engine(&resources, None).await?,
+        };
+
+        // 3. 显式分配确定性回环端口（严禁传 --port 0）
+        let gateway_port = self.active_port.lock().await.unwrap_or(38400);
+        let emb_internal_port = find_available_port(gateway_port + 2).await;
+
+        // 4. 构建启动参数：强制 --n-gpu-layers 0，--embedding
+        let args = vec![
+            "--port".to_string(), emb_internal_port.to_string(),
+            "-m".to_string(), model_str.clone(),
+            "--alias".to_string(), model_alias.clone(),
+            "--embedding".to_string(),
+            "--n-gpu-layers".to_string(), "0".to_string(),
+            "-c".to_string(), "2048".to_string(),
+            "--threads".to_string(), "4".to_string(),
+        ];
+
+        tracing::info!(
+            "正在启动独立常驻 Embedding Worker: model={}, port={}",
+            model_str, emb_internal_port
+        );
+
+        // 5. 启动子进程（通过 win_proc 自动纳入 Windows Job Object 守护）
+        self.embedding_guard.start(&selected_engine, &args, &[]).await?;
+
+        // 6. 等待端口就绪探活
+        match self.embedding_guard.wait_ready(emb_internal_port, LLAMA_READY_TIMEOUT_SECS).await {
+            Ok(_) => {
+                self.embedding_guard.mark_running().await;
+                *self.running_embedding_model.lock().await = Some(model_str.clone());
+                self.proxy_state.register_worker(
+                    crate::server::proxy::Capability::Embedding,
+                    crate::server::proxy::WorkerSlot {
+                        port: emb_internal_port,
+                        status: ProcessStatus::Running,
+                        model_id: model_alias.clone(),
+                        last_active_at: std::time::Instant::now(),
+                    }
+                ).await;
+                tracing::info!(
+                    "Embedding Worker 启动并反代就绪: port={}, model={}",
+                    emb_internal_port, model_alias
+                );
+                Ok(())
+            }
+            Err(e) => {
+                let err_msg = self.embedding_guard.last_error().await.unwrap_or_else(|| e.to_string());
+                tracing::error!("Embedding Worker 就绪探测失败: {}", err_msg);
+                let _ = self.embedding_guard.stop().await;
+                *self.running_embedding_model.lock().await = None;
+                self.proxy_state.unregister_worker(crate::server::proxy::Capability::Embedding).await;
+                Err(anyhow::anyhow!("Embedding Worker 启动失败: {}", err_msg))
+            }
+        }
+    }
+
+    /// 惰性启动 Embedding 崩溃自愈守护
+    fn ensure_embedding_crash_watchdog(self: &Arc<Self>) {
+        if self.embedding_watchdog_started.swap(true, Ordering::SeqCst) {
+            return;
+        }
+        if tokio::runtime::Handle::try_current().is_err() {
+            self.embedding_watchdog_started.store(false, Ordering::SeqCst);
+            return;
+        }
+        Self::spawn_embedding_crash_watchdog(self);
+    }
+
+    /// 独立的 Embedding Worker 崩溃自愈守护任务（只重启 Embedding，绝对不影响 Language）
+    fn spawn_embedding_crash_watchdog(this: &Arc<Self>) {
+        const MAX_AUTO_RESTARTS: u32 = 3;
+        const STABLE_RUN: Duration = Duration::from_secs(60);
+        const TICK: Duration = Duration::from_secs(2);
+
+        let weak = Arc::downgrade(this);
+        tokio::spawn(async move {
+            let mut attempts: u32 = 0;
+            let mut stable_since: Option<Instant> = None;
+
+            loop {
+                tokio::time::sleep(TICK).await;
+                let Some(coord) = weak.upgrade() else { break };
+                let status = coord.embedding_guard.status().await;
+
+                if status == ProcessStatus::Running {
+                    match stable_since {
+                        None => stable_since = Some(Instant::now()),
+                        Some(since) if attempts > 0 && since.elapsed() >= STABLE_RUN => {
+                            tracing::info!("Embedding Worker 已稳定运行，重置崩溃自愈计数");
+                            attempts = 0;
+                            stable_since = Some(Instant::now());
+                        }
+                        _ => {}
+                    }
+                    continue;
+                }
+                stable_since = None;
+
+                if !coord.embedding_guard.is_crashed() {
+                    continue;
+                }
+                if status != ProcessStatus::Failed {
+                    coord.embedding_guard.clear_crash_flag();
+                    continue;
+                }
+                if attempts >= MAX_AUTO_RESTARTS {
+                    tracing::warn!("Embedding Worker 连续异常退出 {} 次，已停止自动重启", attempts);
+                    coord.embedding_guard.clear_crash_flag();
+                    continue;
+                }
+
+                attempts += 1;
+                tracing::warn!("检测到 Embedding Worker 崩溃，正在尝试第 {}/{} 次独立重启自愈...", attempts, MAX_AUTO_RESTARTS);
+                coord.embedding_guard.clear_crash_flag();
+                let last_model = coord.running_embedding_model.lock().await.clone();
+                let _ = coord.start_embedding_worker_inner(last_model).await;
+            }
+        });
     }
 
     /// 根据 model_id 解析物理文件；若未下载，基于元数据构建保底 ModelInfo。

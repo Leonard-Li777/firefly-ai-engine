@@ -3910,7 +3910,7 @@ async fn reset_downgrade(State(state): State<AppState>) -> impl IntoResponse {
 }
 
 /// 判断目标意图模型与当前运行模型是否为同一模型（支持模型 ID、别名、包含文件名及物理绝对路径的比对）
-fn is_same_model(target: &str, running: &str) -> bool {
+pub fn is_same_model(target: &str, running: &str) -> bool {
     let t_clean = target.replace('\\', "/").to_lowercase();
     let r_clean = running.replace('\\', "/").to_lowercase();
     if t_clean == r_clean {
@@ -3976,11 +3976,10 @@ async fn start_engine_service(
         if let Some(ref m) = config.active_embedding_model {
             Some(m.clone())
         } else {
-            // 当未显式配置 active_embedding_model 时：从已下载模型中自动寻找 WeMM / embedding 模型
             let all_ggufs = collect_all_ggufs(&config.models_dir);
             let found_wemm = all_ggufs.iter().find(|(_, name)| {
                 let nl = name.to_lowercase();
-                !nl.contains("mmproj") && (nl.contains("wemm") || nl.contains("embedding"))
+                !nl.contains("mmproj") && (nl.contains("wemm") || nl.contains("embedding") || nl.contains("bge"))
             }).map(|(p, _)| p.to_string_lossy().to_string());
 
             if let Some(ref wemm) = found_wemm {
@@ -4000,7 +3999,7 @@ async fn start_engine_service(
             let all_ggufs = collect_all_ggufs(&config.models_dir);
             let found_lang = all_ggufs.iter().find(|(_, name)| {
                 let nl = name.to_lowercase();
-                !nl.contains("mmproj") && !nl.contains("wemm") && !nl.contains("embedding")
+                !nl.contains("mmproj") && !nl.contains("wemm") && !nl.contains("embedding") && !nl.contains("bge")
             }).map(|(p, _)| p.to_string_lossy().to_string());
 
             if let Some(ref lang) = found_lang {
@@ -4021,48 +4020,30 @@ async fn start_engine_service(
             StatusCode::BAD_REQUEST,
             Json(json!({
                 "success": false,
-                "error": "未检测到已安装的 WeMM 嵌入向量模型，请先在模型管理中下载 WeMM 模型"
+                "error": "未检测到可用的嵌入向量模型，请先在模型管理中下载 WeMM 或 bge 模型"
             })),
         );
     }
 
-    // 2. 若当前正在运行，检查是否需要意图切换（平滑重启）
-    let proc_status = state.coordinator.guard.status().await;
-    if proc_status == crate::engine::process_guard::ProcessStatus::Running {
-        let running_model = {
-            let rm = state.coordinator.running_model.lock().await.clone();
-            if rm.is_some() {
-                rm
-            } else {
-                state.coordinator.active_model.lock().await.clone()
+    // 2. 独立 Worker 调度：向量与语言模型互不杀进程，彻底根除互相踩踏抖动
+    let res = if req.mode.as_deref() == Some("embedding") {
+        match state.coordinator.ensure_embedding_worker(target_model).await {
+            Ok(_) => (StatusCode::OK, Json(json!({ "success": true, "mode": "embedding", "message": "Embedding Worker 启动并就绪" }))),
+            Err(e) => {
+                error!("启动 Embedding Worker 失败: {}", e);
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "success": false, "mode": "embedding", "error": e.to_string() })))
             }
-        };
-        let need_restart = match (&target_model, &running_model) {
-            (Some(t), Some(r)) => !is_same_model(t, r),
-            _ => false,
-        };
-
-        if need_restart {
-            info!("目标意图模型与当前运行模型不一致 (target: {:?}, running: {:?})，执行平滑重启", target_model, running_model);
-            let _ = state.coordinator.stop_service().await;
         }
-    }
-
-    // 3. 在判断并停止旧服务之后，更新 active_model 预选目标
-    if let Some(target) = target_model {
-        *state.coordinator.active_model.lock().await = Some(target);
-    }
-
-    let res = match state.coordinator.start_service().await {
-        Ok(_) => (StatusCode::OK, Json(json!({ "success": true, "message": "服务启动成功" }))),
-        Err(e) => {
-            error!("启动服务失败: {}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "success": false, "error": e.to_string() })),
-            )
+    } else {
+        match state.coordinator.ensure_language_worker(target_model).await {
+            Ok(_) => (StatusCode::OK, Json(json!({ "success": true, "mode": "language", "message": "Language Worker 启动并就绪" }))),
+            Err(e) => {
+                error!("启动 Language Worker 失败: {}", e);
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "success": false, "mode": "language", "error": e.to_string() })))
+            }
         }
     };
+
     state.coordinator.notify_status_changed().await;
     res
 }
