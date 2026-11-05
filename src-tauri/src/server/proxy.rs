@@ -1,5 +1,5 @@
 // server/proxy.rs
-// 透明反向代理：/v1/* → llama-server 实际端口
+// 透明反向代理：/v1/* 多能力动态路由与全流式零拷贝转发
 
 use axum::{
     body::Body,
@@ -7,17 +7,67 @@ use axum::{
     http::StatusCode,
     response::Response,
 };
+use futures::StreamExt;
 use reqwest::Client;
+use std::collections::HashMap;
 use std::sync::Arc;
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, RwLock};
 use tracing::{debug, warn};
 
 use crate::engine::process_guard::ProcessStatus;
 
-/// 代理状态（目标端口可动态变化）
+/// 推理引擎多模态能力枚举
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Capability {
+    Language,
+    Embedding,
+    Audio,
+    Diffusion,
+}
+
+impl Capability {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::Language => "language",
+            Self::Embedding => "embedding",
+            Self::Audio => "audio",
+            Self::Diffusion => "diffusion",
+        }
+    }
+
+    /// 根据请求路径推断所属能力类别
+    pub fn from_path(path: &str) -> Self {
+        let p = path.trim_start_matches('/');
+        if p.starts_with("v1/embeddings") || p.starts_with("v1/rerank") || p.starts_with("embedding") {
+            Self::Embedding
+        } else if p.starts_with("v1/audio") || p.starts_with("v1/x-firefly/audio") {
+            Self::Audio
+        } else if p.starts_with("v1/images") || p.starts_with("v1/x-firefly/images") {
+            Self::Diffusion
+        } else {
+            // /v1/chat/*, /v1/completions*, tokenize, infill, props, slots, webui 等默认归入 Language
+            Self::Language
+        }
+    }
+}
+
+/// 单个推理 Worker 的运行时槽位信息
+#[derive(Debug, Clone)]
+pub struct WorkerSlot {
+    pub port: u16,
+    pub status: ProcessStatus,
+    pub model_id: String,
+    pub last_active_at: std::time::Instant,
+}
+
+/// 代理状态：支持多能力动态 Worker 注册表与流式转发客户端
 #[derive(Clone)]
 pub struct ProxyState {
+    /// 向下兼容既有语言模型单标量端口查询
     pub target_port: Arc<Mutex<Option<u16>>>,
+    /// 多能力 Worker 注册表：HashMap<Capability, WorkerSlot>
+    pub workers: Arc<RwLock<HashMap<Capability, WorkerSlot>>>,
     pub client: Client,
     pub coordinator: Arc<Mutex<Option<Arc<crate::engine::EngineCoordinator>>>>,
 }
@@ -32,15 +82,69 @@ impl ProxyState {
 
         ProxyState {
             target_port: Arc::new(Mutex::new(None)),
+            workers: Arc::new(RwLock::new(HashMap::new())),
             client,
             coordinator: Arc::new(Mutex::new(None)),
         }
     }
 
+    /// 向下兼容更新默认语言模型目标端口
     pub async fn set_target_port(&self, port: u16) {
-        let mut guard = self.target_port.lock().await;
-        *guard = Some(port);
-        tracing::info!("反向代理目标端口更新: {}", port);
+        {
+            let mut guard = self.target_port.lock().await;
+            *guard = Some(port);
+        }
+        let mut workers = self.workers.write().await;
+        let slot = workers.entry(Capability::Language).or_insert_with(|| WorkerSlot {
+            port,
+            status: ProcessStatus::Running,
+            model_id: "default-language-model".to_string(),
+            last_active_at: std::time::Instant::now(),
+        });
+        slot.port = port;
+        slot.status = ProcessStatus::Running;
+        slot.last_active_at = std::time::Instant::now();
+        tracing::info!("反向代理目标端口更新: {} (已同步注册 Language WorkerSlot)", port);
+    }
+
+    /// 注册或更新指定能力的 Worker 槽位
+    pub async fn register_worker(&self, cap: Capability, slot: WorkerSlot) {
+        if cap == Capability::Language {
+            let mut guard = self.target_port.lock().await;
+            *guard = Some(slot.port);
+        }
+        let mut workers = self.workers.write().await;
+        workers.insert(cap, slot);
+    }
+
+    /// 注销指定能力的 Worker 槽位
+    pub async fn unregister_worker(&self, cap: Capability) {
+        if cap == Capability::Language {
+            let mut guard = self.target_port.lock().await;
+            *guard = None;
+        }
+        let mut workers = self.workers.write().await;
+        workers.remove(&cap);
+    }
+
+    /// 获取指定能力的 Worker 槽位信息快照
+    pub async fn get_worker(&self, cap: Capability) -> Option<WorkerSlot> {
+        let workers = self.workers.read().await;
+        workers.get(&cap).cloned()
+    }
+
+    /// 刷新指定 Worker 槽位的活跃时间戳
+    pub async fn touch_worker(&self, cap: Capability) {
+        let mut workers = self.workers.write().await;
+        if let Some(slot) = workers.get_mut(&cap) {
+            slot.last_active_at = std::time::Instant::now();
+        }
+    }
+
+    /// 获取全部已注册 Worker 槽位清单
+    pub async fn get_all_workers(&self) -> HashMap<Capability, WorkerSlot> {
+        let workers = self.workers.read().await;
+        workers.clone()
     }
 
     pub async fn set_coordinator(&self, coordinator: Arc<crate::engine::EngineCoordinator>) {
@@ -310,12 +414,68 @@ pub fn create_sse_keepalive_stream(
     })
 }
 
-/// 代理 handler：将所有 /v1/* 与 WebUI 请求转发到 llama-server
+/// 代理 handler：拦截 /v1/models 聚合响应，或将多模态请求精准路由到对应 Worker 端口
 pub async fn proxy_handler(
     State(state): State<ProxyState>,
     req: Request<Body>,
 ) -> Response<Body> {
     let req_path = req.uri().path().to_string();
+
+    // 1. /v1/models 全多模态模型聚合拦截（宿主直接响应，严禁无脑单流透传）
+    if (req_path == "/v1/models" || req_path == "/v1/models/") && req.method() == axum::http::Method::GET {
+        let all_workers = state.get_all_workers().await;
+        let mut models_data = Vec::new();
+        let now_ts = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(1700000000);
+
+        for (cap, slot) in all_workers {
+            if slot.status == ProcessStatus::Running {
+                models_data.push(serde_json::json!({
+                    "id": slot.model_id,
+                    "object": "model",
+                    "created": now_ts,
+                    "owned_by": "firefly-ai-engine",
+                    "capabilities": [cap.as_str()],
+                }));
+            }
+        }
+
+        // 向下兼容：若尚未显式注册多槽位但 target_port 已激活，注入默认语言模型
+        if models_data.is_empty() {
+            let target_port = {
+                let guard = state.target_port.lock().await;
+                *guard
+            };
+            if target_port.is_some() {
+                models_data.push(serde_json::json!({
+                    "id": "default-language-model",
+                    "object": "model",
+                    "created": now_ts,
+                    "owned_by": "firefly-ai-engine",
+                    "capabilities": ["language"],
+                }));
+            }
+        }
+
+        let body = serde_json::json!({
+            "object": "list",
+            "data": models_data,
+        });
+
+        return Response::builder()
+            .status(StatusCode::OK)
+            .header("content-type", "application/json")
+            .body(Body::from(body.to_string()))
+            .unwrap();
+    }
+
+    // 2. 推断请求所属能力与目标槽位查找
+    let cap = Capability::from_path(&req_path);
+    let worker_slot = state.get_worker(cap).await;
+
+    // 3. 活跃工作请求计费/生命周期守卫
     let _request_guard = if is_inference_request(&req_path) {
         let coordinator = {
             let guard = state.coordinator.lock().await;
@@ -326,50 +486,68 @@ pub async fn proxy_handler(
         None
     };
 
-    let target_port = {
-        let guard = state.target_port.lock().await;
-        *guard
+    // 4. 目标端口与服务可用性判定
+    let target_port = match worker_slot {
+        Some(ref slot) if slot.status == ProcessStatus::Running => Some(slot.port),
+        _ => {
+            // 向下兼容：若为 Language 且 target_port 存在
+            if cap == Capability::Language {
+                let guard = state.target_port.lock().await;
+                *guard
+            } else {
+                None
+            }
+        }
     };
 
     let Some(port) = target_port else {
-        // 宿主进程可能活着但推理服务从未启动：按真实状态分流，禁止一律谎报 "starting"
+        // 目标能力未就绪或未运行：判定原因并返回精细化拒绝响应
         let coordinator = {
             let guard = state.coordinator.lock().await;
             guard.clone()
         };
-        let proc_status = match coordinator {
-            Some(c) => Some(c.guard.status().await),
-            None => None,
+        let reason = if cap == Capability::Language {
+            let proc_status = match coordinator {
+                Some(c) => Some(c.guard.status().await),
+                None => None,
+            };
+            RejectionReason::from(proc_status.as_ref())
+        } else {
+            match worker_slot.as_ref().map(|s| &s.status) {
+                Some(ProcessStatus::Stopped) | None => RejectionReason::ServiceStopped,
+                Some(ProcessStatus::Failed) => RejectionReason::Failed { message: None },
+                Some(ProcessStatus::Starting) | Some(ProcessStatus::Running) => {
+                    RejectionReason::Starting { deadline_ms: None }
+                }
+            }
         };
-        let reason = RejectionReason::from(proc_status.as_ref());
         warn!(
-            "推理服务尚未就绪，反代请求被拒绝: proc_status={:?}, reason={:?}",
-            proc_status, reason
+            "推理服务槽位尚未就绪，反代请求被拒绝: cap={:?}, reason={:?}",
+            cap, reason
         );
         return build_rejection_response(&reason);
     };
 
-    // 构建目标 URL
+    // 刷新该 Worker 的最近活跃时间
+    state.touch_worker(cap).await;
+
+    // 5. 构建目标内部 URL
     let uri = req.uri();
     let path_and_query = uri.path_and_query().map(|pq| pq.as_str()).unwrap_or("/");
     let target_url = format!("http://127.0.0.1:{}{}", port, path_and_query);
 
-    debug!("代理请求: {} {}", req.method(), target_url);
+    debug!("代理请求 [{}]: {} {}", cap.as_str(), req.method(), target_url);
 
-    // 构建代理请求
     let method = req.method().clone();
     let headers = req.headers().clone();
 
-    // 读取请求体
-    let body_bytes = match axum::body::to_bytes(req.into_body(), 1024 * 1024 * 100).await {
-        Ok(b) => b,
-        Err(e) => {
-            warn!("读取请求体失败: {}", e);
-            return error_response(StatusCode::BAD_REQUEST, "Failed to read request body");
-        }
-    };
+    // 6. 全流式零拷贝请求体转换（废除 100MB 内存硬缓冲，支持超大音频流式直传）
+    let body_stream = req.into_body().into_data_stream().map(|chunk_res| {
+        chunk_res.map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)
+    });
+    let reqwest_body = reqwest::Body::wrap_stream(body_stream);
 
-    // 转发请求
+    // 7. 构建代理请求
     let mut proxy_req = state
         .client
         .request(reqwest::Method::from_bytes(method.as_str().as_bytes()).unwrap(), &target_url);
@@ -387,21 +565,21 @@ pub async fn proxy_handler(
         }
     }
 
-    proxy_req = proxy_req.body(body_bytes);
+    proxy_req = proxy_req.body(reqwest_body);
 
-    // 发送并获取响应
+    // 8. 发送并获取响应
     let resp = match proxy_req.send().await {
         Ok(r) => r,
         Err(e) => {
-            warn!("代理请求失败: {}", e);
+            warn!("代理请求发送失败: {}", e);
             return error_response(
                 StatusCode::BAD_GATEWAY,
-                &format!("AI engine request failed: {}", e),
+                &format!("AI engine worker [{}] request failed: {}", cap.as_str(), e),
             );
         }
     };
 
-    // 构建响应
+    // 9. 构建外部响应
     let status = StatusCode::from_u16(resp.status().as_u16()).unwrap_or(StatusCode::OK);
     let mut builder = Response::builder().status(status);
 
@@ -413,7 +591,7 @@ pub async fn proxy_handler(
         }
     }
 
-    // 检查是否为流式响应（SSE / streaming）
+    // 检查是否为流式响应（SSE / streaming / chunked）
     let is_stream = resp
         .headers()
         .get("content-type")
@@ -424,7 +602,6 @@ pub async fn proxy_handler(
     if is_stream {
         // 流式透传：使用 GuardedStream 持有 _request_guard 直至整个数据流传输结束
         let stream = resp.bytes_stream();
-        use futures::StreamExt;
         let mapped = stream.map(|r| r.map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e)));
         let guarded = GuardedStream {
             inner: Box::pin(mapped),
@@ -438,16 +615,20 @@ pub async fn proxy_handler(
                 .unwrap()
         })
     } else {
-        // 普通响应：body_bytes 读取完成并写入 Response，_request_guard 随函数正常返回而自动 drop
-        let body_bytes = resp.bytes().await.unwrap_or_default();
-        builder
-            .body(Body::from(body_bytes))
-            .unwrap_or_else(|_| {
-                Response::builder()
-                    .status(StatusCode::INTERNAL_SERVER_ERROR)
-                    .body(Body::empty())
-                    .unwrap()
-            })
+        // 普通响应：全流式转换为 axum Body 零拷贝透传
+        let stream = resp.bytes_stream();
+        let mapped = stream.map(|r| r.map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e)));
+        let guarded = GuardedStream {
+            inner: Box::pin(mapped),
+            _guard: _request_guard,
+        };
+        let body = Body::from_stream(guarded);
+        builder.body(body).unwrap_or_else(|_| {
+            Response::builder()
+                .status(StatusCode::INTERNAL_SERVER_ERROR)
+                .body(Body::empty())
+                .unwrap()
+        })
     }
 }
 
@@ -509,5 +690,19 @@ mod tests {
         let (status, _, code) = rejection(None);
         assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE);
         assert_eq!(code, "engine_starting");
+    }
+
+    #[test]
+    fn test_capability_from_path() {
+        assert_eq!(Capability::from_path("/v1/chat/completions"), Capability::Language);
+        assert_eq!(Capability::from_path("/v1/completions"), Capability::Language);
+        assert_eq!(Capability::from_path("/v1/embeddings"), Capability::Embedding);
+        assert_eq!(Capability::from_path("/v1/rerank"), Capability::Embedding);
+        assert_eq!(Capability::from_path("/v1/audio/transcriptions"), Capability::Audio);
+        assert_eq!(Capability::from_path("/v1/audio/speech"), Capability::Audio);
+        assert_eq!(Capability::from_path("/v1/x-firefly/audio/clone"), Capability::Audio);
+        assert_eq!(Capability::from_path("/v1/images/generations"), Capability::Diffusion);
+        assert_eq!(Capability::from_path("/v1/x-firefly/images/upscale"), Capability::Diffusion);
+        assert_eq!(Capability::from_path("/props"), Capability::Language);
     }
 }
