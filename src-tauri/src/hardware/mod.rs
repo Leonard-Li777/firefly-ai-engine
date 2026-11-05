@@ -3,6 +3,7 @@ pub mod competitor_detector;
 pub mod detector;
 pub mod driver_compliance;
 pub mod gpu_info;
+pub mod vram_arbiter;
 
 pub use backend_smoke::{
     build_composite_smoke_cache_key, classify_exit_status, derive_backend_priority_ladder,
@@ -15,4 +16,9 @@ pub use driver_compliance::{DowngradeInfo, DowngradeReason, DriverComplianceServ
 pub use gpu_info::{
     AccelerationTier, CpuInfo, GpuInfo, GpuVendor, MemoryInfo, SystemResources,
     VramFreeProbe, is_flash_attention_supported, is_pascal_arch_gpu,
+};
+pub use vram_arbiter::{
+    query_dxgi_vram, ArbiterPhase, ArbiterStatusSnapshot, DxgiVramInfo, TaskPriority,
+    VramArbiter, VramLeaseToken, DEFAULT_IDLE_COOLDOWN_SECS, MIN_SAFETY_WATERMARK_BYTES,
+    SAFETY_WATERMARK_RATIO,
 };

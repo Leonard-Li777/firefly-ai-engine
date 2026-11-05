@@ -486,6 +486,35 @@ pub async fn proxy_handler(
         None
     };
 
+    // 3.5 显存与生命周期仲裁器 (VRAM Arbiter) 状态核验与不可中断原子段防护
+    let coordinator_opt = {
+        let guard = state.coordinator.lock().await;
+        guard.clone()
+    };
+    if let Some(ref coord) = coordinator_opt {
+        if coord.arbiter.phase().await == crate::hardware::ArbiterPhase::Swapping {
+            let snapshot = coord.arbiter.get_status_snapshot().await;
+            let reason = RejectionReason::Swapping {
+                retry_after_secs: 3,
+                eta_ms: Some(snapshot.eta_ms),
+                queue_position: Some(snapshot.queue_position),
+            };
+            warn!("当前引擎处于不可中断原子迁移段，拒绝外部打断请求: reason={:?}", reason);
+            return build_rejection_response(&reason);
+        }
+    }
+
+    let _vram_lease = if let Some(ref coord) = coordinator_opt {
+        let priority = if cap == Capability::Diffusion {
+            crate::hardware::TaskPriority::P1ActiveImageGen
+        } else {
+            crate::hardware::TaskPriority::P0InteractiveChat
+        };
+        coord.arbiter.acquire_lease(priority).await.ok()
+    } else {
+        None
+    };
+
     // 4. 目标端口与服务可用性判定
     let target_port = match worker_slot {
         Some(ref slot) if slot.status == ProcessStatus::Running => Some(slot.port),

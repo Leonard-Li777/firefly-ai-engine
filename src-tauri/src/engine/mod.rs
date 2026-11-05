@@ -65,6 +65,7 @@ pub struct EngineStatus {
     pub downgrade_info: Option<crate::hardware::DowngradeInfo>,
     pub runtime_params: Option<serde_json::Value>,
     pub last_error: Option<String>,
+    pub arbiter: Option<crate::hardware::ArbiterStatusSnapshot>,
 }
 
 /// 硬件摘要（status 端点返回）
@@ -139,6 +140,11 @@ pub struct EngineCoordinator {
     pub running_embedding_model: Arc<Mutex<Option<String>>>,
     /// 嵌入 Worker 崩溃自愈看门狗启动状态
     embedding_watchdog_started: Arc<std::sync::atomic::AtomicBool>,
+    pub arbiter: Arc<crate::hardware::VramArbiter>,
+    /// Diffusion 生图 Worker 子进程守护器
+    pub diffusion_guard: Arc<ProcessGuard>,
+    /// Audio 语音 Worker 子进程守护器
+    pub audio_guard: Arc<ProcessGuard>,
 }
 
 impl EngineCoordinator {
@@ -166,6 +172,11 @@ impl EngineCoordinator {
         let guard = ProcessGuard::new_with_log_dir(compliance.clone(), log_dir.clone());
         let embedding_log_dir = log_dir.as_ref().map(|d| d.join("embedding"));
         let embedding_guard = ProcessGuard::new_with_log_dir(compliance.clone(), embedding_log_dir);
+        let arbiter = crate::hardware::VramArbiter::new();
+        let diff_log_dir = log_dir.as_ref().map(|d| d.join("diffusion"));
+        let diffusion_guard = ProcessGuard::new_with_log_dir(compliance.clone(), diff_log_dir);
+        let aud_log_dir = log_dir.as_ref().map(|d| d.join("audio"));
+        let audio_guard = ProcessGuard::new_with_log_dir(compliance.clone(), aud_log_dir);
         let (status_broadcast, _) = tokio::sync::broadcast::channel(32);
 
         let coordinator = Arc::new(EngineCoordinator {
@@ -191,6 +202,9 @@ impl EngineCoordinator {
             embedding_guard,
             running_embedding_model: Arc::new(Mutex::new(None)),
             embedding_watchdog_started: Arc::new(std::sync::atomic::AtomicBool::new(false)),
+            arbiter,
+            diffusion_guard,
+            audio_guard,
         });
 
         coordinator
@@ -560,6 +574,7 @@ impl EngineCoordinator {
             downgrade_info,
             runtime_params,
             last_error,
+            arbiter: Some(self.arbiter.get_status_snapshot().await),
         }
     }
 
@@ -774,6 +789,8 @@ impl EngineCoordinator {
         self.guard.stop().await?;
         *self.running_model.lock().await = None;
         let _ = self.stop_embedding_worker().await;
+        let _ = self.diffusion_guard.stop().await;
+        let _ = self.audio_guard.stop().await;
         tracing::info!("引擎服务全部子进程已停止");
         Ok(())
     }
@@ -835,6 +852,123 @@ impl EngineCoordinator {
 
         self.ensure_embedding_crash_watchdog();
         self.start_embedding_worker_inner(target_model).await
+    }
+
+    /// 确保 Diffusion (sd-server) 生图 Worker 运行且加载模型
+    /// 强制开启 VAE Tiling 避免 Windows WDDM TDR 崩溃
+    pub async fn ensure_diffusion_worker(self: &Arc<Self>, model_path: Option<String>) -> anyhow::Result<u16> {
+        let status = self.diffusion_guard.status().await;
+        if status == ProcessStatus::Running {
+            if let Some(slot) = self.proxy_state.get_worker(crate::server::proxy::Capability::Diffusion).await {
+                return Ok(slot.port);
+            }
+        }
+
+        // 寻找 sd-server 可执行文件
+        let server_name = if cfg!(windows) { "sd-server.exe" } else { "sd-server" };
+        let mut found_path = None;
+        for bin_dir in &self.install_bin_dirs {
+            let candidate = bin_dir.join(server_name);
+            if candidate.exists() {
+                found_path = Some(candidate);
+                break;
+            }
+        }
+
+        let exe_path = found_path.unwrap_or_else(|| PathBuf::from(server_name));
+        let free_port = crate::config::find_available_port(38430).await;
+
+        let mut args = vec![
+            "--port".to_string(), free_port.to_string(),
+            "--vae-tiling".to_string(), // 强制注入 VAE Tiling 防 TDR
+        ];
+
+        if let Some(ref m) = model_path {
+            args.push("-m".to_string());
+            args.push(m.clone());
+        }
+
+        tracing::info!("[Diffusion Worker] 启动 sd-server: exe={:?}, port={}", exe_path, free_port);
+        let installed = crate::engine::scheduler::InstalledEngine {
+            dir_name: "diffusion-worker".to_string(),
+            binary_path: exe_path,
+            tier: crate::hardware::gpu_info::AccelerationTier::Vulkan,
+            build_num: None,
+        };
+        let _ = self.diffusion_guard.start(&installed, &args, &[]).await;
+
+        // 注册到 ProxyState 槽位
+        self.proxy_state.register_worker(
+            crate::server::proxy::Capability::Diffusion,
+            crate::server::proxy::WorkerSlot {
+                port: free_port,
+                status: ProcessStatus::Running,
+                model_id: model_path.unwrap_or_else(|| "default-diffusion".to_string()),
+                last_active_at: std::time::Instant::now(),
+            },
+        ).await;
+
+        Ok(free_port)
+    }
+
+    /// 确保 Audio (audiocpp_server) 语音 Worker 运行
+    /// 默认分配 CPU (AVX2)，严格按照 min(4, max(1, cores / 2)) 分配线程，杜绝 CPU 超订
+    pub async fn ensure_audio_worker(self: &Arc<Self>, model_path: Option<String>) -> anyhow::Result<u16> {
+        let status = self.audio_guard.status().await;
+        if status == ProcessStatus::Running {
+            if let Some(slot) = self.proxy_state.get_worker(crate::server::proxy::Capability::Audio).await {
+                return Ok(slot.port);
+            }
+        }
+
+        let server_name = if cfg!(windows) { "audiocpp_server.exe" } else { "audiocpp_server" };
+        let mut found_path = None;
+        for bin_dir in &self.install_bin_dirs {
+            let candidate = bin_dir.join(server_name);
+            if candidate.exists() {
+                found_path = Some(candidate);
+                break;
+            }
+        }
+
+        let exe_path = found_path.unwrap_or_else(|| PathBuf::from(server_name));
+        let free_port = crate::config::find_available_port(38440).await;
+
+        // 防超订线程计算公式: min(4, max(1, cores / 2))
+        let physical_cores = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(4);
+        let alloc_threads = std::cmp::min(4, std::cmp::max(1, (physical_cores / 2) as u32));
+
+        let mut args = vec![
+            "--port".to_string(), free_port.to_string(),
+            "--backend".to_string(), "cpu".to_string(), // 默认分配 CPU
+            "--threads".to_string(), alloc_threads.to_string(),
+        ];
+
+        if let Some(ref m) = model_path {
+            args.push("-m".to_string());
+            args.push(m.clone());
+        }
+
+        tracing::info!("[Audio Worker] 启动 audiocpp_server: exe={:?}, port={}, threads={}", exe_path, free_port, alloc_threads);
+        let installed = crate::engine::scheduler::InstalledEngine {
+            dir_name: "audio-worker".to_string(),
+            binary_path: exe_path,
+            tier: crate::hardware::gpu_info::AccelerationTier::Cpu,
+            build_num: None,
+        };
+        let _ = self.audio_guard.start(&installed, &args, &[]).await;
+
+        self.proxy_state.register_worker(
+            crate::server::proxy::Capability::Audio,
+            crate::server::proxy::WorkerSlot {
+                port: free_port,
+                status: ProcessStatus::Running,
+                model_id: model_path.unwrap_or_else(|| "default-audio".to_string()),
+                last_active_at: std::time::Instant::now(),
+            },
+        ).await;
+
+        Ok(free_port)
     }
 
     /// 实际拉起独立常驻 Embedding Worker 子进程
@@ -1639,4 +1773,46 @@ mod tests {
         let fallback_resolved = resolve_model_name_by_path(&model_path, None, &[], &[]);
         assert_eq!(fallback_resolved, Some("MiniCPM5 1B（较好•越狱）".to_string()), "必须由语义兜底识别出 MiniCPM5 1B");
     }
+
+}
+
+/// 临时图片受控目录 500MB LRU 淘汰清理器 (Issue 06 AC 2)
+pub fn clean_image_cache_lru(cache_dir: &std::path::Path, max_bytes: u64) -> std::io::Result<u64> {
+    if !cache_dir.exists() {
+        return Ok(0);
+    }
+
+    let mut entries = Vec::new();
+    let mut total_bytes = 0u64;
+
+    for entry in std::fs::read_dir(cache_dir)? {
+        let entry = entry?;
+        let metadata = entry.metadata()?;
+        if metadata.is_file() {
+            let size = metadata.len();
+            total_bytes += size;
+            let modified = metadata.modified().unwrap_or(std::time::SystemTime::UNIX_EPOCH);
+            entries.push((entry.path(), size, modified));
+        }
+    }
+
+    if total_bytes <= max_bytes {
+        return Ok(0);
+    }
+
+    // 按修改时间升序排列（最旧的排在前面优先删除）
+    entries.sort_by_key(|(_, _, modified)| *modified);
+
+    let mut deleted_bytes = 0u64;
+    for (path, size, _) in entries {
+        if total_bytes.saturating_sub(deleted_bytes) <= max_bytes {
+            break;
+        }
+        if std::fs::remove_file(&path).is_ok() {
+            deleted_bytes += size;
+        }
+    }
+
+    tracing::info!("[LRU 缓存清理] 成功回收临时图片占用: {} MB", deleted_bytes / (1024 * 1024));
+    Ok(deleted_bytes)
 }

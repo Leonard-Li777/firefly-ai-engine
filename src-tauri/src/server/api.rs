@@ -4089,6 +4089,16 @@ async fn clear_engine_logs(State(state): State<AppState>) -> impl IntoResponse {
 }
 
 /// 注册管理端点路由
+
+/// GET /v1/engine/metrics
+/// 暴露统一的指标与显存仲裁活性状态
+async fn engine_metrics(State(state): State<AppState>) -> impl IntoResponse {
+    let snapshot = state.coordinator.arbiter.get_status_snapshot().await;
+    Json(json!({
+        "arbiter": snapshot,
+    }))
+}
+
 pub fn management_routes() -> Router<AppState> {
     Router::new()
         .route("/api/engine/status", get(engine_status))
@@ -4123,6 +4133,7 @@ pub fn management_routes() -> Router<AppState> {
         .route("/api/engine/ui-intent/consume", post(consume_ui_intent))
         .route("/api/engine/shutdown", post(shutdown))
         .route("/api/engine/reset-downgrade", post(reset_downgrade))
+        .route("/v1/engine/metrics", get(engine_metrics))
 }
 
 #[cfg(test)]
@@ -4403,6 +4414,7 @@ mod tests {
             downgrade_info: None,
             runtime_params: None,
             last_error: None,
+            arbiter: None,
         };
 
         let val = serde_json::to_value(&status).expect("序列化失败");
