@@ -1668,23 +1668,7 @@ pub fn is_engine_dir_matching_backend(dir_name: &str, backend: &str) -> bool {
 
 /// 针对 Windows 下可能存在的短时文件句柄占用（进程退出延迟），带重试清理旧目录
 pub async fn remove_engine_dir_with_retry(dir: &std::path::Path) -> std::io::Result<()> {
-    let max_attempts = 5;
-    let mut last_err = None;
-    for attempt in 1..=max_attempts {
-        match std::fs::remove_dir_all(dir) {
-            Ok(_) => {
-                info!("[引擎更新] 成功清理旧版本引擎目录 (尝试 {}/{}): {:?}", attempt, max_attempts, dir);
-                return Ok(());
-            }
-            Err(e) => {
-                last_err = Some(e);
-                if attempt < max_attempts {
-                    tokio::time::sleep(std::time::Duration::from_millis(300)).await;
-                }
-            }
-        }
-    }
-    Err(last_err.unwrap())
+    crate::win_proc::atomic_retire_and_remove_dir(dir).await
 }
 
 /// 解析指定 backend 在当前平台的推荐文件名
