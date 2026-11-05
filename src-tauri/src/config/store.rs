@@ -240,6 +240,51 @@ pub struct ConfigStore {
     config_path: PathBuf,
 }
 
+
+/// 检查并执行历史废弃模型（如 LFM2.5）向最新推荐模型（Qwen2.5-1.5B-Instruct）的平滑重定向迁移
+pub fn migrate_deprecated_models(config: &mut EngineConfig) -> bool {
+    let mut modified = false;
+    let target_replacement = "Qwen/Qwen2.5-1.5B-Instruct-GGUF:Q4_K_M".to_string();
+
+    // 1. active_language_model
+    if let Some(ref lang) = config.active_language_model {
+        let lower = lang.to_lowercase();
+        if lower.contains("lfm2.5") || lower.contains("lfm2_5") || lower.contains("lfm-2.5") {
+            info!("[配置平滑迁移] 检测到历史废弃模型 active_language_model: {}，自动重定向至推荐模型: {}", lang, target_replacement);
+            config.active_language_model = Some(target_replacement.clone());
+            modified = true;
+        }
+    }
+
+    // 2. 历史兼容字段 selected_model_path
+    if let Some(ref path) = config.selected_model_path {
+        let p_str = path.to_string_lossy().to_lowercase();
+        if p_str.contains("lfm2.5") || p_str.contains("lfm2_5") || p_str.contains("lfm-2.5") {
+            info!("[配置平滑迁移] 检测到历史废弃模型 selected_model_path: {:?}，自动清理重定向", path);
+            config.selected_model_path = None;
+            if config.active_language_model.is_none() {
+                config.active_language_model = Some(target_replacement.clone());
+            }
+            modified = true;
+        }
+    }
+
+    // 3. model_custom_params 哈希表的全部键名扫描
+    let keys: Vec<String> = config.model_custom_params.keys().cloned().collect();
+    for key in keys {
+        let lower = key.to_lowercase();
+        if lower.contains("lfm2.5") || lower.contains("lfm2_5") || lower.contains("lfm-2.5") {
+            if let Some(params) = config.model_custom_params.remove(&key) {
+                info!("[配置平滑迁移] 迁移历史废弃模型自定义参数 key: {} -> {}", key, target_replacement);
+                config.model_custom_params.insert(target_replacement.clone(), params);
+                modified = true;
+            }
+        }
+    }
+
+    modified
+}
+
 impl ConfigStore {
     /// 初始化配置存储
     /// data_dir：Tauri app_data_dir()（产品名 = "firefly-ai-engine"）
@@ -269,6 +314,12 @@ impl ConfigStore {
         config.data_dir = data_dir.clone();
         if config.models_dir.is_relative() {
             config.models_dir = data_dir.join(&config.models_dir);
+        }
+
+        // 启动期存量配置自动平滑迁移重定向 (LFM2.5 -> Qwen2.5-1.5B)
+        if migrate_deprecated_models(&mut config) {
+            info!("[配置平滑迁移] 存量老旧模型配置已自动迁移，正在写回持久化配置");
+            let _ = self.save(&config);
         }
 
         debug!("加载配置成功: models_dir={:?}", config.models_dir);
