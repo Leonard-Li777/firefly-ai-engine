@@ -487,7 +487,10 @@ pub async fn proxy_handler(
     };
 
     // 3.5 显存与生命周期仲裁器 (VRAM Arbiter) 状态核验与不可中断原子段防护
-    let coordinator_opt = {
+    // 独立常驻 Embedding 通道不参与大模型/生图显存置换门闩与独占租约 (Spec §2.2 / A.1)
+    let coordinator_opt = if cap == Capability::Embedding {
+        None
+    } else {
         let guard = state.coordinator.lock().await;
         guard.clone()
     };
