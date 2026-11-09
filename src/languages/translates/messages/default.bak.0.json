@@ -29,7 +29,11 @@
     "de-DE": "Unabhängige hochverfügbare endseitige KI-Inferenz-Engine und Modellverwaltungsplattform",
     "fr-FR": "Moteur d'inférence d'IA end-side indépendant à haute disponibilité et plateforme de gestion de modèles",
     "ko-KR": "독립적인 고가용성 최종 AI 추론 엔진 및 모델 관리 플랫폼",
-    "$files": ["src/App.tsx(8894-8920)", "src/App.tsx(8346-8372)", "src/App.tsx(8131-8157)"],
+    "$files": [
+      "src/App.tsx(8894-8920)",
+      "src/App.tsx(8346-8372)",
+      "src/App.tsx(8131-8157)"
+    ],
     "$id": 441
   },
   "沙盒 Mock": {
@@ -42,7 +46,11 @@
     "de-DE": "Sandbox-Mock",
     "fr-FR": "Maquette de bac à sable",
     "ko-KR": "샌드박스 모의",
-    "$files": ["src/App.tsx(9152-9163)", "src/App.tsx(8604-8615)", "src/App.tsx(8389-8400)"],
+    "$files": [
+      "src/App.tsx(9152-9163)",
+      "src/App.tsx(8604-8615)",
+      "src/App.tsx(8389-8400)"
+    ],
     "$id": 442
   },
   "就绪": {
@@ -308,7 +316,11 @@
     "de-DE": "Herunterladen",
     "fr-FR": "Téléchargement",
     "ko-KR": "다운로드 중",
-    "$files": ["src/App.tsx(15179-15186)", "src/App.tsx(14653-14660)", "src/App.tsx(14208-14215)"],
+    "$files": [
+      "src/App.tsx(15179-15186)",
+      "src/App.tsx(14653-14660)",
+      "src/App.tsx(14208-14215)"
+    ],
     "$id": 1210
   },
   "引擎与硬件": {
@@ -450,7 +462,9 @@
     "de-DE": "Engine wurde erfolgreich aktualisiert und bereitgestellt",
     "fr-FR": "Moteur mis à jour et déployé avec succès",
     "ko-KR": "엔진이 업데이트되고 성공적으로 배포되었습니다.",
-    "$files": ["src/hooks/use-engine-download.ts(2333-2346)"],
+    "$files": [
+      "src/hooks/use-engine-download.ts(2333-2346)"
+    ],
     "$id": 461
   },
   "下载未正常完成": {
@@ -463,7 +477,9 @@
     "de-DE": "Der Download wurde nicht normal abgeschlossen",
     "fr-FR": "Le téléchargement ne s'est pas terminé normalement",
     "ko-KR": "다운로드가 정상적으로 완료되지 않았습니다",
-    "$files": ["src/hooks/use-engine-download.ts(2390-2401)"],
+    "$files": [
+      "src/hooks/use-engine-download.ts(2390-2401)"
+    ],
     "$id": 462
   },
   "引擎下载失败": {
@@ -476,7 +492,9 @@
     "de-DE": "Der Engine-Download ist fehlgeschlagen",
     "fr-FR": "Échec du téléchargement du moteur",
     "ko-KR": "엔진 다운로드 실패",
-    "$files": ["src/hooks/use-engine-download.ts(2517-2527)"],
+    "$files": [
+      "src/hooks/use-engine-download.ts(2517-2527)"
+    ],
     "$id": 463
   },
   "显存不足": {
@@ -522,7 +540,9 @@
     "de-DE": "Nicht genügend Videospeicher oder Arbeitsspeicher zum Laden des aktuellen Modells",
     "fr-FR": "Mémoire vidéo ou mémoire insuffisante pour charger le modèle actuel",
     "ko-KR": "현재 모델을 로드하기에는 비디오 메모리 또는 메모리가 부족합니다.",
-    "$files": ["src/lib/error-analyzer.ts(5021-5041)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(5021-5041)"
+    ],
     "$id": 467
   },
   "关闭其他占用显存的应用程序": {
@@ -535,7 +555,9 @@
     "de-DE": "Schließen Sie andere Anwendungen, die Videospeicher belegen  ",
     "fr-FR": "Fermez les autres applications utilisant la mémoire vidéo  ",
     "ko-KR": "VRAM을 사용 중인 다른 애플리케이션을 종료하세요",
-    "$files": ["src/lib/error-analyzer.ts(5077-5094)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(5077-5094)"
+    ],
     "$id": 468
   },
   "尝试切换到更小的模型（如 0.8B 或更小）": {
@@ -548,7 +570,9 @@
     "de-DE": "Versuchen Sie, auf ein kleineres Modell umzusteigen (z. B. 0,8B oder kleiner).",
     "fr-FR": "Essayez de passer à un modèle plus petit (comme 0,8 B ou moins)",
     "ko-KR": "더 작은 모델(예: 0.8B 이하)로 전환해 보세요.",
-    "$files": ["src/lib/error-analyzer.ts(5108-5134)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(5108-5134)"
+    ],
     "$id": 469
   },
   "在「引擎与硬件」中切换到 CPU 或兼容模式": {
@@ -561,7 +585,9 @@
     "de-DE": "Wechseln Sie unter „Engine & Hardware“ in den CPU- oder Kompatibilitätsmodus.",
     "fr-FR": "Passez en mode CPU ou compatibilité dans \"Moteur et matériel\"",
     "ko-KR": "\"엔진 및 하드웨어\"에서 CPU 또는 호환 모드로 전환하세요.",
-    "$files": ["src/lib/error-analyzer.ts(5148-5174)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(5148-5174)"
+    ],
     "$id": 470
   },
   "查看运行日志获取更多技术细节": {
@@ -599,7 +625,9 @@
     "de-DE": "Anomalie beim Grafikkartentreiber oder in der Beschleunigungsschicht",
     "fr-FR": "Anomalie du pilote de la carte graphique ou de la couche d'accélération",
     "ko-KR": "그래픽 카드 드라이버 또는 가속 레이어 이상",
-    "$files": ["src/lib/error-analyzer.ts(5349-5363)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(5349-5363)"
+    ],
     "$id": 472
   },
   "当前 GPU 驱动/加速后端与模型运行不兼容，引擎可能已降级": {
@@ -612,7 +640,9 @@
     "de-DE": "Der aktuelle GPU-Treiber/Beschleunigungs-Backend ist nicht mit dem laufenden Modell kompatibel und die Engine wurde möglicherweise herabgestuft",
     "fr-FR": "Le pilote GPU/backend d'accélération actuel est incompatible avec le modèle en cours d'exécution et le moteur a peut-être été rétrogradé.",
     "ko-KR": "현재 GPU 드라이버/가속 백엔드는 실행 중인 모델과 호환되지 않으며 엔진이 다운그레이드되었을 수 있습니다.",
-    "$files": ["src/lib/error-analyzer.ts(5388-5422)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(5388-5422)"
+    ],
     "$id": 473
   },
   "升级显卡驱动至最新版本": {
@@ -625,7 +655,9 @@
     "de-DE": "Aktualisieren Sie den Grafikkartentreiber auf die neueste Version",
     "fr-FR": "Mettez à niveau le pilote de la carte graphique vers la dernière version",
     "ko-KR": "그래픽 카드 드라이버를 최신 버전으로 업그레이드하세요.",
-    "$files": ["src/lib/error-analyzer.ts(5458-5473)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(5458-5473)"
+    ],
     "$id": 474
   },
   "在「引擎与硬件」中切换计算引擎（如 CUDA → Vulkan → CPU）": {
@@ -638,7 +670,9 @@
     "de-DE": "Wechseln Sie die Computer-Engine unter „Engine und Hardware“ (z. B. CUDA → Vulkan → CPU).",
     "fr-FR": "Changez le moteur de calcul dans \"Moteur et matériel\" (tel que CUDA → Vulkan → CPU)",
     "ko-KR": "\"엔진 및 하드웨어\"(예: CUDA → Vulkan → CPU)에서 컴퓨팅 엔진을 전환합니다.",
-    "$files": ["src/lib/error-analyzer.ts(5487-5529)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(5487-5529)"
+    ],
     "$id": 475
   },
   "启用兼容模式后重试启动": {
@@ -651,7 +685,9 @@
     "de-DE": "Versuchen Sie den Bootvorgang erneut, nachdem Sie den Kompatibilitätsmodus aktiviert haben",
     "fr-FR": "Réessayez de démarrer après avoir activé le mode de compatibilité",
     "ko-KR": "호환 모드를 활성화한 후 부팅을 다시 시도하세요.",
-    "$files": ["src/lib/error-analyzer.ts(5543-5558)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(5543-5558)"
+    ],
     "$id": 476
   },
   "当前环境无法运行本地 AI": {
@@ -664,7 +700,9 @@
     "de-DE": "Die aktuelle Umgebung kann keine lokale KI ausführen",
     "fr-FR": "L'environnement actuel ne peut pas exécuter l'IA locale",
     "ko-KR": "현재 환경에서는 로컬 AI를 실행할 수 없습니다.",
-    "$files": ["src/lib/error-analyzer.ts(5734-5751)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(5734-5751)"
+    ],
     "$id": 477
   },
   "系统环境发生致命错误，本地引擎无法继续运行": {
@@ -677,7 +715,9 @@
     "de-DE": "In der Systemumgebung ist ein schwerwiegender Fehler aufgetreten und die lokale Engine kann nicht weiter ausgeführt werden.",
     "fr-FR": "Une erreur fatale s'est produite dans l'environnement système et le moteur local ne peut pas continuer à fonctionner.",
     "ko-KR": "시스템 환경에 치명적인 오류가 발생하여 로컬 엔진을 계속 실행할 수 없습니다.",
-    "$files": ["src/lib/error-analyzer.ts(5776-5801)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(5776-5801)"
+    ],
     "$id": 478
   },
   "重启应用后重试": {
@@ -690,7 +730,9 @@
     "de-DE": "Starten Sie die App neu und versuchen Sie es erneut",
     "fr-FR": "Redémarrez l'application et réessayez",
     "ko-KR": "앱을 다시 시작한 후 다시 시도해 보세요.",
-    "$files": ["src/lib/error-analyzer.ts(5837-5848)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(5837-5848)"
+    ],
     "$id": 479
   },
   "在「引擎与硬件」中强制使用 CPU 模式": {
@@ -703,7 +745,9 @@
     "de-DE": "CPU-Modus in Engine & Hardware erzwingen",
     "fr-FR": "Forcer le mode CPU dans Moteur et matériel",
     "ko-KR": "엔진 및 하드웨어에서 강제 CPU 모드",
-    "$files": ["src/lib/error-analyzer.ts(5862-5886)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(5862-5886)"
+    ],
     "$id": 480
   },
   "检查系统内存与磁盘空间是否充足": {
@@ -716,7 +760,9 @@
     "de-DE": "Prüfen Sie, ob Systemspeicher und Festplattenspeicher ausreichend sind",
     "fr-FR": "Vérifiez si la mémoire système et l'espace disque sont suffisants",
     "ko-KR": "시스템 메모리와 디스크 공간이 충분한지 확인하세요.",
-    "$files": ["src/lib/error-analyzer.ts(5900-5919)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(5900-5919)"
+    ],
     "$id": 481
   },
   "引擎程序缺失": {
@@ -729,7 +775,9 @@
     "de-DE": "Motorprogramm fehlt",
     "fr-FR": "Programme moteur manquant",
     "ko-KR": "엔진 프로그램 누락",
-    "$files": ["src/lib/error-analyzer.ts(6091-6101)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(6091-6101)"
+    ],
     "$id": 482
   },
   "未找到 llama.cpp 引擎可执行文件，部署可能不完整": {
@@ -742,7 +790,9 @@
     "de-DE": "Die ausführbare Datei der llama.cpp-Engine wurde nicht gefunden. Die Bereitstellung ist möglicherweise unvollständig",
     "fr-FR": "L'exécutable du moteur lama.cpp est introuvable, le déploiement peut être incomplet",
     "ko-KR": "llama.cpp 엔진 실행 파일을 찾을 수 없습니다. 배포가 불완전할 수 있습니다.",
-    "$files": ["src/lib/error-analyzer.ts(6126-6159)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(6126-6159)"
+    ],
     "$id": 483
   },
   "重新安装应用或恢复引擎组件": {
@@ -755,7 +805,9 @@
     "de-DE": "Installieren Sie Anwendungen neu oder stellen Sie Engine-Komponenten wieder her",
     "fr-FR": "Réinstaller des applications ou restaurer les composants du moteur",
     "ko-KR": "애플리케이션 재설치 또는 엔진 구성 요소 복원",
-    "$files": ["src/lib/error-analyzer.ts(6195-6212)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(6195-6212)"
+    ],
     "$id": 484
   },
   "检查模型与引擎安装目录是否被安全软件隔离": {
@@ -768,7 +820,9 @@
     "de-DE": "Überprüfen Sie, ob die Modell- und Engine-Installationsverzeichnisse durch Sicherheitssoftware isoliert sind",
     "fr-FR": "Vérifiez si les répertoires d'installation du modèle et du moteur sont isolés par un logiciel de sécurité",
     "ko-KR": "모델 및 엔진 설치 디렉터리가 보안 소프트웨어에 의해 격리되어 있는지 확인",
-    "$files": ["src/lib/error-analyzer.ts(6226-6250)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(6226-6250)"
+    ],
     "$id": 485
   },
   "尚未下载模型": {
@@ -781,7 +835,9 @@
     "de-DE": "Noch kein Modell heruntergeladen",
     "fr-FR": "Aucun modèle téléchargé pour le moment",
     "ko-KR": "아직 다운로드된 모델이 없습니다.",
-    "$files": ["src/lib/error-analyzer.ts(6417-6427)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(6417-6427)"
+    ],
     "$id": 486
   },
   "当前模型存储目录下没有可用的 GGUF 模型文件，引擎无法启动": {
@@ -794,7 +850,9 @@
     "de-DE": "Im aktuellen Modellspeicherverzeichnis ist keine GGUF-Modelldatei verfügbar und die Engine kann nicht gestartet werden.",
     "fr-FR": "Aucun fichier de modèle GGUF n'est disponible dans le répertoire de stockage de modèle actuel et le moteur ne peut pas être démarré.",
     "ko-KR": "현재 모델 저장 디렉터리에 사용 가능한 GGUF 모델 파일이 없어 엔진을 시작할 수 없습니다.",
-    "$files": ["src/lib/error-analyzer.ts(6452-6487)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(6452-6487)"
+    ],
     "$id": 487
   },
   "前往「模型管理」下载一个模型后重试": {
@@ -807,7 +865,9 @@
     "de-DE": "Gehen Sie zu „Modellverwaltung“, um ein Modell herunterzuladen, und versuchen Sie es erneut",
     "fr-FR": "Allez dans \"Gestion des modèles\" pour télécharger un modèle et réessayez",
     "ko-KR": "\"모델 관리\"로 이동하여 모델을 다운로드하고 다시 시도하세요.",
-    "$files": ["src/lib/error-analyzer.ts(6523-6544)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(6523-6544)"
+    ],
     "$id": 488
   },
   "在「模型管理」中重新扫描存储目录": {
@@ -820,7 +880,9 @@
     "de-DE": "Scannen Sie das Speicherverzeichnis in „Model Management“ erneut.",
     "fr-FR": "Analysez à nouveau le répertoire de stockage dans « Gestion des modèles »",
     "ko-KR": "\"모델 관리\"에서 저장소 디렉터리를 다시 검색합니다.",
-    "$files": ["src/lib/error-analyzer.ts(6558-6578)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(6558-6578)"
+    ],
     "$id": 489
   },
   "确认模型存储目录设置正确且包含 .gguf 文件": {
@@ -833,7 +895,9 @@
     "de-DE": "Stellen Sie sicher, dass das Modellspeicherverzeichnis richtig eingestellt ist und .gguf-Dateien enthält",
     "fr-FR": "Confirmez que le répertoire de stockage du modèle est correctement défini et contient les fichiers .gguf",
     "ko-KR": "모델 저장소 디렉터리가 올바르게 설정되어 있고 .gguf 파일이 포함되어 있는지 확인하세요.",
-    "$files": ["src/lib/error-analyzer.ts(6592-6620)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(6592-6620)"
+    ],
     "$id": 490
   },
   "模型加载失败": {
@@ -846,7 +910,9 @@
     "de-DE": "Das Laden des Modells ist fehlgeschlagen",
     "fr-FR": "Échec du chargement du modèle",
     "ko-KR": "모델 로드 실패",
-    "$files": ["src/lib/error-analyzer.ts(6789-6799)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(6789-6799)"
+    ],
     "$id": 491
   },
   "模型文件存在但加载失败，通常是文件损坏、不兼容或资源不足": {
@@ -859,7 +925,9 @@
     "de-DE": "Die Modelldatei ist vorhanden, kann jedoch nicht geladen werden. Dies ist in der Regel auf Dateibeschädigung, Inkompatibilität oder unzureichende Ressourcen zurückzuführen.",
     "fr-FR": "Le fichier modèle existe mais ne parvient pas à se charger. Cela est généralement dû à une corruption de fichiers, à une incompatibilité ou à des ressources insuffisantes.",
     "ko-KR": "모델 파일이 존재하지만 로드에 실패했습니다. 이는 일반적으로 파일 손상, 비호환성 또는 리소스 부족으로 인해 발생합니다.",
-    "$files": ["src/lib/error-analyzer.ts(6824-6856)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(6824-6856)"
+    ],
     "$id": 492
   },
   "重新下载模型文件或切换其他模型": {
@@ -872,7 +940,9 @@
     "de-DE": "Laden Sie die Modelldatei erneut herunter oder wechseln Sie zu einem anderen Modell",
     "fr-FR": "Re-téléchargez le fichier modèle ou passez à un autre modèle",
     "ko-KR": "모델 파일을 다시 다운로드하거나 다른 모델로 전환하세요.",
-    "$files": ["src/lib/error-analyzer.ts(6892-6911)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(6892-6911)"
+    ],
     "$id": 493
   },
   "检查磁盘空间和系统显存是否充足": {
@@ -885,7 +955,9 @@
     "de-DE": "Prüfen Sie, ob der Festplattenspeicher und der Systemspeicher ausreichend sind",
     "fr-FR": "Vérifiez si l'espace disque et la mémoire système sont suffisants",
     "ko-KR": "디스크 공간과 시스템 메모리가 충분한지 확인하세요.",
-    "$files": ["src/lib/error-analyzer.ts(6925-6944)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(6925-6944)"
+    ],
     "$id": 494
   },
   "尝试使用更小尺寸的模型": {
@@ -898,7 +970,9 @@
     "de-DE": "Versuchen Sie es mit einem kleineren Modell",
     "fr-FR": "Essayez un modèle de plus petite taille",
     "ko-KR": "더 작은 크기의 모델을 사용해 보세요",
-    "$files": ["src/lib/error-analyzer.ts(6958-6973)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(6958-6973)"
+    ],
     "$id": 495
   },
   "在「引擎与硬件」中切换到 CPU 模式": {
@@ -911,7 +985,9 @@
     "de-DE": "Wechseln Sie unter „Engine und Hardware“ in den CPU-Modus.",
     "fr-FR": "Passer en mode CPU dans \"Moteur et matériel\"",
     "ko-KR": "\"엔진 및 하드웨어\"에서 CPU 모드로 전환",
-    "$files": ["src/lib/error-analyzer.ts(6987-7010)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(6987-7010)"
+    ],
     "$id": 496
   },
   "引擎服务启动失败": {
@@ -924,7 +1000,9 @@
     "de-DE": "Der Motorservice konnte nicht gestartet werden",
     "fr-FR": "Le service moteur n'a pas pu démarrer",
     "ko-KR": "엔진 서비스를 시작하지 못했습니다.",
-    "$files": ["src/lib/error-analyzer.ts(7185-7197)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(7185-7197)"
+    ],
     "$id": 497
   },
   "llama.cpp 服务未能成功启动或端口异常": {
@@ -937,7 +1015,9 @@
     "de-DE": "Der Dienst llama.cpp konnte nicht erfolgreich gestartet werden oder der Port war abnormal.",
     "fr-FR": "Le service llama.cpp n'a pas pu démarrer correctement ou le port était anormal.",
     "ko-KR": "llama.cpp 서비스를 성공적으로 시작하지 못했거나 포트가 비정상이었습니다.",
-    "$files": ["src/lib/error-analyzer.ts(7222-7249)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(7222-7249)"
+    ],
     "$id": 498
   },
   "检查端口是否被占用，稍后重试启动": {
@@ -950,7 +1030,9 @@
     "de-DE": "Überprüfen Sie, ob der Port belegt ist, und versuchen Sie es später erneut",
     "fr-FR": "Vérifiez si le port est occupé et essayez de redémarrer plus tard",
     "ko-KR": "포트가 사용 중인지 확인하고 나중에 다시 시작해 보세요.",
-    "$files": ["src/lib/error-analyzer.ts(7285-7305)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(7285-7305)"
+    ],
     "$id": 499
   },
   "确认模型文件完整且已正确选择": {
@@ -963,7 +1045,9 @@
     "de-DE": "Bestätigen Sie, dass die Modelldatei vollständig und richtig ausgewählt ist",
     "fr-FR": "Confirmez que le fichier modèle est complet et correctement sélectionné",
     "ko-KR": "모델 파일이 완전하고 올바르게 선택되었는지 확인",
-    "$files": ["src/lib/error-analyzer.ts(7319-7337)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(7319-7337)"
+    ],
     "$id": 500
   },
   "切换计算引擎或强制 CPU 模式后重试": {
@@ -976,7 +1060,9 @@
     "de-DE": "Versuchen Sie es erneut, nachdem Sie die Rechen-Engine gewechselt oder den CPU-Modus erzwungen haben",
     "fr-FR": "Réessayez après avoir changé de moteur de calcul ou forcé le mode CPU",
     "ko-KR": "컴퓨팅 엔진을 전환하거나 CPU 모드를 강제 적용한 후 다시 시도하세요.",
-    "$files": ["src/lib/error-analyzer.ts(7351-7374)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(7351-7374)"
+    ],
     "$id": 501
   },
   "引擎异常崩溃": {
@@ -989,7 +1075,9 @@
     "de-DE": "Motor stürzt unerwartet ab",
     "fr-FR": "Le moteur tombe en panne de manière inattendue",
     "ko-KR": "엔진이 예기치 않게 충돌함",
-    "$files": ["src/lib/error-analyzer.ts(7544-7554)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(7544-7554)"
+    ],
     "$id": 502
   },
   "推理进程意外退出，可能与驱动、显存或模型有关": {
@@ -1002,7 +1090,9 @@
     "de-DE": "Der Rückschlussvorgang wurde unerwartet beendet, was möglicherweise mit dem Treiber, dem Videospeicher oder dem Modell zusammenhängt.",
     "fr-FR": "Le processus d'inférence s'est terminé de manière inattendue, ce qui peut être lié au pilote, à la mémoire vidéo ou au modèle.",
     "ko-KR": "추론 프로세스가 예기치 않게 종료되었습니다. 이는 드라이버, 비디오 메모리 또는 모델과 관련이 있을 수 있습니다.",
-    "$files": ["src/lib/error-analyzer.ts(7579-7605)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(7579-7605)"
+    ],
     "$id": 503
   },
   "切换到占用显存更小的模型": {
@@ -1015,7 +1105,9 @@
     "de-DE": "Wechseln Sie zu einem Modell, das weniger Videospeicher benötigt",
     "fr-FR": "Passez à un modèle qui utilise moins de mémoire vidéo",
     "ko-KR": "비디오 메모리를 덜 차지하는 모델로 전환하세요",
-    "$files": ["src/lib/error-analyzer.ts(7641-7657)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(7641-7657)"
+    ],
     "$id": 504
   },
   "停止其他占用显存的程序后重试": {
@@ -1028,7 +1120,9 @@
     "de-DE": "Stoppen Sie, dass andere Programme Videospeicher belegen, und versuchen Sie es erneut.",
     "fr-FR": "Arrêtez les autres programmes d'utiliser la mémoire vidéo et réessayez.",
     "ko-KR": "비디오 메모리를 차지하는 다른 프로그램을 중지하고 다시 시도하십시오.",
-    "$files": ["src/lib/error-analyzer.ts(7671-7689)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(7671-7689)"
+    ],
     "$id": 505
   },
   "尝试手动配置引擎为 CPU 模式": {
@@ -1041,7 +1135,9 @@
     "de-DE": "Versuchen Sie, den CPU-Modus in den Einstellungen zu erzwingen und das Minimalmodell zu verwenden",
     "fr-FR": "Essayez de forcer le mode CPU dans les paramètres et utilisez le modèle minimal",
     "ko-KR": "설정에서 CPU 모드를 강제로 켜고 최소 모델을 사용해 보세요.",
-    "$files": ["src/lib/error-analyzer.ts(7703-7723)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(7703-7723)"
+    ],
     "$id": 506
   },
   "请求超时": {
@@ -1054,7 +1150,9 @@
     "de-DE": "Anfragezeitüberschreitung",
     "fr-FR": "Délai de demande dépassé",
     "ko-KR": "요청 시간 초과",
-    "$files": ["src/lib/error-analyzer.ts(7892-7900)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(7892-7900)"
+    ],
     "$id": 507
   },
   "引擎响应超时，可能是负载过高或服务未就绪": {
@@ -1067,7 +1165,9 @@
     "de-DE": "Die Reaktion des Motors ist abgelaufen, möglicherweise weil die Last zu hoch ist oder der Dienst nicht bereit ist.",
     "fr-FR": "Le délai de réponse du moteur a expiré, peut-être parce que la charge est trop élevée ou que le service n'est pas prêt.",
     "ko-KR": "엔진 응답 시간이 초과되었습니다. 로드가 너무 높거나 서비스가 준비되지 않았기 때문일 수 있습니다.",
-    "$files": ["src/lib/error-analyzer.ts(7925-7949)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(7925-7949)"
+    ],
     "$id": 508
   },
   "等待服务就绪后重试": {
@@ -1080,7 +1180,9 @@
     "de-DE": "Warten Sie, bis der Dienst bereit ist, und versuchen Sie es erneut",
     "fr-FR": "Attendez que le service soit prêt et réessayez",
     "ko-KR": "서비스가 준비될 때까지 기다린 후 다시 시도하세요.",
-    "$files": ["src/lib/error-analyzer.ts(7985-7998)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(7985-7998)"
+    ],
     "$id": 509
   },
   "切换到更轻量的模型": {
@@ -1093,7 +1195,9 @@
     "de-DE": "Wechseln Sie zu einem leichteren Modell",
     "fr-FR": "Passer à un modèle plus léger",
     "ko-KR": "더 가벼운 모델로 전환하세요",
-    "$files": ["src/lib/error-analyzer.ts(8012-8025)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(8012-8025)"
+    ],
     "$id": 510
   },
   "减少正在运行的后台任务": {
@@ -1106,7 +1210,9 @@
     "de-DE": "Reduzieren Sie laufende Hintergrundaufgaben",
     "fr-FR": "Réduire les tâches en arrière-plan en cours d'exécution",
     "ko-KR": "실행 중인 백그라운드 작업 줄이기",
-    "$files": ["src/lib/error-analyzer.ts(8039-8054)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(8039-8054)"
+    ],
     "$id": 511
   },
   "磁盘空间不足": {
@@ -1119,7 +1225,9 @@
     "de-DE": "Nicht genügend Speicherplatz",
     "fr-FR": "Pas assez d'espace disque",
     "ko-KR": "디스크 공간이 부족합니다.",
-    "$files": ["src/lib/error-analyzer.ts(8215-8225)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(8215-8225)"
+    ],
     "$id": 512
   },
   "磁盘空间不足，无法完成模型或日志写入": {
@@ -1132,7 +1240,9 @@
     "de-DE": "Nicht genügend Speicherplatz, um das Schreiben des Modells oder Protokolls abzuschließen",
     "fr-FR": "Espace disque insuffisant pour terminer l'écriture du modèle ou du journal",
     "ko-KR": "모델 또는 로그 쓰기를 완료하기에는 디스크 공간이 부족합니다.",
-    "$files": ["src/lib/error-analyzer.ts(8250-8272)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(8250-8272)"
+    ],
     "$id": 513
   },
   "清理磁盘空间后重试": {
@@ -1145,7 +1255,9 @@
     "de-DE": "Machen Sie Speicherplatz frei und versuchen Sie es erneut",
     "fr-FR": "Libérez de l'espace disque et réessayez",
     "ko-KR": "디스크 공간을 비운 후 다시 시도하세요.",
-    "$files": ["src/lib/error-analyzer.ts(8308-8321)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(8308-8321)"
+    ],
     "$id": 514
   },
   "将模型存储路径迁移到更大磁盘": {
@@ -1158,7 +1270,9 @@
     "de-DE": "Modellspeicherpfad auf eine größere Festplatte migrieren",
     "fr-FR": "Migrer le chemin de stockage du modèle vers un disque plus grand",
     "ko-KR": "모델 스토리지 경로를 더 큰 디스크로 마이그레이션",
-    "$files": ["src/lib/error-analyzer.ts(8335-8353)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(8335-8353)"
+    ],
     "$id": 515
   },
   "引擎运行异常": {
@@ -1171,7 +1285,9 @@
     "de-DE": "Motor läuft ungewöhnlich",
     "fr-FR": "Le moteur tourne anormalement",
     "ko-KR": "엔진이 비정상적으로 작동 중",
-    "$files": ["src/lib/error-analyzer.ts(8507-8517)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(8507-8517)"
+    ],
     "$id": 516
   },
   "引擎运行出现异常，建议查看日志并重试": {
@@ -1184,7 +1300,9 @@
     "de-DE": "Der Motor läuft ungewöhnlich. Es wird empfohlen, das Protokoll zu überprüfen und es erneut zu versuchen.",
     "fr-FR": "Le moteur tourne anormalement. Il est recommandé de vérifier le journal et de réessayer.",
     "ko-KR": "엔진이 비정상적으로 작동하고 있습니다. 로그를 확인하고 다시 시도하는 것이 좋습니다.",
-    "$files": ["src/lib/error-analyzer.ts(8542-8564)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(8542-8564)"
+    ],
     "$id": 517
   },
   "重试启动服务": {
@@ -1213,7 +1331,9 @@
     "de-DE": "Wechseln Sie Modelle oder Berechnungs-Engines",
     "fr-FR": "Changer de modèle ou de moteur de calcul",
     "ko-KR": "모델 또는 계산 엔진 전환",
-    "$files": ["src/lib/error-analyzer.ts(8624-8637)"],
+    "$files": [
+      "src/lib/error-analyzer.ts(8624-8637)"
+    ],
     "$id": 519
   },
   "主语言模型": {
@@ -1226,7 +1346,9 @@
     "de-DE": "Hauptsprachmodell",
     "fr-FR": "Modèle de langage principal",
     "ko-KR": "주요 언어 모델",
-    "$files": ["src/lib/model-component-recommender.ts(1121-1130)"],
+    "$files": [
+      "src/lib/model-component-recommender.ts(1121-1130)"
+    ],
     "$id": 1381
   },
   "核心中枢": {
@@ -1239,7 +1361,9 @@
     "de-DE": "Kernzentrum",
     "fr-FR": "Centre central",
     "ko-KR": "핵심 센터",
-    "$files": ["src/lib/model-component-recommender.ts(1149-1157)"],
+    "$files": [
+      "src/lib/model-component-recommender.ts(1149-1157)"
+    ],
     "$id": 1382
   },
   "负责文本理解、实体识别、分类打标与智能总结（核心必备底座）": {
@@ -1252,7 +1376,9 @@
     "de-DE": "Verantwortlich für Textverständnis, Entitätserkennung, Klassifizierungskennzeichnung und intelligente Zusammenfassung (wesentliche Kernbasis)",
     "fr-FR": "Responsable de la compréhension du texte, de la reconnaissance des entités, de l'étiquetage de la classification et du résumé intelligent (base essentielle de base)",
     "ko-KR": "텍스트 이해, 개체 인식, 분류 라벨링 및 지능형 요약을 담당합니다(핵심 필수 기반).",
-    "$files": ["src/lib/model-component-recommender.ts(1176-1209)"],
+    "$files": [
+      "src/lib/model-component-recommender.ts(1176-1209)"
+    ],
     "$id": 1383
   },
   "识图多模态模型": {
@@ -1265,7 +1391,9 @@
     "de-DE": "Multimodales Modell der Bilderkennung",
     "fr-FR": "Modèle multimodal de reconnaissance d'images",
     "ko-KR": "이미지 인식의 다중 모드 모델",
-    "$files": ["src/lib/model-component-recommender.ts(1244-1255)"],
+    "$files": [
+      "src/lib/model-component-recommender.ts(1244-1255)"
+    ],
     "$id": 1384
   },
   "视觉之眼": {
@@ -1278,7 +1406,9 @@
     "de-DE": "Auge des Sehens",
     "fr-FR": "Oeil de vue",
     "ko-KR": "시력의 눈",
-    "$files": ["src/lib/model-component-recommender.ts(1274-1282)"],
+    "$files": [
+      "src/lib/model-component-recommender.ts(1274-1282)"
+    ],
     "$id": 1385
   },
   "赋予模型看图能力，用于图片理解、图表分析与 OCR 图文提取；若无需看图可取消以节约显存": {
@@ -1291,7 +1421,9 @@
     "de-DE": "Geben Sie dem Modell die Fähigkeit, Bilder zu lesen, die zum Bildverständnis, zur Diagrammanalyse und zur OCR-Bild- und Textextraktion verwendet werden können. Wenn Sie keine Bilder lesen müssen, können Sie den Vorgang abbrechen, um Videospeicher zu sparen.",
     "fr-FR": "Donner au modèle la capacité de lire des images, qui peuvent être utilisées pour la compréhension d'images, l'analyse de graphiques et l'extraction d'images et de texte OCR ; si vous n'avez pas besoin de lire les images, vous pouvez l'annuler pour économiser la mémoire vidéo.",
     "ko-KR": "그림 이해, 차트 분석, OCR 이미지 및 텍스트 추출에 사용할 수 있는 그림을 읽을 수 있는 기능을 모델에 부여합니다. 사진을 읽을 필요가 없으면 취소하여 비디오 메모리를 절약할 수 있습니다.",
-    "$files": ["src/lib/model-component-recommender.ts(1301-1349)"],
+    "$files": [
+      "src/lib/model-component-recommender.ts(1301-1349)"
+    ],
     "$id": 1386
   },
   "DSpark 加速模型": {
@@ -1304,7 +1436,9 @@
     "de-DE": "DSpark-Beschleunigungsmodell",
     "fr-FR": "Modèle d'accélération DSpark",
     "ko-KR": "DSpark 가속 모델",
-    "$files": ["src/lib/model-component-recommender.ts(1384-1399)"],
+    "$files": [
+      "src/lib/model-component-recommender.ts(1384-1399)"
+    ],
     "$id": 1387
   },
   "提速 50%": {
@@ -1317,7 +1451,9 @@
     "de-DE": "50 % schneller",
     "fr-FR": "50% plus rapide",
     "ko-KR": "50% 더 빨라짐",
-    "$files": ["src/lib/model-component-recommender.ts(1418-1428)"],
+    "$files": [
+      "src/lib/model-component-recommender.ts(1418-1428)"
+    ],
     "$id": 1388
   },
   "轻量投机草稿头，大幅提升生成速度 30%~70%，仅占用微小显存，极力推荐": {
@@ -1330,7 +1466,9 @@
     "de-DE": "Ein leichter spekulativer Draft-Header, der die Generierungsgeschwindigkeit um 30–70 % erheblich erhöht und nur wenig Videospeicher beansprucht. Es ist sehr zu empfehlen.",
     "fr-FR": "Un en-tête de projet spéculatif léger qui augmente considérablement la vitesse de génération de 30 à 70 % et n'occupe qu'une petite quantité de mémoire vidéo. C'est fortement recommandé.",
     "ko-KR": "생성 속도를 30%~70% 크게 높이고 비디오 메모리를 적게 차지하는 경량 추측 초안 헤더입니다. 적극 권장됩니다.",
-    "$files": ["src/lib/model-component-recommender.ts(1447-1488)"],
+    "$files": [
+      "src/lib/model-component-recommender.ts(1447-1488)"
+    ],
     "$id": 1389
   },
   "MTP 草稿模型": {
@@ -1343,7 +1481,9 @@
     "de-DE": "MTP-Entwurfsmodell",
     "fr-FR": "Projet de modèle MTP",
     "ko-KR": "MTP 초안 모델",
-    "$files": ["src/lib/model-component-recommender.ts(1522-1534)"],
+    "$files": [
+      "src/lib/model-component-recommender.ts(1522-1534)"
+    ],
     "$id": 1390
   },
   "推测加速": {
@@ -1356,7 +1496,9 @@
     "de-DE": "Spekulierte Beschleunigung",
     "fr-FR": "Accélération spéculée",
     "ko-KR": "추측된 가속도",
-    "$files": ["src/lib/model-component-recommender.ts(1553-1561)"],
+    "$files": [
+      "src/lib/model-component-recommender.ts(1553-1561)"
+    ],
     "$id": 1391
   },
   "独立辅助小模型进行多 Token 投机验证，提升长文本与代码分析速率": {
@@ -1369,7 +1511,9 @@
     "de-DE": "Unterstützen Sie kleine Modelle unabhängig bei der Überprüfung von Multi-Token-Spekulationen und verbessern Sie so die Geschwindigkeit der Langtext- und Codeanalyse",
     "fr-FR": "Assister de manière indépendante les petits modèles pour la vérification de la spéculation multi-token, améliorant ainsi la vitesse d'analyse des textes longs et du code",
     "ko-KR": "다중 토큰 추측 검증을 위한 소규모 모델을 독립적으로 지원하여 긴 텍스트 및 코드 분석 속도를 향상시킵니다.",
-    "$files": ["src/lib/model-component-recommender.ts(1580-1618)"],
+    "$files": [
+      "src/lib/model-component-recommender.ts(1580-1618)"
+    ],
     "$id": 1392
   },
   "正在检测硬件环境，默认展示完整推荐包": {
@@ -1382,7 +1526,9 @@
     "de-DE": "Die Hardwareumgebung wird erkannt und das vollständige empfohlene Paket wird standardmäßig angezeigt.",
     "fr-FR": "L'environnement matériel est détecté et le package complet recommandé est affiché par défaut.",
     "ko-KR": "하드웨어 환경이 감지되고 전체 권장 패키지가 기본적으로 표시됩니다.",
-    "$files": ["src/lib/model-component-recommender.ts(3283-3305)"],
+    "$files": [
+      "src/lib/model-component-recommender.ts(3283-3305)"
+    ],
     "$id": 1393
   },
   "本机显存/内存充裕，已推荐全选以获得完整多模态与极速推理能力": {
@@ -1395,7 +1541,9 @@
     "de-DE": "Das Gerät verfügt über ausreichend Videospeicher und es wird empfohlen, „Alle“ auszuwählen, um vollständige multimodale und extrem schnelle Argumentationsfunktionen zu erhalten.",
     "fr-FR": "La machine dispose d'une mémoire vidéo/mémoire suffisante, et il est recommandé de tout sélectionner pour obtenir des capacités de raisonnement multimodales complètes et extrêmement rapides.",
     "ko-KR": "기계에는 충분한 비디오 메모리/메모리가 있으므로 완전한 다중 모드 및 매우 빠른 추론 기능을 얻으려면 모두 선택하는 것이 좋습니다.",
-    "$files": ["src/lib/model-component-recommender.ts(3588-3622)"],
+    "$files": [
+      "src/lib/model-component-recommender.ts(3588-3622)"
+    ],
     "$id": 1394
   },
   "显存适中，推荐启用加速模型；识图模型已设为可选，如需处理图片可手动开启": {
@@ -1408,7 +1556,9 @@
     "de-DE": "Der Videospeicher ist mäßig. Es wird empfohlen, das Beschleunigungsmodell zu aktivieren; Das Bilderkennungsmodell wurde als optional eingestellt. Wenn Sie Bilder verarbeiten müssen, können Sie es manuell aktivieren.",
     "fr-FR": "La mémoire vidéo est modérée. Il est recommandé d'activer le modèle d'accélération ; le modèle de reconnaissance d'image a été défini comme facultatif. Si vous devez traiter des images, vous pouvez l'activer manuellement.",
     "ko-KR": "비디오 메모리는 보통입니다. 가속 모델을 활성화하는 것이 좋습니다. 이미지 인식 모델이 선택사항으로 설정되었습니다. 이미지를 처리해야 하는 경우 수동으로 활성화할 수 있습니다.",
-    "$files": ["src/lib/model-component-recommender.ts(3884-3923)"],
+    "$files": [
+      "src/lib/model-component-recommender.ts(3884-3923)"
+    ],
     "$id": 1395
   },
   "当前使用系统内存/显存受限，已为您精简为仅主模型以防止运行卡死": {
@@ -1421,7 +1571,9 @@
     "de-DE": "Die aktuelle Nutzung des Systemspeichers/Videospeichers ist begrenzt und wurde auf das Hauptmodell beschränkt, damit Sie ein Einfrieren vermeiden können.",
     "fr-FR": "L'utilisation actuelle de la mémoire système/mémoire vidéo est limitée et a été rationalisée uniquement pour le modèle principal afin d'éviter les blocages.",
     "ko-KR": "현재 시스템 메모리/비디오 메모리의 사용은 제한되어 있으며 실행 정지를 방지하기 위해 메인 모델로만 간소화되었습니다.",
-    "$files": ["src/lib/model-component-recommender.ts(4242-4277)"],
+    "$files": [
+      "src/lib/model-component-recommender.ts(4242-4277)"
+    ],
     "$id": 1396
   },
   "显存较为紧张，建议仅下载主模型以保证基础分类稳定": {
@@ -1434,7 +1586,9 @@
     "de-DE": "Der Videospeicher ist relativ knapp bemessen. Es wird empfohlen, nur das Hauptmodell herunterzuladen, um die Stabilität der Grundklassifizierung sicherzustellen.",
     "fr-FR": "La mémoire vidéo est relativement restreinte. Il est recommandé de télécharger uniquement le modèle principal pour garantir la stabilité de la classification de base.",
     "ko-KR": "비디오 메모리가 상대적으로 부족합니다. 기본분류의 안정성을 확보하기 위해 메인모델만 다운로드하는 것을 권장합니다.",
-    "$files": ["src/lib/model-component-recommender.ts(4287-4315)"],
+    "$files": [
+      "src/lib/model-component-recommender.ts(4287-4315)"
+    ],
     "$id": 1397
   },
   "获取引擎状态失败": {
@@ -1659,6 +1813,346 @@
       "src/hooks/use-model-download.ts(5960-5972)"
     ],
     "$id": 465
+  },
+  "极致推理性能": {
+    "en-US": "Ultimate reasoning performance",
+    "es-ES": "Rendimiento de razonamiento definitivo",
+    "ar-EG": "الأداء المنطقي النهائي",
+    "pt-PT": "Desempenho de raciocínio final",
+    "ru-RU": "Максимальная производительность рассуждений",
+    "ja-JP": "究極の推理パフォーマンス",
+    "de-DE": "Ultimative Argumentationsleistung",
+    "fr-FR": "Performance de raisonnement ultime",
+    "ko-KR": "최고의 추론 성능",
+    "$files": [
+      "src/components/api/third-party-api-view.tsx(1138-1148)"
+    ],
+    "$id": 527
+  },
+  "采用 llama.cpp 高性能推理核心，无需依赖庞大运行时，推理速度较 Ollama 等同类平台快 30%~50%，端侧响应更快、资源占用更低。": {
+    "en-US": "Using the llama.cpp high-performance inference core, there is no need to rely on a huge runtime. The inference speed is 30% to 50% faster than similar platforms such as Ollama, with faster client-side response and lower resource usage.",
+    "es-ES": "Al utilizar el núcleo de inferencia de alto rendimiento llama.cpp, no es necesario depender de un tiempo de ejecución enorme. La velocidad de inferencia es entre un 30% y un 50% más rápida que la de plataformas similares como Ollama, con una respuesta más rápida del lado del cliente y un menor uso de recursos.",
+    "ar-EG": "باستخدام نواة الاستدلال عالية الأداء llama.cpp، ليست هناك حاجة للاعتماد على وقت تشغيل ضخم. سرعة الاستدلال أسرع بنسبة 30% إلى 50% من المنصات المماثلة مثل Ollama، مع استجابة أسرع من جانب العميل واستخدام أقل للموارد.",
+    "pt-PT": "Usando o núcleo de inferência de alto desempenho llama.cpp, não há necessidade de depender de um grande tempo de execução. A velocidade de inferência é 30% a 50% mais rápida do que plataformas semelhantes, como Ollama, com resposta mais rápida do lado do cliente e menor uso de recursos.",
+    "ru-RU": "Используя высокопроизводительное ядро ​​вывода llama.cpp, нет необходимости полагаться на огромную среду выполнения. Скорость вывода на 30–50 % выше, чем у аналогичных платформ, таких как Ollama, с более быстрым ответом на стороне клиента и меньшим использованием ресурсов.",
+    "ja-JP": "llama.cpp 高性能推論コアを使用すると、大規模なランタイムに依存する必要がなくなります。推論速度は、Ollama などの同様のプラットフォームよりも 30% ～ 50% 速く、クライアント側の応答が速く、リソース使用量が低くなります。",
+    "de-DE": "Durch die Verwendung des leistungsstarken Inferenzkerns llama.cpp ist es nicht erforderlich, sich auf eine große Laufzeit zu verlassen. Die Inferenzgeschwindigkeit ist 30 bis 50 % schneller als bei ähnlichen Plattformen wie Ollama, mit schnellerer Reaktion auf der Clientseite und geringerem Ressourcenverbrauch.",
+    "fr-FR": "Grâce au noyau d'inférence hautes performances llama.cpp, il n'est pas nécessaire de s'appuyer sur un temps d'exécution énorme. La vitesse d'inférence est 30 à 50 % plus rapide que celle de plates-formes similaires telles qu'Ollama, avec une réponse côté client plus rapide et une utilisation moindre des ressources.",
+    "ko-KR": "llama.cpp 고성능 추론 코어를 사용하면 막대한 런타임에 의존할 필요가 없습니다. 추론 속도는 Ollama와 같은 유사한 플랫폼보다 30%~50% 더 빠르며 클라이언트 측 응답이 더 빠르고 리소스 사용량이 더 적습니다.",
+    "$files": [
+      "src/components/api/third-party-api-view.tsx(1164-1241)"
+    ],
+    "$id": 528
+  },
+  "全平台硬件智能适配": {
+    "en-US": "Intelligent adaptation of all-platform hardware",
+    "es-ES": "Adaptación inteligente del hardware multiplataforma",
+    "ar-EG": "التكيف الذكي لجميع الأجهزة الأساسية",
+    "pt-PT": "Adaptação inteligente de hardware para todas as plataformas",
+    "ru-RU": "Интеллектуальная адаптация общеплатформенного оборудования",
+    "ja-JP": "全プラットフォームのハードウェアをインテリジェントに適応",
+    "de-DE": "Intelligente Anpassung plattformübergreifender Hardware",
+    "fr-FR": "Adaptation intelligente du matériel toutes plateformes",
+    "ko-KR": "모든 플랫폼 하드웨어의 지능적인 적응",
+    "$files": [
+      "src/components/api/third-party-api-view.tsx(1290-1303)"
+    ],
+    "$id": 529
+  },
+  "自动检测硬件并智能调参，基于大量真实硬件场景调优验证，广泛兼容 CPU / GPU，覆盖 Intel、AMD、Apple Silicon（Mac）全平台，无需手动配置即可获得最佳性能。": {
+    "en-US": "Automatically detects hardware and intelligently adjusts parameters. It is based on a large number of real hardware scenario tuning and verification. It is widely compatible with CPU/GPU and covers all Intel, AMD, and Apple Silicon (Mac) platforms. You can obtain the best performance without manual configuration.",
+    "es-ES": "Detecta automáticamente el hardware y ajusta los parámetros de forma inteligente. Se basa en una gran cantidad de ajustes y verificación de escenarios de hardware reales. Es ampliamente compatible con CPU/GPU y cubre todas las plataformas Intel, AMD y Apple Silicon (Mac). Puede obtener el mejor rendimiento sin configuración manual.",
+    "ar-EG": "يكتشف الأجهزة تلقائيًا ويضبط المعلمات بذكاء. يعتمد على عدد كبير من سيناريوهات الأجهزة الحقيقية التي يتم ضبطها والتحقق منها. وهو متوافق على نطاق واسع مع وحدة المعالجة المركزية/وحدة معالجة الرسومات ويغطي جميع منصات Intel وAMD وApple Silicon (Mac). يمكنك الحصول على أفضل أداء دون تكوين يدوي.",
+    "pt-PT": "Detecta automaticamente o hardware e ajusta os parâmetros de forma inteligente. É baseado em um grande número de ajustes e verificações de cenários reais de hardware. É amplamente compatível com CPU/GPU e cobre todas as plataformas Intel, AMD e Apple Silicon (Mac). Você pode obter o melhor desempenho sem configuração manual.",
+    "ru-RU": "Автоматически обнаруживает оборудование и интеллектуально настраивает параметры. Он основан на большом количестве реальных настроек и проверок аппаратных сценариев. Он широко совместим с ЦП/ГП и охватывает все платформы Intel, AMD и Apple Silicon (Mac). Вы можете получить максимальную производительность без ручной настройки.",
+    "ja-JP": "ハードウェアを自動的に検出し、パラメータをインテリジェントに調整します。これは、多数の実際のハードウェア シナリオの調整と検証に基づいています。 CPU/GPUと幅広く互換性があり、Intel、AMD、Apple Silicon (Mac)のすべてのプラットフォームをカバーします。手動で設定しなくても最高のパフォーマンスを得ることができます。",
+    "de-DE": "Erkennt automatisch Hardware und passt Parameter intelligent an. Es basiert auf einer Vielzahl realer Hardware-Szenario-Tunings und -Verifizierungen. Es ist weitgehend kompatibel mit CPU/GPU und deckt alle Plattformen von Intel, AMD und Apple Silicon (Mac) ab. Sie können die beste Leistung ohne manuelle Konfiguration erzielen.",
+    "fr-FR": "Détecte automatiquement le matériel et ajuste intelligemment les paramètres. Il est basé sur un grand nombre de réglages et de vérifications de scénarios matériels réels. Il est largement compatible avec les CPU/GPU et couvre toutes les plates-formes Intel, AMD et Apple Silicon (Mac). Vous pouvez obtenir les meilleures performances sans configuration manuelle.",
+    "ko-KR": "하드웨어를 자동으로 감지하고 매개변수를 지능적으로 조정합니다. 수많은 실제 하드웨어 시나리오 튜닝 및 검증을 기반으로 합니다. CPU/GPU와 광범위하게 호환되며 Intel, AMD 및 Apple Silicon(Mac) 플랫폼을 모두 포괄합니다. 수동 구성 없이도 최상의 성능을 얻을 수 있습니다.",
+    "$files": [
+      "src/components/api/third-party-api-view.tsx(1319-1415)"
+    ],
+    "$id": 530
+  },
+  "国内外模型高速下载": {
+    "en-US": "High-speed download of domestic and foreign models",
+    "es-ES": "Descarga de alta velocidad de modelos nacionales y extranjeros.",
+    "ar-EG": "تنزيل عالي السرعة للنماذج المحلية والأجنبية",
+    "pt-PT": "Download em alta velocidade de modelos nacionais e estrangeiros",
+    "ru-RU": "Высокоскоростная загрузка отечественных и зарубежных моделей",
+    "ja-JP": "国内外モデルを高速ダウンロード",
+    "de-DE": "Hochgeschwindigkeits-Download inländischer und ausländischer Modelle",
+    "fr-FR": "Téléchargement à grande vitesse de modèles nationaux et étrangers",
+    "ko-KR": "국내외 모델의 고속 다운로드",
+    "$files": [
+      "src/components/api/third-party-api-view.tsx(1466-1479)"
+    ],
+    "$id": 531
+  },
+  "内置多源镜像加速，国内网络环境走 ModelScope 等国内源、国际网络环境走 HuggingFace，均可高速下载模型，彻底告别下载缓慢与连接超时。": {
+    "en-US": "Built-in multi-source image acceleration, domestic network environment uses ModelScope and other domestic sources, and international network environment uses HuggingFace, both can download models at high speed, completely saying goodbye to slow downloads and connection timeouts.",
+    "es-ES": "Aceleración de imágenes de múltiples fuentes incorporada, el entorno de red nacional usa ModelScope y otras fuentes nacionales, y el entorno de red internacional usa HuggingFace, ambos pueden descargar modelos a alta velocidad, despidiéndose por completo de las descargas lentas y los tiempos de espera de conexión.",
+    "ar-EG": "المدمج في تسريع الصور متعددة المصادر، وتستخدم بيئة الشبكة المحلية ModelScope والمصادر المحلية الأخرى، وتستخدم بيئة الشبكة الدولية HuggingFace، ويمكن لكل منهما تنزيل النماذج بسرعة عالية، وداعًا تمامًا للتنزيلات البطيئة ومهلة الاتصال.",
+    "pt-PT": "Aceleração de imagem multi-fonte integrada, o ambiente de rede doméstico usa ModelScope e outras fontes domésticas, e o ambiente de rede internacional usa HuggingFace, ambos podem baixar modelos em alta velocidade, dizendo adeus completamente aos downloads lentos e aos tempos limite de conexão.",
+    "ru-RU": "Встроенное ускорение изображений из нескольких источников, внутренняя сетевая среда использует ModelScope и другие внутренние источники, а международная сетевая среда использует HuggingFace, оба могут загружать модели на высокой скорости, полностью попрощавшись с медленной загрузкой и тайм-аутами соединения.",
+    "ja-JP": "マルチソース画像アクセラレーションを内蔵し、国内ネットワーク環境ではModelScopeなどの国内ソースを使用し、海外ネットワーク環境ではHuggingFaceを使用し、どちらも高速でモデルをダウンロードできるため、ダウンロードの遅さや接続タイムアウトとは完全に別れます。",
+    "de-DE": "Integrierte Bildbeschleunigung aus mehreren Quellen, die inländische Netzwerkumgebung nutzt ModelScope und andere inländische Quellen und die internationale Netzwerkumgebung nutzt HuggingFace. Beide können Modelle mit hoher Geschwindigkeit herunterladen, wodurch langsame Downloads und Verbindungs-Timeouts vollständig vermieden werden.",
+    "fr-FR": "Accélération d'image multi-source intégrée, l'environnement réseau national utilise ModelScope et d'autres sources nationales, et l'environnement réseau international utilise HuggingFace, les deux peuvent télécharger des modèles à grande vitesse, disant complètement adieu aux téléchargements lents et aux délais d'attente de connexion.",
+    "ko-KR": "내장된 멀티 소스 이미지 가속, 국내 네트워크 환경은 ModelScope 및 기타 국내 소스를 사용하고 국제 네트워크 환경은 HuggingFace를 사용합니다. 두 모델 모두 고속으로 모델을 다운로드할 수 있어 느린 다운로드 및 연결 시간 초과와 완전히 작별합니다.",
+    "$files": [
+      "src/components/api/third-party-api-view.tsx(1495-1575)"
+    ],
+    "$id": 532
+  },
+  "优选模型，持续跟进前沿": {
+    "en-US": "Optimize models and continue to follow the cutting edge",
+    "es-ES": "Optimice los modelos y continúe a la vanguardia",
+    "ar-EG": "قم بتحسين النماذج واستمر في متابعة أحدث التطورات",
+    "pt-PT": "Otimize modelos e continue acompanhando o que há de mais moderno",
+    "ru-RU": "Оптимизируйте модели и продолжайте следовать новейшим технологиям",
+    "ja-JP": "モデルを最適化し、最先端を追い続ける",
+    "de-DE": "Optimieren Sie Modelle und bleiben Sie weiterhin auf dem neuesten Stand",
+    "fr-FR": "Optimisez les modèles et continuez à suivre la pointe",
+    "ko-KR": "모델을 최적화하고 계속해서 최첨단 기술을 따르세요.",
+    "$files": [
+      "src/components/api/third-party-api-view.tsx(1629-1644)"
+    ],
+    "$id": 533
+  },
+  "由团队严格筛选与评测优选模型，持续跟进并收录最新前沿模型，省去自行试错与踩坑成本，开箱即用即可获得高质量推理效果。": {
+    "en-US": "The team strictly selects and evaluates the selected models, continuously follows up and includes the latest cutting-edge models, eliminating the cost of trial and error and pitfalls, and you can obtain high-quality inference results right out of the box.",
+    "es-ES": "El equipo selecciona y evalúa estrictamente los modelos seleccionados, realiza un seguimiento continuo e incluye los últimos modelos de vanguardia, eliminando el costo de prueba y error y las trampas, y usted puede obtener resultados de inferencia de alta calidad desde el primer momento.",
+    "ar-EG": "يقوم الفريق باختيار النماذج المختارة وتقييمها بدقة، والمتابعة المستمرة وتضمين أحدث النماذج المتطورة، مما يلغي تكلفة التجربة والخطأ والمزالق، ويمكنك الحصول على نتائج استدلالية عالية الجودة فور إخراجها من الصندوق.",
+    "pt-PT": "A equipe seleciona e avalia rigorosamente os modelos selecionados, acompanha continuamente e inclui os modelos de ponta mais recentes, eliminando o custo de tentativa e erro e armadilhas, e você pode obter resultados de inferência de alta qualidade imediatamente.",
+    "ru-RU": "Команда строго отбирает и оценивает выбранные модели, постоянно отслеживает и включает новейшие передовые модели, исключая затраты на пробы, ошибки и подводные камни, и вы можете получить высококачественные результаты вывода прямо из коробки.",
+    "ja-JP": "チームは選択したモデルを厳密に選択および評価し、継続的にフォローアップして最新の最先端モデルを組み込むことで、試行錯誤のコストや落とし穴を排除し、箱から出してすぐに高品質の推論結果を得ることができます。",
+    "de-DE": "Das Team wählt die ausgewählten Modelle streng aus und bewertet sie, verfolgt sie kontinuierlich und integriert die neuesten, hochmodernen Modelle, wodurch die Kosten für Versuch und Irrtum und Fallstricke entfallen und Sie sofort hochwertige Inferenzergebnisse erhalten können.",
+    "fr-FR": "L'équipe sélectionne et évalue strictement les modèles sélectionnés, effectue un suivi continu et inclut les derniers modèles de pointe, éliminant ainsi le coût des essais, des erreurs et des pièges, et vous pouvez obtenir des résultats d'inférence de haute qualité dès la sortie de la boîte.",
+    "ko-KR": "팀은 선택된 모델을 엄격하게 선택 및 평가하고 최신 최첨단 모델을 지속적으로 추적하고 포함하므로 시행 착오 및 함정에 대한 비용을 제거하고 즉시 고품질 추론 결과를 얻을 수 있습니다.",
+    "$files": [
+      "src/components/api/third-party-api-view.tsx(1660-1721)"
+    ],
+    "$id": 534
+  },
+  "本地私密，数据不出端": {
+    "en-US": "Local privacy, data does not come out",
+    "es-ES": "Privacidad local, los datos no salen",
+    "ar-EG": "الخصوصية المحلية، لا تخرج البيانات",
+    "pt-PT": "Privacidade local, os dados não saem",
+    "ru-RU": "Локальная конфиденциальность, данные не выходят",
+    "ja-JP": "ローカルのプライバシー、データは外に出ません",
+    "de-DE": "Lokale Privatsphäre, Daten kommen nicht heraus",
+    "fr-FR": "Confidentialité locale, les données ne sortent pas",
+    "ko-KR": "로컬 프라이버시, 데이터가 나오지 않습니다",
+    "$files": [
+      "src/components/api/third-party-api-view.tsx(1778-1792)"
+    ],
+    "$id": 535
+  },
+  "推理全程在本地完成，数据不离开设备，无云端隐私泄露风险；同时无需 API 订阅费用，一次部署长期免费使用。": {
+    "en-US": "The entire inference process is completed locally, the data does not leave the device, and there is no risk of privacy leakage in the cloud; there is no API subscription fee, and one deployment is free for long-term use.",
+    "es-ES": "Todo el proceso de inferencia se completa localmente, los datos no salen del dispositivo y no hay riesgo de fuga de privacidad en la nube; no hay tarifa de suscripción API y una implementación es gratuita para uso a largo plazo.",
+    "ar-EG": "تتم عملية الاستدلال بأكملها محليًا، ولا تترك البيانات الجهاز، ولا يوجد خطر تسرب الخصوصية في السحابة؛ لا توجد رسوم اشتراك في واجهة برمجة التطبيقات (API)، ويتم النشر مجانًا للاستخدام على المدى الطويل.",
+    "pt-PT": "Todo o processo de inferência é concluído localmente, os dados não saem do dispositivo e não há risco de vazamento de privacidade na nuvem; não há taxa de assinatura de API e uma implantação é gratuita para uso a longo prazo.",
+    "ru-RU": "Весь процесс вывода выполняется локально, данные не покидают устройство, и нет риска утечки конфиденциальной информации в облаке; плата за подписку на API не взимается, а одно развертывание бесплатно при долгосрочном использовании.",
+    "ja-JP": "推論プロセス全体がローカルで完了し、データがデバイスの外に流出することはなく、クラウドでのプライバシー漏洩のリスクはありません。 API サブスクリプション料金はなく、1 つのデプロイメントは長期使用のために無料です。",
+    "de-DE": "Der gesamte Inferenzprozess wird lokal abgeschlossen, die Daten verlassen das Gerät nicht und es besteht kein Risiko eines Datenschutzverlusts in der Cloud; Es fallen keine API-Abonnementgebühren an und eine Bereitstellung ist für die langfristige Nutzung kostenlos.",
+    "fr-FR": "L'ensemble du processus d'inférence est effectué localement, les données ne quittent pas l'appareil et il n'y a aucun risque de fuite de confidentialité dans le cloud ; il n'y a pas de frais d'abonnement à l'API et un déploiement est gratuit pour une utilisation à long terme.",
+    "ko-KR": "전체 추론 프로세스는 로컬에서 완료되고 데이터는 장치 외부로 유출되지 않으며 클라우드에서 개인정보가 유출될 위험이 없습니다. API 구독료가 없으며 장기간 사용 시 한 번의 배포가 무료입니다.",
+    "$files": [
+      "src/components/api/third-party-api-view.tsx(1808-1865)"
+    ],
+    "$id": 536
+  },
+  "完全开源免费，社区共建": {
+    "en-US": "Completely open source and free, built by the community",
+    "es-ES": "Completamente de código abierto y gratuito, creado por la comunidad.",
+    "ar-EG": "مفتوح المصدر بالكامل ومجاني، تم إنشاؤه بواسطة المجتمع",
+    "pt-PT": "Completamente de código aberto e gratuito, construído pela comunidade",
+    "ru-RU": "Полностью открытый исходный код и бесплатный, созданный сообществом.",
+    "ja-JP": "完全にオープンソースで無料、コミュニティによって構築されました",
+    "de-DE": "Völlig Open Source und kostenlos, erstellt von der Community",
+    "fr-FR": "Entièrement open source et gratuit, construit par la communauté",
+    "ko-KR": "커뮤니티가 구축한 완전 오픈 소스 및 무료",
+    "$files": [
+      "src/components/api/third-party-api-view.tsx(1916-1931)"
+    ],
+    "$id": 537
+  },
+  "基于 MIT 协议完全开源，代码透明，无任何隐藏付费项；欢迎社区参与共建，共同打磨更好的本地 AI 引擎。": {
+    "en-US": "It is completely open source based on the MIT protocol, with transparent code and no hidden payment items; the community is welcome to participate in co-construction and jointly polish a better local AI engine.",
+    "es-ES": "Es completamente de código abierto basado en el protocolo MIT, con código transparente y sin elementos de pago ocultos; la comunidad puede participar en la co-construcción y pulir conjuntamente un mejor motor de IA local.",
+    "ar-EG": "إنه مفتوح المصدر بالكامل ويعتمد على بروتوكول MIT، مع كود شفاف ولا توجد عناصر دفع مخفية؛ نرحب بالمجتمع للمشاركة في البناء المشترك والتحسين المشترك لمحرك ذكاء اصطناعي محلي أفضل.",
+    "pt-PT": "É totalmente open source baseado no protocolo MIT, com código transparente e sem itens de pagamento ocultos; a comunidade é bem-vinda para participar da co-construção e aprimorar em conjunto um melhor mecanismo de IA local.",
+    "ru-RU": "Это полностью открытый исходный код, основанный на протоколе MIT, с прозрачным кодом и без скрытых платежных элементов; Сообщество может принять участие в совместной разработке и совместной доработке лучшего местного движка искусственного интеллекта.",
+    "ja-JP": "これは MIT プロトコルに基づいた完全なオープンソースであり、透明なコードと隠された支払い項目はありません。コミュニティは共同構築に参加し、より良いローカル AI エンジンを共同で磨き上げることを歓迎します。",
+    "de-DE": "Es ist vollständig Open Source und basiert auf dem MIT-Protokoll, mit transparentem Code und ohne versteckte Zahlungselemente. Die Community ist herzlich eingeladen, sich am gemeinsamen Aufbau zu beteiligen und gemeinsam an einer besseren lokalen KI-Engine zu feilen.",
+    "fr-FR": "Il est entièrement open source basé sur le protocole MIT, avec un code transparent et aucun élément de paiement caché ; la communauté est invitée à participer à la co-construction et à peaufiner conjointement un meilleur moteur d'IA local.",
+    "ko-KR": "MIT 프로토콜을 기반으로 한 완전한 오픈 소스이며, 투명한 코드와 숨겨진 결제 항목이 없습니다. 커뮤니티는 공동 구축에 참여하고 더 나은 로컬 AI 엔진을 공동으로 연마하는 것을 환영합니다.",
+    "$files": [
+      "src/components/api/third-party-api-view.tsx(1947-2004)"
+    ],
+    "$id": 538
+  },
+  "第三方应用对接与 API 地址": {
+    "en-US": "Third-party application docking and API address",
+    "es-ES": "Acoplamiento de aplicaciones de terceros y dirección API",
+    "ar-EG": "إرساء تطبيقات الطرف الثالث وعنوان واجهة برمجة التطبيقات (API).",
+    "pt-PT": "Docking de aplicativos de terceiros e endereço de API",
+    "ru-RU": "Привязка сторонних приложений и адрес API",
+    "ja-JP": "サードパーティアプリケーションのドッキングとAPIアドレス",
+    "de-DE": "Docking- und API-Adresse von Drittanbieteranwendungen",
+    "fr-FR": "Dock d'application tierce et adresse API",
+    "ko-KR": "타사 애플리케이션 도킹 및 API 주소",
+    "$files": [
+      "src/components/api/third-party-api-view.tsx(2328-2347)"
+    ],
+    "$id": 539
+  },
+  "完全兼容 OpenAI 标准协议，可无缝配置至 萤核智能文件夹、龙虾、Cherry Studio、ChatBox、NextChat 等客户端。": {
+    "en-US": "It is fully compatible with the OpenAI standard protocol and can be seamlessly configured to clients such as Firefly AI Folder, Lobster, Cherry Studio, ChatBox, and NextChat.",
+    "es-ES": "Es totalmente compatible con el protocolo estándar OpenAI y se puede configurar sin problemas para clientes como Firefly AI Folder, Lobster, Cherry Studio, ChatBox y NextChat.",
+    "ar-EG": "وهو متوافق تمامًا مع بروتوكول OpenAI القياسي ويمكن تهيئته بسلاسة لعملاء مثل Firefly AI Folder وLobster وCherry Studio وChatBox وNextChat.",
+    "pt-PT": "É totalmente compatível com o protocolo padrão OpenAI e pode ser configurado perfeitamente para clientes como Firefly AI Folder, Lobster, Cherry Studio, ChatBox e NextChat.",
+    "ru-RU": "Он полностью совместим со стандартным протоколом OpenAI и может быть легко настроен для таких клиентов, как Firefly AI Folder, Lobster, Cherry Studio, ChatBox и NextChat.",
+    "ja-JP": "OpenAI 標準プロトコルと完全な互換性があり、Firefly AI Folder、Lobster、Cherry Studio、ChatBox、NextChat などのクライアントにシームレスに設定できます。",
+    "de-DE": "Es ist vollständig kompatibel mit dem OpenAI-Standardprotokoll und kann nahtlos für Clients wie Firefly AI Folder, Lobster, Cherry Studio, ChatBox und NextChat konfiguriert werden.",
+    "fr-FR": "Il est entièrement compatible avec le protocole standard OpenAI et peut être configuré de manière transparente pour des clients tels que Firefly AI Folder, Lobster, Cherry Studio, ChatBox et NextChat.",
+    "ko-KR": "OpenAI 표준 프로토콜과 완벽하게 호환되며 Firefly AI Folder, Lobster, Cherry Studio, ChatBox 및 NextChat과 같은 클라이언트에 원활하게 구성할 수 있습니다.",
+    "$files": [
+      "src/components/api/third-party-api-view.tsx(2475-2550)"
+    ],
+    "$id": 540
+  },
+  "基础端点": {
+    "en-US": "Basic endpoint",
+    "es-ES": "Punto final básico",
+    "ar-EG": "نقطة النهاية الأساسية",
+    "pt-PT": "Ponto de extremidade básico",
+    "ru-RU": "Базовая конечная точка",
+    "ja-JP": "基本エンドポイント",
+    "de-DE": "Grundlegender Endpunkt",
+    "fr-FR": "Point de terminaison de base",
+    "ko-KR": "기본 엔드포인트",
+    "$files": [
+      "src/components/api/third-party-api-view.tsx(2932-2940)"
+    ],
+    "$id": 541
+  },
+  "已复制": {
+    "en-US": "Copied",
+    "es-ES": "Copiado",
+    "ar-EG": "منقول",
+    "pt-PT": "Copiado",
+    "ru-RU": "Скопировано",
+    "ja-JP": "コピーされました",
+    "de-DE": "Kopiert",
+    "fr-FR": "Copié",
+    "ko-KR": "복사됨",
+    "$files": [
+      "src/components/api/third-party-api-view.tsx(3528-3535)",
+      "src/components/api/third-party-api-view.tsx(4712-4719)",
+      "src/components/api/third-party-api-view.tsx(5887-5894)",
+      "src/components/dashboard/dashboard-view.tsx(14762-14769)",
+      "src/components/logs/engine-logs-view.tsx(15683-15690)",
+      "src/components/logs/engine-logs-view.tsx(21640-21647)",
+      "src/components/dashboard/dashboard-view.tsx(13873-13880)"
+    ],
+    "$id": 542
+  },
+  "复制": {
+    "en-US": "Copy",
+    "es-ES": "Copiar",
+    "ar-EG": "انسخ  ",
+    "pt-PT": "Copiar",
+    "ru-RU": "Копировать",
+    "ja-JP": "コピー",
+    "de-DE": "Kopieren",
+    "fr-FR": "Copier",
+    "ko-KR": "복사",
+    "$files": [
+      "src/components/api/third-party-api-view.tsx(3680-3686)",
+      "src/components/api/third-party-api-view.tsx(4864-4870)",
+      "src/components/api/third-party-api-view.tsx(6039-6045)",
+      "src/components/dashboard/dashboard-view.tsx(14955-14961)",
+      "src/components/dashboard/dashboard-view.tsx(14066-14072)"
+    ],
+    "$id": 543
+  },
+  "聊天接口": {
+    "en-US": "Chat interface",
+    "es-ES": "Interfaz de chat",
+    "ar-EG": "واجهة الدردشة",
+    "pt-PT": "Interface de bate-papo",
+    "ru-RU": "Интерфейс чата",
+    "ja-JP": "チャットインターフェース",
+    "de-DE": "Chat-Schnittstelle",
+    "fr-FR": "Interface de discussion",
+    "ko-KR": "채팅 인터페이스",
+    "$files": [
+      "src/components/api/third-party-api-view.tsx(4100-4108)"
+    ],
+    "$id": 544
+  },
+  "授权秘钥": {
+    "en-US": "Authorization key",
+    "es-ES": "Clave de autorización",
+    "ar-EG": "مفتاح التفويض",
+    "pt-PT": "Chave de autorização",
+    "ru-RU": "Ключ авторизации",
+    "ja-JP": "認証キー",
+    "de-DE": "Autorisierungsschlüssel",
+    "fr-FR": "Clé d'autorisation",
+    "ko-KR": "인증 키",
+    "$files": [
+      "src/components/api/third-party-api-view.tsx(5261-5269)"
+    ],
+    "$id": 545
+  },
+  "无需秘钥 (可任意填写，如 sk-firefly)": {
+    "en-US": "No secret key required (can be filled in arbitrarily, such as sk-firefly)",
+    "es-ES": "No se requiere clave secreta (se puede completar arbitrariamente, como sk-firefly)",
+    "ar-EG": "لا يلزم وجود مفتاح سري (يمكن ملؤه بشكل تعسفي، مثل sk-firefly)",
+    "pt-PT": "Nenhuma chave secreta é necessária (pode ser preenchida arbitrariamente, como sk-firefly)",
+    "ru-RU": "Секретный ключ не требуется (можно заполнить произвольно, например, sk-firefly)",
+    "ja-JP": "秘密鍵不要（sk-fireflyなど任意に入力可）",
+    "de-DE": "Kein geheimer Schlüssel erforderlich (kann beliebig ausgefüllt werden, z. B. sk-firefly)",
+    "fr-FR": "Aucune clé secrète requise (peut être remplie arbitrairement, comme sk-firefly)",
+    "ko-KR": "비밀키 불필요 (sk-firefly 등 임의로 입력 가능)",
+    "$files": [
+      "src/components/api/third-party-api-view.tsx(5418-5447)"
+    ],
+    "$id": 546
+  },
+  "萤核AI引擎核心优势": {
+    "en-US": "Firefly AI ​​engine core advantages",
+    "es-ES": "Ventajas principales del motor Firefly AI",
+    "ar-EG": "المزايا الأساسية لمحرك Firefly AI",
+    "pt-PT": "Principais vantagens do motor Firefly AI",
+    "ru-RU": "Основные преимущества двигателя Firefly AI",
+    "ja-JP": "Firefly AIエンジンのコア利点",
+    "de-DE": "Die Kernvorteile der Firefly AI-Engine",
+    "fr-FR": "Avantages principaux du moteur Firefly AI",
+    "ko-KR": "Firefly AI ​​엔진 핵심 장점",
+    "$files": [
+      "src/components/api/third-party-api-view.tsx(6464-6478)"
+    ],
+    "$id": 547
+  },
+  "选择萤核AI引擎作为本地推理后端，您将获得以下开箱即用的体验：": {
+    "en-US": "By choosing Firefly AI ​​engine as the local inference backend, you will get the following out-of-box experience:",
+    "es-ES": "Al elegir el motor Firefly AI ​​como backend de inferencia local, obtendrá la siguiente experiencia lista para usar:",
+    "ar-EG": "من خلال اختيار محرك Firefly AI ​​كواجهة خلفية للاستدلال المحلي، سوف تحصل على التجربة الجاهزة التالية:",
+    "pt-PT": "Ao escolher o mecanismo Firefly AI ​​como back-end de inferência local, você obterá a seguinte experiência pronta para uso:",
+    "ru-RU": "Выбрав движок Firefly AI ​​в качестве локального механизма вывода, вы получите следующий готовый опыт:",
+    "ja-JP": "Firefly AI エンジンをローカル推論バックエンドとして選択すると、次のようなすぐに使用できるエクスペリエンスが得られます。",
+    "de-DE": "Wenn Sie die Firefly AI-Engine als lokales Inferenz-Backend auswählen, erhalten Sie die folgende sofort einsatzbereite Erfahrung:",
+    "fr-FR": "En choisissant le moteur Firefly AI ​​​​comme backend d'inférence local, vous obtiendrez l'expérience prête à l'emploi suivante :",
+    "ko-KR": "Firefly AI ​​엔진을 로컬 추론 백엔드로 선택하면 다음과 같은 기본 경험을 얻을 수 있습니다.",
+    "$files": [
+      "src/components/api/third-party-api-view.tsx(6606-6641)"
+    ],
+    "$id": 548
   },
   "服务未就绪": {
     "en-US": "Service not ready",
@@ -2024,7 +2518,9 @@
     "de-DE": "Wählen Sie die Sprache der Benutzeroberfläche aus (Sprache wechseln)",
     "fr-FR": "Sélectionnez la langue de l'interface (Changer la langue)",
     "ko-KR": "인터페이스 언어 선택(언어 전환)",
-    "$files": ["src/components/common/language-selector.tsx(1125-1153)"],
+    "$files": [
+      "src/components/common/language-selector.tsx(1125-1153)"
+    ],
     "$id": 614
   },
   "未选定": {
@@ -2381,46 +2877,6 @@
     ],
     "$id": 578
   },
-  "已复制": {
-    "en-US": "Copied",
-    "es-ES": "Copiado",
-    "ar-EG": "منقول",
-    "pt-PT": "Copiado",
-    "ru-RU": "Скопировано",
-    "ja-JP": "コピーされました",
-    "de-DE": "Kopiert",
-    "fr-FR": "Copié",
-    "ko-KR": "복사됨",
-    "$files": [
-      "src/components/dashboard/dashboard-view.tsx(14762-14769)",
-      "src/components/api/third-party-api-view.tsx(3528-3535)",
-      "src/components/api/third-party-api-view.tsx(4712-4719)",
-      "src/components/api/third-party-api-view.tsx(5887-5894)",
-      "src/components/logs/engine-logs-view.tsx(15683-15690)",
-      "src/components/logs/engine-logs-view.tsx(21640-21647)",
-      "src/components/dashboard/dashboard-view.tsx(13873-13880)"
-    ],
-    "$id": 542
-  },
-  "复制": {
-    "en-US": "Copy",
-    "es-ES": "Copiar",
-    "ar-EG": "انسخ  ",
-    "pt-PT": "Copiar",
-    "ru-RU": "Копировать",
-    "ja-JP": "コピー",
-    "de-DE": "Kopieren",
-    "fr-FR": "Copier",
-    "ko-KR": "복사",
-    "$files": [
-      "src/components/dashboard/dashboard-view.tsx(14955-14961)",
-      "src/components/api/third-party-api-view.tsx(3680-3686)",
-      "src/components/api/third-party-api-view.tsx(4864-4870)",
-      "src/components/api/third-party-api-view.tsx(6039-6045)",
-      "src/components/dashboard/dashboard-view.tsx(14066-14072)"
-    ],
-    "$id": 543
-  },
   "暂无启动记录，服务启动后将展示完整命令行": {
     "en-US": "There is no startup record yet. The complete command line will be displayed after the service is started.",
     "es-ES": "Aún no hay registro de inicio. La línea de comando completa se mostrará después de que se inicie el servicio.",
@@ -2759,6 +3215,112 @@
     ],
     "$id": 599
   },
+  "错误分析与解决建议": {
+    "en-US": "Error analysis and solution suggestions",
+    "es-ES": "Análisis de errores y sugerencias de solución.",
+    "ar-EG": "تحليل الأخطاء واقتراحات الحلول",
+    "pt-PT": "Análise de erros e sugestões de soluções",
+    "ru-RU": "Анализ ошибок и предложения по решению",
+    "ja-JP": "エラー分析と解決策の提案",
+    "de-DE": "Fehleranalyse und Lösungsvorschläge",
+    "fr-FR": "Analyse des erreurs et suggestions de solutions",
+    "ko-KR": "오류 분석 및 해결 방법 제안",
+    "$files": [
+      "src/components/errors/error-analysis-sidebar.tsx(2807-2820)"
+    ],
+    "$id": 637
+  },
+  "面向普通用户的引擎错误解读": {
+    "en-US": "Interpretation of engine errors for ordinary users",
+    "es-ES": "Interpretación de errores del motor para usuarios comunes.",
+    "ar-EG": "تفسير أخطاء المحرك للمستخدمين العاديين",
+    "pt-PT": "Interpretação de erros do motor para usuários comuns",
+    "ru-RU": "Расшифровка ошибок двигателя для обычных пользователей",
+    "ja-JP": "一般ユーザー向けのエンジンエラーの解釈",
+    "de-DE": "Interpretation von Motorfehlern für normale Benutzer",
+    "fr-FR": "Interprétation des erreurs du moteur pour les utilisateurs ordinaires",
+    "ko-KR": "일반 사용자를 위한 엔진 오류 해석",
+    "$files": [
+      "src/components/errors/error-analysis-sidebar.tsx(2954-2971)"
+    ],
+    "$id": 638
+  },
+  "关闭": {
+    "en-US": "Closure",
+    "es-ES": "Cierre",
+    "ar-EG": "إنهاء",
+    "pt-PT": "Encerramento",
+    "ru-RU": "закрытие",
+    "ja-JP": "閉鎖",
+    "de-DE": "Schließung",
+    "fr-FR": "Fermeture",
+    "ko-KR": "폐쇄",
+    "$files": [
+      "src/components/errors/error-analysis-sidebar.tsx(3300-3306)",
+      "src/components/model/model-download-popover.tsx(6819-6825)"
+    ],
+    "$id": 639
+  },
+  "严重级别": {
+    "en-US": "Severity level",
+    "es-ES": "Nivel de gravedad",
+    "ar-EG": "مستوى الخطورة",
+    "pt-PT": "Nível de gravidade",
+    "ru-RU": "Уровень серьезности",
+    "ja-JP": "重大度レベル",
+    "de-DE": "Schweregrad",
+    "fr-FR": "Niveau de gravité",
+    "ko-KR": "심각도 수준",
+    "$files": [
+      "src/components/errors/error-analysis-sidebar.tsx(3644-3652)"
+    ],
+    "$id": 640
+  },
+  "建议解决方案": {
+    "en-US": "Suggested solution",
+    "es-ES": "Solución recomendada",
+    "ar-EG": "الحلول المقترحة",
+    "pt-PT": "Solução recomendada",
+    "ru-RU": "Рекомендуемое решение",
+    "ja-JP": "提案される解決策",
+    "de-DE": "Empfohlene Lösung",
+    "fr-FR": "Solution recommandée",
+    "ko-KR": "권장 해결 방안",
+    "$files": [
+      "src/components/errors/error-analysis-sidebar.tsx(4932-4942)"
+    ],
+    "$id": 641
+  },
+  "原始错误详情": {
+    "en-US": "Original error details",
+    "es-ES": "Detalles del error original",
+    "ar-EG": "تفاصيل الخطأ الأصلي",
+    "pt-PT": "Detalhes do erro original",
+    "ru-RU": "Подробности исходной ошибки",
+    "ja-JP": "元のエラーの詳細",
+    "de-DE": "Ursprüngliche Fehlerdetails",
+    "fr-FR": "Détails de l'erreur d'origine",
+    "ko-KR": "원래 오류 세부정보",
+    "$files": [
+      "src/components/errors/error-analysis-sidebar.tsx(6002-6012)"
+    ],
+    "$id": 642
+  },
+  "查看运行日志": {
+    "en-US": "View running log",
+    "es-ES": "Ver registro de ejecución",
+    "ar-EG": "عرض سجل التشغيل",
+    "pt-PT": "Ver registro de execução",
+    "ru-RU": "Посмотреть журнал бега",
+    "ja-JP": "実行ログを表示する",
+    "de-DE": "Laufprotokoll ansehen",
+    "fr-FR": "Afficher le journal d'exécution",
+    "ko-KR": "실행 로그 보기",
+    "$files": [
+      "src/components/errors/error-analysis-sidebar.tsx(7404-7414)"
+    ],
+    "$id": 643
+  },
   "切换本地AI引擎": {
     "en-US": "Switch local AI engine",
     "es-ES": "Cambiar el motor de IA local",
@@ -2769,7 +3331,9 @@
     "de-DE": "Lokale KI-Engine wechseln",
     "fr-FR": "Changer de moteur d'IA local",
     "ko-KR": "로컬 AI 엔진 전환",
-    "$files": ["src/components/engine/engine-table.tsx(2447-2459)"],
+    "$files": [
+      "src/components/engine/engine-table.tsx(2447-2459)"
+    ],
     "$id": 615
   },
   "您的 {vendor} 显卡可切换以下引擎": {
@@ -2782,7 +3346,9 @@
     "de-DE": "Ihre {vendor}-Grafikkarte kann die folgenden Engines umschalten",
     "fr-FR": "Votre carte graphique {vendor} peut changer les moteurs suivants",
     "ko-KR": "{vendor} 그래픽 카드는 다음 엔진을 전환할 수 있습니다.",
-    "$files": ["src/components/engine/engine-table.tsx(2596-2621)"],
+    "$files": [
+      "src/components/engine/engine-table.tsx(2596-2621)"
+    ],
     "$id": 616
   },
   "AI 引擎": {
@@ -2795,7 +3361,9 @@
     "de-DE": "KI-Engine",
     "fr-FR": "Moteur d'IA",
     "ko-KR": "AI 엔진",
-    "$files": ["src/components/engine/engine-table.tsx(3350-3359)"],
+    "$files": [
+      "src/components/engine/engine-table.tsx(3350-3359)"
+    ],
     "$id": 617
   },
   "适配类型": {
@@ -3256,360 +3824,6 @@
     ],
     "$id": 807
   },
-  "错误分析与解决建议": {
-    "en-US": "Error analysis and solution suggestions",
-    "es-ES": "Análisis de errores y sugerencias de solución.",
-    "ar-EG": "تحليل الأخطاء واقتراحات الحلول",
-    "pt-PT": "Análise de erros e sugestões de soluções",
-    "ru-RU": "Анализ ошибок и предложения по решению",
-    "ja-JP": "エラー分析と解決策の提案",
-    "de-DE": "Fehleranalyse und Lösungsvorschläge",
-    "fr-FR": "Analyse des erreurs et suggestions de solutions",
-    "ko-KR": "오류 분석 및 해결 방법 제안",
-    "$files": ["src/components/errors/error-analysis-sidebar.tsx(2807-2820)"],
-    "$id": 637
-  },
-  "面向普通用户的引擎错误解读": {
-    "en-US": "Interpretation of engine errors for ordinary users",
-    "es-ES": "Interpretación de errores del motor para usuarios comunes.",
-    "ar-EG": "تفسير أخطاء المحرك للمستخدمين العاديين",
-    "pt-PT": "Interpretação de erros do motor para usuários comuns",
-    "ru-RU": "Расшифровка ошибок двигателя для обычных пользователей",
-    "ja-JP": "一般ユーザー向けのエンジンエラーの解釈",
-    "de-DE": "Interpretation von Motorfehlern für normale Benutzer",
-    "fr-FR": "Interprétation des erreurs du moteur pour les utilisateurs ordinaires",
-    "ko-KR": "일반 사용자를 위한 엔진 오류 해석",
-    "$files": ["src/components/errors/error-analysis-sidebar.tsx(2954-2971)"],
-    "$id": 638
-  },
-  "关闭": {
-    "en-US": "Closure",
-    "es-ES": "Cierre",
-    "ar-EG": "إنهاء",
-    "pt-PT": "Encerramento",
-    "ru-RU": "закрытие",
-    "ja-JP": "閉鎖",
-    "de-DE": "Schließung",
-    "fr-FR": "Fermeture",
-    "ko-KR": "폐쇄",
-    "$files": [
-      "src/components/errors/error-analysis-sidebar.tsx(3300-3306)",
-      "src/components/model/model-download-popover.tsx(6819-6825)"
-    ],
-    "$id": 639
-  },
-  "严重级别": {
-    "en-US": "Severity level",
-    "es-ES": "Nivel de gravedad",
-    "ar-EG": "مستوى الخطورة",
-    "pt-PT": "Nível de gravidade",
-    "ru-RU": "Уровень серьезности",
-    "ja-JP": "重大度レベル",
-    "de-DE": "Schweregrad",
-    "fr-FR": "Niveau de gravité",
-    "ko-KR": "심각도 수준",
-    "$files": ["src/components/errors/error-analysis-sidebar.tsx(3644-3652)"],
-    "$id": 640
-  },
-  "建议解决方案": {
-    "en-US": "Suggested solution",
-    "es-ES": "Solución recomendada",
-    "ar-EG": "الحلول المقترحة",
-    "pt-PT": "Solução recomendada",
-    "ru-RU": "Рекомендуемое решение",
-    "ja-JP": "提案される解決策",
-    "de-DE": "Empfohlene Lösung",
-    "fr-FR": "Solution recommandée",
-    "ko-KR": "권장 해결 방안",
-    "$files": ["src/components/errors/error-analysis-sidebar.tsx(4932-4942)"],
-    "$id": 641
-  },
-  "原始错误详情": {
-    "en-US": "Original error details",
-    "es-ES": "Detalles del error original",
-    "ar-EG": "تفاصيل الخطأ الأصلي",
-    "pt-PT": "Detalhes do erro original",
-    "ru-RU": "Подробности исходной ошибки",
-    "ja-JP": "元のエラーの詳細",
-    "de-DE": "Ursprüngliche Fehlerdetails",
-    "fr-FR": "Détails de l'erreur d'origine",
-    "ko-KR": "원래 오류 세부정보",
-    "$files": ["src/components/errors/error-analysis-sidebar.tsx(6002-6012)"],
-    "$id": 642
-  },
-  "查看运行日志": {
-    "en-US": "View running log",
-    "es-ES": "Ver registro de ejecución",
-    "ar-EG": "عرض سجل التشغيل",
-    "pt-PT": "Ver registro de execução",
-    "ru-RU": "Посмотреть журнал бега",
-    "ja-JP": "実行ログを表示する",
-    "de-DE": "Laufprotokoll ansehen",
-    "fr-FR": "Afficher le journal d'exécution",
-    "ko-KR": "실행 로그 보기",
-    "$files": ["src/components/errors/error-analysis-sidebar.tsx(7404-7414)"],
-    "$id": 643
-  },
-  "极致推理性能": {
-    "en-US": "Ultimate reasoning performance",
-    "es-ES": "Rendimiento de razonamiento definitivo",
-    "ar-EG": "الأداء المنطقي النهائي",
-    "pt-PT": "Desempenho de raciocínio final",
-    "ru-RU": "Максимальная производительность рассуждений",
-    "ja-JP": "究極の推理パフォーマンス",
-    "de-DE": "Ultimative Argumentationsleistung",
-    "fr-FR": "Performance de raisonnement ultime",
-    "ko-KR": "최고의 추론 성능",
-    "$files": ["src/components/api/third-party-api-view.tsx(1138-1148)"],
-    "$id": 527
-  },
-  "采用 llama.cpp 高性能推理核心，无需依赖庞大运行时，推理速度较 Ollama 等同类平台快 30%~50%，端侧响应更快、资源占用更低。": {
-    "en-US": "Using the llama.cpp high-performance inference core, there is no need to rely on a huge runtime. The inference speed is 30% to 50% faster than similar platforms such as Ollama, with faster client-side response and lower resource usage.",
-    "es-ES": "Al utilizar el núcleo de inferencia de alto rendimiento llama.cpp, no es necesario depender de un tiempo de ejecución enorme. La velocidad de inferencia es entre un 30% y un 50% más rápida que la de plataformas similares como Ollama, con una respuesta más rápida del lado del cliente y un menor uso de recursos.",
-    "ar-EG": "باستخدام نواة الاستدلال عالية الأداء llama.cpp، ليست هناك حاجة للاعتماد على وقت تشغيل ضخم. سرعة الاستدلال أسرع بنسبة 30% إلى 50% من المنصات المماثلة مثل Ollama، مع استجابة أسرع من جانب العميل واستخدام أقل للموارد.",
-    "pt-PT": "Usando o núcleo de inferência de alto desempenho llama.cpp, não há necessidade de depender de um grande tempo de execução. A velocidade de inferência é 30% a 50% mais rápida do que plataformas semelhantes, como Ollama, com resposta mais rápida do lado do cliente e menor uso de recursos.",
-    "ru-RU": "Используя высокопроизводительное ядро ​​вывода llama.cpp, нет необходимости полагаться на огромную среду выполнения. Скорость вывода на 30–50 % выше, чем у аналогичных платформ, таких как Ollama, с более быстрым ответом на стороне клиента и меньшим использованием ресурсов.",
-    "ja-JP": "llama.cpp 高性能推論コアを使用すると、大規模なランタイムに依存する必要がなくなります。推論速度は、Ollama などの同様のプラットフォームよりも 30% ～ 50% 速く、クライアント側の応答が速く、リソース使用量が低くなります。",
-    "de-DE": "Durch die Verwendung des leistungsstarken Inferenzkerns llama.cpp ist es nicht erforderlich, sich auf eine große Laufzeit zu verlassen. Die Inferenzgeschwindigkeit ist 30 bis 50 % schneller als bei ähnlichen Plattformen wie Ollama, mit schnellerer Reaktion auf der Clientseite und geringerem Ressourcenverbrauch.",
-    "fr-FR": "Grâce au noyau d'inférence hautes performances llama.cpp, il n'est pas nécessaire de s'appuyer sur un temps d'exécution énorme. La vitesse d'inférence est 30 à 50 % plus rapide que celle de plates-formes similaires telles qu'Ollama, avec une réponse côté client plus rapide et une utilisation moindre des ressources.",
-    "ko-KR": "llama.cpp 고성능 추론 코어를 사용하면 막대한 런타임에 의존할 필요가 없습니다. 추론 속도는 Ollama와 같은 유사한 플랫폼보다 30%~50% 더 빠르며 클라이언트 측 응답이 더 빠르고 리소스 사용량이 더 적습니다.",
-    "$files": ["src/components/api/third-party-api-view.tsx(1164-1241)"],
-    "$id": 528
-  },
-  "全平台硬件智能适配": {
-    "en-US": "Intelligent adaptation of all-platform hardware",
-    "es-ES": "Adaptación inteligente del hardware multiplataforma",
-    "ar-EG": "التكيف الذكي لجميع الأجهزة الأساسية",
-    "pt-PT": "Adaptação inteligente de hardware para todas as plataformas",
-    "ru-RU": "Интеллектуальная адаптация общеплатформенного оборудования",
-    "ja-JP": "全プラットフォームのハードウェアをインテリジェントに適応",
-    "de-DE": "Intelligente Anpassung plattformübergreifender Hardware",
-    "fr-FR": "Adaptation intelligente du matériel toutes plateformes",
-    "ko-KR": "모든 플랫폼 하드웨어의 지능적인 적응",
-    "$files": ["src/components/api/third-party-api-view.tsx(1290-1303)"],
-    "$id": 529
-  },
-  "自动检测硬件并智能调参，基于大量真实硬件场景调优验证，广泛兼容 CPU / GPU，覆盖 Intel、AMD、Apple Silicon（Mac）全平台，无需手动配置即可获得最佳性能。": {
-    "en-US": "Automatically detects hardware and intelligently adjusts parameters. It is based on a large number of real hardware scenario tuning and verification. It is widely compatible with CPU/GPU and covers all Intel, AMD, and Apple Silicon (Mac) platforms. You can obtain the best performance without manual configuration.",
-    "es-ES": "Detecta automáticamente el hardware y ajusta los parámetros de forma inteligente. Se basa en una gran cantidad de ajustes y verificación de escenarios de hardware reales. Es ampliamente compatible con CPU/GPU y cubre todas las plataformas Intel, AMD y Apple Silicon (Mac). Puede obtener el mejor rendimiento sin configuración manual.",
-    "ar-EG": "يكتشف الأجهزة تلقائيًا ويضبط المعلمات بذكاء. يعتمد على عدد كبير من سيناريوهات الأجهزة الحقيقية التي يتم ضبطها والتحقق منها. وهو متوافق على نطاق واسع مع وحدة المعالجة المركزية/وحدة معالجة الرسومات ويغطي جميع منصات Intel وAMD وApple Silicon (Mac). يمكنك الحصول على أفضل أداء دون تكوين يدوي.",
-    "pt-PT": "Detecta automaticamente o hardware e ajusta os parâmetros de forma inteligente. É baseado em um grande número de ajustes e verificações de cenários reais de hardware. É amplamente compatível com CPU/GPU e cobre todas as plataformas Intel, AMD e Apple Silicon (Mac). Você pode obter o melhor desempenho sem configuração manual.",
-    "ru-RU": "Автоматически обнаруживает оборудование и интеллектуально настраивает параметры. Он основан на большом количестве реальных настроек и проверок аппаратных сценариев. Он широко совместим с ЦП/ГП и охватывает все платформы Intel, AMD и Apple Silicon (Mac). Вы можете получить максимальную производительность без ручной настройки.",
-    "ja-JP": "ハードウェアを自動的に検出し、パラメータをインテリジェントに調整します。これは、多数の実際のハードウェア シナリオの調整と検証に基づいています。 CPU/GPUと幅広く互換性があり、Intel、AMD、Apple Silicon (Mac)のすべてのプラットフォームをカバーします。手動で設定しなくても最高のパフォーマンスを得ることができます。",
-    "de-DE": "Erkennt automatisch Hardware und passt Parameter intelligent an. Es basiert auf einer Vielzahl realer Hardware-Szenario-Tunings und -Verifizierungen. Es ist weitgehend kompatibel mit CPU/GPU und deckt alle Plattformen von Intel, AMD und Apple Silicon (Mac) ab. Sie können die beste Leistung ohne manuelle Konfiguration erzielen.",
-    "fr-FR": "Détecte automatiquement le matériel et ajuste intelligemment les paramètres. Il est basé sur un grand nombre de réglages et de vérifications de scénarios matériels réels. Il est largement compatible avec les CPU/GPU et couvre toutes les plates-formes Intel, AMD et Apple Silicon (Mac). Vous pouvez obtenir les meilleures performances sans configuration manuelle.",
-    "ko-KR": "하드웨어를 자동으로 감지하고 매개변수를 지능적으로 조정합니다. 수많은 실제 하드웨어 시나리오 튜닝 및 검증을 기반으로 합니다. CPU/GPU와 광범위하게 호환되며 Intel, AMD 및 Apple Silicon(Mac) 플랫폼을 모두 포괄합니다. 수동 구성 없이도 최상의 성능을 얻을 수 있습니다.",
-    "$files": ["src/components/api/third-party-api-view.tsx(1319-1415)"],
-    "$id": 530
-  },
-  "国内外模型高速下载": {
-    "en-US": "High-speed download of domestic and foreign models",
-    "es-ES": "Descarga de alta velocidad de modelos nacionales y extranjeros.",
-    "ar-EG": "تنزيل عالي السرعة للنماذج المحلية والأجنبية",
-    "pt-PT": "Download em alta velocidade de modelos nacionais e estrangeiros",
-    "ru-RU": "Высокоскоростная загрузка отечественных и зарубежных моделей",
-    "ja-JP": "国内外モデルを高速ダウンロード",
-    "de-DE": "Hochgeschwindigkeits-Download inländischer und ausländischer Modelle",
-    "fr-FR": "Téléchargement à grande vitesse de modèles nationaux et étrangers",
-    "ko-KR": "국내외 모델의 고속 다운로드",
-    "$files": ["src/components/api/third-party-api-view.tsx(1466-1479)"],
-    "$id": 531
-  },
-  "内置多源镜像加速，国内网络环境走 ModelScope 等国内源、国际网络环境走 HuggingFace，均可高速下载模型，彻底告别下载缓慢与连接超时。": {
-    "en-US": "Built-in multi-source image acceleration, domestic network environment uses ModelScope and other domestic sources, and international network environment uses HuggingFace, both can download models at high speed, completely saying goodbye to slow downloads and connection timeouts.",
-    "es-ES": "Aceleración de imágenes de múltiples fuentes incorporada, el entorno de red nacional usa ModelScope y otras fuentes nacionales, y el entorno de red internacional usa HuggingFace, ambos pueden descargar modelos a alta velocidad, despidiéndose por completo de las descargas lentas y los tiempos de espera de conexión.",
-    "ar-EG": "المدمج في تسريع الصور متعددة المصادر، وتستخدم بيئة الشبكة المحلية ModelScope والمصادر المحلية الأخرى، وتستخدم بيئة الشبكة الدولية HuggingFace، ويمكن لكل منهما تنزيل النماذج بسرعة عالية، وداعًا تمامًا للتنزيلات البطيئة ومهلة الاتصال.",
-    "pt-PT": "Aceleração de imagem multi-fonte integrada, o ambiente de rede doméstico usa ModelScope e outras fontes domésticas, e o ambiente de rede internacional usa HuggingFace, ambos podem baixar modelos em alta velocidade, dizendo adeus completamente aos downloads lentos e aos tempos limite de conexão.",
-    "ru-RU": "Встроенное ускорение изображений из нескольких источников, внутренняя сетевая среда использует ModelScope и другие внутренние источники, а международная сетевая среда использует HuggingFace, оба могут загружать модели на высокой скорости, полностью попрощавшись с медленной загрузкой и тайм-аутами соединения.",
-    "ja-JP": "マルチソース画像アクセラレーションを内蔵し、国内ネットワーク環境ではModelScopeなどの国内ソースを使用し、海外ネットワーク環境ではHuggingFaceを使用し、どちらも高速でモデルをダウンロードできるため、ダウンロードの遅さや接続タイムアウトとは完全に別れます。",
-    "de-DE": "Integrierte Bildbeschleunigung aus mehreren Quellen, die inländische Netzwerkumgebung nutzt ModelScope und andere inländische Quellen und die internationale Netzwerkumgebung nutzt HuggingFace. Beide können Modelle mit hoher Geschwindigkeit herunterladen, wodurch langsame Downloads und Verbindungs-Timeouts vollständig vermieden werden.",
-    "fr-FR": "Accélération d'image multi-source intégrée, l'environnement réseau national utilise ModelScope et d'autres sources nationales, et l'environnement réseau international utilise HuggingFace, les deux peuvent télécharger des modèles à grande vitesse, disant complètement adieu aux téléchargements lents et aux délais d'attente de connexion.",
-    "ko-KR": "내장된 멀티 소스 이미지 가속, 국내 네트워크 환경은 ModelScope 및 기타 국내 소스를 사용하고 국제 네트워크 환경은 HuggingFace를 사용합니다. 두 모델 모두 고속으로 모델을 다운로드할 수 있어 느린 다운로드 및 연결 시간 초과와 완전히 작별합니다.",
-    "$files": ["src/components/api/third-party-api-view.tsx(1495-1575)"],
-    "$id": 532
-  },
-  "优选模型，持续跟进前沿": {
-    "en-US": "Optimize models and continue to follow the cutting edge",
-    "es-ES": "Optimice los modelos y continúe a la vanguardia",
-    "ar-EG": "قم بتحسين النماذج واستمر في متابعة أحدث التطورات",
-    "pt-PT": "Otimize modelos e continue acompanhando o que há de mais moderno",
-    "ru-RU": "Оптимизируйте модели и продолжайте следовать новейшим технологиям",
-    "ja-JP": "モデルを最適化し、最先端を追い続ける",
-    "de-DE": "Optimieren Sie Modelle und bleiben Sie weiterhin auf dem neuesten Stand",
-    "fr-FR": "Optimisez les modèles et continuez à suivre la pointe",
-    "ko-KR": "모델을 최적화하고 계속해서 최첨단 기술을 따르세요.",
-    "$files": ["src/components/api/third-party-api-view.tsx(1629-1644)"],
-    "$id": 533
-  },
-  "由团队严格筛选与评测优选模型，持续跟进并收录最新前沿模型，省去自行试错与踩坑成本，开箱即用即可获得高质量推理效果。": {
-    "en-US": "The team strictly selects and evaluates the selected models, continuously follows up and includes the latest cutting-edge models, eliminating the cost of trial and error and pitfalls, and you can obtain high-quality inference results right out of the box.",
-    "es-ES": "El equipo selecciona y evalúa estrictamente los modelos seleccionados, realiza un seguimiento continuo e incluye los últimos modelos de vanguardia, eliminando el costo de prueba y error y las trampas, y usted puede obtener resultados de inferencia de alta calidad desde el primer momento.",
-    "ar-EG": "يقوم الفريق باختيار النماذج المختارة وتقييمها بدقة، والمتابعة المستمرة وتضمين أحدث النماذج المتطورة، مما يلغي تكلفة التجربة والخطأ والمزالق، ويمكنك الحصول على نتائج استدلالية عالية الجودة فور إخراجها من الصندوق.",
-    "pt-PT": "A equipe seleciona e avalia rigorosamente os modelos selecionados, acompanha continuamente e inclui os modelos de ponta mais recentes, eliminando o custo de tentativa e erro e armadilhas, e você pode obter resultados de inferência de alta qualidade imediatamente.",
-    "ru-RU": "Команда строго отбирает и оценивает выбранные модели, постоянно отслеживает и включает новейшие передовые модели, исключая затраты на пробы, ошибки и подводные камни, и вы можете получить высококачественные результаты вывода прямо из коробки.",
-    "ja-JP": "チームは選択したモデルを厳密に選択および評価し、継続的にフォローアップして最新の最先端モデルを組み込むことで、試行錯誤のコストや落とし穴を排除し、箱から出してすぐに高品質の推論結果を得ることができます。",
-    "de-DE": "Das Team wählt die ausgewählten Modelle streng aus und bewertet sie, verfolgt sie kontinuierlich und integriert die neuesten, hochmodernen Modelle, wodurch die Kosten für Versuch und Irrtum und Fallstricke entfallen und Sie sofort hochwertige Inferenzergebnisse erhalten können.",
-    "fr-FR": "L'équipe sélectionne et évalue strictement les modèles sélectionnés, effectue un suivi continu et inclut les derniers modèles de pointe, éliminant ainsi le coût des essais, des erreurs et des pièges, et vous pouvez obtenir des résultats d'inférence de haute qualité dès la sortie de la boîte.",
-    "ko-KR": "팀은 선택된 모델을 엄격하게 선택 및 평가하고 최신 최첨단 모델을 지속적으로 추적하고 포함하므로 시행 착오 및 함정에 대한 비용을 제거하고 즉시 고품질 추론 결과를 얻을 수 있습니다.",
-    "$files": ["src/components/api/third-party-api-view.tsx(1660-1721)"],
-    "$id": 534
-  },
-  "本地私密，数据不出端": {
-    "en-US": "Local privacy, data does not come out",
-    "es-ES": "Privacidad local, los datos no salen",
-    "ar-EG": "الخصوصية المحلية، لا تخرج البيانات",
-    "pt-PT": "Privacidade local, os dados não saem",
-    "ru-RU": "Локальная конфиденциальность, данные не выходят",
-    "ja-JP": "ローカルのプライバシー、データは外に出ません",
-    "de-DE": "Lokale Privatsphäre, Daten kommen nicht heraus",
-    "fr-FR": "Confidentialité locale, les données ne sortent pas",
-    "ko-KR": "로컬 프라이버시, 데이터가 나오지 않습니다",
-    "$files": ["src/components/api/third-party-api-view.tsx(1778-1792)"],
-    "$id": 535
-  },
-  "推理全程在本地完成，数据不离开设备，无云端隐私泄露风险；同时无需 API 订阅费用，一次部署长期免费使用。": {
-    "en-US": "The entire inference process is completed locally, the data does not leave the device, and there is no risk of privacy leakage in the cloud; there is no API subscription fee, and one deployment is free for long-term use.",
-    "es-ES": "Todo el proceso de inferencia se completa localmente, los datos no salen del dispositivo y no hay riesgo de fuga de privacidad en la nube; no hay tarifa de suscripción API y una implementación es gratuita para uso a largo plazo.",
-    "ar-EG": "تتم عملية الاستدلال بأكملها محليًا، ولا تترك البيانات الجهاز، ولا يوجد خطر تسرب الخصوصية في السحابة؛ لا توجد رسوم اشتراك في واجهة برمجة التطبيقات (API)، ويتم النشر مجانًا للاستخدام على المدى الطويل.",
-    "pt-PT": "Todo o processo de inferência é concluído localmente, os dados não saem do dispositivo e não há risco de vazamento de privacidade na nuvem; não há taxa de assinatura de API e uma implantação é gratuita para uso a longo prazo.",
-    "ru-RU": "Весь процесс вывода выполняется локально, данные не покидают устройство, и нет риска утечки конфиденциальной информации в облаке; плата за подписку на API не взимается, а одно развертывание бесплатно при долгосрочном использовании.",
-    "ja-JP": "推論プロセス全体がローカルで完了し、データがデバイスの外に流出することはなく、クラウドでのプライバシー漏洩のリスクはありません。 API サブスクリプション料金はなく、1 つのデプロイメントは長期使用のために無料です。",
-    "de-DE": "Der gesamte Inferenzprozess wird lokal abgeschlossen, die Daten verlassen das Gerät nicht und es besteht kein Risiko eines Datenschutzverlusts in der Cloud; Es fallen keine API-Abonnementgebühren an und eine Bereitstellung ist für die langfristige Nutzung kostenlos.",
-    "fr-FR": "L'ensemble du processus d'inférence est effectué localement, les données ne quittent pas l'appareil et il n'y a aucun risque de fuite de confidentialité dans le cloud ; il n'y a pas de frais d'abonnement à l'API et un déploiement est gratuit pour une utilisation à long terme.",
-    "ko-KR": "전체 추론 프로세스는 로컬에서 완료되고 데이터는 장치 외부로 유출되지 않으며 클라우드에서 개인정보가 유출될 위험이 없습니다. API 구독료가 없으며 장기간 사용 시 한 번의 배포가 무료입니다.",
-    "$files": ["src/components/api/third-party-api-view.tsx(1808-1865)"],
-    "$id": 536
-  },
-  "完全开源免费，社区共建": {
-    "en-US": "Completely open source and free, built by the community",
-    "es-ES": "Completamente de código abierto y gratuito, creado por la comunidad.",
-    "ar-EG": "مفتوح المصدر بالكامل ومجاني، تم إنشاؤه بواسطة المجتمع",
-    "pt-PT": "Completamente de código aberto e gratuito, construído pela comunidade",
-    "ru-RU": "Полностью открытый исходный код и бесплатный, созданный сообществом.",
-    "ja-JP": "完全にオープンソースで無料、コミュニティによって構築されました",
-    "de-DE": "Völlig Open Source und kostenlos, erstellt von der Community",
-    "fr-FR": "Entièrement open source et gratuit, construit par la communauté",
-    "ko-KR": "커뮤니티가 구축한 완전 오픈 소스 및 무료",
-    "$files": ["src/components/api/third-party-api-view.tsx(1916-1931)"],
-    "$id": 537
-  },
-  "基于 MIT 协议完全开源，代码透明，无任何隐藏付费项；欢迎社区参与共建，共同打磨更好的本地 AI 引擎。": {
-    "en-US": "It is completely open source based on the MIT protocol, with transparent code and no hidden payment items; the community is welcome to participate in co-construction and jointly polish a better local AI engine.",
-    "es-ES": "Es completamente de código abierto basado en el protocolo MIT, con código transparente y sin elementos de pago ocultos; la comunidad puede participar en la co-construcción y pulir conjuntamente un mejor motor de IA local.",
-    "ar-EG": "إنه مفتوح المصدر بالكامل ويعتمد على بروتوكول MIT، مع كود شفاف ولا توجد عناصر دفع مخفية؛ نرحب بالمجتمع للمشاركة في البناء المشترك والتحسين المشترك لمحرك ذكاء اصطناعي محلي أفضل.",
-    "pt-PT": "É totalmente open source baseado no protocolo MIT, com código transparente e sem itens de pagamento ocultos; a comunidade é bem-vinda para participar da co-construção e aprimorar em conjunto um melhor mecanismo de IA local.",
-    "ru-RU": "Это полностью открытый исходный код, основанный на протоколе MIT, с прозрачным кодом и без скрытых платежных элементов; Сообщество может принять участие в совместной разработке и совместной доработке лучшего местного движка искусственного интеллекта.",
-    "ja-JP": "これは MIT プロトコルに基づいた完全なオープンソースであり、透明なコードと隠された支払い項目はありません。コミュニティは共同構築に参加し、より良いローカル AI エンジンを共同で磨き上げることを歓迎します。",
-    "de-DE": "Es ist vollständig Open Source und basiert auf dem MIT-Protokoll, mit transparentem Code und ohne versteckte Zahlungselemente. Die Community ist herzlich eingeladen, sich am gemeinsamen Aufbau zu beteiligen und gemeinsam an einer besseren lokalen KI-Engine zu feilen.",
-    "fr-FR": "Il est entièrement open source basé sur le protocole MIT, avec un code transparent et aucun élément de paiement caché ; la communauté est invitée à participer à la co-construction et à peaufiner conjointement un meilleur moteur d'IA local.",
-    "ko-KR": "MIT 프로토콜을 기반으로 한 완전한 오픈 소스이며, 투명한 코드와 숨겨진 결제 항목이 없습니다. 커뮤니티는 공동 구축에 참여하고 더 나은 로컬 AI 엔진을 공동으로 연마하는 것을 환영합니다.",
-    "$files": ["src/components/api/third-party-api-view.tsx(1947-2004)"],
-    "$id": 538
-  },
-  "第三方应用对接与 API 地址": {
-    "en-US": "Third-party application docking and API address",
-    "es-ES": "Acoplamiento de aplicaciones de terceros y dirección API",
-    "ar-EG": "إرساء تطبيقات الطرف الثالث وعنوان واجهة برمجة التطبيقات (API).",
-    "pt-PT": "Docking de aplicativos de terceiros e endereço de API",
-    "ru-RU": "Привязка сторонних приложений и адрес API",
-    "ja-JP": "サードパーティアプリケーションのドッキングとAPIアドレス",
-    "de-DE": "Docking- und API-Adresse von Drittanbieteranwendungen",
-    "fr-FR": "Dock d'application tierce et adresse API",
-    "ko-KR": "타사 애플리케이션 도킹 및 API 주소",
-    "$files": ["src/components/api/third-party-api-view.tsx(2328-2347)"],
-    "$id": 539
-  },
-  "完全兼容 OpenAI 标准协议，可无缝配置至 萤核智能文件夹、龙虾、Cherry Studio、ChatBox、NextChat 等客户端。": {
-    "en-US": "It is fully compatible with the OpenAI standard protocol and can be seamlessly configured to clients such as Firefly AI Folder, Lobster, Cherry Studio, ChatBox, and NextChat.",
-    "es-ES": "Es totalmente compatible con el protocolo estándar OpenAI y se puede configurar sin problemas para clientes como Firefly AI Folder, Lobster, Cherry Studio, ChatBox y NextChat.",
-    "ar-EG": "وهو متوافق تمامًا مع بروتوكول OpenAI القياسي ويمكن تهيئته بسلاسة لعملاء مثل Firefly AI Folder وLobster وCherry Studio وChatBox وNextChat.",
-    "pt-PT": "É totalmente compatível com o protocolo padrão OpenAI e pode ser configurado perfeitamente para clientes como Firefly AI Folder, Lobster, Cherry Studio, ChatBox e NextChat.",
-    "ru-RU": "Он полностью совместим со стандартным протоколом OpenAI и может быть легко настроен для таких клиентов, как Firefly AI Folder, Lobster, Cherry Studio, ChatBox и NextChat.",
-    "ja-JP": "OpenAI 標準プロトコルと完全な互換性があり、Firefly AI Folder、Lobster、Cherry Studio、ChatBox、NextChat などのクライアントにシームレスに設定できます。",
-    "de-DE": "Es ist vollständig kompatibel mit dem OpenAI-Standardprotokoll und kann nahtlos für Clients wie Firefly AI Folder, Lobster, Cherry Studio, ChatBox und NextChat konfiguriert werden.",
-    "fr-FR": "Il est entièrement compatible avec le protocole standard OpenAI et peut être configuré de manière transparente pour des clients tels que Firefly AI Folder, Lobster, Cherry Studio, ChatBox et NextChat.",
-    "ko-KR": "OpenAI 표준 프로토콜과 완벽하게 호환되며 Firefly AI Folder, Lobster, Cherry Studio, ChatBox 및 NextChat과 같은 클라이언트에 원활하게 구성할 수 있습니다.",
-    "$files": ["src/components/api/third-party-api-view.tsx(2475-2550)"],
-    "$id": 540
-  },
-  "基础端点": {
-    "en-US": "Basic endpoint",
-    "es-ES": "Punto final básico",
-    "ar-EG": "نقطة النهاية الأساسية",
-    "pt-PT": "Ponto de extremidade básico",
-    "ru-RU": "Базовая конечная точка",
-    "ja-JP": "基本エンドポイント",
-    "de-DE": "Grundlegender Endpunkt",
-    "fr-FR": "Point de terminaison de base",
-    "ko-KR": "기본 엔드포인트",
-    "$files": ["src/components/api/third-party-api-view.tsx(2932-2940)"],
-    "$id": 541
-  },
-  "聊天接口": {
-    "en-US": "Chat interface",
-    "es-ES": "Interfaz de chat",
-    "ar-EG": "واجهة الدردشة",
-    "pt-PT": "Interface de bate-papo",
-    "ru-RU": "Интерфейс чата",
-    "ja-JP": "チャットインターフェース",
-    "de-DE": "Chat-Schnittstelle",
-    "fr-FR": "Interface de discussion",
-    "ko-KR": "채팅 인터페이스",
-    "$files": ["src/components/api/third-party-api-view.tsx(4100-4108)"],
-    "$id": 544
-  },
-  "授权秘钥": {
-    "en-US": "Authorization key",
-    "es-ES": "Clave de autorización",
-    "ar-EG": "مفتاح التفويض",
-    "pt-PT": "Chave de autorização",
-    "ru-RU": "Ключ авторизации",
-    "ja-JP": "認証キー",
-    "de-DE": "Autorisierungsschlüssel",
-    "fr-FR": "Clé d'autorisation",
-    "ko-KR": "인증 키",
-    "$files": ["src/components/api/third-party-api-view.tsx(5261-5269)"],
-    "$id": 545
-  },
-  "无需秘钥 (可任意填写，如 sk-firefly)": {
-    "en-US": "No secret key required (can be filled in arbitrarily, such as sk-firefly)",
-    "es-ES": "No se requiere clave secreta (se puede completar arbitrariamente, como sk-firefly)",
-    "ar-EG": "لا يلزم وجود مفتاح سري (يمكن ملؤه بشكل تعسفي، مثل sk-firefly)",
-    "pt-PT": "Nenhuma chave secreta é necessária (pode ser preenchida arbitrariamente, como sk-firefly)",
-    "ru-RU": "Секретный ключ не требуется (можно заполнить произвольно, например, sk-firefly)",
-    "ja-JP": "秘密鍵不要（sk-fireflyなど任意に入力可）",
-    "de-DE": "Kein geheimer Schlüssel erforderlich (kann beliebig ausgefüllt werden, z. B. sk-firefly)",
-    "fr-FR": "Aucune clé secrète requise (peut être remplie arbitrairement, comme sk-firefly)",
-    "ko-KR": "비밀키 불필요 (sk-firefly 등 임의로 입력 가능)",
-    "$files": ["src/components/api/third-party-api-view.tsx(5418-5447)"],
-    "$id": 546
-  },
-  "萤核AI引擎核心优势": {
-    "en-US": "Firefly AI ​​engine core advantages",
-    "es-ES": "Ventajas principales del motor Firefly AI",
-    "ar-EG": "المزايا الأساسية لمحرك Firefly AI",
-    "pt-PT": "Principais vantagens do motor Firefly AI",
-    "ru-RU": "Основные преимущества двигателя Firefly AI",
-    "ja-JP": "Firefly AIエンジンのコア利点",
-    "de-DE": "Die Kernvorteile der Firefly AI-Engine",
-    "fr-FR": "Avantages principaux du moteur Firefly AI",
-    "ko-KR": "Firefly AI ​​엔진 핵심 장점",
-    "$files": ["src/components/api/third-party-api-view.tsx(6464-6478)"],
-    "$id": 547
-  },
-  "选择萤核AI引擎作为本地推理后端，您将获得以下开箱即用的体验：": {
-    "en-US": "By choosing Firefly AI ​​engine as the local inference backend, you will get the following out-of-box experience:",
-    "es-ES": "Al elegir el motor Firefly AI ​​como backend de inferencia local, obtendrá la siguiente experiencia lista para usar:",
-    "ar-EG": "من خلال اختيار محرك Firefly AI ​​كواجهة خلفية للاستدلال المحلي، سوف تحصل على التجربة الجاهزة التالية:",
-    "pt-PT": "Ao escolher o mecanismo Firefly AI ​​como back-end de inferência local, você obterá a seguinte experiência pronta para uso:",
-    "ru-RU": "Выбрав движок Firefly AI ​​в качестве локального механизма вывода, вы получите следующий готовый опыт:",
-    "ja-JP": "Firefly AI エンジンをローカル推論バックエンドとして選択すると、次のようなすぐに使用できるエクスペリエンスが得られます。",
-    "de-DE": "Wenn Sie die Firefly AI-Engine als lokales Inferenz-Backend auswählen, erhalten Sie die folgende sofort einsatzbereite Erfahrung:",
-    "fr-FR": "En choisissant le moteur Firefly AI ​​​​comme backend d'inférence local, vous obtiendrez l'expérience prête à l'emploi suivante :",
-    "ko-KR": "Firefly AI ​​엔진을 로컬 추론 백엔드로 선택하면 다음과 같은 기본 경험을 얻을 수 있습니다.",
-    "$files": ["src/components/api/third-party-api-view.tsx(6606-6641)"],
-    "$id": 548
-  },
   "目前使用兼容模式，能发挥您显卡70% AI算力，显卡驱动需要升级，才能发挥满血性能": {
     "en-US": "Currently using compatibility mode, 70% of the AI ​​computing power of your graphics card can be used. The graphics card driver needs to be upgraded to achieve full performance.",
     "es-ES": "Actualmente, al utilizar el modo de compatibilidad, se puede utilizar el 70% de la potencia informática de IA de su tarjeta gráfica. Es necesario actualizar el controlador de la tarjeta gráfica para lograr el máximo rendimiento.",
@@ -3620,7 +3834,9 @@
     "de-DE": "Im Kompatibilitätsmodus können derzeit 70 % der KI-Rechenleistung Ihrer Grafikkarte genutzt werden. Um die volle Leistung zu erreichen, muss der Grafikkartentreiber aktualisiert werden.",
     "fr-FR": "En utilisant actuellement le mode de compatibilité, 70 % de la puissance de calcul IA de votre carte graphique peut être utilisée. Le pilote de la carte graphique doit être mis à niveau pour obtenir toutes les performances.",
     "ko-KR": "현재 호환 모드를 사용하면 그래픽 카드의 AI 컴퓨팅 성능의 70%를 사용할 수 있습니다. 완전한 성능을 얻으려면 그래픽 카드 드라이버를 업그레이드해야 합니다.",
-    "$files": ["src/components/hardware/hardware-card.tsx(2389-2434)"],
+    "$files": [
+      "src/components/hardware/hardware-card.tsx(2389-2434)"
+    ],
     "$id": 644
   },
   "升级显卡驱动": {
@@ -3633,7 +3849,9 @@
     "de-DE": "Aktualisieren Sie den Grafikkartentreiber",
     "fr-FR": "Mettre à niveau le pilote de la carte graphique",
     "ko-KR": "그래픽 카드 드라이버 업그레이드",
-    "$files": ["src/components/hardware/hardware-card.tsx(2845-2855)"],
+    "$files": [
+      "src/components/hardware/hardware-card.tsx(2845-2855)"
+    ],
     "$id": 645
   },
   "我已升级驱动，重新检测": {
@@ -3646,7 +3864,9 @@
     "de-DE": "Ich habe den Treiber aktualisiert und erneut getestet",
     "fr-FR": "J'ai mis à jour le pilote et re-testé",
     "ko-KR": "드라이버를 업그레이드하고 다시 테스트했습니다.",
-    "$files": ["src/components/hardware/hardware-card.tsx(3285-3300)"],
+    "$files": [
+      "src/components/hardware/hardware-card.tsx(3285-3300)"
+    ],
     "$id": 646
   },
   "显卡型号": {
@@ -3659,7 +3879,9 @@
     "de-DE": "Grafikkartenmodell",
     "fr-FR": "Modèle de carte graphique",
     "ko-KR": "그래픽 카드 모델",
-    "$files": ["src/components/hardware/hardware-card.tsx(4148-4156)"],
+    "$files": [
+      "src/components/hardware/hardware-card.tsx(4148-4156)"
+    ],
     "$id": 647
   },
   "探测中...": {
@@ -3672,7 +3894,9 @@
     "de-DE": "Erkennen...",
     "fr-FR": "Détection...",
     "ko-KR": "감지 중...",
-    "$files": ["src/components/hardware/hardware-card.tsx(4330-4340)"],
+    "$files": [
+      "src/components/hardware/hardware-card.tsx(4330-4340)"
+    ],
     "$id": 648
   },
   "通用加速设备": {
@@ -3685,7 +3909,9 @@
     "de-DE": "Universelle Beschleunigungsausrüstung",
     "fr-FR": "Équipement d'accélération universel",
     "ko-KR": "범용 가속 장비",
-    "$files": ["src/components/hardware/hardware-card.tsx(4390-4400)"],
+    "$files": [
+      "src/components/hardware/hardware-card.tsx(4390-4400)"
+    ],
     "$id": 649
   },
   "集成显卡 (核显)": {
@@ -3698,7 +3924,9 @@
     "de-DE": "Integrierte Grafikkarte (Core Graphics)",
     "fr-FR": "Carte graphique intégrée (graphiques de base)",
     "ko-KR": "통합 그래픽 카드(코어 그래픽)",
-    "$files": ["src/components/hardware/hardware-card.tsx(4642-4655)"],
+    "$files": [
+      "src/components/hardware/hardware-card.tsx(4642-4655)"
+    ],
     "$id": 650
   },
   "独立显卡 (dGPU)": {
@@ -3711,7 +3939,9 @@
     "de-DE": "Separate Grafikkarte (dGPU)",
     "fr-FR": "Carte graphique discrète (dGPU)",
     "ko-KR": "개별 그래픽 카드(dGPU)",
-    "$files": ["src/components/hardware/hardware-card.tsx(4659-4674)"],
+    "$files": [
+      "src/components/hardware/hardware-card.tsx(4659-4674)"
+    ],
     "$id": 651
   },
   "可用显存": {
@@ -3724,7 +3954,9 @@
     "de-DE": "Verfügbarer Videospeicher",
     "fr-FR": "Mémoire vidéo disponible",
     "ko-KR": "사용 가능한 비디오 메모리",
-    "$files": ["src/components/hardware/hardware-card.tsx(5592-5600)"],
+    "$files": [
+      "src/components/hardware/hardware-card.tsx(5592-5600)"
+    ],
     "$id": 652
   },
   "(已用 {used} MB)": {
@@ -3737,7 +3969,9 @@
     "de-DE": "({used} MB verwendet)",
     "fr-FR": "({used} Mo utilisés)",
     "ko-KR": "({used}MB 사용됨)",
-    "$files": ["src/components/hardware/hardware-card.tsx(6094-6112)"],
+    "$files": [
+      "src/components/hardware/hardware-card.tsx(6094-6112)"
+    ],
     "$id": 653
   },
   "当前活动后端": {
@@ -3750,7 +3984,9 @@
     "de-DE": "Derzeit aktives Backend",
     "fr-FR": "Backend actif actuel",
     "ko-KR": "현재 활성 백엔드",
-    "$files": ["src/components/hardware/hardware-card.tsx(6336-6346)"],
+    "$files": [
+      "src/components/hardware/hardware-card.tsx(6336-6346)"
+    ],
     "$id": 654
   },
   "系统物理内存": {
@@ -3763,7 +3999,9 @@
     "de-DE": "Physischer Systemspeicher",
     "fr-FR": "Mémoire physique du système",
     "ko-KR": "시스템 물리적 메모리",
-    "$files": ["src/components/hardware/hardware-card.tsx(7131-7141)"],
+    "$files": [
+      "src/components/hardware/hardware-card.tsx(7131-7141)"
+    ],
     "$id": 655
   },
   "{cores} 核 / {threads} 线程": {
@@ -3776,7 +4014,9 @@
     "de-DE": "{cores} Kern / {threads} Thread",
     "fr-FR": "{cores} noyau / {threads} fil de discussion",
     "ko-KR": "{cores} 코어/{threads} 스레드",
-    "$files": ["src/components/hardware/hardware-card.tsx(7270-7298)"],
+    "$files": [
+      "src/components/hardware/hardware-card.tsx(7270-7298)"
+    ],
     "$id": 656
   },
   "CPU 自适应": {
@@ -3789,7 +4029,9 @@
     "de-DE": "CPU-adaptiv",
     "fr-FR": "Adaptatif du processeur",
     "ko-KR": "CPU 적응형",
-    "$files": ["src/components/hardware/hardware-card.tsx(7372-7383)"],
+    "$files": [
+      "src/components/hardware/hardware-card.tsx(7372-7383)"
+    ],
     "$id": 657
   },
   "平台": {
@@ -3802,7 +4044,9 @@
     "de-DE": "Plattform",
     "fr-FR": "Plateforme",
     "ko-KR": "플랫폼",
-    "$files": ["src/components/hardware/hardware-card.tsx(7515-7521)"],
+    "$files": [
+      "src/components/hardware/hardware-card.tsx(7515-7521)"
+    ],
     "$id": 658
   },
   "条": {
@@ -3831,7 +4075,9 @@
     "de-DE": "Alle",
     "fr-FR": "Tous",
     "ko-KR": "전체",
-    "$files": ["src/components/logs/engine-logs-view.tsx(11278-11284)"],
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(11278-11284)"
+    ],
     "$id": 660
   },
   "错误": {
@@ -3844,7 +4090,9 @@
     "de-DE": "Fehler",
     "fr-FR": "Erreur",
     "ko-KR": "실수",
-    "$files": ["src/components/logs/engine-logs-view.tsx(11830-11836)"],
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(11830-11836)"
+    ],
     "$id": 661
   },
   "警告": {
@@ -3857,7 +4105,9 @@
     "de-DE": "Warnen",
     "fr-FR": "Avertir",
     "ko-KR": "경고하다",
-    "$files": ["src/components/logs/engine-logs-view.tsx(12640-12646)"],
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(12640-12646)"
+    ],
     "$id": 662
   },
   "搜索日志...": {
@@ -3870,7 +4120,9 @@
     "de-DE": "Protokolle durchsuchen...",
     "fr-FR": "Rechercher des journaux...",
     "ko-KR": "로그 검색...",
-    "$files": ["src/components/logs/engine-logs-view.tsx(13402-13413)"],
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(13402-13413)"
+    ],
     "$id": 663
   },
   "搜索": {
@@ -3883,7 +4135,9 @@
     "de-DE": "Suchen",
     "fr-FR": "Recherche",
     "ko-KR": "찾다",
-    "$files": ["src/components/logs/engine-logs-view.tsx(14184-14190)"],
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(14184-14190)"
+    ],
     "$id": 664
   },
   "当前：默认展开多行排版": {
@@ -3896,7 +4150,9 @@
     "de-DE": "Aktuell: Mehrzeiliges Layout standardmäßig erweitern",
     "fr-FR": "Actuel : développer la disposition multiligne par défaut",
     "ko-KR": "현재: 기본적으로 여러 줄 레이아웃 확장",
-    "$files": ["src/components/logs/engine-logs-view.tsx(14808-14823)"],
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(14808-14823)"
+    ],
     "$id": 665
   },
   "当前：默认单行省略": {
@@ -3909,7 +4165,9 @@
     "de-DE": "Aktuell: Einzelzeile wird standardmäßig weggelassen",
     "fr-FR": "Actuel : une seule ligne omise par défaut",
     "ko-KR": "현재: 기본적으로 한 줄 생략",
-    "$files": ["src/components/logs/engine-logs-view.tsx(14827-14840)"],
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(14827-14840)"
+    ],
     "$id": 666
   },
   "多行展开": {
@@ -3922,7 +4180,9 @@
     "de-DE": "Erweitern Sie mehrere Zeilen",
     "fr-FR": "Développer plusieurs lignes",
     "ko-KR": "여러 줄 확장",
-    "$files": ["src/components/logs/engine-logs-view.tsx(15163-15171)"],
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(15163-15171)"
+    ],
     "$id": 667
   },
   "单行折叠": {
@@ -3935,7 +4195,9 @@
     "de-DE": "Einreihiger Falz",
     "fr-FR": "Pliage à une seule rangée",
     "ko-KR": "단일 행 접기",
-    "$files": ["src/components/logs/engine-logs-view.tsx(15175-15183)"],
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(15175-15183)"
+    ],
     "$id": 668
   },
   "复制全量": {
@@ -3948,7 +4210,9 @@
     "de-DE": "Gesamtbetrag kopieren",
     "fr-FR": "Copier le montant total",
     "ko-KR": "전액 복사",
-    "$files": ["src/components/logs/engine-logs-view.tsx(15858-15866)"],
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(15858-15866)"
+    ],
     "$id": 669
   },
   "清空日志": {
@@ -3961,7 +4225,9 @@
     "de-DE": "Protokoll löschen",
     "fr-FR": "Effacer le journal",
     "ko-KR": "로그 지우기",
-    "$files": ["src/components/logs/engine-logs-view.tsx(16358-16366)"],
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(16358-16366)"
+    ],
     "$id": 670
   },
   "跳至最新日志": {
@@ -3974,7 +4240,9 @@
     "de-DE": "Zum neuesten Protokoll springen",
     "fr-FR": "Passer au dernier journal",
     "ko-KR": "최신 로그로 건너뛰기",
-    "$files": ["src/components/logs/engine-logs-view.tsx(16752-16762)"],
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(16752-16762)"
+    ],
     "$id": 671
   },
   "无匹配日志": {
@@ -3987,7 +4255,9 @@
     "de-DE": "Kein passendes Protokoll",
     "fr-FR": "Aucun journal correspondant",
     "ko-KR": "일치하는 로그가 없습니다.",
-    "$files": ["src/components/logs/engine-logs-view.tsx(17426-17435)"],
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(17426-17435)"
+    ],
     "$id": 672
   },
   "暂无日志，等待服务启动...": {
@@ -4000,7 +4270,9 @@
     "de-DE": "Noch keine Protokolle, ich warte auf den Start des Dienstes ...",
     "fr-FR": "Pas de logs pour l'instant, j'attends le démarrage du service...",
     "ko-KR": "아직 로그가 없습니다. 서비스 시작을 기다리는 중입니다...",
-    "$files": ["src/components/logs/engine-logs-view.tsx(17439-17457)"],
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(17439-17457)"
+    ],
     "$id": 673
   },
   "启动命令 (Launch Command)": {
@@ -4013,7 +4285,9 @@
     "de-DE": "Befehl starten",
     "fr-FR": "Commande de lancement",
     "ko-KR": "발사 명령",
-    "$files": ["src/components/logs/engine-logs-view.tsx(18752-18777)"],
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(18752-18777)"
+    ],
     "$id": 674
   },
   "点击切换换行状态": {
@@ -4026,7 +4300,9 @@
     "de-DE": "Klicken Sie, um den Zeilenumbruchstatus zu ändern",
     "fr-FR": "Cliquez pour changer l'état de retour à la ligne",
     "ko-KR": "줄 바꿈 상태를 전환하려면 클릭하세요.",
-    "$files": ["src/components/logs/engine-logs-view.tsx(19333-19345)"],
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(19333-19345)"
+    ],
     "$id": 675
   },
   "分行排版": {
@@ -4039,7 +4315,9 @@
     "de-DE": "Filiallayout",
     "fr-FR": "Disposition des succursales",
     "ko-KR": "지점 레이아웃",
-    "$files": ["src/components/logs/engine-logs-view.tsx(19417-19425)"],
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(19417-19425)"
+    ],
     "$id": 676
   },
   "单行紧凑": {
@@ -4052,7 +4330,9 @@
     "de-DE": "Einreihig kompakt",
     "fr-FR": "Compacte à une rangée",
     "ko-KR": "단일 행 컴팩트",
-    "$files": ["src/components/logs/engine-logs-view.tsx(19429-19437)"],
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(19429-19437)"
+    ],
     "$id": 677
   },
   "切换为单行紧凑格式": {
@@ -4065,7 +4345,9 @@
     "de-DE": "Wechseln Sie zum einzeiligen Kompaktformat",
     "fr-FR": "Passer au format compact monoligne",
     "ko-KR": "단일 라인 압축 형식으로 전환",
-    "$files": ["src/components/logs/engine-logs-view.tsx(20017-20030)"],
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(20017-20030)"
+    ],
     "$id": 678
   },
   "切换为多行按参数格式": {
@@ -4078,7 +4360,9 @@
     "de-DE": "Wechseln Sie zum mehrzeiligen Parameterformat",
     "fr-FR": "Passer au format multiligne par paramètre",
     "ko-KR": "매개변수 형식으로 여러 줄로 전환",
-    "$files": ["src/components/logs/engine-logs-view.tsx(20034-20048)"],
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(20034-20048)"
+    ],
     "$id": 679
   },
   "单行": {
@@ -4091,7 +4375,9 @@
     "de-DE": "Einzelne Zeile",
     "fr-FR": "Une seule ligne",
     "ko-KR": "한 줄",
-    "$files": ["src/components/logs/engine-logs-view.tsx(20301-20307)"],
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(20301-20307)"
+    ],
     "$id": 680
   },
   "换行": {
@@ -4104,7 +4390,9 @@
     "de-DE": "Zeilenumbruch",
     "fr-FR": "Nouvelle ligne",
     "ko-KR": "개행",
-    "$files": ["src/components/logs/engine-logs-view.tsx(20561-20567)"],
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(20561-20567)"
+    ],
     "$id": 681
   },
   "复制命令": {
@@ -4117,7 +4405,9 @@
     "de-DE": "Kopierbefehl",
     "fr-FR": "Commande de copie",
     "ko-KR": "복사 명령",
-    "$files": ["src/components/logs/engine-logs-view.tsx(21853-21861)"],
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(21853-21861)"
+    ],
     "$id": 682
   },
   "点击自动展开完整启动命令": {
@@ -4130,7 +4420,9 @@
     "de-DE": "Klicken Sie, um den vollständigen Startbefehl automatisch zu erweitern",
     "fr-FR": "Cliquez pour développer automatiquement la commande de démarrage complète",
     "ko-KR": "전체 시작 명령을 자동으로 확장하려면 클릭하세요.",
-    "$files": ["src/components/logs/engine-logs-view.tsx(22461-22477)"],
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(22461-22477)"
+    ],
     "$id": 683
   },
   "点击折叠为单行": {
@@ -4143,7 +4435,9 @@
     "de-DE": "Klicken Sie, um es in eine einzelne Zeile zu verkleinern",
     "fr-FR": "Cliquez pour réduire en une seule ligne",
     "ko-KR": "한 줄로 축소하려면 클릭하세요.",
-    "$files": ["src/components/logs/engine-logs-view.tsx(22481-22492)"],
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(22481-22492)"
+    ],
     "$id": 684
   },
   "展开全部": {
@@ -4156,7 +4450,9 @@
     "de-DE": "Alles erweitern",
     "fr-FR": "Tout afficher",
     "ko-KR": "전체 펼치기",
-    "$files": ["src/components/logs/engine-logs-view.tsx(23099-23107)"],
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(23099-23107)"
+    ],
     "$id": 685
   },
   "点击折叠单行": {
@@ -4169,7 +4465,9 @@
     "de-DE": "Klicken Sie, um eine einzelne Zeile auszublenden",
     "fr-FR": "Cliquez pour réduire une seule ligne",
     "ko-KR": "단일 행을 접으려면 클릭하세요.",
-    "$files": ["src/components/logs/engine-logs-view.tsx(23853-23863)"],
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(23853-23863)"
+    ],
     "$id": 686
   },
   "自动滚动已开启": {
@@ -4182,7 +4480,9 @@
     "de-DE": "Autoscroll ist aktiviert",
     "fr-FR": "Le défilement automatique est activé",
     "ko-KR": "자동스크롤이 켜져 있습니다.",
-    "$files": ["src/components/logs/engine-logs-view.tsx(25825-25836)"],
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(25825-25836)"
+    ],
     "$id": 687
   },
   "自动滚动已暂停（向下滚动可恢复）": {
@@ -4195,7 +4495,9 @@
     "de-DE": "Autoscroll angehalten (zum Fortsetzen nach unten scrollen)",
     "fr-FR": "Défilement automatique en pause (faites défiler vers le bas pour reprendre)",
     "ko-KR": "자동스크롤이 일시중지됨(다시 시작하려면 아래로 스크롤)",
-    "$files": ["src/components/logs/engine-logs-view.tsx(25924-25944)"],
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(25924-25944)"
+    ],
     "$id": 688
   },
   "条日志": {
@@ -4208,7 +4510,9 @@
     "de-DE": "Protokolle",
     "fr-FR": "Journaux",
     "ko-KR": "로그",
-    "$files": ["src/components/logs/engine-logs-view.tsx(26136-26143)"],
+    "$files": [
+      "src/components/logs/engine-logs-view.tsx(26136-26143)"
+    ],
     "$id": 689
   },
   "路径格式不合法": {
@@ -4221,7 +4525,9 @@
     "de-DE": "Das Pfadformat ist ungültig",
     "fr-FR": "Le format du chemin est illégal",
     "ko-KR": "경로 형식이 잘못되었습니다.",
-    "$files": ["src/components/storage/model-storage-config.tsx(1175-1186)"],
+    "$files": [
+      "src/components/storage/model-storage-config.tsx(1175-1186)"
+    ],
     "$id": 812
   },
   "模型存储目录已成功更改并已刷新扫描模型！": {
@@ -4234,7 +4540,9 @@
     "de-DE": "Das Modellspeicherverzeichnis wurde erfolgreich geändert und das gescannte Modell wurde aktualisiert!",
     "fr-FR": "Le répertoire de stockage du modèle a été modifié avec succès et le modèle numérisé a été actualisé !",
     "ko-KR": "모델 저장 디렉터리가 성공적으로 변경되었으며 스캔한 모델이 새로 고쳐졌습니다!",
-    "$files": ["src/components/storage/model-storage-config.tsx(1410-1434)"],
+    "$files": [
+      "src/components/storage/model-storage-config.tsx(1410-1434)"
+    ],
     "$id": 813
   },
   "更改存储目录失败，请检查目录权限。": {
@@ -4247,7 +4555,9 @@
     "de-DE": "Das Speicherverzeichnis konnte nicht geändert werden. Bitte überprüfen Sie die Verzeichnisberechtigungen.",
     "fr-FR": "Échec de la modification du répertoire de stockage, veuillez vérifier les autorisations du répertoire.",
     "ko-KR": "저장소 디렉터리를 변경하지 못했습니다. 디렉터리 권한을 확인하세요.",
-    "$files": ["src/components/storage/model-storage-config.tsx(1547-1568)"],
+    "$files": [
+      "src/components/storage/model-storage-config.tsx(1547-1568)"
+    ],
     "$id": 814
   },
   "请输入自定义模型存储目录的绝对路径:": {
@@ -4260,7 +4570,9 @@
     "de-DE": "Bitte geben Sie den absoluten Pfad zum Speicherverzeichnis des benutzerdefinierten Modells ein:",
     "fr-FR": "Veuillez saisir le chemin absolu du répertoire de stockage du modèle personnalisé :",
     "ko-KR": "맞춤 모델 저장소 디렉터리의 절대 경로를 입력하세요.",
-    "$files": ["src/components/storage/model-storage-config.tsx(2210-2232)"],
+    "$files": [
+      "src/components/storage/model-storage-config.tsx(2210-2232)"
+    ],
     "$id": 815
   },
   "模型存储目录自定义配置": {
@@ -4273,7 +4585,9 @@
     "de-DE": "Benutzerdefinierte Konfiguration des Modellspeicherverzeichnisses",
     "fr-FR": "Configuration personnalisée du répertoire de stockage du modèle",
     "ko-KR": "모델 스토리지 디렉터리 사용자 정의 구성",
-    "$files": ["src/components/storage/model-storage-config.tsx(2781-2796)"],
+    "$files": [
+      "src/components/storage/model-storage-config.tsx(2781-2796)"
+    ],
     "$id": 816
   },
   "自定义大容量磁盘存放目录，避免占用系统盘空间。更改后将即时扫描该目录下的 GGUF 模型。": {
@@ -4286,7 +4600,9 @@
     "de-DE": "Passen Sie das Festplattenspeicherverzeichnis mit großer Kapazität an, um zu vermeiden, dass Systemspeicherplatz belegt wird. GGUF-Modelle in diesem Verzeichnis werden sofort gescannt, nachdem Änderungen vorgenommen wurden.",
     "fr-FR": "Personnalisez le répertoire de stockage sur disque de grande capacité pour éviter d'occuper l'espace disque du système. Les modèles GGUF de ce répertoire seront analysés immédiatement après les modifications.",
     "ko-KR": "시스템 디스크 공간을 차지하지 않도록 대용량 디스크 저장 디렉터리를 사용자 정의하세요. 이 디렉터리의 GGUF 모델은 변경 후 즉시 검색됩니다.",
-    "$files": ["src/components/storage/model-storage-config.tsx(2930-2979)"],
+    "$files": [
+      "src/components/storage/model-storage-config.tsx(2930-2979)"
+    ],
     "$id": 817
   },
   "点击右侧“浏览”选择模型存储目录": {
@@ -4299,7 +4615,9 @@
     "de-DE": "Klicken Sie rechts auf „Durchsuchen“, um das Modellspeicherverzeichnis auszuwählen",
     "fr-FR": "Cliquez sur \"Parcourir\" à droite pour sélectionner le répertoire de stockage du modèle",
     "ko-KR": "모델 저장 디렉터리를 선택하려면 오른쪽의 \"찾아보기\"를 클릭하세요.",
-    "$files": ["src/components/storage/model-storage-config.tsx(3229-3249)"],
+    "$files": [
+      "src/components/storage/model-storage-config.tsx(3229-3249)"
+    ],
     "$id": 818
   },
   "迁移中...": {
@@ -4312,7 +4630,9 @@
     "de-DE": "Migration...",
     "fr-FR": "Migration...",
     "ko-KR": "마이그레이션 중...",
-    "$files": ["src/components/storage/model-storage-config.tsx(3831-3841)"],
+    "$files": [
+      "src/components/storage/model-storage-config.tsx(3831-3841)"
+    ],
     "$id": 819
   },
   "浏览": {
@@ -4325,7 +4645,9 @@
     "de-DE": "Durchsuchen",
     "fr-FR": "Parcourir",
     "ko-KR": "찾아보기",
-    "$files": ["src/components/storage/model-storage-config.tsx(3845-3851)"],
+    "$files": [
+      "src/components/storage/model-storage-config.tsx(3845-3851)"
+    ],
     "$id": 820
   },
   "重新扫描": {
@@ -4338,7 +4660,9 @@
     "de-DE": "Erneut scannen",
     "fr-FR": "Nouvelle analyse",
     "ko-KR": "다시 스캔",
-    "$files": ["src/components/storage/model-storage-config.tsx(4271-4279)"],
+    "$files": [
+      "src/components/storage/model-storage-config.tsx(4271-4279)"
+    ],
     "$id": 821
   },
   "剩余约 {value} 秒": {
@@ -5282,7 +5606,9 @@
     "de-DE": "Beim nächsten Aufruf wird es weiterhin angezeigt, bis der Download des ersten Modells abgeschlossen ist.",
     "fr-FR": "Il sera toujours affiché la prochaine fois que vous entrerez jusqu'à ce que le téléchargement du premier modèle soit terminé.",
     "ko-KR": "첫 번째 모델 다운로드가 완료될 때까지 다음 번에 입장할 때 계속 표시됩니다.",
-    "$files": ["src/components/model/model-bubble-guide.tsx(1514-1537)"],
+    "$files": [
+      "src/components/model/model-bubble-guide.tsx(1514-1537)"
+    ],
     "$id": 701
   },
   "欢迎使用模型库": {
@@ -5295,7 +5621,9 @@
     "de-DE": "Willkommen in der Modellbibliothek",
     "fr-FR": "Bienvenue dans la bibliothèque de modèles",
     "ko-KR": "모델 라이브러리에 오신 것을 환영합니다.",
-    "$files": ["src/components/model/model-bubble-guide.tsx(1831-1842)"],
+    "$files": [
+      "src/components/model/model-bubble-guide.tsx(1831-1842)"
+    ],
     "$id": 702
   },
   "模型": {
@@ -5308,7 +5636,9 @@
     "de-DE": "Modell",
     "fr-FR": "Modèle",
     "ko-KR": "모델",
-    "$files": ["src/components/model/model-bubble-guide.tsx(2172-2178)"],
+    "$files": [
+      "src/components/model/model-bubble-guide.tsx(2172-2178)"
+    ],
     "$id": 703
   },
   "：相当于AI的大脑，千人千面，AI模型也各个能力不同。": {
@@ -5321,7 +5651,9 @@
     "de-DE": ": Äquivalent zum Gehirn der KI haben Tausende von Menschen unterschiedliche Gesichter, und KI-Modelle haben auch unterschiedliche Fähigkeiten.",
     "fr-FR": ": Équivalent au cerveau de l'IA, des milliers de personnes ont des visages différents, et les modèles d'IA ont également des capacités différentes.",
     "ko-KR": ": AI의 두뇌에 해당하는 수천 명의 사람들은 서로 다른 얼굴을 가지고 있으며 AI 모델도 서로 다른 능력을 가지고 있습니다.",
-    "$files": ["src/components/model/model-bubble-guide.tsx(2202-2233)"],
+    "$files": [
+      "src/components/model/model-bubble-guide.tsx(2202-2233)"
+    ],
     "$id": 704
   },
   "智能程度": {
@@ -5364,7 +5696,9 @@
     "de-DE": ": Gibt das Intelligenzniveau des Modells an (Grundschule, Mittelschule, Oberschule, Universität). Je höher der Intelligenzgrad, desto besser die Analysequalität, aber auch das Downloadvolumen, der Zeitaufwand und der Ressourcenverbrauch sind entsprechend höher.",
     "fr-FR": ": Indique le niveau d'intelligence du modèle (école primaire, collège, lycée, université). Plus le niveau d'intelligence est élevé, meilleure est la qualité de l'analyse, mais le volume de téléchargement, la consommation de temps et l'utilisation des ressources seront également proportionnellement plus élevés.",
     "ko-KR": ": 모델의 지능수준(초등학교, 중학교, 고등학교, 대학교)을 나타냅니다. 인텔리전스 수준이 높을수록 분석 품질이 향상되지만 그에 따라 다운로드 양, 시간 소모 및 리소스 사용량도 높아집니다.",
-    "$files": ["src/components/model/model-bubble-guide.tsx(2540-2600)"],
+    "$files": [
+      "src/components/model/model-bubble-guide.tsx(2540-2600)"
+    ],
     "$id": 706
   },
   "预估显存": {
@@ -5408,7 +5742,9 @@
     "de-DE": ": Gibt den ungefähren Videospeicher (VRAM) an, der zum Betrieb des Modells erforderlich ist. Bitte vergleichen Sie es mit dem lokalen Videospeicher. Die rote Markierung zeigt an, dass der lokale Videospeicher überschritten ist und nicht reibungslos laufen kann.",
     "fr-FR": ": Indique la mémoire vidéo approximative (VRAM) requise pour exécuter le modèle. Veuillez le comparer avec la mémoire vidéo locale. La marque rouge indique que la mémoire vidéo locale est dépassée et ne peut pas fonctionner correctement.",
     "ko-KR": ": 모델을 실행하는 데 필요한 대략적인 비디오 메모리(VRAM)를 나타냅니다. 로컬 비디오 메모리와 비교해 보세요. 빨간색 표시는 로컬 비디오 메모리가 초과되어 원활하게 실행될 수 없음을 나타냅니다.",
-    "$files": ["src/components/model/model-bubble-guide.tsx(2873-2928)"],
+    "$files": [
+      "src/components/model/model-bubble-guide.tsx(2873-2928)"
+    ],
     "$id": 708
   },
   "选择模型开始下载时，系统会自动为您匹配并下载最佳计算引擎包。可在「模型」与「引擎」标签页查看各自下载进度。": {
@@ -5421,7 +5757,9 @@
     "de-DE": "Wenn Sie ein Modell auswählen, um den Download zu starten, sucht das System automatisch nach dem für Sie besten Berechnungs-Engine-Paket und lädt es herunter. Den jeweiligen Download-Fortschritt können Sie auf den Reitern „Modell“ und „Engine“ überprüfen.",
     "fr-FR": "Lorsque vous sélectionnez un modèle pour commencer le téléchargement, le système fera automatiquement correspondre et téléchargera le meilleur package de moteur de calcul pour vous. Vous pouvez vérifier la progression du téléchargement respectif dans les onglets « Modèle » et « Moteur ».",
     "ko-KR": "다운로드를 시작할 모델을 선택하면 시스템이 자동으로 가장 적합한 계산 엔진 패키지를 일치시켜 다운로드합니다. \"모델\" 및 \"엔진\" 탭에서 해당 다운로드 진행 상황을 확인할 수 있습니다.",
-    "$files": ["src/components/model/model-bubble-guide.tsx(3120-3177)"],
+    "$files": [
+      "src/components/model/model-bubble-guide.tsx(3120-3177)"
+    ],
     "$id": 709
   },
   "统一内存": {
@@ -5434,7 +5772,9 @@
     "de-DE": "Einheitliches Gedächtnis",
     "fr-FR": "Mémoire unifiée",
     "ko-KR": "통합 메모리",
-    "$files": ["src/components/model/model-download-popover.tsx(5211-5219)"],
+    "$files": [
+      "src/components/model/model-download-popover.tsx(5211-5219)"
+    ],
     "$id": 1398
   },
   "独立显卡": {
@@ -5447,7 +5787,9 @@
     "de-DE": "Separate Grafikkarte",
     "fr-FR": "Carte graphique discrète",
     "ko-KR": "개별 그래픽 카드",
-    "$files": ["src/components/model/model-download-popover.tsx(5324-5332)"],
+    "$files": [
+      "src/components/model/model-download-popover.tsx(5324-5332)"
+    ],
     "$id": 1399
   },
   "显存": {
@@ -5460,7 +5802,9 @@
     "de-DE": "Videospeicher",
     "fr-FR": "Mémoire vidéo",
     "ko-KR": "비디오 메모리",
-    "$files": ["src/components/model/model-download-popover.tsx(5366-5372)"],
+    "$files": [
+      "src/components/model/model-download-popover.tsx(5366-5372)"
+    ],
     "$id": 1400
   },
   "系统内存 / 核显模式": {
@@ -5473,7 +5817,9 @@
     "de-DE": "Systemspeicher/Core-Anzeigemodus",
     "fr-FR": "Mémoire système/mode d'affichage Core",
     "ko-KR": "시스템 메모리/코어 디스플레이 모드",
-    "$files": ["src/components/model/model-download-popover.tsx(5400-5415)"],
+    "$files": [
+      "src/components/model/model-download-popover.tsx(5400-5415)"
+    ],
     "$id": 1401
   },
   "自定义模型组件下载": {
@@ -5486,7 +5832,9 @@
     "de-DE": "Herunterladen benutzerdefinierter Modellkomponenten",
     "fr-FR": "Téléchargement de composants de modèle personnalisé",
     "ko-KR": "커스텀 모델 구성요소 다운로드",
-    "$files": ["src/components/model/model-download-popover.tsx(6208-6221)"],
+    "$files": [
+      "src/components/model/model-download-popover.tsx(6208-6221)"
+    ],
     "$id": 1402
   },
   "自定义组件下载": {
@@ -5499,7 +5847,9 @@
     "de-DE": "Benutzerdefinierter Komponenten-Download",
     "fr-FR": "Téléchargement de composants personnalisés",
     "ko-KR": "맞춤 구성요소 다운로드",
-    "$files": ["src/components/model/model-download-popover.tsx(6447-6458)"],
+    "$files": [
+      "src/components/model/model-download-popover.tsx(6447-6458)"
+    ],
     "$id": 1403
   },
   "合计下载": {
@@ -5512,7 +5862,9 @@
     "de-DE": "Gesamtzahl der Downloads",
     "fr-FR": "Total des téléchargements",
     "ko-KR": "총 다운로드",
-    "$files": ["src/components/model/model-download-popover.tsx(9892-9900)"],
+    "$files": [
+      "src/components/model/model-download-popover.tsx(9892-9900)"
+    ],
     "$id": 1404
   },
   "超出安全显存": {
@@ -5525,7 +5877,9 @@
     "de-DE": "Überschreitung des sicheren Videospeichers",
     "fr-FR": "Dépassement de la mémoire vidéo sécurisée",
     "ko-KR": "안전 비디오 메모리 초과",
-    "$files": ["src/components/model/model-download-popover.tsx(10676-10686)"],
+    "$files": [
+      "src/components/model/model-download-popover.tsx(10676-10686)"
+    ],
     "$id": 1405
   },
   "按所选下载": {
@@ -5538,7 +5892,9 @@
     "de-DE": "Download nach Auswahl",
     "fr-FR": "Télécharger par sélection",
     "ko-KR": "선택하여 다운로드",
-    "$files": ["src/components/model/model-download-popover.tsx(10928-10937)"],
+    "$files": [
+      "src/components/model/model-download-popover.tsx(10928-10937)"
+    ],
     "$id": 1406
   },
   "小学生": {
@@ -6074,7 +6430,9 @@
     "de-DE": "Laden Sie das empfohlene Portfolio herunter",
     "fr-FR": "Télécharger le portfolio recommandé",
     "ko-KR": "추천 포트폴리오 다운로드",
-    "$files": ["src/components/model/model-list-panel.tsx(32348-32358)"],
+    "$files": [
+      "src/components/model/model-list-panel.tsx(32348-32358)"
+    ],
     "$id": 1407
   },
   "自定义下载组件与显存配置": {
@@ -6087,7 +6445,9 @@
     "de-DE": "Benutzerdefinierte Download-Komponenten und Videospeicherkonfiguration",
     "fr-FR": "Composants de téléchargement personnalisés et configuration de la mémoire vidéo",
     "ko-KR": "사용자 정의 다운로드 구성 요소 및 비디오 메모리 구성",
-    "$files": ["src/components/model/model-list-panel.tsx(32659-32675)"],
+    "$files": [
+      "src/components/model/model-list-panel.tsx(32659-32675)"
+    ],
     "$id": 1408
   },
   "正在连接源站...": {
@@ -7822,7 +8182,9 @@
     "de-DE": "Wurde erfolgreich zur Modellliste hinzugefügt. Bitte gehen Sie zur Ansicht zur Liste",
     "fr-FR": "A été ajouté avec succès à la liste des modèles, veuillez accéder à la liste pour voir",
     "ko-KR": "모델 목록에 성공적으로 추가되었습니다. 보려면 목록으로 이동하세요.",
-    "$files": ["src/components/model/custom-model-add-card.tsx(2044-2067)"],
+    "$files": [
+      "src/components/model/custom-model-add-card.tsx(2044-2067)"
+    ],
     "$id": 690
   },
   "嗅探完成，已作为标准模型卡片加入下方模型列表": {
@@ -7835,7 +8197,9 @@
     "de-DE": "Das Schnüffeln ist abgeschlossen und wurde als Standardmodellkarte zur Modellliste unten hinzugefügt.",
     "fr-FR": "Le reniflage est terminé et a été ajouté à la liste des modèles ci-dessous en tant que carte modèle standard.",
     "ko-KR": "스니핑이 완료되어 아래 모델 목록에 표준 모델 카드로 추가되었습니다.",
-    "$files": ["src/components/model/custom-model-add-card.tsx(2117-2143)"],
+    "$files": [
+      "src/components/model/custom-model-add-card.tsx(2117-2143)"
+    ],
     "$id": 691
   },
   "自由添加 ModelScope / HuggingFace 托管的任意 GGUF 模型文件，并加入上面待下载模型列表。": {
@@ -7848,7 +8212,9 @@
     "de-DE": "Fühlen Sie sich frei, alle von ModelScope / HuggingFace gehosteten GGUF-Modelldateien hinzuzufügen und sie der Liste der oben herunterzuladenden Modelle hinzuzufügen.",
     "fr-FR": "N'hésitez pas à ajouter tous les fichiers de modèles GGUF hébergés par ModelScope / HuggingFace et à les ajouter à la liste des modèles à télécharger ci-dessus.",
     "ko-KR": "ModelScope / HuggingFace에서 호스팅하는 GGUF 모델 파일을 자유롭게 추가하고 위에서 다운로드할 모델 목록에 추가하세요.",
-    "$files": ["src/components/model/custom-model-add-card.tsx(2766-2829)"],
+    "$files": [
+      "src/components/model/custom-model-add-card.tsx(2766-2829)"
+    ],
     "$id": 693
   }
 }
