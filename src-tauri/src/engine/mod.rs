@@ -1672,12 +1672,6 @@ pub fn resolve_model_name_by_path(
             return Some("Qwen 3.5 0.8B (中文更佳)".to_string());
         }
     }
-    if name_lower.contains("lfm2.5") || name_lower.contains("lfm2_5") {
-        if name_lower.contains("1.2b") || name_lower.contains("1_2b") {
-            return Some("LFM2.5 1.2B Instruct（英文更佳•高速）".to_string());
-        }
-    }
-
     None
 }
 
