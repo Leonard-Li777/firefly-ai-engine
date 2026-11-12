@@ -877,12 +877,16 @@ pub(crate) fn resolve_mmproj_filename(model_id: &str, source_flag: &str) -> Opti
 pub fn resolve_model_downloader(install_bin_dirs: &[PathBuf]) -> PathBuf {
     let exe_name = if cfg!(windows) { "llama-model-download.exe" } else { "llama-model-download" };
 
-    // 辅助闭包：在指定 bin 目录下检索以 llama-model-download- 开头的子目录
-    let find_in_bin_dir = |bin_dir: PathBuf| -> Option<PathBuf> {
+    // 收集某个 bin 目录下所有可用的下载器版本绝对路径（子目录名形如 llama-model-download-<version>）
+    // 关键约束：不同版本能力不同 —— 1.0.0 不支持 --mmproj / --dspark / --draft 伴随模型参数，
+    // master-v1.0.2+ 才支持。若沿用「read_dir 第一个命中即返回」，在多版本并存的安装目录里
+    // 会随机选中旧版，导致下载命令带上 --mmproj 时报 "Unknown argument '--mmproj'" 而整个下载失败。
+    // 因此这里必须收集全部版本，交由调用方按版本号降序择优。
+    let collect_in_bin_dir = |bin_dir: &PathBuf, out: &mut Vec<PathBuf>| {
         if !bin_dir.exists() {
-            return None;
+            return;
         }
-        if let Ok(entries) = std::fs::read_dir(&bin_dir) {
+        if let Ok(entries) = std::fs::read_dir(bin_dir) {
             for entry in entries.flatten() {
                 let path = entry.path();
                 if path.is_dir() {
@@ -890,36 +894,66 @@ pub fn resolve_model_downloader(install_bin_dirs: &[PathBuf]) -> PathBuf {
                     if dir_name.starts_with("llama-model-download-") {
                         let target = path.join(exe_name);
                         if target.exists() {
-                            return Some(target);
+                            out.push(target);
                         }
                     }
                 }
             }
         }
-        // 兜底直接存放在 bin 根目录
+        // 兜底：直接存放在 bin 根目录（无版本目录，无法判定版本，按最低优先级追加）
         let direct = bin_dir.join(exe_name);
         if direct.exists() {
-            return Some(direct);
+            out.push(direct);
         }
-        None
     };
 
-    // 1. 自身安装目录 bin
+    // 从版本子目录名（llama-model-download-<version>）提取可比较的版本段
+    // 返回 (是否具备版本信息, 版本段字符串)。带版本的条目恒优先于无版本条目。
+    let version_key = |p: &PathBuf| -> (bool, String) {
+        let dir = p
+            .parent()
+            .and_then(|d| d.file_name())
+            .map(|n| n.to_string_lossy().to_string())
+            .unwrap_or_default();
+        if let Some(v) = dir.strip_prefix("llama-model-download-") {
+            // master 视为最新主线，排序时置于所有数字版本之上
+            (true, v.to_string())
+        } else {
+            (false, String::new())
+        }
+    };
+
+    // 依次收集：自身安装目录 bin → 用户数据目录
+    let mut candidates: Vec<PathBuf> = Vec::new();
     for bin_dir in install_bin_dirs {
-        if let Some(found) = find_in_bin_dir(bin_dir.clone()) {
-            return found;
-        }
+        collect_in_bin_dir(bin_dir, &mut candidates);
     }
-
-    // 2. 用户数据目录
     for bin_dir in crate::resource_scope::allowed_user_data_bin_dirs() {
-        if let Some(found) = find_in_bin_dir(bin_dir) {
-            return found;
-        }
+        collect_in_bin_dir(&bin_dir, &mut candidates);
     }
 
-    // 未命中时返回裸文件名（调用方按错误路径处理），不再向上探测
-    PathBuf::from(exe_name)
+    if candidates.is_empty() {
+        // 未命中时返回裸文件名（调用方按错误路径处理），不再向上探测
+        return PathBuf::from(exe_name);
+    }
+
+    // 择优：带版本 > 无版本；同类内按版本段降序（master / 更高语义版本优先）
+    // 稳定排序保证同版本段时保持收集顺序（自身安装目录优先于用户数据目录）。
+    candidates.sort_by(|a, b| {
+        let ka = version_key(a);
+        let kb = version_key(b);
+        kb.0.cmp(&ka.0).then_with(|| kb.1.cmp(&ka.1))
+    });
+
+    let chosen = candidates[0].clone();
+    if candidates.len() > 1 {
+        info!(
+            "[downloader] 检测到多个 llama-model-download 版本，按版本降序选用: {:?}（候选 {:?}）",
+            chosen,
+            candidates
+        );
+    }
+    chosen
 }
 
 // ─────────────────────── 路由 Handler ───────────────────────
@@ -4476,6 +4510,28 @@ mod tests {
 
         // 4. 空槽位
         assert!(!is_model_matching_active("some-model", None));
+    }
+
+    /// 验证：resolve_model_downloader 在多版本并存时按版本降序选中新版（支持 --mmproj 的下载器）
+    /// 防回归：曾因「read_dir 第一个命中即返回」随机选中 1.0.0，导致下载带 --mmproj 时报 Unknown argument。
+    #[test]
+    fn test_resolve_downloader_prefers_newer_version() {
+        let temp = tempfile::tempdir().expect("临时目录");
+        let bin_dir = temp.path().join("bin");
+        let v1 = bin_dir.join("llama-model-download-1.0.0-win32-x64");
+        let v2 = bin_dir.join("llama-model-download-master-v1.0.2-win32-x64");
+        std::fs::create_dir_all(&v1).unwrap();
+        std::fs::create_dir_all(&v2).unwrap();
+        // 1.0.0 先创建，master 后创建，模拟 read_dir 任意顺序
+        std::fs::write(v1.join("llama-model-download.exe"), b"old").unwrap();
+        std::fs::write(v2.join("llama-model-download.exe"), b"new").unwrap();
+
+        let chosen = resolve_model_downloader(&[bin_dir]);
+        let chosen_str = chosen.to_string_lossy().to_string();
+        assert!(
+            chosen_str.contains("master-v1.0.2"),
+            "应选中支持 --mmproj 的新版下载器，实际选中: {chosen_str}"
+        );
     }
 
     /// 验证：build_downloader_args 优先使用模型列表的 quantization 字段，文件名提取仅作为 fallback
