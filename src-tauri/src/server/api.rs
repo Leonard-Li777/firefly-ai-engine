@@ -1966,15 +1966,401 @@ pub fn resolve_download_candidates(backend: &str, versions: &[String]) -> Vec<En
     candidates
 }
 
-/// 执行带有断点续传的引擎包下载（支持多候选包匹配与双轨故障转移：GitHub -> EdgeOne R2）
+/// 分块下载元数据（伴随 .part.meta.json）
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct DownloadBlockMeta {
+    pub version: u32,
+    pub total_bytes: u64,
+    pub block_size: u64,
+    pub total_blocks: usize,
+    pub completed_blocks: Vec<usize>,
+}
+
+/// 解析 HTTP 响应头 Content-Range 中的总字节数 (例如 "bytes 0-0/12345678" -> 12345678)
+pub fn parse_content_range_total(header_val: &str) -> Option<u64> {
+    let parts: Vec<&str> = header_val.split('/').collect();
+    if parts.len() == 2 {
+        parts[1].trim().parse::<u64>().ok()
+    } else {
+        None
+    }
+}
+
+/// 4MiB 固定分块网格与 6 线程并发控制常量
+const ENGINE_DOWNLOAD_BLOCK_SIZE: u64 = 4 * 1024 * 1024; // 4 MiB
+const ENGINE_DOWNLOAD_CONCURRENCY: usize = 6;
+const ENGINE_DOWNLOAD_MAX_RETRIES: usize = 3;
+
+/// 单流顺序追加下载（作为不支持 Range 或小文件的保底降级逻辑）
+async fn download_single_stream(
+    resp: reqwest::Response,
+    part_path: &std::path::Path,
+    total_bytes: u64,
+    is_partial: bool,
+    existing_len: u64,
+    task_id: &str,
+    tasks: &DownloadTaskStore,
+) -> Result<bool, String> {
+    use tokio::io::AsyncWriteExt;
+    use futures::StreamExt;
+
+    let mut file = match tokio::fs::OpenOptions::new()
+        .create(true)
+        .write(true)
+        .append(is_partial)
+        .truncate(!is_partial)
+        .open(part_path)
+        .await
+    {
+        Ok(f) => f,
+        Err(e) => return Err(format!("打开单流写入文件失败: {}", e)),
+    };
+
+    let mut stream = resp.bytes_stream();
+    let mut received = if is_partial { existing_len } else { 0 };
+    let mut last_instant = std::time::Instant::now();
+    let mut speed_prev_bytes = received;
+
+    while let Some(chunk_result) = stream.next().await {
+        {
+            let lock = tasks.lock().await;
+            if let Some(task) = lock.get(task_id) {
+                if task.status == DownloadStatus::Canceled {
+                    return Err("下载已取消".to_string());
+                }
+            }
+        }
+
+        match chunk_result {
+            Ok(bytes) => {
+                if let Err(e) = file.write_all(&bytes).await {
+                    return Err(format!("写入磁盘失败: {}", e));
+                }
+                received += bytes.len() as u64;
+
+                let elapsed = last_instant.elapsed().as_secs_f64();
+                if elapsed >= 0.5 {
+                    let instant_speed = (received.saturating_sub(speed_prev_bytes)) as f64 / elapsed;
+                    let pct = if total_bytes > 0 {
+                        (received as f64 / total_bytes as f64 * 100.0).min(100.0)
+                    } else {
+                        0.0
+                    };
+
+                    let mut lock = tasks.lock().await;
+                    if let Some(task) = lock.get_mut(task_id) {
+                        task.received_bytes = received;
+                        task.percent = (pct * 10.0).round() / 10.0;
+                        task.speed_bps = instant_speed;
+                    }
+
+                    speed_prev_bytes = received;
+                    last_instant = std::time::Instant::now();
+                }
+            }
+            Err(e) => {
+                return Err(format!("单流传输中断: {}", e));
+            }
+        }
+    }
+
+    let _ = file.flush().await;
+    Ok(true)
+}
+
+/// 执行 4MiB 网格多线程并发断点续传下载
+async fn download_concurrent_blocks(
+    client: &reqwest::Client,
+    url: &str,
+    total_bytes: u64,
+    part_path: &std::path::Path,
+    meta_path: &std::path::Path,
+    task_id: &str,
+    tasks: &DownloadTaskStore,
+) -> Result<bool, String> {
+    use tokio::io::{AsyncSeekExt, AsyncWriteExt};
+
+    let total_blocks = ((total_bytes + ENGINE_DOWNLOAD_BLOCK_SIZE - 1) / ENGINE_DOWNLOAD_BLOCK_SIZE) as usize;
+
+    // 1. 尝试从 meta_path 恢复已有分块状态
+    let mut completed_blocks: std::collections::HashSet<usize> = std::collections::HashSet::new();
+    if meta_path.exists() {
+        if let Ok(content) = tokio::fs::read_to_string(meta_path).await {
+            if let Ok(meta) = serde_json::from_str::<DownloadBlockMeta>(&content) {
+                if meta.total_bytes == total_bytes && meta.block_size == ENGINE_DOWNLOAD_BLOCK_SIZE && meta.total_blocks == total_blocks {
+                    completed_blocks = meta.completed_blocks.into_iter().collect();
+                    info!("[引擎下载] 命中断点续传元数据: 已完成 {}/{} 块", completed_blocks.len(), total_blocks);
+                }
+            }
+        }
+    }
+
+    // 计算已完成分块的总字节数
+    let mut initial_received = 0u64;
+    for &idx in &completed_blocks {
+        let start = idx as u64 * ENGINE_DOWNLOAD_BLOCK_SIZE;
+        let end = std::cmp::min(start + ENGINE_DOWNLOAD_BLOCK_SIZE, total_bytes);
+        initial_received += end.saturating_sub(start);
+    }
+
+    // 初始化任务状态上的进度与已接收字节
+    {
+        let mut lock = tasks.lock().await;
+        if let Some(task) = lock.get_mut(task_id) {
+            task.total_bytes = total_bytes;
+            task.received_bytes = initial_received;
+            task.percent = if total_bytes > 0 {
+                ((initial_received as f64 / total_bytes as f64 * 100.0) * 10.0).round() / 10.0
+            } else {
+                0.0
+            };
+        }
+    }
+
+    if completed_blocks.len() == total_blocks {
+        info!("[引擎下载] 所有 {} 块分片均已完成，跳过网络下载直接就绪", total_blocks);
+        return Ok(true);
+    }
+
+    // 打开或创建 part 文件，并预分配文件大小
+    let file = tokio::fs::OpenOptions::new()
+        .create(true)
+        .read(true)
+        .write(true)
+        .open(part_path)
+        .await
+        .map_err(|e| format!("打开临时分块文件失败: {}", e))?;
+
+    if let Err(e) = file.set_len(total_bytes).await {
+        warn!("[引擎下载] 预分配分块文件大小失败 (将按需写入扩展): {}", e);
+    }
+
+    let shared_file = Arc::new(Mutex::new(file));
+    let pending_blocks: std::collections::VecDeque<usize> = (0..total_blocks)
+        .filter(|i| !completed_blocks.contains(i))
+        .collect();
+
+    let shared_queue = Arc::new(Mutex::new(pending_blocks));
+    let shared_completed = Arc::new(Mutex::new(completed_blocks));
+    let received_counter = Arc::new(std::sync::atomic::AtomicU64::new(initial_received));
+    let cancel_flag = Arc::new(std::sync::atomic::AtomicBool::new(false));
+
+    // 启动独立定时器上报进度和速率
+    let progress_counter = received_counter.clone();
+    let progress_cancel = cancel_flag.clone();
+    let progress_tasks = tasks.clone();
+    let progress_task_id = task_id.to_string();
+
+    let progress_handle = tokio::spawn(async move {
+        let mut last_instant = std::time::Instant::now();
+        let mut speed_prev_bytes = progress_counter.load(std::sync::atomic::Ordering::Relaxed);
+        loop {
+            tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+            if progress_cancel.load(std::sync::atomic::Ordering::Relaxed) {
+                break;
+            }
+
+            let cur_received = progress_counter.load(std::sync::atomic::Ordering::Relaxed);
+            let elapsed = last_instant.elapsed().as_secs_f64();
+            if elapsed >= 0.4 {
+                let instant_speed = (cur_received.saturating_sub(speed_prev_bytes)) as f64 / elapsed;
+                let pct = if total_bytes > 0 {
+                    (cur_received as f64 / total_bytes as f64 * 100.0).min(100.0)
+                } else {
+                    0.0
+                };
+
+                let mut lock = progress_tasks.lock().await;
+                if let Some(task) = lock.get_mut(&progress_task_id) {
+                    if task.status == DownloadStatus::Canceled {
+                        progress_cancel.store(true, std::sync::atomic::Ordering::Relaxed);
+                        break;
+                    }
+                    task.received_bytes = cur_received;
+                    task.percent = (pct * 10.0).round() / 10.0;
+                    task.speed_bps = instant_speed;
+                }
+
+                speed_prev_bytes = cur_received;
+                last_instant = std::time::Instant::now();
+            }
+        }
+    });
+
+    // 启动多 worker 并发拉取分块
+    let mut worker_handles = Vec::new();
+    let worker_count = ENGINE_DOWNLOAD_CONCURRENCY.min(total_blocks);
+
+    for worker_idx in 0..worker_count {
+        let w_client = client.clone();
+        let w_url = url.to_string();
+        let w_queue = shared_queue.clone();
+        let w_completed = shared_completed.clone();
+        let w_file = shared_file.clone();
+        let w_counter = received_counter.clone();
+        let w_cancel = cancel_flag.clone();
+        let w_meta_path = meta_path.to_path_buf();
+
+        let handle = tokio::spawn(async move {
+            loop {
+                if w_cancel.load(std::sync::atomic::Ordering::Relaxed) {
+                    break;
+                }
+
+                let block_idx = {
+                    let mut q = w_queue.lock().await;
+                    q.pop_front()
+                };
+
+                let block_idx = match block_idx {
+                    Some(idx) => idx,
+                    None => break,
+                };
+
+                let start = block_idx as u64 * ENGINE_DOWNLOAD_BLOCK_SIZE;
+                let end = std::cmp::min(start + ENGINE_DOWNLOAD_BLOCK_SIZE - 1, total_bytes - 1);
+                let expected_len = (end - start + 1) as usize;
+
+                let mut success = false;
+                for attempt in 1..=ENGINE_DOWNLOAD_MAX_RETRIES {
+                    if w_cancel.load(std::sync::atomic::Ordering::Relaxed) {
+                        break;
+                    }
+
+                    let req = w_client
+                        .get(&w_url)
+                        .header(reqwest::header::USER_AGENT, "firefly-ai-engine")
+                        .header(reqwest::header::RANGE, format!("bytes={}-{}", start, end));
+
+                    match req.send().await {
+                        Ok(resp) if resp.status() == reqwest::StatusCode::PARTIAL_CONTENT || resp.status() == reqwest::StatusCode::OK => {
+                            let mut block_data = Vec::with_capacity(expected_len);
+                            let mut stream = resp.bytes_stream();
+                            use futures::StreamExt;
+                            let mut stream_failed = false;
+                            let mut chunk_loaded = 0u64;
+
+                            while let Some(chunk_res) = stream.next().await {
+                                if w_cancel.load(std::sync::atomic::Ordering::Relaxed) {
+                                    stream_failed = true;
+                                    break;
+                                }
+                                match chunk_res {
+                                    Ok(chunk) => {
+                                        chunk_loaded += chunk.len() as u64;
+                                        w_counter.fetch_add(chunk.len() as u64, std::sync::atomic::Ordering::Relaxed);
+                                        block_data.extend_from_slice(&chunk);
+                                    }
+                                    Err(e) => {
+                                        warn!("[Worker-{}] 分块 {} 读取流出错: {}", worker_idx, block_idx, e);
+                                        stream_failed = true;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if !stream_failed && block_data.len() == expected_len {
+                                let mut f = w_file.lock().await;
+                                if let Err(e) = f.seek(std::io::SeekFrom::Start(start)).await {
+                                    warn!("[Worker-{}] 分块 {} seek 失败: {}", worker_idx, block_idx, e);
+                                    w_counter.fetch_sub(chunk_loaded, std::sync::atomic::Ordering::Relaxed);
+                                    break;
+                                }
+                                if let Err(e) = f.write_all(&block_data).await {
+                                    warn!("[Worker-{}] 分块 {} 写入失败: {}", worker_idx, block_idx, e);
+                                    w_counter.fetch_sub(chunk_loaded, std::sync::atomic::Ordering::Relaxed);
+                                    break;
+                                }
+
+                                {
+                                    let mut comp = w_completed.lock().await;
+                                    comp.insert(block_idx);
+                                    let meta = DownloadBlockMeta {
+                                        version: 1,
+                                        total_bytes,
+                                        block_size: ENGINE_DOWNLOAD_BLOCK_SIZE,
+                                        total_blocks,
+                                        completed_blocks: comp.iter().copied().collect(),
+                                    };
+                                    if let Ok(meta_json) = serde_json::to_string(&meta) {
+                                        let _ = tokio::fs::write(&w_meta_path, meta_json).await;
+                                    }
+                                }
+
+                                success = true;
+                                break;
+                            } else {
+                                // 本次读取失败，扣回已统计的未完成字节数并重试
+                                w_counter.fetch_sub(chunk_loaded, std::sync::atomic::Ordering::Relaxed);
+                                warn!("[Worker-{}] 分块 {} 长度不符合预期 (收到 {}/期望 {})，第 {}/{} 次重试",
+                                    worker_idx, block_idx, block_data.len(), expected_len, attempt, ENGINE_DOWNLOAD_MAX_RETRIES);
+                            }
+                        }
+                        Ok(resp) => {
+                            warn!("[Worker-{}] 分块 {} 请求返回异常状态码: HTTP {}，第 {}/{} 次重试",
+                                worker_idx, block_idx, resp.status(), attempt, ENGINE_DOWNLOAD_MAX_RETRIES);
+                        }
+                        Err(e) => {
+                            warn!("[Worker-{}] 分块 {} 网络请求失败: {}，第 {}/{} 次重试",
+                                worker_idx, block_idx, e, attempt, ENGINE_DOWNLOAD_MAX_RETRIES);
+                        }
+                    }
+
+                    tokio::time::sleep(std::time::Duration::from_millis(200 * attempt as u64)).await;
+                }
+
+                if !success && !w_cancel.load(std::sync::atomic::Ordering::Relaxed) {
+                    warn!("[Worker-{}] 分块 {} 重试超限，重新压回队列尾部", worker_idx, block_idx);
+                    let mut q = w_queue.lock().await;
+                    q.push_back(block_idx);
+                    tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+                    break;
+                }
+            }
+        });
+
+        worker_handles.push(handle);
+    }
+
+    for h in worker_handles {
+        let _ = h.await;
+    }
+
+    cancel_flag.store(true, std::sync::atomic::Ordering::Relaxed);
+    progress_handle.abort();
+
+    {
+        let lock = tasks.lock().await;
+        if let Some(task) = lock.get(task_id) {
+            if task.status == DownloadStatus::Canceled {
+                return Err("下载已取消".to_string());
+            }
+        }
+    }
+
+    {
+        let mut f = shared_file.lock().await;
+        let _ = f.flush().await;
+    }
+
+    let comp = shared_completed.lock().await;
+    if comp.len() == total_blocks {
+        info!("[引擎下载] 并发分块下载成功完成: 全部 {}/{} 块已安全落盘", comp.len(), total_blocks);
+        let _ = tokio::fs::remove_file(meta_path).await;
+        Ok(true)
+    } else {
+        warn!("[引擎下载] 并发分块未完全成功: 已完成 {}/{} 块，将故障转移切换下一源", comp.len(), total_blocks);
+        Ok(false)
+    }
+}
+
+/// 执行带有并发断点续传的引擎包下载（支持多候选包匹配与双轨故障转移：GitHub -> EdgeOne R2）
 async fn download_engine_with_resume_and_failover(
     task_id: &str,
     candidates: &[EngineDownloadCandidate],
     base_engine_dir: &std::path::Path,
     tasks: &DownloadTaskStore,
 ) -> Result<(PathBuf, String, String), String> {
-    use tokio::io::AsyncWriteExt;
-
     // 读取系统环境变量代理（兼容 HTTP_PROXY / HTTPS_PROXY）
     let proxy_url = std::env::var("HTTPS_PROXY")
         .or_else(|_| std::env::var("https_proxy"))
@@ -2003,6 +2389,7 @@ async fn download_engine_with_resume_and_failover(
         let filename = &candidate.filename;
         let dest_path = base_engine_dir.join(filename);
         let part_path = dest_path.with_extension(format!("{}.part", dest_path.extension().and_then(|s| s.to_str()).unwrap_or("zip")));
+        let meta_path = part_path.with_extension("part.meta.json");
 
         if let Some(parent) = dest_path.parent() {
             let _ = tokio::fs::create_dir_all(parent).await;
@@ -2026,20 +2413,12 @@ async fn download_engine_with_resume_and_failover(
                 }
             }
 
-            // 读取已有 .part 大小以发送 Range 请求头
-            let existing_len = if part_path.exists() {
-                tokio::fs::metadata(&part_path).await.map(|m| m.len()).unwrap_or(0)
-            } else {
-                0
-            };
+            // 发起轻量 Range 探测获取 total_bytes 与服务端 Range 支持能力
+            let probe_req = client.get(&url)
+                .header(reqwest::header::USER_AGENT, "firefly-ai-engine")
+                .header(reqwest::header::RANGE, "bytes=0-0");
 
-            let mut req = client.get(&url).header(reqwest::header::USER_AGENT, "firefly-ai-engine");
-            if existing_len > 0 {
-                info!("[引擎下载] 检测到已有片段 {} 字节，请求断点续传 Range", existing_len);
-                req = req.header(reqwest::header::RANGE, format!("bytes={}-", existing_len));
-            }
-
-            let resp = match req.send().await {
+            let probe_resp = match probe_req.send().await {
                 Ok(r) => r,
                 Err(e) => {
                     let err_msg = format!("连接 {} 失败: {}", source_name, e);
@@ -2049,23 +2428,30 @@ async fn download_engine_with_resume_and_failover(
                 }
             };
 
-            let status = resp.status();
-            let is_partial = status == reqwest::StatusCode::PARTIAL_CONTENT;
-            let is_ok = status == reqwest::StatusCode::OK;
+            let probe_status = probe_resp.status();
+            let is_partial = probe_status == reqwest::StatusCode::PARTIAL_CONTENT;
+            let is_ok = probe_status == reqwest::StatusCode::OK;
 
             if !is_partial && !is_ok {
-                let err_msg = format!("数据源 {} 返回状态码: {}", source_name, status);
+                let err_msg = format!("数据源 {} 探测返回状态码: {}", source_name, probe_status);
                 warn!("[引擎下载] {}，准备切换下一个源...", err_msg);
-                attempt_logs.push(format!("{}[{}: HTTP {}]", source_name, filename, status.as_u16()));
+                attempt_logs.push(format!("{}[{}: HTTP {}]", source_name, filename, probe_status.as_u16()));
                 continue;
             }
 
-            // 解析总长度
-            let content_len = resp.content_length().unwrap_or(0);
+            // 解析资源真实总字节数
             let total_bytes = if is_partial {
-                existing_len + content_len
+                if let Some(cr) = probe_resp.headers().get(reqwest::header::CONTENT_RANGE) {
+                    if let Ok(cr_str) = cr.to_str() {
+                        parse_content_range_total(cr_str).unwrap_or(0)
+                    } else {
+                        0
+                    }
+                } else {
+                    probe_resp.content_length().unwrap_or(0)
+                }
             } else {
-                content_len
+                probe_resp.content_length().unwrap_or(0)
             };
 
             // 更新任务基础元数据
@@ -2076,83 +2462,74 @@ async fn download_engine_with_resume_and_failover(
                     task.source = source_name.to_string();
                     task.current_file_name = Some(filename.clone());
                     task.total_bytes = total_bytes;
-                    task.received_bytes = if is_partial { existing_len } else { 0 };
                 }
             }
 
-            // 打开 .part 文件进行追加/重写
-            let mut file = match tokio::fs::OpenOptions::new()
-                .create(true)
-                .write(true)
-                .append(is_partial)
-                .truncate(!is_partial)
-                .open(&part_path).await {
-                    Ok(f) => f,
-                    Err(e) => return Err(format!("打开本地临时写入文件失败: {}", e)),
-                };
+            // 策略选择：支持 Range 且体积 ≥ 4MiB 时启用 6 线程并发网格分块断点续传
+            let use_concurrent = is_partial && total_bytes >= ENGINE_DOWNLOAD_BLOCK_SIZE;
 
-            let mut stream = resp.bytes_stream();
-            use futures::StreamExt;
-
-            let mut received = if is_partial { existing_len } else { 0 };
-            let mut last_instant = std::time::Instant::now();
-            let mut speed_prev_bytes = received;
-            let mut stream_success = true;
-
-            while let Some(chunk_result) = stream.next().await {
-                // 每次拉流前检查是否已取消
-                {
-                    let lock = tasks.lock().await;
-                    if let Some(task) = lock.get(task_id) {
-                        if task.status == DownloadStatus::Canceled {
-                            return Err("下载已取消".to_string());
-                        }
-                    }
-                }
-
-                match chunk_result {
-                    Ok(bytes) => {
-                        if let Err(e) = file.write_all(&bytes).await {
-                            warn!("[引擎下载] 写入磁盘失败: {}", e);
-                            stream_success = false;
-                            attempt_logs.push(format!("{}: 写入磁盘失败: {}", source_name, e));
-                            break;
-                        }
-                        received += bytes.len() as u64;
-
-                        // 计算滑动平均下载速率
-                        let elapsed = last_instant.elapsed().as_secs_f64();
-                        if elapsed >= 0.5 {
-                            let instant_speed = (received.saturating_sub(speed_prev_bytes)) as f64 / elapsed;
-                            let pct = if total_bytes > 0 {
-                                (received as f64 / total_bytes as f64 * 100.0).min(100.0)
-                            } else {
-                                0.0
-                            };
-
-                            let mut lock = tasks.lock().await;
-                            if let Some(task) = lock.get_mut(task_id) {
-                                task.received_bytes = received;
-                                task.percent = (pct * 10.0).round() / 10.0;
-                                task.speed_bps = instant_speed;
-                            }
-
-                            speed_prev_bytes = received;
-                            last_instant = std::time::Instant::now();
-                        }
-                    }
+            let download_success = if use_concurrent {
+                info!("[引擎下载] 启用固定 4MiB 块网格 6 线程并发断点续传下载器 (源: {}, 期望: {} 字节)", source_name, total_bytes);
+                // 释放探测连接
+                drop(probe_resp);
+                match download_concurrent_blocks(
+                    &client,
+                    &url,
+                    total_bytes,
+                    &part_path,
+                    &meta_path,
+                    task_id,
+                    tasks,
+                ).await {
+                    Ok(ok) => ok,
                     Err(e) => {
-                        warn!("[引擎下载] 数据流传输中断: {}，准备断点续传重试...", e);
-                        stream_success = false;
-                        attempt_logs.push(format!("{}: 数据流中断: {}", source_name, e));
-                        break;
+                        warn!("[引擎下载] 并发下载异常中断: {}，准备故障转移...", e);
+                        attempt_logs.push(format!("{}: 并发下载异常: {}", source_name, e));
+                        false
                     }
                 }
-            }
+            } else {
+                info!("[引擎下载] 服务端不支持 Range 或文件较小，执行单流断点续传 (源: {})", source_name);
+                if !is_partial {
+                    // 服务端返回 200 OK，复用已有 probe_resp 流进行全量写入
+                    match download_single_stream(probe_resp, &part_path, total_bytes, false, 0, task_id, tasks).await {
+                        Ok(ok) => ok,
+                        Err(e) => {
+                            warn!("[引擎下载] 单流下载失败: {}，准备切换下一个源...", e);
+                            attempt_logs.push(format!("{}: 单流异常: {}", source_name, e));
+                            false
+                        }
+                    }
+                } else {
+                    // 读取已有文件长度断点重拉
+                    drop(probe_resp);
+                    let existing_len = if part_path.exists() {
+                        tokio::fs::metadata(&part_path).await.map(|m| m.len()).unwrap_or(0)
+                    } else {
+                        0
+                    };
+                    let single_req = client.get(&url)
+                        .header(reqwest::header::USER_AGENT, "firefly-ai-engine")
+                        .header(reqwest::header::RANGE, format!("bytes={}-", existing_len));
+                    match single_req.send().await {
+                        Ok(s_resp) if s_resp.status().is_success() => {
+                            match download_single_stream(s_resp, &part_path, total_bytes, true, existing_len, task_id, tasks).await {
+                                Ok(ok) => ok,
+                                Err(e) => {
+                                    attempt_logs.push(format!("{}: 单流续传失败: {}", source_name, e));
+                                    false
+                                }
+                            }
+                        }
+                        _ => {
+                            attempt_logs.push(format!("{}: 重新发起单流请求失败", source_name));
+                            false
+                        }
+                    }
+                }
+            };
 
-            let _ = file.flush().await;
-
-            if stream_success {
+            if download_success {
                 // 下载完成，原子重命名为目标文件
                 if let Err(e) = tokio::fs::rename(&part_path, &dest_path).await {
                     return Err(format!("重命名已完成文件失败: {}", e));
@@ -2160,7 +2537,7 @@ async fn download_engine_with_resume_and_failover(
                 info!("[引擎下载] 成功下载文件: {} (版本: {}, 来源: {})", filename, version, source_name);
                 return Ok((dest_path, version.clone(), filename.clone()));
             } else {
-                warn!("[引擎下载] 源 {} 未完整完成，保留已有 .part 片段，切换下一源断点续传", source_name);
+                warn!("[引擎下载] 源 {} 未完整完成，保留已有片段与元数据，切换下一源断点续传", source_name);
             }
         }
     }
@@ -4759,6 +5136,62 @@ mod tests {
         let not_exist = "non-existent-author/NonExistentModel-GGUF:Q4KM";
         let found_none = find_model_file(not_exist, &models_dir, &all_ggufs);
         assert_eq!(found_none, None, "未下载的模型必须返回 None");
+    }
+
+    /// 验证 HTTP Content-Range 报头解析与容错
+    #[test]
+    fn test_parse_content_range_total() {
+        assert_eq!(parse_content_range_total("bytes 0-0/12345678"), Some(12345678));
+        assert_eq!(parse_content_range_total("bytes 0-4194303/52428800"), Some(52428800));
+        assert_eq!(parse_content_range_total("bytes 100-200/9999"), Some(9999));
+        assert_eq!(parse_content_range_total("bytes 0-0/*"), None);
+        assert_eq!(parse_content_range_total("invalid_header"), None);
+    }
+
+    /// 验证并发分块元数据 JSON 序列化与断点恢复往返
+    #[test]
+    fn test_download_block_meta_serialization() {
+        let meta = DownloadBlockMeta {
+            version: 1,
+            total_bytes: 104857600,
+            block_size: 4194304,
+            total_blocks: 25,
+            completed_blocks: vec![0, 1, 2, 5, 8],
+        };
+        let json = serde_json::to_string(&meta).expect("序列化应成功");
+        let decoded: DownloadBlockMeta = serde_json::from_str(&json).expect("反序列化应成功");
+        assert_eq!(decoded.version, 1);
+        assert_eq!(decoded.total_bytes, 104857600);
+        assert_eq!(decoded.total_blocks, 25);
+        assert_eq!(decoded.completed_blocks, vec![0, 1, 2, 5, 8]);
+    }
+
+    /// 验证 4MiB 分块网格边界与封顶计算
+    #[test]
+    fn test_block_grid_range_clamping() {
+        let total_bytes: u64 = 10 * 1024 * 1024; // 10 MiB
+        let block_size = ENGINE_DOWNLOAD_BLOCK_SIZE; // 4 MiB
+        let total_blocks = ((total_bytes + block_size - 1) / block_size) as usize;
+        assert_eq!(total_blocks, 3); // 4 + 4 + 2 = 10 MiB
+
+        // Block 0: 0 .. 4MiB - 1
+        let s0 = 0 * block_size;
+        let e0 = std::cmp::min(s0 + block_size - 1, total_bytes - 1);
+        assert_eq!(s0, 0);
+        assert_eq!(e0, 4 * 1024 * 1024 - 1);
+
+        // Block 1: 4MiB .. 8MiB - 1
+        let s1 = 1 * block_size;
+        let e1 = std::cmp::min(s1 + block_size - 1, total_bytes - 1);
+        assert_eq!(s1, 4 * 1024 * 1024);
+        assert_eq!(e1, 8 * 1024 * 1024 - 1);
+
+        // Block 2: 8MiB .. 10MiB - 1 (封顶截断)
+        let s2 = 2 * block_size;
+        let e2 = std::cmp::min(s2 + block_size - 1, total_bytes - 1);
+        assert_eq!(s2, 8 * 1024 * 1024);
+        assert_eq!(e2, 10 * 1024 * 1024 - 1);
+        assert_eq!(e2 - s2 + 1, 2 * 1024 * 1024);
     }
 }
 
