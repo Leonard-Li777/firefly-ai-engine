@@ -5,7 +5,7 @@
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
-use tracing::{debug, info, warn};
+use tracing::{debug, warn};
 
 /// 引擎配置（全部字段均有默认值）
 #[derive(Debug, Clone, Serialize, Deserialize)]

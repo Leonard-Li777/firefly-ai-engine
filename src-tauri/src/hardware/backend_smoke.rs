@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 use tokio::sync::Mutex;
-use tracing::{debug, info, warn};
+use tracing::{debug, warn};
 
 /// 后端可用性探测评估结果
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

@@ -20,7 +20,7 @@ use tauri::Manager;
 
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use tracing::{info, warn};
+use tracing::{debug, info, warn};
 
 /// 获取当前 Axum HTTP 服务实际绑定的端口
 #[tauri::command]
