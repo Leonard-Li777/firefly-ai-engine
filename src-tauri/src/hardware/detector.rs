@@ -123,7 +123,7 @@ impl HardwareDetector {
 
         for candidate in &candidates {
             if candidate.exists() {
-                info!("找到 fastfetch: {:?}", candidate);
+                debug!("找到 fastfetch: {:?}", candidate);
                 // 非 Windows 确保可执行权限
                 #[cfg(unix)]
                 {
@@ -209,7 +209,7 @@ impl HardwareDetector {
             }
         }
 
-        info!("使用 fastfetch 执行实时硬件探测...");
+        debug!("使用 fastfetch 执行实时硬件探测...");
 
         let fastfetch_data = match self.run_fastfetch().await {
             Ok(data) => data,
@@ -227,7 +227,7 @@ impl HardwareDetector {
         // 计算最佳加速层级
         let best_acceleration_tier = self.compute_best_tier(&gpus).await;
 
-        info!(
+        debug!(
             "硬件探测完成 - CPU: {}, 内存: {:.1}GB, GPU 数量: {}, 最佳层级: {:?}",
             cpu.model,
             memory.total_gb(),

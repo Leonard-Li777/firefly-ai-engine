@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 use tokio::sync::Mutex;
-use tracing::{info, warn};
+use tracing::{debug, info, warn};
 
 /// 后端可用性探测评估结果
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -300,7 +300,7 @@ pub async fn execute_probe_subprocess(
 pub fn handle_cli_probe_if_requested() -> bool {
     let args: Vec<String> = std::env::args().collect();
     if args.contains(&"--backend-check".to_string()) {
-        info!("[冒烟探测器] 执行 --backend-check 基础设备与驱动初始化检测");
+        debug!("[冒烟探测器] 执行 --backend-check 基础设备与驱动初始化检测");
         // 基础驱动与计算环境检测，冷机零外置模型依赖
         // 成功时直接正常退出 (exit 0)
         std::process::exit(0);
@@ -308,7 +308,7 @@ pub fn handle_cli_probe_if_requested() -> bool {
 
     if let Some(pos) = args.iter().position(|a| a == "--probe-backend") {
         if let Some(backend) = args.get(pos + 1) {
-            info!("[冒烟探测器] 执行 --probe-backend {}", backend);
+            debug!("[冒烟探测器] 执行 --probe-backend {}", backend);
             // 模拟 1-Token 轻量冒烟：
             // 如果是冷机状态未发现模型，优先完成设备计算上下文初始化并退出 0，杜绝 FileNotFound 误拉黑
             let b = backend.to_lowercase();

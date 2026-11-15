@@ -104,7 +104,7 @@ impl ProxyState {
         slot.port = port;
         slot.status = ProcessStatus::Running;
         slot.last_active_at = std::time::Instant::now();
-        tracing::info!("反向代理目标端口更新: {} (已同步注册 Language WorkerSlot)", port);
+        tracing::debug!("反向代理目标端口更新: {} (已同步注册 Language WorkerSlot)", port);
     }
 
     /// 注册或更新指定能力的 Worker 槽位

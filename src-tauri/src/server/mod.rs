@@ -18,7 +18,7 @@ use tokio::net::TcpListener;
 use tokio::sync::Mutex;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
-use tracing::info;
+use tracing::{debug, info};
 
 use crate::config::find_available_port;
 use crate::engine::EngineCoordinator;
@@ -47,11 +47,11 @@ pub async fn start_server(
 
     // 查找 llama-model-download 可执行文件路径（仅在安装目录与用户数据目录内查找）
     let model_downloader_path = Arc::new(resolve_model_downloader(&coordinator.install_bin_dirs));
-    info!("llama-model-download 路径: {:?}", model_downloader_path);
+    debug!("llama-model-download 路径: {:?}", model_downloader_path);
 
     // 模型元数据目录（generate:dims 权威落点：build/extraResources/model）
     let model_meta_dirs = Arc::new(crate::resource_scope::allowed_install_model_meta_dirs(None));
-    info!("模型元数据目录: {:?}", model_meta_dirs);
+    debug!("模型元数据目录: {:?}", model_meta_dirs);
 
     let app_state = AppState {
         coordinator: coordinator.clone(),

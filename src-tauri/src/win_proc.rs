@@ -75,7 +75,7 @@ fn get_or_create_job_object() -> Option<windows_sys::Win32::Foundation::HANDLE> 
             return None;
         }
 
-        tracing::info!("Windows Job Object 创建并配置成功 (KILL_ON_JOB_CLOSE 已激活)");
+        tracing::debug!("Windows Job Object 创建并配置成功 (KILL_ON_JOB_CLOSE 已激活)");
         Some(SafeJobHandle(job))
     });
 
@@ -101,7 +101,7 @@ pub fn assign_pid_to_job(pid: u32) {
                     if res == 0 {
                         tracing::warn!("将进程 pid={} 加入 Job Object 失败", pid);
                     } else {
-                        tracing::info!(
+                        tracing::debug!(
                             "成功将进程 (pid={}) 绑定至 Windows Job Object 守护",
                             pid
                         );
@@ -222,7 +222,7 @@ pub fn kill_stale_workers(target_names: &[&str], exclude_pid: Option<u32>) -> us
                                     if TerminateProcess(h_proc, 1) != 0 {
                                         // 最多等待 2 秒确保其彻底退出并释放显存
                                         WaitForSingleObject(h_proc, 2000);
-                                        tracing::info!("成功终结残留 Worker 进程: pid={}", pid);
+                                        tracing::debug!("成功终结残留 Worker 进程: pid={}", pid);
                                         killed_count += 1;
                                     } else {
                                         tracing::warn!("终止残留 Worker 进程 pid={} 失败", pid);
@@ -379,7 +379,7 @@ pub fn terminate_processes_in_dir(dir: &std::path::Path, timeout_ms: u32) -> usi
                         if !h_proc.is_null() && h_proc != INVALID_HANDLE_VALUE {
                             if TerminateProcess(h_proc, 1) != 0 {
                                 WaitForSingleObject(h_proc, timeout_ms);
-                                tracing::info!("成功终结旧目录进程: pid={}", pid);
+                                tracing::debug!("成功终结旧目录进程: pid={}", pid);
                                 terminated_count += 1;
                             } else {
                                 tracing::warn!("终止旧目录进程 pid={} 失败", pid);
@@ -410,7 +410,7 @@ pub async fn atomic_retire_and_remove_dir(dir: &std::path::Path) -> std::io::Res
     // 1. 定向查杀该目录下的活跃子进程（2 秒硬超时上限）
     let killed = terminate_processes_in_dir(dir, 2000);
     if killed > 0 {
-        tracing::info!("[原子清理] 在目录 {:?} 中终止了 {} 个活跃进程", dir, killed);
+        tracing::debug!("[原子清理] 在目录 {:?} 中终止了 {} 个活跃进程", dir, killed);
     }
 
     // 2. 生成唯一的重命名目标
@@ -427,7 +427,7 @@ pub async fn atomic_retire_and_remove_dir(dir: &std::path::Path) -> std::io::Res
     for attempt in 1..=3 {
         match std::fs::rename(dir, &retired_dir) {
             Ok(_) => {
-                tracing::info!(
+                tracing::debug!(
                     "[原子清理] 目录已重命名隔离: {:?} -> {:?}",
                     dir,
                     retired_dir
@@ -459,7 +459,7 @@ pub async fn atomic_retire_and_remove_dir(dir: &std::path::Path) -> std::io::Res
         for attempt in 1..=max_delete_attempts {
             match std::fs::remove_dir_all(&target_to_delete) {
                 Ok(_) => {
-                    tracing::info!("[原子清理] 物理删除完成: {:?}", target_to_delete);
+                    tracing::debug!("[原子清理] 物理删除完成: {:?}", target_to_delete);
                     return;
                 }
                 Err(e) => {

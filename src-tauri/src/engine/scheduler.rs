@@ -8,7 +8,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::Mutex;
-use tracing::{error, info, warn};
+use tracing::{debug, error, info, warn};
 
 use crate::hardware::{
     AccelerationTier, DowngradeInfo, DowngradeReason, DriverComplianceService, get_fallback_tier,
@@ -188,7 +188,7 @@ impl EngineScheduler {
 
                 // 仅在缓存未命中（真正扫盘）时打印，命中缓存不产生日志 —— 否则
                 // 3s 轮询会把这条日志刷成每秒数行，掩盖真正的故障信号
-                info!("发现已安装引擎: {} (层级: {:?}, 路径: {:?})", dir_name, tier, binary_path);
+                debug!("发现已安装引擎: {} (层级: {:?}, 路径: {:?})", dir_name, tier, binary_path);
 
                 engines.push(InstalledEngine {
                     dir_name,
@@ -447,7 +447,7 @@ impl EngineScheduler {
         let mut guard = self.degraded_tier.lock().await;
         *guard = None;
         self.compliance.clear_cache().await;
-        info!("引擎降级状态已重置");
+        debug!("引擎降级状态已重置");
     }
 }
 

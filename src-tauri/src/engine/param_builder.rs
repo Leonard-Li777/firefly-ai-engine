@@ -4,7 +4,7 @@
 // 关键安全约束：ubatchSize <= batchSize（防止 llama.cpp 0xC0000005 崩溃）
 
 use serde::{Deserialize, Serialize};
-use tracing::{info, warn};
+use tracing::{debug, info, warn};
 
 use crate::hardware::gpu_info::SystemResources;
 
@@ -359,7 +359,7 @@ impl ParamBuilder {
         let cpu_draft_allowed = !is_cpu_pool || (resources.cpu.cores >= 6);
         let mut effective_enable_draft = model.enable_draft && has_draft_file && cpu_draft_allowed;
         if is_cpu_pool && has_draft_file && model.enable_draft && !cpu_draft_allowed {
-            info!(
+            debug!(
                 cores = resources.cpu.cores,
                 "纯 CPU 模式下物理核心数 < 6，自动关停草稿模型加速以防线程竞争拖慢整体吞吐"
             );
@@ -525,7 +525,7 @@ impl ParamBuilder {
                         budget_tokens = 4096;
                         weights_on_gpu_gb = model_size_gb * (ngl_partial as f64 / total_layers.max(1) as f64);
                         fixed_overhead_gb = weights_on_gpu_gb + draft_weights_gb + mmproj_gb + compute_buf;
-                        info!(
+                        debug!(
                             ngl_partial,
                             min_partial_layers,
                             "显存不足全量卸载，触发 Step B1 混合卸载线性回退，锁定 4096 ctx 并卸载 {} 层",
@@ -608,7 +608,7 @@ impl ParamBuilder {
             (final_gpu_layers.max(0) as f64 / total_layers.max(1) as f64).min(1.0)
         };
 
-        info!(
+        debug!(
             "全介质物理预算明细 [{:?}]: 可用 {:.2}G | 固定占用 {:.2}G(权重 {:.2} + 草稿 {:.2} + 投影器 {:.2} + 计算缓冲 {:.2}) | KV 额度 {:.2}G | KV/token {}B(主 {} + 草稿 {}) | 预算上限 {} tokens | 最终 ctx {}",
             plan.pool,
             plan.usable_memory_gb,

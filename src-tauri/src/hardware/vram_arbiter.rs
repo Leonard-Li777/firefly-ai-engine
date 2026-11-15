@@ -6,7 +6,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::{Mutex, RwLock};
-use tracing::info;
+use tracing::{debug, info};
 
 /// 1.5GB 绝对保底安全水位 (字节)
 pub const MIN_SAFETY_WATERMARK_BYTES: u64 = (1.5 * 1024.0 * 1024.0 * 1024.0) as u64;
@@ -353,7 +353,7 @@ impl VramArbiter {
         if *phase_guard == ArbiterPhase::Serving && !self.has_active_leases() {
             *phase_guard = ArbiterPhase::CoolingDown;
             *self.cooldown_until.lock().await = Some(Instant::now() + cooldown_duration);
-            info!("[VRAM Arbiter] 开启空闲冷却防抖倒计时: {:?}", cooldown_duration);
+            debug!("[VRAM Arbiter] 开启空闲冷却防抖倒计时: {:?}", cooldown_duration);
         }
     }
 
@@ -363,7 +363,7 @@ impl VramArbiter {
         if *phase_guard == ArbiterPhase::CoolingDown && !self.has_active_leases() {
             *phase_guard = ArbiterPhase::Idle;
             *self.cooldown_until.lock().await = None;
-            info!("[VRAM Arbiter] P0 交互请求抢占，成功中断冷却倒计时");
+            debug!("[VRAM Arbiter] P0 交互请求抢占，成功中断冷却倒计时");
             return true;
         }
         false

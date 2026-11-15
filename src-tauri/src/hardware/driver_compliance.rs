@@ -8,7 +8,7 @@ use std::sync::Arc;
 use std::sync::OnceLock;
 use std::time::{Duration, Instant};
 use tokio::sync::Mutex;
-use tracing::{info, warn};
+use tracing::{debug, info, warn};
 
 use super::gpu_info::AccelerationTier;
 
@@ -71,7 +71,7 @@ impl DriverComplianceService {
 
     /// 记录降级信息（CUDA → Vulkan 等）
     pub async fn set_downgrade_info(&self, info: DowngradeInfo) {
-        info!(
+        debug!(
             "记录驱动降级: {} → {}, GPU: {}",
             info.best_tier, info.current_tier, info.gpu_name
         );
@@ -299,7 +299,7 @@ async fn detect_nvidia_driver_info_uncached() -> (Option<f64>, Option<f64>) {
             .and_then(|m| m.as_str().parse::<f64>().ok());
 
         if driver_ver.is_some() || cuda_ver.is_some() {
-            tracing::info!(
+            tracing::debug!(
                 "[驱动合规] nvidia-smi 探测成功 - 驱动版本: {:?}, CUDA 版本: {:?}",
                 driver_ver,
                 cuda_ver
@@ -342,7 +342,7 @@ async fn detect_nvidia_driver_info_uncached() -> (Option<f64>, Option<f64>) {
                             450.0
                         };
 
-                        tracing::info!(
+                        tracing::debug!(
                             "[驱动合规] nvcuda.dll 探测成功: CUDA API 版本: {}, 映射驱动基准: {}",
                             cuda_ver,
                             baseline_driver_ver

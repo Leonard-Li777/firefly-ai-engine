@@ -163,7 +163,7 @@ impl ProcessGuard {
         if let Some(store) = &self.log_store {
             store.clear();
         }
-        info!("llama.cpp 运行时日志已清空");
+        debug!("llama.cpp 运行时日志已清空");
     }
 
     /// 向缓冲区写入一条日志，并同步落盘（落盘失败静默降级）
@@ -234,7 +234,7 @@ impl ProcessGuard {
         }
         self.shutting_down.store(false, Ordering::SeqCst);
 
-        info!(
+        debug!(
             "启动 llama-server: {:?} {}",
             engine.binary_path,
             args.join(" ")

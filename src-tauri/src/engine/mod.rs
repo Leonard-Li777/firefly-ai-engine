@@ -265,7 +265,7 @@ impl EngineCoordinator {
                     match stable_since {
                         None => stable_since = Some(Instant::now()),
                         Some(since) if attempts > 0 && since.elapsed() >= STABLE_RUN => {
-                            tracing::info!(
+                            tracing::debug!(
                                 "llama-server 已稳定运行 {}s，重置崩溃自愈计数",
                                 STABLE_RUN.as_secs()
                             );
@@ -626,7 +626,7 @@ impl EngineCoordinator {
     async fn start_service_inner(&self) -> anyhow::Result<()> {
         let current_status = self.guard.status().await;
         if current_status == ProcessStatus::Running || current_status == ProcessStatus::Starting {
-            tracing::info!("引擎服务已经在运行或启动中，无需重复启动");
+            tracing::debug!("引擎服务已经在运行或启动中，无需重复启动");
             return Ok(());
         }
 
@@ -706,7 +706,7 @@ impl EngineCoordinator {
         if let Some(primary_gpu) = resources.gpus.first_mut() {
             if primary_gpu.supports_cuda {
                 if let Some(free_mb) = crate::hardware::VramFreeProbe::probe_free_mb(primary_gpu).await {
-                    tracing::info!("实时探测 NVIDIA 可用显存: {} MB", free_mb);
+                    tracing::debug!("实时探测 NVIDIA 可用显存: {} MB", free_mb);
                     primary_gpu.memory_free_mb = Some(free_mb);
                 }
             }
@@ -1035,7 +1035,7 @@ impl EngineCoordinator {
             "--threads".to_string(), "4".to_string(),
         ];
 
-        tracing::info!(
+        tracing::debug!(
             "正在启动独立常驻 Embedding Worker: model={}, port={}",
             model_str, emb_internal_port
         );
@@ -1057,7 +1057,7 @@ impl EngineCoordinator {
                         last_active_at: std::time::Instant::now(),
                     }
                 ).await;
-                tracing::info!(
+                tracing::debug!(
                     "Embedding Worker 启动并反代就绪: port={}, model={}",
                     emb_internal_port, model_alias
                 );
@@ -1259,7 +1259,7 @@ impl EngineCoordinator {
                                 tracing::warn!("写入宽容 Jinja 模板失败: {}", e);
                                 None
                             } else {
-                                tracing::info!("生成宽容 Jinja 模板就绪: {:?}", tolerant_file);
+                                tracing::debug!("生成宽容 Jinja 模板就绪: {:?}", tolerant_file);
                                 Some(tolerant_file.to_string_lossy().to_string())
                             }
                         } else {
@@ -1807,6 +1807,6 @@ pub fn clean_image_cache_lru(cache_dir: &std::path::Path, max_bytes: u64) -> std
         }
     }
 
-    tracing::info!("[LRU 缓存清理] 成功回收临时图片占用: {} MB", deleted_bytes / (1024 * 1024));
+    tracing::debug!("[LRU 缓存清理] 成功回收临时图片占用: {} MB", deleted_bytes / (1024 * 1024));
     Ok(deleted_bytes)
 }

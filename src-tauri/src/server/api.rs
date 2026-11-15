@@ -18,7 +18,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use tracing::{error, info, warn};
+use tracing::{debug, error, info, warn};
 
 use crate::config::CustomModelEntry;
 use crate::engine::param_builder::ParamBuilder;
@@ -947,7 +947,7 @@ pub fn resolve_model_downloader(install_bin_dirs: &[PathBuf]) -> PathBuf {
 
     let chosen = candidates[0].clone();
     if candidates.len() > 1 {
-        info!(
+        debug!(
             "[downloader] 检测到多个 llama-model-download 版本，按版本降序选用: {:?}（候选 {:?}）",
             chosen,
             candidates
@@ -1424,7 +1424,7 @@ async fn switch_engine(
     // 4. 若当前推理服务正在运行或正在启动，执行热重启以无缝切换到新引擎
     let proc_status = state.coordinator.guard.status().await;
     let res = if proc_status == crate::engine::ProcessStatus::Running || proc_status == crate::engine::ProcessStatus::Starting {
-        info!("当前引擎服务运行中，正在热重启以切换至新后端: {}", payload.backend);
+        debug!("当前引擎服务运行中，正在热重启以切换至新后端: {}", payload.backend);
         // 先停掉旧服务
         if let Err(e) = state.coordinator.stop_service().await {
             warn!("切换后端时停止旧服务失败: {}", e);
@@ -2089,7 +2089,7 @@ async fn download_concurrent_blocks(
             if let Ok(meta) = serde_json::from_str::<DownloadBlockMeta>(&content) {
                 if meta.total_bytes == total_bytes && meta.block_size == ENGINE_DOWNLOAD_BLOCK_SIZE && meta.total_blocks == total_blocks {
                     completed_blocks = meta.completed_blocks.into_iter().collect();
-                    info!("[引擎下载] 命中断点续传元数据: 已完成 {}/{} 块", completed_blocks.len(), total_blocks);
+                    debug!("[引擎下载] 命中断点续传元数据: 已完成 {}/{} 块", completed_blocks.len(), total_blocks);
                 }
             }
         }
@@ -2118,7 +2118,7 @@ async fn download_concurrent_blocks(
     }
 
     if completed_blocks.len() == total_blocks {
-        info!("[引擎下载] 所有 {} 块分片均已完成，跳过网络下载直接就绪", total_blocks);
+        debug!("[引擎下载] 所有 {} 块分片均已完成，跳过网络下载直接就绪", total_blocks);
         return Ok(true);
     }
 
@@ -2345,7 +2345,7 @@ async fn download_concurrent_blocks(
 
     let comp = shared_completed.lock().await;
     if comp.len() == total_blocks {
-        info!("[引擎下载] 并发分块下载成功完成: 全部 {}/{} 块已安全落盘", comp.len(), total_blocks);
+        debug!("[引擎下载] 并发分块下载成功完成: 全部 {}/{} 块已安全落盘", comp.len(), total_blocks);
         let _ = tokio::fs::remove_file(meta_path).await;
         Ok(true)
     } else {
@@ -2373,7 +2373,7 @@ async fn download_engine_with_resume_and_failover(
 
     if let Some(ref p) = proxy_url {
         if let Ok(proxy) = reqwest::Proxy::all(p) {
-            info!("[引擎下载] 启用系统代理: {}", p);
+            debug!("[引擎下载] 启用系统代理: {}", p);
             client_builder = client_builder.proxy(proxy);
         }
     }
@@ -2399,7 +2399,7 @@ async fn download_engine_with_resume_and_failover(
         let candidate_urls = build_candidate_urls(version, filename);
 
         for (source_name, url) in candidate_urls {
-            info!("[引擎下载] 尝试数据源: {} [{}/{}] URL: {}", source_name, version, filename, url);
+            debug!("[引擎下载] 尝试数据源: {} [{}/{}] URL: {}", source_name, version, filename, url);
 
             // 更新任务当前正在尝试的文件与通道
             {
@@ -2469,7 +2469,7 @@ async fn download_engine_with_resume_and_failover(
             let use_concurrent = is_partial && total_bytes >= ENGINE_DOWNLOAD_BLOCK_SIZE;
 
             let download_success = if use_concurrent {
-                info!("[引擎下载] 启用固定 4MiB 块网格 6 线程并发断点续传下载器 (源: {}, 期望: {} 字节)", source_name, total_bytes);
+                debug!("[引擎下载] 启用固定 4MiB 块网格 6 线程并发断点续传下载器 (源: {}, 期望: {} 字节)", source_name, total_bytes);
                 // 释放探测连接
                 drop(probe_resp);
                 match download_concurrent_blocks(
@@ -2489,7 +2489,7 @@ async fn download_engine_with_resume_and_failover(
                     }
                 }
             } else {
-                info!("[引擎下载] 服务端不支持 Range 或文件较小，执行单流断点续传 (源: {})", source_name);
+                debug!("[引擎下载] 服务端不支持 Range 或文件较小，执行单流断点续传 (源: {})", source_name);
                 if !is_partial {
                     // 服务端返回 200 OK，复用已有 probe_resp 流进行全量写入
                     match download_single_stream(probe_resp, &part_path, total_bytes, false, 0, task_id, tasks).await {
@@ -2534,7 +2534,7 @@ async fn download_engine_with_resume_and_failover(
                 if let Err(e) = tokio::fs::rename(&part_path, &dest_path).await {
                     return Err(format!("重命名已完成文件失败: {}", e));
                 }
-                info!("[引擎下载] 成功下载文件: {} (版本: {}, 来源: {})", filename, version, source_name);
+                debug!("[引擎下载] 成功下载文件: {} (版本: {}, 来源: {})", filename, version, source_name);
                 return Ok((dest_path, version.clone(), filename.clone()));
             } else {
                 warn!("[引擎下载] 源 {} 未完整完成，保留已有片段与元数据，切换下一源断点续传", source_name);
@@ -2635,7 +2635,7 @@ async fn run_engine_download(
         PathBuf::from("engines")
     };
 
-    info!("[引擎下载] 启动引擎下载工作流: 任务ID={} 候选数量={}", task_id, candidates.len());
+    debug!("[引擎下载] 启动引擎下载工作流: 任务ID={} 候选数量={}", task_id, candidates.len());
 
     // 1. 下载阶段 (支持候选包探测、双轨故障转移与断点续传)
     let (downloaded_archive_path, final_version, final_filename) = match download_engine_with_resume_and_failover(
@@ -2657,7 +2657,7 @@ async fn run_engine_download(
     };
 
     let target_dest_dir = base_engine_dir.join(format!("llama-{}-bin-win-{}-x64", final_version, tier_name));
-    info!("[引擎下载] 成功获取包: {}，准备部署至 {:?}", final_filename, target_dest_dir);
+    debug!("[引擎下载] 成功获取包: {}，准备部署至 {:?}", final_filename, target_dest_dir);
 
     // 2. 解压部署主包
     {
@@ -2668,7 +2668,7 @@ async fn run_engine_download(
         }
     }
 
-    info!("[引擎下载] 正在解压主包至目标目录: {:?}", target_dest_dir);
+    debug!("[引擎下载] 正在解压主包至目标目录: {:?}", target_dest_dir);
     if let Err(e) = extract_engine_archive(&downloaded_archive_path, &target_dest_dir) {
         error!("[引擎下载] 解压主包部署失败: {}", e);
         let mut lock = tasks.lock().await;
@@ -2704,7 +2704,7 @@ async fn run_engine_download(
             }]
         };
 
-        info!("[引擎下载] Windows CUDA 引擎需要配套 cudart 库，开始连带下载: {:?}", cudart_candidates);
+        debug!("[引擎下载] Windows CUDA 引擎需要配套 cudart 库，开始连带下载: {:?}", cudart_candidates);
         {
             let mut lock = tasks.lock().await;
             if let Some(task) = lock.get_mut(&task_id) {
@@ -2721,7 +2721,7 @@ async fn run_engine_download(
             &tasks,
         ).await {
             Ok((cudart_path, _cudart_ver, cudart_file)) => {
-                info!("[引擎下载] 成功下载 cudart 运行时包: {}，正在解压合并至 {:?}", cudart_file, target_dest_dir);
+                debug!("[引擎下载] 成功下载 cudart 运行时包: {}，正在解压合并至 {:?}", cudart_file, target_dest_dir);
                 {
                     let mut lock = tasks.lock().await;
                     if let Some(task) = lock.get_mut(&task_id) {
@@ -2732,7 +2732,7 @@ async fn run_engine_download(
                 if let Err(e) = extract_engine_archive(&cudart_path, &target_dest_dir) {
                     warn!("[引擎下载] 解压 cudart 运行时包失败 (尝试继续): {}", e);
                 } else {
-                    info!("[引擎下载] 成功合并解压 cudart 运行时包到 {:?}", target_dest_dir);
+                    debug!("[引擎下载] 成功合并解压 cudart 运行时包到 {:?}", target_dest_dir);
                     let _ = std::fs::remove_file(&cudart_path);
                 }
             }
@@ -2778,7 +2778,7 @@ async fn run_engine_download(
     let is_current_backend = status.active_backend == backend;
 
     if is_running && is_current_backend {
-        info!("[引擎更新] 当前更新的后端 {} 正在运行，执行热切换流程...", backend);
+        debug!("[引擎更新] 当前更新的后端 {} 正在运行，执行热切换流程...", backend);
         // 停止旧引擎服务
         if let Err(e) = app_state.coordinator.stop_service().await {
             warn!("[引擎更新] 切换时停止旧引擎服务失败: {}", e);
@@ -2799,21 +2799,21 @@ async fn run_engine_download(
         if let Err(e) = app_state.coordinator.start_service().await {
             error!("[引擎更新] 热重启新版本引擎服务失败: {}", e);
         } else {
-            info!("[引擎更新] 新版本引擎服务热重启成功！");
+            debug!("[引擎更新] 新版本引擎服务热重启成功！");
         }
 
         // 旧引擎进程已完全退出，带重试安全清理旧版本目录（规避 Windows 短时文件句柄释放延迟）
         for old_dir in old_dirs_to_clean {
-            info!("[引擎更新] 清理旧版本引擎目录: {:?}", old_dir);
+            debug!("[引擎更新] 清理旧版本引擎目录: {:?}", old_dir);
             if let Err(e) = remove_engine_dir_with_retry(&old_dir).await {
                 warn!("[引擎更新] 清理旧引擎目录失败: {:?}", e);
             }
         }
     } else {
         // 当前未运行该引擎，直接清理历史旧版本目录
-        info!("[引擎更新] 当前未运行后端 {}，清理历史旧版本目录", backend);
+        debug!("[引擎更新] 当前未运行后端 {}，清理历史旧版本目录", backend);
         for old_dir in old_dirs_to_clean {
-            info!("[引擎更新] 清理旧版本引擎目录: {:?}", old_dir);
+            debug!("[引擎更新] 清理旧版本引擎目录: {:?}", old_dir);
             if let Err(e) = remove_engine_dir_with_retry(&old_dir).await {
                 warn!("[引擎更新] 清理旧引擎目录失败: {:?}", e);
             }
@@ -2851,7 +2851,7 @@ async fn start_model_download(
     {
         let tasks = state.download_tasks.lock().await;
         if let Some(existing) = tasks.values().find(|t| t.model_id == payload.model_id && (t.status == DownloadStatus::Pending || t.status == DownloadStatus::Downloading)) {
-            info!("模型 {} 已有进行中的下载任务: {}，直接复用", payload.model_id, existing.task_id);
+            debug!("模型 {} 已有进行中的下载任务: {}，直接复用", payload.model_id, existing.task_id);
             return Json(json!({
                 "taskId": existing.task_id,
                 "totalBytes": existing.total_bytes,
@@ -3040,7 +3040,7 @@ async fn run_model_download(
     // 抑制 llama-model-download 控制台窗口闪烁
     crate::win_proc::apply_no_window(&mut cmd);
 
-    info!("启动原生真实下载进程: {:?} 参数: {:?}", downloader_path, downloader_args);
+    debug!("启动原生真实下载进程: {:?} 参数: {:?}", downloader_path, downloader_args);
 
     let mut child = match cmd.spawn() {
         Ok(c) => c,
@@ -3202,7 +3202,7 @@ async fn run_model_download(
                     }
                 }
             } else {
-                info!("[llama-model-download] {}", line);
+                debug!("[llama-model-download] {}", line);
             }
         }
     }
@@ -3240,7 +3240,7 @@ async fn run_model_download(
             task.status = DownloadStatus::Completed;
             task.percent = 100.0;
             task.file_index = total_files.saturating_sub(1);
-            info!("主模型下载就绪并校验完整: {}", task.model_id);
+            debug!("主模型下载就绪并校验完整: {}", task.model_id);
         } else {
             task.status = DownloadStatus::Error;
             let code_str = exit_status.map(|s| format!("{:?}", s.code())).unwrap_or_else(|e| e.to_string());
@@ -3260,7 +3260,7 @@ async fn run_model_download(
 
 /// 开发模式下模拟下载进度（当 llama-model-download 不存在时）
 async fn simulate_download_progress(task_id: &str, model_id: &str, tasks: &DownloadTaskStore) {
-    info!("模拟下载进度: {}", model_id);
+    debug!("模拟下载进度: {}", model_id);
     let total_bytes: u64 = 500_000_000; // 500 MB 模拟
 
     {
@@ -3345,7 +3345,7 @@ async fn cancel_model_download(
     };
 
     if let Some(pid) = pid_opt {
-        info!("取消下载任务: {}，真实终止 PID: {}", task_id, pid);
+        debug!("取消下载任务: {}，真实终止 PID: {}", task_id, pid);
         #[cfg(windows)]
         {
             let mut kill_cmd = std::process::Command::new("taskkill");
@@ -3361,7 +3361,7 @@ async fn cancel_model_download(
                 .output();
         }
     } else {
-        info!("取消下载任务: {} (无活跃关联子进程)", task_id);
+        debug!("取消下载任务: {} (无活跃关联子进程)", task_id);
     }
 
     Json(json!({ "success": true }))
@@ -3373,7 +3373,7 @@ async fn switch_model(
     State(state): State<AppState>,
     Json(payload): Json<SwitchModelReq>,
 ) -> impl IntoResponse {
-    info!("切换模型: {} 来源: {:?}", payload.model_id, payload.source);
+    debug!("切换模型: {} 来源: {:?}", payload.model_id, payload.source);
 
     let models_dir = {
         let config = state.coordinator.config.lock().await;
@@ -3551,7 +3551,7 @@ async fn update_models_dir(
 
     // 如果路径不同，执行迁移
     if old_path != new_path && old_path.exists() {
-        info!("开始模型目录迁移: {:?} -> {:?}", old_path, new_path);
+        debug!("开始模型目录迁移: {:?} -> {:?}", old_path, new_path);
 
         // 1. 停止当前引擎（释放文件锁）
         if let Err(e) = state.coordinator.guard.stop().await {
@@ -3647,13 +3647,13 @@ fn migrate_model_files(old_dir: &std::path::Path, new_dir: &std::path::Path) -> 
             let old_size = std::fs::metadata(&old_path).map(|m| m.len()).unwrap_or(0);
             let new_size = std::fs::metadata(&new_file_path).map(|m| m.len()).unwrap_or(0);
             if old_size == new_size && old_size > 0 {
-                info!("跳过已存在文件: {}", file_name);
+                debug!("跳过已存在文件: {}", file_name);
                 std::fs::remove_file(&old_path).ok();
                 continue;
             }
         }
 
-        info!("迁移平铺模型文件: {} -> {:?}", file_name, new_file_path);
+        debug!("迁移平铺模型文件: {} -> {:?}", file_name, new_file_path);
         robust_move_or_copy_file(&old_path, &new_file_path)?;
     }
 
@@ -3667,14 +3667,14 @@ fn robust_move_or_copy_dir(src: &std::path::Path, dst: &std::path::Path) -> std:
     }
     // 尝试直接 rename（同盘秒移）
     if std::fs::rename(src, dst).is_ok() {
-        info!("同盘秒移目录成功: {:?} -> {:?}", src, dst);
+        debug!("同盘秒移目录成功: {:?} -> {:?}", src, dst);
         return Ok(());
     }
 
     // 异盘：递归复制并校验
     copy_dir_recursive(src, dst)?;
     std::fs::remove_dir_all(src)?;
-    info!("异盘迁移目录成功并已清理源: {:?}", src);
+    debug!("异盘迁移目录成功并已清理源: {:?}", src);
     Ok(())
 }
 
@@ -3722,7 +3722,7 @@ fn robust_move_or_copy_file(src: &std::path::Path, dst: &std::path::Path) -> std
 async fn rescan_models(State(state): State<AppState>) -> impl IntoResponse {
     let config = state.coordinator.config.lock().await;
     let models = scan_and_merge_models(&config.models_dir, None, &config.custom_models);
-    info!("重新扫描模型目录，发现 {} 个模型", models.len());
+    debug!("重新扫描模型目录，发现 {} 个模型", models.len());
     Json(models)
 }
 
@@ -3749,7 +3749,7 @@ async fn set_thinking_mode(
         error!("持久化思考模式开关失败: {}", e);
         return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "success": false, "error": e.to_string() })));
     }
-    info!("已持久化模型思考模式开关: enable_thinking={}", payload.enable_thinking);
+    debug!("已持久化模型思考模式开关: enable_thinking={}", payload.enable_thinking);
     (StatusCode::OK, Json(json!({ "success": true, "enableThinking": config.enable_thinking })))
 }
 
@@ -3769,7 +3769,7 @@ async fn update_params(
         config.custom_context_window = Some(ctx);
     }
 
-    info!("更新引擎参数: gpu_layers={:?}, ctx_size={:?}",
+    debug!("更新引擎参数: gpu_layers={:?}, ctx_size={:?}",
         payload.n_gpu_layers, payload.ctx_size);
 
     Json(json!({ "success": true }))
@@ -3789,7 +3789,7 @@ async fn save_model_params(
         error!("持久化模型专属参数失败 [{}]: {}", payload.model_id, e);
         return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "success": false, "error": e.to_string() })));
     }
-    info!("已成功持久化保存模型专属参数 [{}] 至 config.json", payload.model_id);
+    debug!("已成功持久化保存模型专属参数 [{}] 至 config.json", payload.model_id);
     (StatusCode::OK, Json(json!({ "success": true })))
 }
 
@@ -3940,7 +3940,7 @@ async fn add_custom_model(
         }
     };
     let (main_size, mmproj) = custom_model::sniff_model(&client, &parsed, &resolve_url).await;
-    info!(
+    debug!(
         "嗅探自定义模型完成: {} 主模型={:?} 投影={:?}",
         parsed.file_name, main_size, mmproj
     );
@@ -4003,7 +4003,7 @@ async fn delete_model(
     State(state): State<AppState>,
     Json(payload): Json<DeleteModelReq>,
 ) -> impl IntoResponse {
-    info!("删除模型: {} localPath: {:?}", payload.model_id, payload.local_path);
+    debug!("删除模型: {} localPath: {:?}", payload.model_id, payload.local_path);
 
     let models_dir = {
         let mut config = state.coordinator.config.lock().await;
@@ -4014,11 +4014,11 @@ async fn delete_model(
 
         // 同步清空激活槽位（语言模型或嵌入模型槽位若指向被删除模型，同步置空）
         if is_model_matching_active(&payload.model_id, config.active_language_model.as_deref()) {
-            info!("待删除模型处于 active_language_model 激活槽位，清空配置槽位");
+            debug!("待删除模型处于 active_language_model 激活槽位，清空配置槽位");
             config.active_language_model = None;
         }
         if is_model_matching_active(&payload.model_id, config.active_embedding_model.as_deref()) {
-            info!("待删除模型处于 active_embedding_model 激活槽位，清空配置槽位");
+            debug!("待删除模型处于 active_embedding_model 激活槽位，清空配置槽位");
             config.active_embedding_model = None;
         }
 
@@ -4093,7 +4093,7 @@ async fn delete_model(
     };
 
     if is_currently_running {
-        info!("被删除的模型当前正在运行中，先停止引擎服务以释放文件句柄: {}", model_dir.display());
+        debug!("被删除的模型当前正在运行中，先停止引擎服务以释放文件句柄: {}", model_dir.display());
         if let Err(e) = state.coordinator.stop_service().await {
             warn!("停止运行中引擎服务遇到错误（继续尝试删除）: {}", e);
         }
@@ -4107,14 +4107,14 @@ async fn delete_model(
                 || std::path::Path::new(current).starts_with(&model_dir)
             {
                 *active_model = None;
-                info!("已重置运行态 active_model");
+                debug!("已重置运行态 active_model");
             }
         }
     }
 
     match std::fs::remove_dir_all(&model_dir) {
         Ok(_) => {
-            info!("已删除模型目录: {}", model_dir.display());
+            debug!("已删除模型目录: {}", model_dir.display());
             (StatusCode::OK, Json(json!({ "success": true })))
         }
         Err(e) => {
@@ -4133,7 +4133,7 @@ async fn remove_custom_model(
     State(state): State<AppState>,
     Json(payload): Json<DeleteModelReq>,
 ) -> impl IntoResponse {
-    info!("移除自定义模型条目: {}", payload.model_id);
+    debug!("移除自定义模型条目: {}", payload.model_id);
     let mut config = state.coordinator.config.lock().await;
     let before = config.custom_models.len();
     config.custom_models.retain(|m| m.id != payload.model_id);
@@ -4141,11 +4141,11 @@ async fn remove_custom_model(
 
     // 同步清空激活槽位
     if is_model_matching_active(&payload.model_id, config.active_language_model.as_deref()) {
-        info!("移除的自定义模型处于 active_language_model 激活槽位，清空配置槽位");
+        debug!("移除的自定义模型处于 active_language_model 激活槽位，清空配置槽位");
         config.active_language_model = None;
     }
     if is_model_matching_active(&payload.model_id, config.active_embedding_model.as_deref()) {
-        info!("移除的自定义模型处于 active_embedding_model 激活槽位，清空配置槽位");
+        debug!("移除的自定义模型处于 active_embedding_model 激活槽位，清空配置槽位");
         config.active_embedding_model = None;
     }
 
@@ -4165,7 +4165,7 @@ async fn remove_custom_model(
             Json(json!({ "success": false, "error": e.to_string() })),
         );
     }
-    info!("已移除自定义模型条目: {}", payload.model_id);
+    debug!("已移除自定义模型条目: {}", payload.model_id);
     (StatusCode::OK, Json(json!({ "success": true })))
 }
 
@@ -4206,7 +4206,7 @@ async fn open_ui(
         .and_then(|p| p.source.clone())
         .map(|s| s.trim().to_string())
         .filter(|s| !s.is_empty());
-    info!(
+    debug!(
         "收到 open-ui 请求，准备显示主窗口 panel={} focus_model={:?} source={:?}",
         panel, focus_model, source
     );
@@ -4259,7 +4259,7 @@ async fn open_ui(
 async fn consume_ui_intent(State(state): State<AppState>) -> impl IntoResponse {
     match take_ui_intent(&state.ui_intent).await {
         Some(record) => {
-            info!("前端补偿消费 UI 意图 panel={} seq={}", record.panel, record.seq);
+            debug!("前端补偿消费 UI 意图 panel={} seq={}", record.panel, record.seq);
             (StatusCode::OK, Json(json!({ "intent": record })))
         }
         None => (StatusCode::OK, Json(json!({ "intent": null }))),
@@ -4372,7 +4372,7 @@ async fn start_engine_service(
     } else {
         StartEngineReq::default()
     };
-    info!("收到 start_engine_service 请求，mode: {:?}, model_id: {:?}", req.mode, req.model_id);
+    debug!("收到 start_engine_service 请求，mode: {:?}, model_id: {:?}", req.mode, req.model_id);
 
     // 1. 计算本次请求的目标意图模型 target_model
     let target_model = if let Some(ref m) = req.model_id {
@@ -4394,7 +4394,7 @@ async fn start_engine_service(
             }).map(|(p, _)| p.to_string_lossy().to_string());
 
             if let Some(ref wemm) = found_wemm {
-                info!("自动检测并绑定已安装的嵌入向量模型: {}", wemm);
+                debug!("自动检测并绑定已安装的嵌入向量模型: {}", wemm);
                 config.active_embedding_model = Some(wemm.clone());
                 if let Err(e) = config.save_to_disk() {
                     warn!("持久化 active_embedding_model 失败: {}", e);
@@ -4414,7 +4414,7 @@ async fn start_engine_service(
             }).map(|(p, _)| p.to_string_lossy().to_string());
 
             if let Some(ref lang) = found_lang {
-                info!("自动检测并绑定已安装的主语言模型: {}", lang);
+                debug!("自动检测并绑定已安装的主语言模型: {}", lang);
                 config.active_language_model = Some(lang.clone());
                 if let Err(e) = config.save_to_disk() {
                     warn!("持久化 active_language_model 失败: {}", e);
@@ -4462,7 +4462,7 @@ async fn start_engine_service(
 /// POST /api/engine/stop
 /// 停止 llama.cpp 推理服务子进程
 async fn stop_engine_service(State(state): State<AppState>) -> impl IntoResponse {
-    info!("收到 stop_engine_service 请求");
+    debug!("收到 stop_engine_service 请求");
     let res = match state.coordinator.stop_service().await {
         Ok(_) => (StatusCode::OK, Json(json!({ "success": true, "message": "服务已停止" }))),
         Err(e) => {
