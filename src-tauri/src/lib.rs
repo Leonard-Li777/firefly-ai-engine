@@ -151,11 +151,23 @@ pub fn run() {
     }
     // 初始化 tracing 日志：控制台 + AppData/logs/app.log 双写。
     // 落盘是为了让进程崩溃 / 被重启后仍能回看启动与错误记录（仅控制台输出会随进程一起消失）。
+    //
+    // 环境感知级别门控（与 desktop/omni 对齐）：
+    // - 开发模式（FIREFLY_ENGINE_DEV=1）：firefly_ai_engine_lib=debug，全量调试信息
+    // - 生产模式（默认）：firefly_ai_engine_lib=info，仅关键节点 info/warn/error，debug 不落盘
+    //   保留 info 是为了在崩溃后能回溯「引擎何时启动/停止」等关键生命周期事件
+    //
+    // 可通过 RUST_LOG 环境变量覆盖（tracing_subscriber 标准行为）。
     use tracing_subscriber::fmt::writer::MakeWriterExt;
+    let default_filter = if std::env::var("FIREFLY_ENGINE_DEV").map(|v| v == "1").unwrap_or(false) {
+        "firefly_ai_engine_lib=debug,tower_http=info".to_string()
+    } else {
+        "firefly_ai_engine_lib=info,tower_http=warn".to_string()
+    };
     tracing_subscriber::fmt()
         .with_env_filter(
             tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "firefly_ai_engine_lib=info,tower_http=warn".parse().unwrap()),
+                .unwrap_or_else(|_| default_filter.parse().unwrap()),
         )
         .json()
         .with_writer(std::io::stdout.and(app_log::FileAppender))
@@ -200,7 +212,7 @@ pub fn run() {
             let tauri_resource_dir = app_handle.path().resource_dir().ok();
             let install_bin_dirs =
                 resource_scope::allowed_install_bin_dirs(tauri_resource_dir.as_deref());
-            info!("资源查找安装目录 bin: {:?}", install_bin_dirs);
+            debug!("资源查找安装目录 bin: {:?}", install_bin_dirs);
             let hardware = Arc::new(HardwareDetector::new(install_bin_dirs.clone()));
 
             // 初始化驱动合规服务
@@ -311,7 +323,7 @@ pub fn run() {
                     let _ = window.show();
                     let _ = window.set_focus();
                 } else {
-                    info!("以静默模式启动（--silent），主窗口保持隐藏");
+                    debug!("以静默模式启动（--silent），主窗口保持隐藏");
                 }
             }
 
