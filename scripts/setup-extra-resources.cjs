@@ -289,6 +289,18 @@ async function extractArchive(archivePath, destDir) {
       console.log(`   ✅ [系统 ${cmd}] 成功解压: ${path.basename(archivePath)}`)
       return
     }
+    // unzip 不可用时（如 WSL 默认无 unzip），回退到 Node.js unzipper 解压 zip
+    if (!isTarGz) {
+      try {
+        const unzipper = require('unzipper')
+        const directory = await unzipper.Open.file(absArchive)
+        await directory.extract({ path: absDest, concurrency: 4 })
+        console.log(`   ✅ [unzipper] 成功解压: ${path.basename(archivePath)}`)
+        return
+      } catch (e) {
+        console.error(`   ⚠ [unzipper] 解压失败: ${e.message}`)
+      }
+    }
   }
 
   throw new Error(`解压文件失败: ${archivePath}`)
