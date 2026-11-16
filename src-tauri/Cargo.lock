@@ -1001,6 +1001,7 @@ dependencies = [
  "dirs 5.0.1",
  "futures",
  "http-body-util",
+ "libc",
  "mockito",
  "regex",
  "reqwest 0.12.28",

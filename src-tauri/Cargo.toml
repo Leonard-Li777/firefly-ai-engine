@@ -91,6 +91,10 @@ windows-sys = { version = "0.61", features = [
     "Win32_System_Diagnostics_ToolHelp",
 ] }
 
+# Unix（Linux/macOS）：process_guard 优雅终止子进程需发送 SIGTERM
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
 [dev-dependencies]
 tokio-test = "0.4"
 tempfile = "3"
