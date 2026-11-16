@@ -48,8 +48,15 @@ interface CustomModelRowProps {
 
 /** 单行自定义模型条目：展示来源 Badge、名称、参数、下载进度、已就绪状态、启动与高级管理操作 */
 const CustomModelRowItem: React.FC<CustomModelRowProps> = ({ model, onOpenConfig }) => {
-  const { fetchModels, modelsDir, engineStatus, activateAndStart, removeCustomModel, deleteModel, activeModelKey } =
-    useEngineStore()
+  const {
+    fetchModels,
+    modelsDir,
+    engineStatus,
+    activateAndStart,
+    removeCustomModel,
+    deleteModel,
+    activeModelKey
+  } = useEngineStore()
 
   const handleDownloadComplete = React.useCallback(() => {
     fetchModels()
@@ -95,7 +102,8 @@ const CustomModelRowItem: React.FC<CustomModelRowProps> = ({ model, onOpenConfig
   // 启动与激活状态判定
   const [isStartLaunching, setIsStartLaunching] = useState(false)
   const isEngineReady = engineStatus?.status === 'ready' || engineStatus?.status === 'processing'
-  const isEngineStarting = engineStatus?.status === 'starting' || engineStatus?.status === 'model_loading'
+  const isEngineStarting =
+    engineStatus?.status === 'starting' || engineStatus?.status === 'model_loading'
   const modelKey = `${model.id}@${model.source}`
   const isActiveModel =
     isDownloaded &&
@@ -106,7 +114,13 @@ const CustomModelRowItem: React.FC<CustomModelRowProps> = ({ model, onOpenConfig
   const handleActivateAndStart = async () => {
     try {
       setIsStartLaunching(true)
-      await activateAndStart(model.id, model.source, resolvedLocalPath, model.name, model.isEmbedding)
+      await activateAndStart(
+        model.id,
+        model.source,
+        resolvedLocalPath,
+        model.name,
+        model.isEmbedding
+      )
     } finally {
       setIsStartLaunching(false)
     }
@@ -230,7 +244,10 @@ const CustomModelRowItem: React.FC<CustomModelRowProps> = ({ model, onOpenConfig
                   : `${t('正在下载')} ${dl.progress}%`}
             </span>
           ) : dl.status === 'error' ? (
-            <span className="text-xs font-semibold text-destructive truncate" title={dl.error || undefined}>
+            <span
+              className="text-xs font-semibold text-destructive truncate"
+              title={dl.error || undefined}
+            >
               {dl.error || t('下载失败')}
             </span>
           ) : isDownloaded ? (
@@ -239,15 +256,18 @@ const CustomModelRowItem: React.FC<CustomModelRowProps> = ({ model, onOpenConfig
               <span>{t('已就绪')}</span>
             </div>
           ) : (
-            <span className="text-xs text-muted-foreground/70 font-medium">{t('尚未下载到本地')}</span>
+            <span className="text-xs text-muted-foreground/70 font-medium">
+              {t('尚未下载到本地')}
+            </span>
           )}
         </div>
 
         {/* 右侧操作按钮组 */}
         <div className="flex items-center gap-1.5 shrink-0">
           {/* 高级操作收纳：移除记录 / 删除文件 / 参数配置 */}
-          {!isDownloadingOrPaused && dl.status !== 'error' && (
-            isDeleteConfirm ? (
+          {!isDownloadingOrPaused &&
+            dl.status !== 'error' &&
+            (isDeleteConfirm ? (
               <>
                 <Button
                   size="sm"
@@ -324,19 +344,28 @@ const CustomModelRowItem: React.FC<CustomModelRowProps> = ({ model, onOpenConfig
                 <Settings2 className="h-3 w-3 mr-1 shrink-0" />
                 {t('高级')}
               </Button>
-            )
-          )}
+            ))}
 
           {/* 下载状态控制按钮 */}
           {isDownloadingOrPaused ? (
             <>
               {dl.isPaused ? (
-                <Button size="sm" variant="outline" className="h-7 text-xs px-2.5 rounded-lg font-bold" onClick={resumeDownload}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs px-2.5 rounded-lg font-bold"
+                  onClick={resumeDownload}
+                >
                   <Play className="h-3 w-3 mr-1" />
                   {t('继续')}
                 </Button>
               ) : (
-                <Button size="sm" variant="outline" className="h-7 text-xs px-2.5 rounded-lg font-bold" onClick={pauseDownload}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs px-2.5 rounded-lg font-bold"
+                  onClick={pauseDownload}
+                >
                   <Pause className="h-3 w-3 mr-1" />
                   {t('暂停')}
                 </Button>
@@ -352,7 +381,12 @@ const CustomModelRowItem: React.FC<CustomModelRowProps> = ({ model, onOpenConfig
               </Button>
             </>
           ) : dl.status === 'error' ? (
-            <Button size="sm" variant="outline" className="h-7 text-xs px-2.5 rounded-lg border-border font-bold" onClick={retryDownload}>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs px-2.5 rounded-lg border-border font-bold"
+              onClick={retryDownload}
+            >
               <RotateCw className="h-3 w-3 mr-1" />
               {t('重试')}
             </Button>
@@ -386,7 +420,10 @@ const CustomModelRowItem: React.FC<CustomModelRowProps> = ({ model, onOpenConfig
               size="sm"
               variant="outline"
               className="h-7 text-xs px-3 rounded-lg font-bold border-border hover:border-primary/60 shrink-0"
-              onClick={() => startDownload()}
+              onClick={() => {
+                void useEngineStore.getState().triggerEngineAutoDownloadIfNeeded(model.name)
+                startDownload()
+              }}
             >
               <Download className="h-3 w-3 mr-1 shrink-0" />
               {t('下载模型')}
@@ -408,7 +445,8 @@ const CustomModelRowItem: React.FC<CustomModelRowProps> = ({ model, onOpenConfig
             </span>
             <div className="flex items-center gap-2 font-mono text-[11px] text-muted-foreground">
               <span>
-                {formatFileSize(dl.receivedBytes)} / {formatFileSize(dl.totalBytes || model.fileSize)}
+                {formatFileSize(dl.receivedBytes)} /{' '}
+                {formatFileSize(dl.totalBytes || model.fileSize)}
               </span>
               {!dl.isPaused && dl.speedBps > 0 && (
                 <span className="text-foreground font-bold">{formatSpeed(dl.speedBps)}</span>
@@ -439,7 +477,9 @@ export const CustomModelAddCard: React.FC = () => {
   const [expanded, setExpanded] = useState(false)
   const [url, setUrl] = useState('')
   const [sniffing, setSniffing] = useState(false)
-  const [feedback, setFeedback] = useState<{ type: 'error' | 'success'; message: string } | null>(null)
+  const [feedback, setFeedback] = useState<{ type: 'error' | 'success'; message: string } | null>(
+    null
+  )
   const inputRef = useRef<HTMLInputElement>(null)
 
   // 模型专属参数侧边栏抽屉状态
@@ -491,7 +531,9 @@ export const CustomModelAddCard: React.FC = () => {
             <span>{t('增加任意模型')}</span>
           </Label>
           <p className="text-xs text-muted-foreground font-normal mt-1 leading-relaxed">
-            {t('自由添加 ModelScope / HuggingFace 托管的任意 GGUF 模型文件，保存在本地配置并集中管理。')}
+            {t(
+              '自由添加 ModelScope / HuggingFace 托管的任意 GGUF 模型文件，保存在本地配置并集中管理。'
+            )}
           </p>
         </div>
         {customModels.length > 0 && (
@@ -603,7 +645,9 @@ export const CustomModelAddCard: React.FC = () => {
             )}
 
             {feedback?.type === 'success' && (
-              <p className="text-xs text-muted-foreground">{t('可继续添加下一个模型，或收起本卡片。')}</p>
+              <p className="text-xs text-muted-foreground">
+                {t('可继续添加下一个模型，或收起本卡片。')}
+              </p>
             )}
           </div>
         )}

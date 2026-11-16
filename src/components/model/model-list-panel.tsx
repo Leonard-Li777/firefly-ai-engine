@@ -39,7 +39,6 @@ import { useModelDownloadStore } from '../../stores/model-download-store'
 import { ModelItem, ModelSource } from '../../api/types'
 import { formatFileSize, formatSpeed, calculateRemainingTime } from '../../lib/utils'
 import { t } from '../../languages'
-import { toast } from '../common/Toast'
 import { sortModels, EnrichedModelItem } from '../../lib/model-sorting'
 import { getDisplayRelativeModelPath } from '../../lib/path-utils'
 import { ModelResolver, matchEngineModel } from '../../lib/model-resolver'
@@ -90,7 +89,8 @@ export function getIntelligenceConfig(id?: number | null): IntelligenceLevelItem
     },
     4: {
       label: t('大学生'),
-      badgeClass: 'bg-purple-500/15 text-purple-700 dark:text-purple-400 border-purple-500/30 font-extrabold'
+      badgeClass:
+        'bg-purple-500/15 text-purple-700 dark:text-purple-400 border-purple-500/30 font-extrabold'
     }
   }
 
@@ -138,7 +138,12 @@ interface ModelRowProps {
   isEx?: boolean
   /** Desktop 深链引导的目标行：呼吸高亮光晕（Issue 0046 §3） */
   highlighted?: boolean
-  onActivate: (modelId: string, source?: string, localPath?: string, modelName?: string) => Promise<boolean | void>
+  onActivate: (
+    modelId: string,
+    source?: string,
+    localPath?: string,
+    modelName?: string
+  ) => Promise<boolean | void>
   onOpenConfig: (model: ModelItem) => void
   /** 模型下载提交前的联动回调（PRD-0043：联动提交引擎包下载并提示双 tab 进度） */
   onDownloadSubmit?: (modelName?: string) => void
@@ -149,7 +154,16 @@ interface ModelRowProps {
  * 「已激活」状态条、描述、本地路径、状态与操作按钮各自独占整行子行，互不挤压。
  * 下载进行中以整行子区块展开进度条。
  */
-const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isActiveModel = false, isEx = false, highlighted = false, onActivate, onOpenConfig, onDownloadSubmit }) => {
+const ModelRowItem: React.FC<ModelRowProps> = ({
+  model,
+  isCurrent,
+  isActiveModel = false,
+  isEx = false,
+  highlighted = false,
+  onActivate,
+  onOpenConfig,
+  onDownloadSubmit
+}) => {
   const { fetchModels, modelsDir } = useEngineStore()
   const hardware = useEngineStore(useShallow(s => s.engineStatus?.hardware ?? null))
   const saveModelParams = useEngineStore(s => s.saveModelParams)
@@ -158,7 +172,9 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isActiveModel
   const [isPopoverOpen, setIsPopoverOpen] = React.useState(false)
   const [anchorRect, setAnchorRect] = React.useState<DOMRect | null>(null)
 
-  const hasMultipleComponents = Boolean(model.mmproj || model.isMultiModal || model.dspark || model.draftId)
+  const hasMultipleComponents = Boolean(
+    model.mmproj || model.isMultiModal || model.dspark || model.draftId
+  )
   const rec = React.useMemo(() => recommendComponentsForModel(model, hardware), [model, hardware])
 
   const handleDownloadComplete = React.useCallback(async () => {
@@ -189,14 +205,25 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isActiveModel
     } finally {
       fetchModels()
     }
-  }, [model.id, model.mmproj, model.isMultiModal, model.dspark, model.draftId, saveModelParams, fetchModels])
+  }, [
+    model.id,
+    model.mmproj,
+    model.isMultiModal,
+    model.dspark,
+    model.draftId,
+    saveModelParams,
+    fetchModels
+  ])
 
-  const dlOptions = React.useMemo(() => ({
-    source: model.source,
-    quantization: model.quantization,
-    isDownloaded: model.isDownloaded,
-    onDownloadComplete: handleDownloadComplete
-  }), [model.source, model.quantization, model.isDownloaded, handleDownloadComplete])
+  const dlOptions = React.useMemo(
+    () => ({
+      source: model.source,
+      quantization: model.quantization,
+      isDownloaded: model.isDownloaded,
+      onDownloadComplete: handleDownloadComplete
+    }),
+    [model.source, model.quantization, model.isDownloaded, handleDownloadComplete]
+  )
 
   const {
     state: dl,
@@ -216,7 +243,8 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isActiveModel
   const activateAndStart = useEngineStore(s => s.activateAndStart)
   const [isStartLaunching, setIsStartLaunching] = useState(false)
   const isEngineReady = engineRunStatusForRow === 'ready' || engineRunStatusForRow === 'processing'
-  const isEngineStarting = engineRunStatusForRow === 'starting' || engineRunStatusForRow === 'model_loading'
+  const isEngineStarting =
+    engineRunStatusForRow === 'starting' || engineRunStatusForRow === 'model_loading'
   // 运行态判定必须锚定「进程内实际运行的模型」（isActiveModel），而非「槽位已激活」（isCurrent）：
   // 语言槽与嵌入槽可同时为「已激活」，但进程同一时刻只运行一个模型，
   // 若用 isCurrent 判定会把另一槽位的模型也误标为「已启动」。
@@ -227,7 +255,13 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isActiveModel
   const handleActivateAndStart = async () => {
     try {
       setIsStartLaunching(true)
-      await activateAndStart(model.id, model.source, resolvedLocalPath, model.name, model.isEmbedding)
+      await activateAndStart(
+        model.id,
+        model.source,
+        resolvedLocalPath,
+        model.name,
+        model.isEmbedding
+      )
     } finally {
       setIsStartLaunching(false)
     }
@@ -278,7 +312,10 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isActiveModel
   if (remainingTime.kind === 'seconds')
     remainingText = t('剩余约 {value} 秒', { value: remainingTime.value ?? 0 })
   else if (remainingTime.kind === 'minutes')
-    remainingText = t('剩余约 {value} 分 {seconds} 秒', { value: remainingTime.value ?? 0, seconds: remainingTime.seconds ?? 0 })
+    remainingText = t('剩余约 {value} 分 {seconds} 秒', {
+      value: remainingTime.value ?? 0,
+      seconds: remainingTime.seconds ?? 0
+    })
   else if (remainingTime.kind === 'hours')
     remainingText = t('剩余约 {value} 小时', { value: remainingTime.value ?? 0 })
 
@@ -366,12 +403,13 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isActiveModel
   return (
     <div
       data-model-key={`${model.id}@${model.source}`}
-      className={`group relative transition-colors rounded-lg ${highlighted ? 'model-row-highlight' : ''} ${isEx
+      className={`group relative transition-colors rounded-lg ${highlighted ? 'model-row-highlight' : ''} ${
+        isEx
           ? 'opacity-50 grayscale-[0.5]'
           : isCurrent
             ? 'bg-primary/10 ring-1 ring-primary/50 shadow-xs hover:bg-primary/10'
             : 'hover:bg-muted/30'
-        }`}
+      }`}
     >
       {/* 引导安装提示横幅（Desktop 深链聚焦目标模型时呈现，Issue 0046 §3） */}
       {highlighted && (
@@ -424,12 +462,13 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isActiveModel
               <Badge
                 key={cap}
                 variant="outline"
-                className={`text-[10px] font-bold h-4.5 px-1.5 flex items-center gap-1 max-w-full ${isText
+                className={`text-[10px] font-bold h-4.5 px-1.5 flex items-center gap-1 max-w-full ${
+                  isText
                     ? 'border-emerald-500/30 text-emerald-700 dark:text-emerald-400 bg-emerald-500/10'
                     : isImage
                       ? 'border-purple-500/30 text-purple-700 dark:text-purple-400 bg-purple-500/10'
                       : 'border-border/70 text-muted-foreground bg-muted/40'
-                  }`}
+                }`}
               >
                 {isText ? (
                   <FileText className="h-2.5 w-2.5 shrink-0" />
@@ -469,8 +508,9 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isActiveModel
 
         {/* 列8：预估显存（右对齐，超标红色警示） */}
         <span
-          className={`font-mono text-xs font-bold text-right tabular-nums whitespace-nowrap ${isEx ? 'text-destructive' : 'text-blue-600 dark:text-blue-400'
-            }`}
+          className={`font-mono text-xs font-bold text-right tabular-nums whitespace-nowrap ${
+            isEx ? 'text-destructive' : 'text-blue-600 dark:text-blue-400'
+          }`}
           title={model.vramNeededGB ? t('预估显存') : undefined}
         >
           {model.vramNeededGB ? `~${model.vramNeededGB} GB` : '-'}
@@ -479,7 +519,10 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isActiveModel
 
       {/* 描述独占整行 */}
       {!isDownloadingOrPaused && model.description && (
-        <p className="px-4 pb-1.5 text-xs text-muted-foreground leading-relaxed break-words" title={model.description}>
+        <p
+          className="px-4 pb-1.5 text-xs text-muted-foreground leading-relaxed break-words"
+          title={model.description}
+        >
           {model.description}
         </p>
       )}
@@ -488,7 +531,10 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isActiveModel
       {isDownloaded && displayRelativePath && (
         <div className="flex items-start gap-1 px-4 pb-1.5 min-w-0">
           <HardDrive className="h-3 w-3 shrink-0 mt-0.5 text-muted-foreground/80" />
-          <span className="break-all select-all text-[11px] font-mono text-muted-foreground" title={displayRelativePath}>
+          <span
+            className="break-all select-all text-[11px] font-mono text-muted-foreground"
+            title={displayRelativePath}
+          >
             {displayRelativePath}
           </span>
         </div>
@@ -497,11 +543,20 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isActiveModel
       {/* 状态与操作按钮独占整行：状态在左，按钮全部显示完整文字标签 */}
       <div className="flex items-center justify-between gap-3 px-4 pb-3">
         {isDownloadingOrPaused ? (
-          <span className={`font-mono text-xs font-bold tabular-nums ${dl.isPaused ? 'text-amber-600 dark:text-amber-400' : 'text-primary'}`}>
-            {dl.isPaused ? t('已暂停') : dl.status === 'pending' ? t('准备下载中...') : `${t('正在下载')} ${dl.progress}%`}
+          <span
+            className={`font-mono text-xs font-bold tabular-nums ${dl.isPaused ? 'text-amber-600 dark:text-amber-400' : 'text-primary'}`}
+          >
+            {dl.isPaused
+              ? t('已暂停')
+              : dl.status === 'pending'
+                ? t('准备下载中...')
+                : `${t('正在下载')} ${dl.progress}%`}
           </span>
         ) : dl.status === 'error' ? (
-          <span className="text-xs font-semibold text-destructive truncate min-w-0" title={dl.error || undefined}>
+          <span
+            className="text-xs font-semibold text-destructive truncate min-w-0"
+            title={dl.error || undefined}
+          >
             {dl.error || t('下载失败')}
           </span>
         ) : isDownloaded ? (
@@ -517,8 +572,10 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isActiveModel
 
         <div className="flex items-center gap-1.5 shrink-0">
           {/* 高级操作收纳区：默认仅显示弱化的「高级」按钮，点击后原位展开 删除/移除/参数配置 */}
-          {hasAdvancedActions && !isDownloadingOrPaused && dl.status !== 'error' && (
-            isDeleteConfirm ? (
+          {hasAdvancedActions &&
+            !isDownloadingOrPaused &&
+            dl.status !== 'error' &&
+            (isDeleteConfirm ? (
               <>
                 {canRemoveCustom ? (
                   <Button
@@ -611,28 +668,47 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isActiveModel
                 <Settings2 className="h-3.5 w-3.5 mr-1 shrink-0" />
                 {t('高级')}
               </Button>
-            )
-          )}
+            ))}
           {isDownloadingOrPaused ? (
             <>
               {dl.isPaused ? (
-                <Button size="sm" variant="outline" className="h-7.5 text-xs px-3 rounded-lg font-bold" onClick={resumeDownload}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7.5 text-xs px-3 rounded-lg font-bold"
+                  onClick={resumeDownload}
+                >
                   <Play className="h-3 w-3 mr-1" />
                   {t('继续')}
                 </Button>
               ) : (
-                <Button size="sm" variant="outline" className="h-7.5 text-xs px-3 rounded-lg font-bold" onClick={pauseDownload}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7.5 text-xs px-3 rounded-lg font-bold"
+                  onClick={pauseDownload}
+                >
                   <Pause className="h-3 w-3 mr-1" />
                   {t('暂停')}
                 </Button>
               )}
-              <Button size="sm" variant="ghost" className="h-7.5 text-xs px-3 rounded-lg font-bold text-destructive hover:bg-destructive/10" onClick={cancelDownload}>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7.5 text-xs px-3 rounded-lg font-bold text-destructive hover:bg-destructive/10"
+                onClick={cancelDownload}
+              >
                 <X className="h-3 w-3 mr-1" />
                 {t('取消')}
               </Button>
             </>
           ) : dl.status === 'error' ? (
-            <Button size="sm" variant="outline" className="h-7.5 text-xs px-3 rounded-lg border-border font-bold" onClick={retryDownload}>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7.5 text-xs px-3 rounded-lg border-border font-bold"
+              onClick={retryDownload}
+            >
               <RotateCw className="h-3 w-3 mr-1" />
               {t('重试')}
             </Button>
@@ -645,13 +721,24 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isActiveModel
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => startDownload(model.id, { isMultiModal: true, mmproj: model.mmproj, dspark: 'none', draftId: 'none' })}
+                  onClick={() =>
+                    startDownload(model.id, {
+                      isMultiModal: true,
+                      mmproj: model.mmproj,
+                      dspark: 'none',
+                      draftId: 'none'
+                    })
+                  }
                   disabled={dl.isDownloading}
                   title={t('下载识图多模态投影模型，支持图片理解')}
                   className="h-7.5 text-xs px-3 rounded-lg border-purple-500/50 text-purple-600 dark:text-purple-400 hover:bg-purple-500/10 font-bold flex items-center gap-1 transition-all"
                 >
                   <Eye className="h-3 w-3 shrink-0" />
-                  <span>{model.mmprojSize ? `${t('下载识图模型')} (${model.mmprojSize})` : t('下载识图模型')}</span>
+                  <span>
+                    {model.mmprojSize
+                      ? `${t('下载识图模型')} (${model.mmprojSize})`
+                      : t('下载识图模型')}
+                  </span>
                 </Button>
               )}
 
@@ -660,18 +747,24 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isActiveModel
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => startDownload(model.id, {
-                    isMultiModal: false,
-                    mmproj: 'none',
-                    dspark: model.dspark ? model.dspark : 'none',
-                    draftId: model.draftId ? model.draftId : 'none'
-                  })}
+                  onClick={() =>
+                    startDownload(model.id, {
+                      isMultiModal: false,
+                      mmproj: 'none',
+                      dspark: model.dspark ? model.dspark : 'none',
+                      draftId: model.draftId ? model.draftId : 'none'
+                    })
+                  }
                   disabled={dl.isDownloading}
                   title={t('下载投机采样加速模型，大幅提升推理速度')}
                   className="h-7.5 text-xs px-3 rounded-lg border-emerald-500/50 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 font-bold flex items-center gap-1 transition-all"
                 >
                   <Zap className="h-3 w-3 shrink-0" />
-                  <span>{(model.dsparkSize || model.draftSize) ? `${t('下载加速模型')} (${model.dsparkSize || model.draftSize})` : t('下载加速模型')}</span>
+                  <span>
+                    {model.dsparkSize || model.draftSize
+                      ? `${t('下载加速模型')} (${model.dsparkSize || model.draftSize})`
+                      : t('下载加速模型')}
+                  </span>
                 </Button>
               )}
 
@@ -755,14 +848,16 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isActiveModel
                       onDownloadSubmit?.(model.name)
                       startDownload(model.id, {
                         isMultiModal: rec.selectedComponents.mmproj,
-                        mmproj: rec.selectedComponents.mmproj ? (model.mmproj || 'auto') : 'none',
-                        dspark: rec.selectedComponents.dspark ? (model.dspark || 'auto') : 'none',
-                        draftId: rec.selectedComponents.draft ? (model.draftId || 'auto') : 'none'
+                        mmproj: rec.selectedComponents.mmproj ? model.mmproj || 'auto' : 'none',
+                        dspark: rec.selectedComponents.dspark ? model.dspark || 'auto' : 'none',
+                        draftId: rec.selectedComponents.draft ? model.draftId || 'auto' : 'none'
                       })
                     }}
                   >
                     <Download className="h-3 w-3 mr-0.5 shrink-0" />
-                    <span>{t('下载推荐组合')} ({rec.recommendedTotalSizeStr})</span>
+                    <span>
+                      {t('下载推荐组合')} ({rec.recommendedTotalSizeStr})
+                    </span>
                   </Button>
 
                   <button
@@ -786,7 +881,9 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isActiveModel
                       setIsPopoverOpen(prev => !prev)
                     }}
                   >
-                    <ChevronDown className={`h-3.5 w-3.5 transition-transform ${isPopoverOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDown
+                      className={`h-3.5 w-3.5 transition-transform ${isPopoverOpen ? 'rotate-180' : ''}`}
+                    />
                   </button>
                 </div>
               ) : (
@@ -806,8 +903,6 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isActiveModel
                   <span>{model.size ? `${t('下载模型')} (${model.size})` : t('下载模型')}</span>
                 </Button>
               )}
-
-
             </>
           )}
         </div>
@@ -832,18 +927,33 @@ const ModelRowItem: React.FC<ModelRowProps> = ({ model, isCurrent, isActiveModel
       {isDownloadingOrPaused && (
         <div className="px-4 pb-3 space-y-1.5">
           <div className="flex items-center justify-between text-xs font-semibold">
-            <span className={`truncate max-w-[360px] ${dl.isPaused ? 'text-amber-600 dark:text-amber-400' : 'text-primary'}`} title={dl.currentFileName}>
+            <span
+              className={`truncate max-w-[360px] ${dl.isPaused ? 'text-amber-600 dark:text-amber-400' : 'text-primary'}`}
+              title={dl.currentFileName}
+            >
               {dl.totalFiles && dl.totalFiles > 1
                 ? `[${(dl.fileIndex || 0) + 1}/${dl.totalFiles}] ${dl.currentFileName || (dl.status === 'pending' ? t('正在连接源站...') : t('正在下载...'))}`
-                : dl.currentFileName || (dl.isPaused ? t('下载已暂停') : dl.status === 'pending' ? t('准备下载中...') : t('正在下载...'))}
+                : dl.currentFileName ||
+                  (dl.isPaused
+                    ? t('下载已暂停')
+                    : dl.status === 'pending'
+                      ? t('准备下载中...')
+                      : t('正在下载...'))}
             </span>
             <div className="flex items-center gap-2 font-mono text-[11px] text-muted-foreground">
               <span>
-                {formatFileSize(dl.receivedBytes)} / {formatFileSize(dl.totalBytes || model.fileSize)}
+                {formatFileSize(dl.receivedBytes)} /{' '}
+                {formatFileSize(dl.totalBytes || model.fileSize)}
               </span>
-              {!dl.isPaused && dl.speedBps > 0 && <span className="text-foreground font-bold">{formatSpeed(dl.speedBps)}</span>}
+              {!dl.isPaused && dl.speedBps > 0 && (
+                <span className="text-foreground font-bold">{formatSpeed(dl.speedBps)}</span>
+              )}
               {!dl.isPaused && remainingText && <span>{remainingText}</span>}
-              {dl.isPaused && <span className="text-amber-600 dark:text-amber-400 font-bold">{t('等待继续')}</span>}
+              {dl.isPaused && (
+                <span className="text-amber-600 dark:text-amber-400 font-bold">
+                  {t('等待继续')}
+                </span>
+              )}
             </div>
           </div>
 
@@ -868,16 +978,27 @@ interface ModelGroupSectionProps {
   children: React.ReactNode
 }
 
-const ModelGroupSection: React.FC<ModelGroupSectionProps> = ({ icon, iconClass, title, count, children, collapsible = false }) => {
+const ModelGroupSection: React.FC<ModelGroupSectionProps> = ({
+  icon,
+  iconClass,
+  title,
+  count,
+  children,
+  collapsible = false
+}) => {
   const [isOpen, setIsOpen] = useState(!collapsible)
 
   return (
     <section aria-label={title}>
       <div className="mb-2 flex items-center gap-2">
-        <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${iconClass}`}>
+        <span
+          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${iconClass}`}
+        >
           {icon}
         </span>
-        <h3 className="text-xs font-bold text-foreground/90 tracking-wide whitespace-nowrap">{title}</h3>
+        <h3 className="text-xs font-bold text-foreground/90 tracking-wide whitespace-nowrap">
+          {title}
+        </h3>
         <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-muted border border-border/60 text-muted-foreground tabular-nums">
           {count}
         </span>
@@ -890,7 +1011,9 @@ const ModelGroupSection: React.FC<ModelGroupSectionProps> = ({ icon, iconClass, 
             className="flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-bold text-muted-foreground/70 transition-colors hover:text-foreground"
           >
             {isOpen ? t('收起') : t('展开')}
-            <ChevronDown className={`h-3.5 w-3.5 shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+            <ChevronDown
+              className={`h-3.5 w-3.5 shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+            />
           </button>
         )}
       </div>
@@ -925,9 +1048,15 @@ export interface ModelListPanelProps {
   focusModel?: string
   /** 推荐模型源：命中时自动切换页签，保证可顺畅下载的源在前 */
   focusSource?: ModelSource
+  /** Tab 导航控制回调：供联动横幅直接跳转 */
+  onNavigateTab?: (tab: string) => void
 }
 
-export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focusSource }) => {
+export const ModelListPanel: React.FC<ModelListPanelProps> = ({
+  focusModel,
+  focusSource,
+  onNavigateTab
+}) => {
   // 细粒度订阅：绝不整取 store。引擎状态由 Footer 每 2.5s 静默轮询刷新，
   // 整取会让整个模型列表（含全部卡片与抽屉）跟随每次轮询全量重渲染，
   // 主线程被占满后参数抽屉里勾选项的点击响应会被明显拖慢。
@@ -937,7 +1066,6 @@ export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focu
   const activeLanguageModelKey = useEngineStore(s => s.activeLanguageModelKey)
   const activeEmbeddingModelKey = useEngineStore(s => s.activeEmbeddingModelKey)
   const switchModel = useEngineStore(s => s.switchModel)
-  const engineList = useEngineStore(s => s.engineList)
   const fetchEngineList = useEngineStore(s => s.fetchEngineList)
   const lastAddedSource = useEngineStore(s => s.lastAddedSource)
   // engineStatus 里只用到三个原始值，按原始值订阅（Object.is 比较）而非订阅整个状态对象
@@ -961,7 +1089,12 @@ export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focu
   const downloadingBySource = useMemo(() => {
     let ms = 0
     let hf = 0
-    let activeTaskDesc: { modelId: string; source: ModelSource; progress: number; speedBps: number } | null = null
+    let activeTaskDesc: {
+      modelId: string
+      source: ModelSource
+      progress: number
+      speedBps: number
+    } | null = null
     for (const t of Object.values(downloadTasks)) {
       if (t.isDownloading) {
         if (t.source === 'huggingface') {
@@ -982,32 +1115,21 @@ export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focu
     return { modelscope: ms, huggingface: hf, activeTask: activeTaskDesc }
   }, [downloadTasks])
 
-  // 引擎包联动下载（PRD-0043）：实例化引擎下载 hook，提交模型下载时若最佳引擎包未安装则自动同时下载
-  const { startDownload: startEngineDownload } = useEngineDownload()
+  // 引擎包联动下载（PRD-0043）：实例化引擎下载 hook 与全局自适应下载 action
+  const { state: engineDownloadState } = useEngineDownload()
+  const triggerEngineAutoDownloadIfNeeded = useEngineStore(s => s.triggerEngineAutoDownloadIfNeeded)
 
   /**
    * 模型下载提交前的联动处理（PRD-0043）：
    * - 硬件最佳适配引擎包（matchType === 'best'）未安装时，联动提交引擎包下载（用户无需感知选择）；
    * - 无论是否联动，均提示用户可在「模型」与「引擎」两个标签页查看各自下载进度。
    */
-  const handleModelDownloadSubmit = React.useCallback((modelName?: string) => {
-    const bestEngine = (engineList || []).find(e => e.matchType === 'best')
-    if (bestEngine && !bestEngine.isInstalled) {
-      // 联动提交引擎包下载：不 await，两个下载任务并行进行
-      startEngineDownload(bestEngine.backend).catch(() => {
-        // 引擎包下载失败不阻塞模型下载主流程，引擎 tab 内可重试
-      })
-      toast.info(
-        t('已为您自动匹配并开始下载最佳引擎包（{name}），可在「模型」与「引擎」标签页查看下载进度', { name: bestEngine.name })
-      )
-    } else {
-      if (modelName) {
-        toast.info(t('已开始下载模型「{name}」，可在「模型」标签页查看下载进度', { name: modelName }))
-      } else {
-        toast.info(t('已开始下载模型，可在「模型」标签页查看下载进度'))
-      }
-    }
-  }, [engineList, startEngineDownload])
+  const handleModelDownloadSubmit = React.useCallback(
+    (modelName?: string) => {
+      void triggerEngineAutoDownloadIfNeeded(modelName)
+    },
+    [triggerEngineAutoDownloadIfNeeded]
+  )
 
   // 气泡引导（PRD-0043）：模型列表已加载且本机无任何已下载模型时激活；
   // 会话内关闭后本次不再显示，下次进入仍会出现，直至完成首次模型下载提交（localStorage 永久标记）
@@ -1015,7 +1137,10 @@ export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focu
   const isModelsLoaded = models !== null && models !== undefined
   const hasAnyDownloadedModel = safeModelsLen(models) > 0
   const isGuideActive =
-    isModelsLoaded && !hasAnyDownloadedModel && !guideSessionDismissed && !hasCompletedModelGuideDownload()
+    isModelsLoaded &&
+    !hasAnyDownloadedModel &&
+    !guideSessionDismissed &&
+    !hasCompletedModelGuideDownload()
 
   // 自由添加成功后，自动切换到新模型所属来源页签，保证列表立即可见
   useEffect(() => {
@@ -1096,7 +1221,11 @@ export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focu
       if (m.custom) return false
       if (m.source !== activeSource) return false
       // 仅显示推荐打开时过滤非推荐；特例：若为当前外部深链聚焦的目标模型，即便未标 recommended 也必须展示以呈现安装引导
-      const isFocused = Boolean(focusModel && (m.id.toLowerCase().includes(focusModel.toLowerCase()) || m.name.toLowerCase().includes(focusModel.toLowerCase())))
+      const isFocused = Boolean(
+        focusModel &&
+        (m.id.toLowerCase().includes(focusModel.toLowerCase()) ||
+          m.name.toLowerCase().includes(focusModel.toLowerCase()))
+      )
       if (showRecommendedOnly && !m.recommended && !isFocused) return false
       return true
     })
@@ -1116,9 +1245,12 @@ export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focu
   }, [safeModels, activeSource, showRecommendedOnly, userVramGB, focusModel])
 
   const totalCount =
-    groupedModels.downloaded.language.length + groupedModels.downloaded.embedding.length +
-    groupedModels.notDownloaded.language.length + groupedModels.notDownloaded.embedding.length +
-    groupedModels.vramLimited.language.length + groupedModels.vramLimited.embedding.length
+    groupedModels.downloaded.language.length +
+    groupedModels.downloaded.embedding.length +
+    groupedModels.notDownloaded.language.length +
+    groupedModels.notDownloaded.embedding.length +
+    groupedModels.vramLimited.language.length +
+    groupedModels.vramLimited.embedding.length
 
   // 统计各来源官方注册模型数量（排除用户自定义模型）
   const counts = useMemo(() => {
@@ -1131,9 +1263,15 @@ export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focu
   const targetFocusModel = useMemo(() => {
     const kw = focusModel?.trim().toLowerCase()
     if (!kw) return null
-    return safeModels.find(
-      m => m && !m.custom && m.source === activeSource && (m.id.toLowerCase().includes(kw) || m.name.toLowerCase().includes(kw))
-    ) || null
+    return (
+      safeModels.find(
+        m =>
+          m &&
+          !m.custom &&
+          m.source === activeSource &&
+          (m.id.toLowerCase().includes(kw) || m.name.toLowerCase().includes(kw))
+      ) || null
+    )
   }, [focusModel, activeSource, safeModels])
 
   // 统一渲染单行模型条目
@@ -1143,9 +1281,14 @@ export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focu
     // - 嵌入向量模型：对比 activeEmbeddingModelKey，未配置时已下载的 WeMM 默认视为就绪
     // - 语言模型：对比 activeLanguageModelKey，未启动或未配置时降级使用 activeModelKey
     // 强制守卫：未下载模型绝不可标记为已激活状态（isCurrent 必须以 isDownloaded 为前提）
-    const isCurrent = Boolean(model.isDownloaded) && (model.isEmbedding
-      ? (activeEmbeddingModelKey === modelKey || (!activeEmbeddingModelKey && (activeModelKey === modelKey || model.id.toLowerCase().includes('wemm'))))
-      : (activeLanguageModelKey === modelKey || (!activeLanguageModelKey && activeModelKey === modelKey)))
+    const isCurrent =
+      Boolean(model.isDownloaded) &&
+      (model.isEmbedding
+        ? activeEmbeddingModelKey === modelKey ||
+          (!activeEmbeddingModelKey &&
+            (activeModelKey === modelKey || model.id.toLowerCase().includes('wemm')))
+        : activeLanguageModelKey === modelKey ||
+          (!activeLanguageModelKey && activeModelKey === modelKey))
     // 运行态（已启动/启动中）只归属于引擎进程实际加载的模型（activeModelKey 由 current_model 反查得到）；
     // 与槽位激活态解耦，避免「语言模型在跑，嵌入模型却显示已启动」以及由此导致的无法手动切换。
     // 兜底：反查 activeModelKey 可能因「current_model 为物理路径 + 条目 localPath 缺失」而失败，
@@ -1173,9 +1316,12 @@ export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focu
 
   return (
     <Card className="p-0 overflow-hidden border border-border/70 rounded-2xl bg-card shadow-xs">
-
       {/* Tabs 栏：复刻 Desktop 风格 + 右侧 Switch 仅显示推荐 */}
-      <Tabs value={activeSource} onValueChange={val => setActiveSource(val as ModelSource)} className="w-full">
+      <Tabs
+        value={activeSource}
+        onValueChange={val => setActiveSource(val as ModelSource)}
+        className="w-full"
+      >
         <div className="flex items-center justify-between border-b border-border/40 bg-muted/30 px-4">
           <TabsList className="flex justify-start h-12 bg-transparent p-0 border-b-0 rounded-none overflow-x-auto no-scrollbar gap-2">
             <TabsTrigger
@@ -1188,7 +1334,10 @@ export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focu
                 {counts.modelscope}
               </span>
               {downloadingBySource.modelscope > 0 && (
-                <span className="ml-1 flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" title={t('正在下载中')} />
+                <span
+                  className="ml-1 flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse"
+                  title={t('正在下载中')}
+                />
               )}
             </TabsTrigger>
 
@@ -1202,7 +1351,10 @@ export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focu
                 {counts.huggingface}
               </span>
               {downloadingBySource.huggingface > 0 && (
-                <span className="ml-1 flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" title={t('正在下载中')} />
+                <span
+                  className="ml-1 flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse"
+                  title={t('正在下载中')}
+                />
               )}
             </TabsTrigger>
           </TabsList>
@@ -1225,36 +1377,80 @@ export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focu
 
         {/* 列表内容区：表头 + 单行表格布局，按 已下载 / 待下载 / 显存不足 三组显示 */}
         <TabsContent value={activeSource} className="p-5 focus-visible:ring-0 m-0">
-          {/* 跨源下载进行中提示条：当用户切到另一源时，明确告知后台正在下载并允许一键切回 */}
-          {downloadingBySource.activeTask && downloadingBySource.activeTask.source !== activeSource && (
-            <div className="mb-4 flex items-center justify-between gap-3 p-3 rounded-xl border border-primary/30 bg-primary/10 text-primary shadow-2xs animate-in fade-in duration-200">
-              <div className="flex items-center gap-2 text-xs font-semibold">
-                <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />
-                <span>
-                  {t('正在从 {source} 下载模型（进度 {progress}%，速度 {speed}），切回即可查看实时卡片。', {
-                    source: downloadingBySource.activeTask.source === 'modelscope' ? 'ModelScope' : 'HuggingFace',
-                    progress: downloadingBySource.activeTask.progress,
-                    speed: formatSpeed(downloadingBySource.activeTask.speedBps)
+          {/* 引擎联动下载进行中提示条：模型页清晰提示引擎正在后台并行下载 */}
+          {engineDownloadState.isDownloading && (
+            <div className="mb-4 flex items-center justify-between gap-3 p-3 rounded-xl border border-primary/30 bg-primary/5 text-primary shadow-2xs animate-in fade-in duration-200">
+              <div className="flex items-center gap-2.5 text-xs font-semibold min-w-0">
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-primary shrink-0" />
+                <span className="truncate">
+                  {t('正在同步下载并部署硬件适配 AI 引擎（{backend}）：{progress}%{speed}', {
+                    backend: engineDownloadState.currentBackend || 'llama.cpp',
+                    progress: engineDownloadState.progress,
+                    speed:
+                      engineDownloadState.speedBps > 0
+                        ? ` · ${formatSpeed(engineDownloadState.speedBps)}`
+                        : ''
                   })}
                 </span>
               </div>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 text-xs px-2.5 rounded-lg border-primary/40 bg-background/80 hover:bg-background font-bold text-primary shrink-0"
-                onClick={() => setActiveSource(downloadingBySource.activeTask!.source)}
-              >
-                {t('切回查看')}
-              </Button>
+              <div className="flex items-center gap-2 shrink-0">
+                <Progress
+                  value={engineDownloadState.progress}
+                  className="h-1.5 w-20 hidden sm:block"
+                />
+                {onNavigateTab && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs px-2.5 rounded-lg border-primary/40 bg-background/80 hover:bg-background font-bold text-primary shrink-0"
+                    onClick={() => onNavigateTab('engine')}
+                  >
+                    {t('查看引擎进度')}
+                  </Button>
+                )}
+              </div>
             </div>
           )}
+
+          {/* 跨源下载进行中提示条：当用户切到另一源时，明确告知后台正在下载并允许一键切回 */}
+          {downloadingBySource.activeTask &&
+            downloadingBySource.activeTask.source !== activeSource && (
+              <div className="mb-4 flex items-center justify-between gap-3 p-3 rounded-xl border border-primary/30 bg-primary/10 text-primary shadow-2xs animate-in fade-in duration-200">
+                <div className="flex items-center gap-2 text-xs font-semibold">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />
+                  <span>
+                    {t(
+                      '正在从 {source} 下载模型（进度 {progress}%，速度 {speed}），切回即可查看实时卡片。',
+                      {
+                        source:
+                          downloadingBySource.activeTask.source === 'modelscope'
+                            ? 'ModelScope'
+                            : 'HuggingFace',
+                        progress: downloadingBySource.activeTask.progress,
+                        speed: formatSpeed(downloadingBySource.activeTask.speedBps)
+                      }
+                    )}
+                  </span>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs px-2.5 rounded-lg border-primary/40 bg-background/80 hover:bg-background font-bold text-primary shrink-0"
+                  onClick={() => setActiveSource(downloadingBySource.activeTask!.source)}
+                >
+                  {t('切回查看')}
+                </Button>
+              </div>
+            )}
           {/* 外部深链聚焦且目标模型尚未下载时，在模型上方显示明确安装引导提示（Issue 0046 §3） */}
           {targetFocusModel && !targetFocusModel.isDownloaded && (
             <div className="mb-4 flex items-center justify-between gap-3 p-3.5 rounded-xl border border-primary/30 bg-primary/10 text-primary shadow-2xs animate-in fade-in slide-in-from-top-2 duration-300">
               <div className="flex items-center gap-2.5 min-w-0">
                 <Sparkles className="w-4 h-4 text-primary shrink-0" />
                 <span className="text-xs font-semibold leading-relaxed">
-                  {t('主程序已开启高维修正与视频检索，请先下载安装下方高亮的 {name} 嵌入模型。', { name: targetFocusModel.name })}
+                  {t('主程序已开启高维修正与视频检索，请先下载安装下方高亮的 {name} 嵌入模型。', {
+                    name: targetFocusModel.name
+                  })}
                 </span>
               </div>
             </div>
@@ -1285,7 +1481,9 @@ export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focu
                         {t('语言模型')}
                       </h2>
                       <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
-                        {t('用于文件内容理解、标签生成与智能描述。激活后引擎将加载该模型进行 AI 分析。')}
+                        {t(
+                          '用于文件内容理解、标签生成与智能描述。激活后引擎将加载该模型进行 AI 分析。'
+                        )}
                       </p>
                     </div>
                   </div>
@@ -1349,7 +1547,9 @@ export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focu
                         {t('Embedding 嵌入模型')}
                       </h2>
                       <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
-                        {t('用于高维向量修正与视频内容语义检索。安装后可大幅提升标签精准度，并支持自然语言搜索视频内容。不参与语言模型的激活与推理流程，独立静默运行。')}
+                        {t(
+                          '用于高维向量修正与视频内容语义检索。安装后可大幅提升标签精准度，并支持自然语言搜索视频内容。不参与语言模型的激活与推理流程，独立静默运行。'
+                        )}
                       </p>
                     </div>
                   </div>
@@ -1407,7 +1607,7 @@ export const ModelListPanel: React.FC<ModelListPanelProps> = ({ focusModel, focu
           drawerModel
             ? (activeModelKey === `${drawerModel.id}@${drawerModel.source}` ||
                 matchEngineModel(drawerModel, currentModelPath)) &&
-            (engineRunStatus === 'ready' || engineRunStatus === 'processing')
+              (engineRunStatus === 'ready' || engineRunStatus === 'processing')
             : false
         }
         onClose={handleCloseDrawer}

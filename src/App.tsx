@@ -128,7 +128,8 @@ export const App: React.FC = () => {
         fetchEngineList(),
         fetchModels(),
         runRegionDetection(),
-        useModelDownloadStore.getState().syncActiveTasks()
+        useModelDownloadStore.getState().syncActiveTasks(),
+        useEngineStore.getState().syncActiveEngineTasks()
       ])
     }
 
@@ -140,7 +141,8 @@ export const App: React.FC = () => {
   // 且未完成过首次下载引导 → 自动切换到「模型管理」tab。仅此一次自动切换：
   // 用户随后手动切到其它 tab 时不拽回，由下方常驻引导横幅承接继续引导。
   const models = useEngineStore(s => s.models)
-  const isFirstUseModelsEmpty = Array.isArray(models) && models.length > 0 && models.every(m => !m.isDownloaded)
+  const isFirstUseModelsEmpty =
+    Array.isArray(models) && models.length > 0 && models.every(m => !m.isDownloaded)
   const hasAutoSwitchedRef = useRef(false)
   useEffect(() => {
     if (hasAutoSwitchedRef.current) return
@@ -155,7 +157,11 @@ export const App: React.FC = () => {
   // 点击直达模型管理，会话内可关闭（不持久化，下次启动若仍未下载会再出现）
   const [guideBannerDismissed, setGuideBannerDismissed] = useState(false)
   const showFirstUseBanner =
-    Array.isArray(models) && models.length > 0 && isFirstUseModelsEmpty && !guideBannerDismissed && !hasCompletedModelGuideDownload()
+    Array.isArray(models) &&
+    models.length > 0 &&
+    isFirstUseModelsEmpty &&
+    !guideBannerDismissed &&
+    !hasCompletedModelGuideDownload()
 
   // Desktop 经 /api/engine/open-ui 触发的导航意图：error=错误分析侧边栏，logs=运行日志，models=模型管理
   useEffect(() => {
@@ -171,9 +177,7 @@ export const App: React.FC = () => {
         setActiveMainTab('models')
         // Issue 0046 §3：携带目标模型与推荐源时，交由模型列表页滚动聚焦 + 呼吸高亮
         setModelFocusRequest(
-          detail?.focusModel
-            ? { focusModel: detail.focusModel, source: detail.source }
-            : null
+          detail?.focusModel ? { focusModel: detail.focusModel, source: detail.source } : null
         )
       }
     }
@@ -201,19 +205,35 @@ export const App: React.FC = () => {
   const isMock = isMockMode()
 
   return (
-    <div dir={dir} className="h-screen max-h-screen w-screen overflow-hidden bg-background text-foreground flex flex-col font-sans transition-colors duration-200">
+    <div
+      dir={dir}
+      className="h-screen max-h-screen w-screen overflow-hidden bg-background text-foreground flex flex-col font-sans transition-colors duration-200"
+    >
       {/* 顶部常驻导航与状态条：纯固定 Flex 项，绝不随任何内容滚动 */}
       <header className="shrink-0 z-50 border-b border-border/80 bg-background/95 backdrop-blur-md px-5 py-3 flex flex-wrap lg:flex-nowrap items-center justify-between gap-3 shadow-xs">
         <div className="flex items-center gap-3 shrink-0 min-w-0">
-          <img src="/icon.ico" alt={t('萤核AI引擎')} className="h-8.5 w-8.5 shrink-0 rounded-xl object-cover shadow-xs" draggable={false} />
+          <img
+            src="/icon.ico"
+            alt={t('萤核AI引擎')}
+            className="h-8.5 w-8.5 shrink-0 rounded-xl object-cover shadow-xs"
+            draggable={false}
+          />
           <div className="flex flex-col min-w-0">
             <div className="flex items-center gap-2 flex-nowrap">
-              <span className="text-2xl font-bold tracking-tight text-foreground whitespace-nowrap">{t('萤核AI引擎')}</span>
-              <Badge variant="outline" className="text-[10px] h-5 px-1.5 mt-2 ml-2 font-bold font-mono whitespace-nowrap shrink-0 rounded-md border-0 text-primary bg-primary/10">
+              <span className="text-2xl font-bold tracking-tight text-foreground whitespace-nowrap">
+                {t('萤核AI引擎')}
+              </span>
+              <Badge
+                variant="outline"
+                className="text-[10px] h-5 px-1.5 mt-2 ml-2 font-bold font-mono whitespace-nowrap shrink-0 rounded-md border-0 text-primary bg-primary/10"
+              >
                 {t('独立高可用端侧 AI 推理引擎与模型管理平台')}
               </Badge>
               {isMock && (
-                <Badge variant="secondary" className="text-[10px] h-5 px-1.5 py-0 font-bold whitespace-nowrap shrink-0 rounded-md border border-border/60">
+                <Badge
+                  variant="secondary"
+                  className="text-[10px] h-5 px-1.5 py-0 font-bold whitespace-nowrap shrink-0 rounded-md border border-border/60"
+                >
                   {t('沙盒 Mock')}
                 </Badge>
               )}
@@ -263,11 +283,17 @@ export const App: React.FC = () => {
                 className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-bold shrink-0 ${chipCls}`}
                 title={engineStatusLastError || undefined}
               >
-                <span className={`relative flex h-2 w-2 shrink-0 ${isOnline || isError || !isStopped ? '' : 'opacity-100'}`}>
+                <span
+                  className={`relative flex h-2 w-2 shrink-0 ${isOnline || isError || !isStopped ? '' : 'opacity-100'}`}
+                >
                   {isOnline || isError || !isStopped ? (
                     <>
-                      <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${dotCls}`}></span>
-                      <span className={`relative inline-flex rounded-full h-2 w-2 ${dotCls.replace(' opacity-75', '')}`}></span>
+                      <span
+                        className={`animate-ping absolute inline-flex h-full w-full rounded-full ${dotCls}`}
+                      ></span>
+                      <span
+                        className={`relative inline-flex rounded-full h-2 w-2 ${dotCls.replace(' opacity-75', '')}`}
+                      ></span>
                     </>
                   ) : (
                     <span className={`relative inline-flex rounded-full h-2 w-2 ${dotCls}`}></span>
@@ -308,11 +334,7 @@ export const App: React.FC = () => {
       {/* 吸顶 Tab 栏：自然作为第 2 行固定 Flex 项，纹丝不动绝无滚动位移 */}
       <div className="shrink-0 z-40 bg-background/95 backdrop-blur-md border-b border-border/70 px-6 shadow-2xs">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <Tabs
-            value={activeMainTab}
-            onValueChange={setActiveMainTab}
-            className="w-full"
-          >
+          <Tabs value={activeMainTab} onValueChange={setActiveMainTab} className="w-full">
             <TabsList className="flex justify-start h-12 bg-transparent p-0 rounded-none gap-2 shadow-none border-b-0 overflow-x-auto no-scrollbar">
               {/* Tab 1: 仪表板 Dashboard */}
               <TabsTrigger
@@ -331,7 +353,10 @@ export const App: React.FC = () => {
                 <Boxes className="h-4 w-4 text-inherit" />
                 <span>{t('模型管理')}</span>
                 {activeDownloadsCount > 0 && (
-                  <Badge variant="default" className="text-[10px] h-4.5 px-1.5 font-bold animate-pulse bg-primary text-primary-foreground">
+                  <Badge
+                    variant="default"
+                    className="text-[10px] h-4.5 px-1.5 font-bold animate-pulse bg-primary text-primary-foreground"
+                  >
                     {t('下载中')} ({activeDownloadsCount})
                   </Badge>
                 )}
@@ -424,7 +449,7 @@ export const App: React.FC = () => {
         {/* Tab 1: 仪表盘 Dashboard */}
         {activeMainTab === 'dashboard' && (
           <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in duration-200">
-            <DashboardView />
+            <DashboardView onNavigateTab={setActiveMainTab} />
           </div>
         )}
 
@@ -436,6 +461,7 @@ export const App: React.FC = () => {
               <ModelListPanel
                 focusModel={modelFocusRequest?.focusModel}
                 focusSource={modelFocusRequest?.source}
+                onNavigateTab={setActiveMainTab}
               />
             </section>
 
@@ -494,10 +520,7 @@ export const App: React.FC = () => {
       </main>
 
       {/* 底部信息栏：全局常驻展示模型状态、引擎警告与思考模式开关 */}
-      <Footer
-        onNavigateTab={setActiveMainTab}
-        onOpenErrorPanel={() => setErrorPanelOpen(true)}
-      />
+      <Footer onNavigateTab={setActiveMainTab} onOpenErrorPanel={() => setErrorPanelOpen(true)} />
 
       {/* 错误分析侧边栏：llama.cpp/引擎错误解读与解决建议（移植 desktop 分析能力） */}
       <ErrorAnalysisSidebar

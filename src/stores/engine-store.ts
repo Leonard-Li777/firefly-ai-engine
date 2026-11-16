@@ -4,7 +4,8 @@ import {
   EngineItem,
   ModelItem,
   RuntimeParams,
-  ModelParamsResponse
+  ModelParamsResponse,
+  DownloadProgressEvent
 } from '../api/types'
 import { engineApiClient } from '../api/provider'
 import { RegionDetectionResult, regionDetector } from '../lib/region-detector'
@@ -48,10 +49,23 @@ function isRuntimeParamsEqual(a?: RuntimeParams | null, b?: RuntimeParams | null
   return true
 }
 
+export interface EngineDownloadState {
+  isDownloading: boolean
+  progress: number
+  speedBps: number
+  receivedBytes: number
+  totalBytes: number
+  status: 'idle' | 'downloading' | 'extracting' | 'completed' | 'error'
+  error?: string
+  currentBackend?: string
+  sourceName?: string
+}
+
 interface EngineStoreState {
   // 状态数据
   engineStatus: EngineStatusResponse | null
   engineList: EngineItem[]
+  engineDownloadState: EngineDownloadState
   models: ModelItem[]
   modelsDir: string
   activeModelKey: string | null
@@ -70,10 +84,19 @@ interface EngineStoreState {
   // 动作
   fetchEngineStatus: (silent?: boolean) => Promise<void>
   fetchEngineList: () => Promise<void>
+  startEngineDownload: (backend?: string) => Promise<boolean>
+  triggerEngineAutoDownloadIfNeeded: (modelName?: string) => Promise<boolean>
+  syncActiveEngineTasks: () => Promise<void>
   fetchModels: (source?: string) => Promise<void>
   switchEngine: (backend: string) => Promise<boolean>
   deleteEngine: (backend: string) => Promise<boolean>
-  switchModel: (modelId: string, source?: string, localPath?: string, modelName?: string, isEmbedding?: boolean) => Promise<boolean>
+  switchModel: (
+    modelId: string,
+    source?: string,
+    localPath?: string,
+    modelName?: string,
+    isEmbedding?: boolean
+  ) => Promise<boolean>
   updateStoragePath: (newPath: string) => Promise<boolean>
   rescanModels: () => Promise<void>
   updateRuntimeParams: (params: Partial<RuntimeParams>) => Promise<boolean>
@@ -82,7 +105,13 @@ interface EngineStoreState {
   addCustomModel: (url: string) => Promise<{ ok: boolean; error?: string }>
   deleteModel: (modelId: string, localPath?: string) => Promise<boolean>
   removeCustomModel: (modelId: string) => Promise<boolean>
-  activateAndStart: (modelId: string, source?: string, localPath?: string, modelName?: string, isEmbedding?: boolean) => Promise<boolean>
+  activateAndStart: (
+    modelId: string,
+    source?: string,
+    localPath?: string,
+    modelName?: string,
+    isEmbedding?: boolean
+  ) => Promise<boolean>
   runRegionDetection: (force?: boolean) => Promise<void>
   resetDowngrade: () => Promise<boolean>
   startEngine: (options?: { mode?: 'language' | 'embedding'; modelId?: string }) => Promise<boolean>
@@ -94,6 +123,14 @@ interface EngineStoreState {
 export const useEngineStore = create<EngineStoreState>((set, get) => ({
   engineStatus: null,
   engineList: [],
+  engineDownloadState: {
+    isDownloading: false,
+    progress: 0,
+    speedBps: 0,
+    receivedBytes: 0,
+    totalBytes: 0,
+    status: 'idle'
+  },
   models: [],
   modelsDir: resolveToAbsolutePath('build/extraResources/models'),
   activeModelKey: null,
@@ -160,7 +197,13 @@ export const useEngineStore = create<EngineStoreState>((set, get) => ({
       const currentModels = get().models
       if (status.active_language_model) {
         const langPref = status.active_language_model
-        const matchedLang = currentModels.find(m => !m.isEmbedding && (m.id === langPref || `${m.id}@${m.source}` === langPref || matchCurrentModel(m, langPref)))
+        const matchedLang = currentModels.find(
+          m =>
+            !m.isEmbedding &&
+            (m.id === langPref ||
+              `${m.id}@${m.source}` === langPref ||
+              matchCurrentModel(m, langPref))
+        )
         const langKey = matchedLang ? `${matchedLang.id}@${matchedLang.source}` : langPref
         if (get().activeLanguageModelKey !== langKey) {
           set({ activeLanguageModelKey: langKey })
@@ -168,7 +211,11 @@ export const useEngineStore = create<EngineStoreState>((set, get) => ({
       }
       if (status.active_embedding_model) {
         const embPref = status.active_embedding_model
-        const matchedEmb = currentModels.find(m => m.isEmbedding && (m.id === embPref || `${m.id}@${m.source}` === embPref || matchCurrentModel(m, embPref)))
+        const matchedEmb = currentModels.find(
+          m =>
+            m.isEmbedding &&
+            (m.id === embPref || `${m.id}@${m.source}` === embPref || matchCurrentModel(m, embPref))
+        )
         const embKey = matchedEmb ? `${matchedEmb.id}@${matchedEmb.source}` : embPref
         if (get().activeEmbeddingModelKey !== embKey) {
           set({ activeEmbeddingModelKey: embKey })
@@ -185,6 +232,159 @@ export const useEngineStore = create<EngineStoreState>((set, get) => ({
       set({ engineList: list })
     } catch (e: any) {
       console.error('获取引擎列表失败:', e)
+    }
+  },
+
+  startEngineDownload: async (backend?: string) => {
+    const effectiveBackend = backend || 'auto'
+    if (get().engineDownloadState.isDownloading) {
+      return false
+    }
+
+    set({
+      engineDownloadState: {
+        isDownloading: true,
+        progress: 0,
+        speedBps: 0,
+        receivedBytes: 0,
+        totalBytes: 0,
+        status: 'downloading',
+        currentBackend: effectiveBackend,
+        error: undefined
+      }
+    })
+
+    try {
+      const res = await engineApiClient.downloadEngine(
+        effectiveBackend,
+        (progress: DownloadProgressEvent) => {
+          const isDone = progress.status === 'completed' || progress.percent >= 100
+          set({
+            engineDownloadState: {
+              isDownloading:
+                !isDone && progress.status !== 'error' && progress.status !== 'canceled',
+              progress: isDone ? 100 : progress.percent,
+              receivedBytes: progress.receivedBytes,
+              totalBytes: progress.totalBytes,
+              speedBps: progress.speedBps,
+              sourceName: progress.sourceName,
+              status: isDone
+                ? 'completed'
+                : progress.percent >= 100
+                  ? 'extracting'
+                  : progress.status === 'error'
+                    ? 'error'
+                    : 'downloading',
+              currentBackend: effectiveBackend,
+              error: progress.error
+            }
+          })
+        }
+      )
+
+      if (res.success) {
+        set({
+          engineDownloadState: {
+            isDownloading: false,
+            progress: 100,
+            speedBps: 0,
+            receivedBytes: 0,
+            totalBytes: 0,
+            status: 'completed',
+            currentBackend: effectiveBackend
+          }
+        })
+        await get().fetchEngineList()
+        await get().fetchEngineStatus(true)
+        toast.success(t('引擎更新并部署成功'))
+        return true
+      } else {
+        throw new Error(t('下载未正常完成'))
+      }
+    } catch (err: any) {
+      const errMsg = err?.message || t('引擎下载失败')
+      set({
+        engineDownloadState: {
+          isDownloading: false,
+          progress: 0,
+          speedBps: 0,
+          receivedBytes: 0,
+          totalBytes: 0,
+          status: 'error',
+          error: errMsg,
+          currentBackend: effectiveBackend
+        }
+      })
+      toast.error(errMsg)
+      return false
+    }
+  },
+
+  triggerEngineAutoDownloadIfNeeded: async (modelName?: string) => {
+    let currentEngineList = get().engineList
+    if (!currentEngineList || currentEngineList.length === 0) {
+      await get().fetchEngineList()
+      currentEngineList = get().engineList
+    }
+
+    const hasInstalledEngine = (currentEngineList || []).some(e => e.isInstalled)
+    const isDownloadingEngine = get().engineDownloadState.isDownloading
+
+    if (!hasInstalledEngine && !isDownloadingEngine) {
+      const bestEngine =
+        (currentEngineList || []).find(e => e.matchType === 'best') ||
+        (currentEngineList || []).find(e => e.isRecommended) ||
+        (currentEngineList || [])[0]
+      const targetBackend = bestEngine?.backend || 'auto'
+      const targetName = bestEngine?.name || t('硬件最佳适配引擎')
+
+      void get().startEngineDownload(targetBackend)
+      toast.info(
+        t(
+          '已为您自动匹配并开始下载最佳引擎包（{name}），可在「模型」与「引擎」标签页查看下载进度',
+          { name: targetName }
+        )
+      )
+      return true
+    } else {
+      if (modelName) {
+        toast.info(
+          t('已开始下载模型「{name}」，可在「模型」标签页查看下载进度', { name: modelName })
+        )
+      } else {
+        toast.info(t('已开始下载模型，可在「模型」标签页查看下载进度'))
+      }
+      return false
+    }
+  },
+
+  syncActiveEngineTasks: async () => {
+    try {
+      if (get().engineDownloadState.isDownloading) return
+      const backendTasks = await engineApiClient.getDownloadTasks()
+      if (!Array.isArray(backendTasks)) return
+      const engineTask = backendTasks.find(
+        t =>
+          t.modelId?.startsWith('engine-') && (t.status === 'downloading' || t.status === 'pending')
+      )
+      if (engineTask && engineTask.taskId) {
+        const backend = engineTask.modelId.replace('engine-', '')
+        set({
+          engineDownloadState: {
+            isDownloading: true,
+            progress: engineTask.percent || 0,
+            receivedBytes: engineTask.receivedBytes || 0,
+            totalBytes: engineTask.totalBytes || 0,
+            speedBps: engineTask.speedBps || 0,
+            status: 'downloading',
+            currentBackend: backend,
+            sourceName: engineTask.sourceName,
+            error: engineTask.error
+          }
+        })
+      }
+    } catch (e) {
+      console.warn('同步引擎下载任务失败:', e)
     }
   },
 
@@ -206,7 +406,12 @@ export const useEngineStore = create<EngineStoreState>((set, get) => ({
 
       let targetLangKey = get().activeLanguageModelKey
       if (engineStatus?.active_language_model) {
-        const matched = langModels.find(m => m.id === engineStatus.active_language_model || `${m.id}@${m.source}` === engineStatus.active_language_model || matchCurrentModel(m, engineStatus.active_language_model!))
+        const matched = langModels.find(
+          m =>
+            m.id === engineStatus.active_language_model ||
+            `${m.id}@${m.source}` === engineStatus.active_language_model ||
+            matchCurrentModel(m, engineStatus.active_language_model!)
+        )
         if (matched && matched.isDownloaded) {
           targetLangKey = `${matched.id}@${matched.source}`
         } else {
@@ -221,7 +426,12 @@ export const useEngineStore = create<EngineStoreState>((set, get) => ({
 
       let targetEmbKey = get().activeEmbeddingModelKey
       if (engineStatus?.active_embedding_model) {
-        const matched = embModels.find(m => m.id === engineStatus.active_embedding_model || `${m.id}@${m.source}` === engineStatus.active_embedding_model || matchCurrentModel(m, engineStatus.active_embedding_model!))
+        const matched = embModels.find(
+          m =>
+            m.id === engineStatus.active_embedding_model ||
+            `${m.id}@${m.source}` === engineStatus.active_embedding_model ||
+            matchCurrentModel(m, engineStatus.active_embedding_model!)
+        )
         if (matched && matched.isDownloaded) {
           targetEmbKey = `${matched.id}@${matched.source}`
         } else {
@@ -241,10 +451,12 @@ export const useEngineStore = create<EngineStoreState>((set, get) => ({
       let targetActiveKey: string | null = null
       if (engineStatus?.current_model) {
         const activeItem = models.find(m => matchCurrentModel(m, engineStatus.current_model!))
-        targetActiveKey = activeItem && activeItem.isDownloaded
-          ? `${activeItem.id}@${activeItem.source}`
-          : null
-      } else if (get().activeModelKey && models.some(m => `${m.id}@${m.source}` === get().activeModelKey)) {
+        targetActiveKey =
+          activeItem && activeItem.isDownloaded ? `${activeItem.id}@${activeItem.source}` : null
+      } else if (
+        get().activeModelKey &&
+        models.some(m => `${m.id}@${m.source}` === get().activeModelKey)
+      ) {
         // 状态快照暂时缺失（如刚启动尚未拿到 status）时保留已确认的运行态，但不新造
         targetActiveKey = get().activeModelKey
       }
@@ -259,20 +471,39 @@ export const useEngineStore = create<EngineStoreState>((set, get) => ({
     }
   },
 
-  switchModel: async (modelId: string, source?: string, localPath?: string, modelName?: string, isEmbedding?: boolean) => {
+  switchModel: async (
+    modelId: string,
+    source?: string,
+    localPath?: string,
+    modelName?: string,
+    isEmbedding?: boolean
+  ) => {
     try {
       set({ loading: true })
       const models = get().models
-      const matched = models.find(
-        m => m.id === modelId && (!source || m.source === source)
-      )
+      const matched = models.find(m => m.id === modelId && (!source || m.source === source))
       const effectiveLocalPath = localPath || matched?.localPath
       const effectiveModelName = modelName || matched?.name
-      const effectiveIsEmbedding = isEmbedding !== undefined ? isEmbedding : (matched?.isEmbedding || modelId.toLowerCase().includes('wemm'))
-      const res = await engineApiClient.switchModel(modelId, source, effectiveLocalPath, effectiveModelName, effectiveIsEmbedding)
+      const effectiveIsEmbedding =
+        isEmbedding !== undefined
+          ? isEmbedding
+          : matched?.isEmbedding || modelId.toLowerCase().includes('wemm')
+      const res = await engineApiClient.switchModel(
+        modelId,
+        source,
+        effectiveLocalPath,
+        effectiveModelName,
+        effectiveIsEmbedding
+      )
       if (res.success) {
-        captureEvent('切换模型', { modelId, source: source || 'modelscope', isEmbedding: effectiveIsEmbedding })
-        const key = matched ? `${matched.id}@${matched.source}` : `${modelId}@${source || 'modelscope'}`
+        captureEvent('切换模型', {
+          modelId,
+          source: source || 'modelscope',
+          isEmbedding: effectiveIsEmbedding
+        })
+        const key = matched
+          ? `${matched.id}@${matched.source}`
+          : `${modelId}@${source || 'modelscope'}`
         // 切换只更新「配置槽位」（用户偏好），绝不宣称模型已进入运行态：
         // - 语言模型与嵌入模型各自独立持有激活槽位，二者可同时处于「已激活」；
         // - 但引擎进程同一时刻只运行一个模型，「已启动」由 /api/engine/status 的
@@ -457,10 +688,16 @@ export const useEngineStore = create<EngineStoreState>((set, get) => ({
         if (get().activeModelKey === removedKey || get().activeModelKey?.startsWith(modelId)) {
           set({ activeModelKey: null })
         }
-        if (get().activeLanguageModelKey === removedKey || get().activeLanguageModelKey?.startsWith(modelId)) {
+        if (
+          get().activeLanguageModelKey === removedKey ||
+          get().activeLanguageModelKey?.startsWith(modelId)
+        ) {
           set({ activeLanguageModelKey: null })
         }
-        if (get().activeEmbeddingModelKey === removedKey || get().activeEmbeddingModelKey?.startsWith(modelId)) {
+        if (
+          get().activeEmbeddingModelKey === removedKey ||
+          get().activeEmbeddingModelKey?.startsWith(modelId)
+        ) {
           set({ activeEmbeddingModelKey: null })
         }
         // 删除后先刷新引擎状态（可能因正在运行被停止），再刷新模型列表保持 UI 与磁盘一致
@@ -486,10 +723,16 @@ export const useEngineStore = create<EngineStoreState>((set, get) => ({
         if (get().activeModelKey === removedKey || get().activeModelKey?.startsWith(modelId)) {
           set({ activeModelKey: null })
         }
-        if (get().activeLanguageModelKey === removedKey || get().activeLanguageModelKey?.startsWith(modelId)) {
+        if (
+          get().activeLanguageModelKey === removedKey ||
+          get().activeLanguageModelKey?.startsWith(modelId)
+        ) {
           set({ activeLanguageModelKey: null })
         }
-        if (get().activeEmbeddingModelKey === removedKey || get().activeEmbeddingModelKey?.startsWith(modelId)) {
+        if (
+          get().activeEmbeddingModelKey === removedKey ||
+          get().activeEmbeddingModelKey?.startsWith(modelId)
+        ) {
           set({ activeEmbeddingModelKey: null })
         }
         await get().fetchEngineStatus(true)
@@ -504,15 +747,27 @@ export const useEngineStore = create<EngineStoreState>((set, get) => ({
     }
   },
 
-  activateAndStart: async (modelId: string, source?: string, localPath?: string, modelName?: string, isEmbedding?: boolean) => {
+  activateAndStart: async (
+    modelId: string,
+    source?: string,
+    localPath?: string,
+    modelName?: string,
+    isEmbedding?: boolean
+  ) => {
     // 先切换/激活模型，再启动引擎服务
     const switched = await get().switchModel(modelId, source, localPath, modelName, isEmbedding)
     if (!switched) return false
     const models = get().models
     const matched = models.find(m => m.id === modelId && (!source || m.source === source))
     const effectivePath = localPath || matched?.localPath
-    const effectiveIsEmbedding = isEmbedding !== undefined ? isEmbedding : (matched?.isEmbedding || modelId.toLowerCase().includes('wemm'))
-    return get().startEngine({ mode: effectiveIsEmbedding ? 'embedding' : 'language', modelId: effectivePath || modelId })
+    const effectiveIsEmbedding =
+      isEmbedding !== undefined
+        ? isEmbedding
+        : matched?.isEmbedding || modelId.toLowerCase().includes('wemm')
+    return get().startEngine({
+      mode: effectiveIsEmbedding ? 'embedding' : 'language',
+      modelId: effectivePath || modelId
+    })
   },
 
   runRegionDetection: async (force?: boolean) => {
@@ -552,7 +807,13 @@ export const useEngineStore = create<EngineStoreState>((set, get) => ({
             m => m.id === activeId && (!activeSource || m.source === activeSource)
           )
           if (activeModel?.isDownloaded) {
-            await engineApiClient.switchModel(activeModel.id, activeModel.source, activeModel.localPath, activeModel.name, activeModel.isEmbedding)
+            await engineApiClient.switchModel(
+              activeModel.id,
+              activeModel.source,
+              activeModel.localPath,
+              activeModel.name,
+              activeModel.isEmbedding
+            )
           }
         }
       }

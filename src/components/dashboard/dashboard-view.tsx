@@ -14,7 +14,8 @@ import {
   Loader2,
   AlertCircle,
   ChevronDown,
-  Terminal
+  Terminal,
+  Download
 } from 'lucide-react'
 import { Card } from '../ui/card'
 import { Badge } from '../ui/badge'
@@ -24,14 +25,21 @@ import { Label } from '../ui/label'
 import { Alert, AlertTitle, AlertDescription } from '../ui/alert'
 import { toast } from '../common/Toast'
 import { useEngineStore } from '../../stores/engine-store'
+import { useModelDownloadStore } from '../../stores/model-download-store'
 import { t } from '../../languages'
 import { getModelCustomParams } from '../../lib/model-param-storage'
 import { resolveDisplayModel } from '../../lib/model-resolver'
 
-export const DashboardView: React.FC = () => {
+export interface DashboardViewProps {
+  onNavigateTab?: (tab: string) => void
+}
+
+export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigateTab }) => {
   const {
     engineStatus,
     models,
+    engineList,
+    fetchEngineList,
     runtimeParams,
     activeModelKey,
     activeLanguageModelKey,
@@ -140,11 +148,59 @@ export const DashboardView: React.FC = () => {
     try {
       setActionLoading(true)
       setStartFailedError(null)
+
+      // 1. 确保已拥有最新的 engineList
+      let currentEngineList = engineList
+      if (!currentEngineList || currentEngineList.length === 0) {
+        await fetchEngineList()
+        currentEngineList = useEngineStore.getState().engineList
+      }
+
+      // 2. 检查引擎下载中态（用户特别强调：模型已下载完，但引擎没下载完，点击启动服务也需要相应的提示）
+      const currentEngineDl = useEngineStore.getState().engineDownloadState
+      if (
+        currentEngineDl.isDownloading ||
+        currentEngineDl.status === 'downloading' ||
+        currentEngineDl.status === 'extracting'
+      ) {
+        const msg = t('AI 推理引擎正在下载中，请等待下载解压完成后再启动服务')
+        toast.warning(msg)
+        setStartFailedError(msg)
+        return
+      }
+
+      // 3. 检查引擎未安装态
+      const currentHasInstalledEngine = (currentEngineList || []).some(e => e.isInstalled)
+      if (currentEngineList && currentEngineList.length > 0 && !currentHasInstalledEngine) {
+        const msg = t('尚未安装 AI 推理引擎，请先前往「引擎与硬件」页面下载适配您硬件的引擎')
+        toast.warning(msg)
+        setStartFailedError(msg)
+        return
+      }
+
+      // 4. 检查模型就绪态
+      const downloadedModels = (models || []).filter(m => m.isDownloaded)
+      if (models && models.length > 0 && downloadedModels.length === 0) {
+        const tasks = useModelDownloadStore.getState().tasks
+        const currentIsModelDownloading = Object.values(tasks).some(
+          t => t.isDownloading || t.status === 'downloading' || t.status === 'pending'
+        )
+        const msg = currentIsModelDownloading
+          ? t('模型正在下载中，请等待下载完成后再启动服务')
+          : t('尚未下载 AI 模型，请先前往「模型管理」页面下载模型')
+        toast.warning(msg)
+        setStartFailedError(msg)
+        return
+      }
+
       const ok = await startEngine()
       if (ok) {
         toast.success(t('AI 推理服务已成功启动！'))
       } else {
-        const errMsg = useEngineStore.getState().error || engineStatus?.last_error || t('启动失败，请检查模型文件或端口占用')
+        const errMsg =
+          useEngineStore.getState().error ||
+          engineStatus?.last_error ||
+          t('启动失败，请检查模型文件或端口占用')
         setStartFailedError(errMsg)
         toast.error(`${t('启动服务失败')}: ${errMsg}`)
       }
@@ -169,19 +225,63 @@ export const DashboardView: React.FC = () => {
     }
   }
 
+  // 订阅引擎下载状态与模型就绪状态
+  const engineDlState = useEngineStore(s => s.engineDownloadState)
+  const isEngineDownloading =
+    engineDlState.isDownloading ||
+    engineDlState.status === 'downloading' ||
+    engineDlState.status === 'extracting'
+  const hasInstalledEngine = (engineList || []).some(e => e.isInstalled)
+  const hasDownloadedModel = (models || []).some(m => m.isDownloaded)
+  const modelTasks = useModelDownloadStore(s => s.tasks)
+  const isModelDownloading = Object.values(modelTasks).some(
+    t => t.isDownloading || t.status === 'downloading' || t.status === 'pending'
+  )
+
+  const effectiveError =
+    startFailedError || engineStatus?.last_error || (rawStatus === 'error' ? storeError : null)
+
+  const isEngineDownloadingError =
+    Boolean(effectiveError) && (effectiveError!.includes('正在下载') || isEngineDownloading)
+
+  const isEngineMissingError =
+    Boolean(effectiveError) &&
+    !isEngineDownloadingError &&
+    (effectiveError!.includes('llama-server') ||
+      effectiveError!.includes('未发现任何') ||
+      effectiveError!.includes('尚未安装 AI 推理引擎') ||
+      (!hasInstalledEngine && !isEngineDownloading))
+
+  const isModelDownloadingError =
+    Boolean(effectiveError) &&
+    !isEngineDownloadingError &&
+    !isEngineMissingError &&
+    (effectiveError!.includes('模型正在下载中') || (!hasDownloadedModel && isModelDownloading))
+
+  const isModelMissingError =
+    Boolean(effectiveError) &&
+    !isEngineDownloadingError &&
+    !isEngineMissingError &&
+    !isModelDownloadingError &&
+    (effectiveError!.includes('未找到模型') ||
+      effectiveError!.includes('尚未下载 AI 模型') ||
+      !hasDownloadedModel)
+
   return (
     <div className="space-y-6">
       {/* 顶部服务启停与运行状态控制区块 */}
       <Card className="p-5 bg-card/95 border border-border/80 rounded-2xl shadow-xs">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border transition-all ${
-              isRunning
-                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
-                : isStarting
-                  ? 'bg-amber-500/10 border-amber-500/30 text-amber-500 animate-pulse'
-                  : 'bg-muted/40 border-border/60 text-muted-foreground'
-            }`}>
+            <div
+              className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border transition-all ${
+                isRunning
+                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
+                  : isStarting
+                    ? 'bg-amber-500/10 border-amber-500/30 text-amber-500 animate-pulse'
+                    : 'bg-muted/40 border-border/60 text-muted-foreground'
+              }`}
+            >
               <Zap className="h-6 w-6" />
             </div>
             <div>
@@ -208,13 +308,15 @@ export const DashboardView: React.FC = () => {
                         : 'border-border text-muted-foreground bg-muted/40'
                   }`}
                 >
-                  <span className={`h-2 w-2 rounded-full ${
-                    isRunning
-                      ? 'bg-emerald-500 animate-pulse'
-                      : isStarting
-                        ? 'bg-amber-500 animate-ping'
-                        : 'bg-muted-foreground'
-                  }`} />
+                  <span
+                    className={`h-2 w-2 rounded-full ${
+                      isRunning
+                        ? 'bg-emerald-500 animate-pulse'
+                        : isStarting
+                          ? 'bg-amber-500 animate-ping'
+                          : 'bg-muted-foreground'
+                    }`}
+                  />
                   <span>
                     {isRunning
                       ? t('运行中 (就绪)')
@@ -265,20 +367,135 @@ export const DashboardView: React.FC = () => {
           </div>
         </div>
 
-        {/* 启动失败原因详细提示卡片 */}
-        {(startFailedError || engineStatus?.last_error || (rawStatus === 'error' && storeError)) && !isRunning && !isStarting && (
-          <div className="mt-4 pt-4 border-t border-destructive/20 animate-in fade-in duration-200">
-            <Alert variant="destructive" className="bg-destructive/10 border-destructive/30">
-              <AlertCircle className="h-4 w-4 text-destructive" />
-              <div className="ml-2">
-                <AlertTitle className="text-xs font-bold text-destructive">
-                  {t('服务启动失败')}
-                </AlertTitle>
-                <AlertDescription className="text-xs font-mono text-destructive/90 mt-1 break-words">
-                  {startFailedError || engineStatus?.last_error || storeError}
-                </AlertDescription>
-              </div>
-            </Alert>
+        {/* 启动失败原因详细提示卡片与直达引导 */}
+        {effectiveError && !isRunning && !isStarting && (
+          <div className="mt-4 pt-4 border-t border-border/40 animate-in fade-in duration-200">
+            {isEngineDownloadingError ? (
+              <Alert className="bg-primary/5 border-primary/30 text-primary">
+                <Loader2 className="h-4 w-4 animate-spin text-primary shrink-0" />
+                <div className="ml-2 flex-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div>
+                    <AlertTitle className="text-xs font-bold text-primary">
+                      {t('AI 推理引擎正在下载中')}
+                    </AlertTitle>
+                    <AlertDescription className="text-xs text-muted-foreground mt-0.5">
+                      {t(
+                        '模型已就绪，但硬件适配的 llama.cpp 引擎仍在下载与部署中（当前进度 {progress}%），请等待完成后启动服务。',
+                        { progress: engineDlState.progress }
+                      )}
+                    </AlertDescription>
+                  </div>
+                  {onNavigateTab && (
+                    <Button
+                      size="sm"
+                      className="h-8 text-xs font-bold bg-primary text-primary-foreground hover:bg-primary/90 shrink-0 gap-1.5"
+                      onClick={() => onNavigateTab('engine')}
+                    >
+                      <Zap className="h-3.5 w-3.5" />
+                      <span>{t('前往查看引擎下载进度')}</span>
+                    </Button>
+                  )}
+                </div>
+              </Alert>
+            ) : isEngineMissingError ? (
+              <Alert className="bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400">
+                <AlertCircle className="h-4 w-4 text-amber-500 shrink-0" />
+                <div className="ml-2 flex-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div>
+                    <AlertTitle className="text-xs font-bold text-amber-600 dark:text-amber-400">
+                      {t('未检测到已安装的 AI 推理引擎')}
+                    </AlertTitle>
+                    <AlertDescription className="text-xs text-muted-foreground mt-0.5">
+                      {t(
+                        '已检测到可用模型，但尚未安装推理引擎。本地运行 AI 模型需要先安装适配您当前硬件的 llama.cpp 引擎。'
+                      )}
+                    </AlertDescription>
+                  </div>
+                  {onNavigateTab && (
+                    <Button
+                      size="sm"
+                      className="h-8 text-xs font-bold bg-primary text-primary-foreground hover:bg-primary/90 shrink-0 gap-1.5"
+                      onClick={() => onNavigateTab('engine')}
+                    >
+                      <Zap className="h-3.5 w-3.5" />
+                      <span>{t('前往下载引擎')}</span>
+                    </Button>
+                  )}
+                </div>
+              </Alert>
+            ) : isModelDownloadingError ? (
+              <Alert className="bg-primary/5 border-primary/30 text-primary">
+                <Loader2 className="h-4 w-4 animate-spin text-primary shrink-0" />
+                <div className="ml-2 flex-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div>
+                    <AlertTitle className="text-xs font-bold text-primary">
+                      {t('AI 模型正在下载中')}
+                    </AlertTitle>
+                    <AlertDescription className="text-xs text-muted-foreground mt-0.5">
+                      {t('当前尚未有就绪的本地模型，模型正在后台下载中，请等待完成后再启动服务。')}
+                    </AlertDescription>
+                  </div>
+                  {onNavigateTab && (
+                    <Button
+                      size="sm"
+                      className="h-8 text-xs font-bold bg-primary text-primary-foreground hover:bg-primary/90 shrink-0 gap-1.5"
+                      onClick={() => onNavigateTab('models')}
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                      <span>{t('前往查看模型进度')}</span>
+                    </Button>
+                  )}
+                </div>
+              </Alert>
+            ) : isModelMissingError ? (
+              <Alert className="bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400">
+                <AlertCircle className="h-4 w-4 text-amber-500 shrink-0" />
+                <div className="ml-2 flex-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div>
+                    <AlertTitle className="text-xs font-bold text-amber-600 dark:text-amber-400">
+                      {t('未检测到已下载的 AI 模型')}
+                    </AlertTitle>
+                    <AlertDescription className="text-xs text-muted-foreground mt-0.5">
+                      {t('启动本地 AI 推理服务前，请先前往「模型管理」页面下载模型。')}
+                    </AlertDescription>
+                  </div>
+                  {onNavigateTab && (
+                    <Button
+                      size="sm"
+                      className="h-8 text-xs font-bold bg-primary text-primary-foreground hover:bg-primary/90 shrink-0 gap-1.5"
+                      onClick={() => onNavigateTab('models')}
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                      <span>{t('前往下载模型')}</span>
+                    </Button>
+                  )}
+                </div>
+              </Alert>
+            ) : (
+              <Alert variant="destructive" className="bg-destructive/10 border-destructive/30">
+                <AlertCircle className="h-4 w-4 text-destructive" />
+                <div className="ml-2 flex-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div>
+                    <AlertTitle className="text-xs font-bold text-destructive">
+                      {t('服务启动失败')}
+                    </AlertTitle>
+                    <AlertDescription className="text-xs font-mono text-destructive/90 mt-1 break-words">
+                      {effectiveError}
+                    </AlertDescription>
+                  </div>
+                  {onNavigateTab && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 text-xs font-bold border-destructive/40 text-destructive hover:bg-destructive/10 shrink-0"
+                      onClick={() => onNavigateTab('logs')}
+                    >
+                      {t('查看运行日志')}
+                    </Button>
+                  )}
+                </div>
+              </Alert>
+            )}
           </div>
         )}
 
@@ -292,7 +509,9 @@ export const DashboardView: React.FC = () => {
           >
             <Sliders className="h-3.5 w-3.5" />
             <span className="text-xs font-medium">{t('当前模型启动参数')}</span>
-            <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${paramsExpanded ? 'rotate-180' : ''}`} />
+            <ChevronDown
+              className={`h-3.5 w-3.5 transition-transform duration-200 ${paramsExpanded ? 'rotate-180' : ''}`}
+            />
           </button>
 
           {paramsExpanded && (
@@ -401,9 +620,7 @@ export const DashboardView: React.FC = () => {
               {t('已安装模型')}
             </span>
             <div className="flex items-baseline gap-1.5 mt-0.5">
-              <span className="text-2xl font-black text-foreground">
-                {installedModelsCount}
-              </span>
+              <span className="text-2xl font-black text-foreground">{installedModelsCount}</span>
               <span className="text-xs font-mono text-muted-foreground">
                 / {totalModelsCount} {t('个可用')}
               </span>
@@ -428,11 +645,17 @@ export const DashboardView: React.FC = () => {
               <span className="text-lg font-black text-foreground uppercase truncate">
                 {activeBackend}
               </span>
-              <Badge variant="outline" className="text-[9px] font-bold h-4.5 px-1.5 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 uppercase">
+              <Badge
+                variant="outline"
+                className="text-[9px] font-bold h-4.5 px-1.5 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 uppercase"
+              >
                 {engineStatus?.status === 'ready' ? t('就绪') : t('运行中')}
               </Badge>
             </div>
-            <span className="text-[10px] text-muted-foreground truncate block mt-1" title={hw?.gpu_name}>
+            <span
+              className="text-[10px] text-muted-foreground truncate block mt-1"
+              title={hw?.gpu_name}
+            >
               {hw?.gpu_name || t('通用加速硬件')}
             </span>
           </div>
@@ -494,7 +717,12 @@ export const DashboardView: React.FC = () => {
               indicatorClassName={vramPercent > 85 ? 'bg-amber-500' : 'bg-primary'}
             />
             <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-              <span>{t('可用余量')}: <strong className="text-foreground font-mono">{Math.max(0, Math.round(totalVramMb - usedVramMb))} MB</strong></span>
+              <span>
+                {t('可用余量')}:{' '}
+                <strong className="text-foreground font-mono">
+                  {Math.max(0, Math.round(totalVramMb - usedVramMb))} MB
+                </strong>
+              </span>
               <span className="font-semibold text-foreground/80">
                 {hw?.is_integrated ? t('共享系统显存') : t('独立显存')}
               </span>
@@ -514,7 +742,9 @@ export const DashboardView: React.FC = () => {
                   {t('系统物理内存 (RAM)')}
                 </Label>
                 <span className="text-[10px] text-muted-foreground block">
-                  {hw?.cpu_cores ? `${hw.cpu_cores} ${t('核心')} / ${hw.cpu_threads || hw.cpu_cores * 2} ${t('线程')}` : t('中央处理器')}
+                  {hw?.cpu_cores
+                    ? `${hw.cpu_cores} ${t('核心')} / ${hw.cpu_threads || hw.cpu_cores * 2} ${t('线程')}`
+                    : t('中央处理器')}
                 </span>
               </div>
             </div>
@@ -536,17 +766,19 @@ export const DashboardView: React.FC = () => {
               indicatorClassName="bg-blue-500"
             />
             <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-              <span>{t('可用余量')}: <strong className="text-foreground font-mono">{Math.max(0, totalRamGb - usedRamGb).toFixed(1)} GB</strong></span>
-              <span className="font-semibold text-foreground/80">
-                {t('系统统一调度')}
+              <span>
+                {t('可用余量')}:{' '}
+                <strong className="text-foreground font-mono">
+                  {Math.max(0, totalRamGb - usedRamGb).toFixed(1)} GB
+                </strong>
               </span>
+              <span className="font-semibold text-foreground/80">{t('系统统一调度')}</span>
             </div>
           </div>
         </Card>
       </div>
 
       {/* 第三方应用对接与 API 地址已迁移至顶级 Tab「第三方对接」，见 components/api/third-party-api-view.tsx */}
-
     </div>
   )
 }

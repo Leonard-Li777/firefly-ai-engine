@@ -19,7 +19,25 @@ import type { ModelItem } from '../src/api/types'
 
 describe('Tier 2 管理视窗核心组件交互测试', () => {
   beforeEach(async () => {
-    // 每次测试前初始化 Store 状态
+    // 每次测试前彻底重置 Mock 客户端与 Store 状态，防止用例间异步定时器、模型激活与下载状态污染
+    mockApiClient.reset()
+    useEngineStore.setState({
+      engineDownloadState: {
+        isDownloading: false,
+        progress: 0,
+        speedBps: 0,
+        receivedBytes: 0,
+        totalBytes: 0,
+        status: 'idle'
+      },
+      activeModelKey: null,
+      activeLanguageModelKey: null,
+      activeEmbeddingModelKey: null,
+      switchingBackend: null,
+      loading: false,
+      error: null
+    })
+    await useEngineStore.getState().fetchModels()
     await useEngineStore.getState().fetchEngineStatus()
     await useEngineStore.getState().fetchEngineList()
   })
@@ -83,6 +101,17 @@ describe('Tier 2 管理视窗核心组件交互测试', () => {
       })
     } finally {
       window.open = originalOpen
+      mockApiClient.reset()
+      useEngineStore.setState({
+        engineDownloadState: {
+          isDownloading: false,
+          progress: 0,
+          speedBps: 0,
+          receivedBytes: 0,
+          totalBytes: 0,
+          status: 'idle'
+        }
+      })
     }
   })
 
@@ -153,7 +182,10 @@ describe('Tier 2 管理视窗核心组件交互测试', () => {
 
     // 开关变更后应持久化到 mock 客户端（与后端 config.json 同构）
     await waitFor(() => {
-      expect(screen.getByRole('switch', { name: '模型思考模式' })).toHaveAttribute('aria-checked', 'true')
+      expect(screen.getByRole('switch', { name: '模型思考模式' })).toHaveAttribute(
+        'aria-checked',
+        'true'
+      )
     })
   })
 
@@ -227,7 +259,9 @@ describe('Tier 2 管理视窗核心组件交互测试', () => {
 
   it('ModelListPanel 能正确显示嵌入推荐模型，并在 focusModel 聚焦时高亮并展示安装引导提示', async () => {
     await useEngineStore.getState().fetchModels()
-    const { unmount } = render(<ModelListPanel focusModel="qwen3-embedding" focusSource="modelscope" />)
+    const { unmount } = render(
+      <ModelListPanel focusModel="qwen3-embedding" focusSource="modelscope" />
+    )
 
     // 默认开启「仅显示推荐」下，嵌入模型依然可见（recommended: true）
     expect(screen.getAllByText(/Qwen3-Embedding 8B/i).length).toBeGreaterThan(0)
@@ -253,9 +287,12 @@ describe('Tier 2 管理视窗核心组件交互测试', () => {
     expect(screen.getByText(/运行中 \(就绪\)|已停止/)).toBeInTheDocument()
 
     // 校验当前模型名称正常显示
-    const activeModelKey = useEngineStore.getState().activeModelKey || useEngineStore.getState().activeLanguageModelKey
+    const activeModelKey =
+      useEngineStore.getState().activeModelKey || useEngineStore.getState().activeLanguageModelKey
     const models = useEngineStore.getState().models
-    const currentModel = models.find(m => `${m.id}@${m.source}` === activeModelKey || m.id === activeModelKey)
+    const currentModel = models.find(
+      m => `${m.id}@${m.source}` === activeModelKey || m.id === activeModelKey
+    )
     if (currentModel) {
       expect(screen.getByText(currentModel.name)).toBeInTheDocument()
     }
@@ -292,7 +329,8 @@ describe('Tier 2 管理视窗核心组件交互测试', () => {
       description: '极速轻量文本模型。',
       isDownloaded: true,
       recommended: true,
-      localPath: 'D:\\AI_Models\\hub\\models\\unsloth\\Qwen3.5-0.8B-GGUF\\qwen3.5-0.8b-instruct-ud-q4_k_xl.gguf'
+      localPath:
+        'D:\\AI_Models\\hub\\models\\unsloth\\Qwen3.5-0.8B-GGUF\\qwen3.5-0.8b-instruct-ud-q4_k_xl.gguf'
     }
     const wemm: ModelItem = {
       id: 'WeMM-Embedding-2B:Q8_0',
@@ -483,8 +521,10 @@ describe('Tier 2 管理视窗核心组件交互测试', () => {
       mmproj: 'mmproj-Ornith-1.5-9B-BF16.gguf',
       isDownloaded: true,
       recommended: true,
-      localPath: 'D:\\AI_Models\\hub\\models\\ornith-ai\\Ornith-1.5-9B-GGUF\\Ornith-1.5-9B-Q4_K_M.gguf',
-      mmprojLocalPath: 'D:\\AI_Models\\hub\\models\\ornith-ai\\Ornith-1.5-9B-GGUF\\mmproj-Ornith-1.5-9B-BF16.gguf'
+      localPath:
+        'D:\\AI_Models\\hub\\models\\ornith-ai\\Ornith-1.5-9B-GGUF\\Ornith-1.5-9B-Q4_K_M.gguf',
+      mmprojLocalPath:
+        'D:\\AI_Models\\hub\\models\\ornith-ai\\Ornith-1.5-9B-GGUF\\mmproj-Ornith-1.5-9B-BF16.gguf'
     }
 
     const multiModalWithoutMmproj: ModelItem = {
@@ -510,7 +550,9 @@ describe('Tier 2 管理视窗核心组件交互测试', () => {
     fake.listModels = async () => [multiModalWithMmproj, multiModalWithoutMmproj]
     fake.getEngineList = async () => []
 
-    const spy = vi.spyOn(modelMetadataService, 'getModelsForLanguage').mockReturnValue([multiModalWithMmproj, multiModalWithoutMmproj])
+    const spy = vi
+      .spyOn(modelMetadataService, 'getModelsForLanguage')
+      .mockReturnValue([multiModalWithMmproj, multiModalWithoutMmproj])
     setEngineApiClient(fake)
 
     try {
@@ -524,12 +566,20 @@ describe('Tier 2 管理视窗核心组件交互测试', () => {
       })
 
       // multiModalWithMmproj 已经有 mmprojLocalPath，绝不展示【下载识图模型】
-      const rowWithMmproj = document.querySelector(`[data-model-key="${keyWithMmproj}"]`) as HTMLElement
-      expect(within(rowWithMmproj).queryByRole('button', { name: /下载识图模型/ })).not.toBeInTheDocument()
+      const rowWithMmproj = document.querySelector(
+        `[data-model-key="${keyWithMmproj}"]`
+      ) as HTMLElement
+      expect(
+        within(rowWithMmproj).queryByRole('button', { name: /下载识图模型/ })
+      ).not.toBeInTheDocument()
 
       // multiModalWithoutMmproj 缺少 mmprojLocalPath，必须展示【下载识图模型】补偿按钮
-      const rowWithoutMmproj = document.querySelector(`[data-model-key="${keyWithoutMmproj}"]`) as HTMLElement
-      expect(within(rowWithoutMmproj).getByRole('button', { name: /下载识图模型/ })).toBeInTheDocument()
+      const rowWithoutMmproj = document.querySelector(
+        `[data-model-key="${keyWithoutMmproj}"]`
+      ) as HTMLElement
+      expect(
+        within(rowWithoutMmproj).getByRole('button', { name: /下载识图模型/ })
+      ).toBeInTheDocument()
     } finally {
       spy.mockRestore()
       setEngineApiClient(mockApiClient)
@@ -600,6 +650,117 @@ describe('Tier 2 管理视窗核心组件交互测试', () => {
       expect(saveButton).toBeDisabled()
     })
   })
+
+  it('DashboardView 在未安装任何 AI 引擎时点击【启动服务】，拦截并引导前往【引擎与硬件】页面下载', async () => {
+    // 构造无任何已安装引擎的状态
+    mockApiClient.setStatus('stopped')
+    mockApiClient.setEngines([
+      {
+        id: 'cuda',
+        name: 'CUDA 12.4',
+        backend: 'cuda',
+        matchType: 'best',
+        matchText: '最佳匹配',
+        performance: '可发挥显卡 95% 硬件性能',
+        isCurrent: false,
+        isInstalled: false,
+        downloadSizeMb: 450,
+        driverCompliant: true
+      },
+      {
+        id: 'cpu',
+        name: 'CPU (AVX2)',
+        backend: 'cpu',
+        matchType: 'fallback',
+        matchText: '保底',
+        performance: '无显卡方案，纯 CPU 保底',
+        isCurrent: false,
+        isInstalled: false,
+        driverCompliant: true
+      }
+    ])
+    await useEngineStore.getState().fetchEngineList()
+    useEngineStore.setState(state => ({
+      engineStatus: state.engineStatus ? { ...state.engineStatus, status: 'stopped' } : null
+    }))
+
+    const navSpy = vi.fn()
+    render(<DashboardView onNavigateTab={navSpy} />)
+
+    // 点击【启动服务】
+    const startBtn = screen.getByRole('button', { name: /启动服务/ })
+    fireEvent.click(startBtn)
+
+    // 校验拦截提示与引导按钮
+    await waitFor(() => {
+      expect(screen.getByText(/未检测到已安装的 AI 推理引擎/)).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /前往下载引擎/ })).toBeInTheDocument()
+    })
+
+    // 点击【前往下载引擎】应调用 onNavigateTab('engine')
+    fireEvent.click(screen.getByRole('button', { name: /前往下载引擎/ }))
+    expect(navSpy).toHaveBeenCalledWith('engine')
+  })
+
+  it('DashboardView 在模型就绪但引擎正在下载时点击【启动服务】，拦截并提示正在下载引擎与提供进度查看直达按钮', async () => {
+    // 模拟引擎正在下载状态
+    useEngineStore.setState(state => ({
+      engineStatus: state.engineStatus ? { ...state.engineStatus, status: 'stopped' } : null,
+      engineDownloadState: {
+        isDownloading: true,
+        progress: 42,
+        speedBps: 10 * 1024 * 1024,
+        receivedBytes: 42 * 1024 * 1024,
+        totalBytes: 100 * 1024 * 1024,
+        status: 'downloading',
+        backend: 'cuda'
+      }
+    }))
+
+    const navSpy = vi.fn()
+    render(<DashboardView onNavigateTab={navSpy} />)
+
+    // 点击【启动服务】拦截
+    const startBtn = screen.getByRole('button', { name: /启动服务/ })
+    fireEvent.click(startBtn)
+
+    // 校验拦截提示与引导按钮
+    await waitFor(() => {
+      expect(screen.getByText(/AI 推理引擎正在下载中/)).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /前往查看引擎下载进度/ })).toBeInTheDocument()
+    })
+
+    // 点击跳转直达
+    fireEvent.click(screen.getByRole('button', { name: /前往查看引擎下载进度/ }))
+    expect(navSpy).toHaveBeenCalledWith('engine')
+  })
+
+  it('ModelListPanel 触发未下载模型下载时，联动触发适配硬件的最佳引擎自动下载', async () => {
+    // 构造初始未安装引擎状态
+    mockApiClient.setEngines([
+      {
+        id: 'cuda',
+        name: 'CUDA 12.4',
+        backend: 'cuda',
+        matchType: 'best',
+        matchText: '最佳匹配',
+        performance: '可发挥显卡 95% 硬件性能',
+        isCurrent: false,
+        isInstalled: false,
+        downloadSizeMb: 450,
+        driverCompliant: true
+      }
+    ])
+    await useEngineStore.getState().fetchEngineList()
+
+    const triggerSpy = vi.spyOn(useEngineStore.getState(), 'triggerEngineAutoDownloadIfNeeded')
+
+    render(<ModelListPanel />)
+
+    // 找到未下载模型的下载按钮（aria-label 为 "下载模型"）
+    const downloadBtns = screen.getAllByRole('button', { name: /下载模型/ })
+    expect(downloadBtns.length).toBeGreaterThan(0)
+    fireEvent.click(downloadBtns[0])
+    expect(triggerSpy).toHaveBeenCalled()
+  })
 })
-
-

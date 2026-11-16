@@ -17,13 +17,111 @@ import type { SupportedLanguage } from '../lib/language'
 import { resolveToAbsolutePath } from '../lib/path-utils'
 import { LlamaCommandBuilder } from '../lib/command-builder'
 
+const INITIAL_ENGINES: EngineItem[] = [
+  {
+    id: 'cuda134',
+    name: 'CUDA 13.4',
+    backend: 'cuda', // 后端标识
+    matchType: 'best',
+    matchText: '最新最佳',
+    performance: '可发挥显卡 100% 硬件性能（需最新驱动）',
+    isCurrent: false,
+    isInstalled: false,
+    downloadSizeMb: 480,
+    driverCompliant: false, // 模拟 CUDA 13 驱动版本不足，需升级显卡驱动
+    driverUpdateUrl: 'https://www.nvidia.cn/Download/index.aspx'
+  },
+  {
+    id: 'cuda',
+    name: 'CUDA 12.4',
+    backend: 'cuda',
+    matchType: 'best',
+    matchText: '最佳匹配',
+    performance: '可发挥显卡 95% 硬件性能',
+    isCurrent: false,
+    isInstalled: false, // 初始未安装，触发【下载引擎】
+    downloadSizeMb: 450,
+    driverCompliant: true
+  },
+  {
+    id: 'vulkan',
+    name: 'Vulkan',
+    backend: 'vulkan',
+    matchType: 'compatible',
+    matchText: '兼容模式',
+    performance: '硬件兼容性较好，可发挥显卡 70% 硬件性能',
+    isCurrent: true,
+    isInstalled: true,
+    driverCompliant: true
+  },
+  {
+    id: 'cpu',
+    name: 'CPU (AVX2)',
+    backend: 'cpu',
+    matchType: 'fallback',
+    matchText: '保底',
+    performance: '无显卡方案，纯 CPU 保底（AVX2 深度优化）',
+    isCurrent: false,
+    isInstalled: true,
+    driverCompliant: true
+  }
+]
+
+const INITIAL_MODELS: ModelItem[] = [
+  {
+    id: 'unsloth/Qwen3.5-0.8B-GGUF:UD-Q4_K_XL',
+    name: 'Qwen 3.5 0.8B (轻量识图)',
+    author: 'unsloth',
+    source: 'modelscope',
+    quant: 'Q4_K_XL',
+    fileSize: 558000000,
+    params: '0.8B',
+    description: '极速轻量文本模型，适合低配及 CPU 环境，中文分析表现均衡。',
+    isMultiModal: false,
+    isDownloaded: true,
+    recommended: true,
+    localPath:
+      'D:\\AI_Models\\hub\\models\\unsloth\\Qwen3.5-0.8B-GGUF\\qwen3.5-0.8b-instruct-ud-q4_k_xl.gguf',
+    sha256: '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08'
+  },
+  {
+    id: 'OpenBMB/MiniCPM5-2B-gguf:Q4_K_M',
+    name: 'MiniCPM5 2B（高质量•小体积）',
+    author: 'OpenBMB',
+    source: 'modelscope',
+    quant: 'Q4_K_M',
+    fileSize: 1450000000,
+    params: '2B',
+    description: '显存不足，又想正确分类文件，必须选我，唯一缺点仅支持文本。',
+    isMultiModal: false,
+    isDownloaded: true,
+    recommended: true,
+    localPath: 'D:\\AI_Models\\hub\\models\\OpenBMB\\MiniCPM5-2B-gguf\\minicpm5_2b_q4_k_m.gguf',
+    sha256: '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8'
+  },
+  {
+    id: 'unsloth/Qwen3.5-0.8B-GGUF:UD-Q5_K_XL',
+    name: 'Qwen 3.5 0.8B (中文更佳)',
+    author: 'unsloth',
+    source: 'huggingface',
+    quant: 'UD-Q5_K_XL',
+    fileSize: 579000000,
+    params: '0.8B',
+    description: '极速轻量文本模型，适合低配及 CPU 环境，中文分析表现均衡。',
+    isMultiModal: false,
+    isDownloaded: false,
+    recommended: true,
+    sha256: '4b227777d4dd1fc61c6f884f48641d02b4d121d3fd328cb08b5531fcacdabf8a'
+  }
+]
+
 /**
  * 独立的 Mock API 仿真客户端
  * 用于纯前端脱离后端独立运行、沙盒交互验证与自动化测试
  */
 export class MockApiClient implements IEngineApiClient {
   private currentBackend: 'vulkan' | 'cuda' | 'cpu' | 'metal' = 'vulkan'
-  private currentModel = 'Qwen 3.5 0.8B (中文更佳)'
+  private currentModel = 'Qwen 3.5 0.8B (轻量识图)'
   private modelsDir = resolveToAbsolutePath('build/extraResources/models')
   private vramUsageMb = 1420
   private status: 'ready' | 'starting' | 'stopped' | 'error' = 'ready'
@@ -31,106 +129,13 @@ export class MockApiClient implements IEngineApiClient {
   private downgradeInfo = {
     downgraded: true,
     reason: 'GPU_DRIVER_OUTDATED',
-    message: 'NVIDIA 显卡驱动版本过低，已自动降级至 Vulkan 运行。建议前往官网更新驱动以启用最高性能 CUDA 加速。',
+    message:
+      'NVIDIA 显卡驱动版本过低，已自动降级至 Vulkan 运行。建议前往官网更新驱动以启用最高性能 CUDA 加速。',
     driver_update_url: 'https://www.nvidia.cn/Download/index.aspx'
   }
 
-  private engines: EngineItem[] = [
-    {
-      id: 'cuda134',
-      name: 'CUDA 13.4',
-      backend: 'cuda', // 后端标识
-      matchType: 'best',
-      matchText: '最新最佳',
-      performance: '可发挥显卡 100% 硬件性能（需最新驱动）',
-      isCurrent: false,
-      isInstalled: false,
-      downloadSizeMb: 480,
-      driverCompliant: false, // 模拟 CUDA 13 驱动版本不足，需升级显卡驱动
-      driverUpdateUrl: 'https://www.nvidia.cn/Download/index.aspx'
-    },
-    {
-      id: 'cuda',
-      name: 'CUDA 12.4',
-      backend: 'cuda',
-      matchType: 'best',
-      matchText: '最佳匹配',
-      performance: '可发挥显卡 95% 硬件性能',
-      isCurrent: false,
-      isInstalled: false, // 初始未安装，触发【下载引擎】
-      downloadSizeMb: 450,
-      driverCompliant: true
-    },
-    {
-      id: 'vulkan',
-      name: 'Vulkan',
-      backend: 'vulkan',
-      matchType: 'compatible',
-      matchText: '兼容模式',
-      performance: '硬件兼容性较好，可发挥显卡 70% 硬件性能',
-      isCurrent: true,
-      isInstalled: true,
-      driverCompliant: true
-    },
-    {
-      id: 'cpu',
-      name: 'CPU (AVX2)',
-      backend: 'cpu',
-      matchType: 'fallback',
-      matchText: '保底',
-      performance: '无显卡方案，纯 CPU 保底（AVX2 深度优化）',
-      isCurrent: false,
-      isInstalled: true,
-      driverCompliant: true
-    }
-  ]
-
-  private models: ModelItem[] = [
-    {
-      id: 'unsloth/Qwen3.5-0.8B-GGUF:UD-Q4_K_XL',
-      name: 'Qwen 3.5 0.8B (轻量识图)',
-      author: 'unsloth',
-      source: 'modelscope',
-      quant: 'Q4_K_XL',
-      fileSize: 558000000,
-      params: '0.8B',
-      description: '极速轻量文本模型，适合低配及 CPU 环境，中文分析表现均衡。',
-      isMultiModal: false,
-      isDownloaded: true,
-      recommended: true,
-      localPath: 'D:\\AI_Models\\hub\\models\\unsloth\\Qwen3.5-0.8B-GGUF\\qwen3.5-0.8b-instruct-ud-q4_k_xl.gguf',
-      sha256: '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08'
-    },
-    {
-      id: 'OpenBMB/MiniCPM5-2B-gguf:Q4_K_M',
-      name: 'MiniCPM5 2B（高质量•小体积）',
-      author: 'OpenBMB',
-      source: 'modelscope',
-      quant: 'Q4_K_M',
-      fileSize: 1450000000,
-      params: '2B',
-      description: '显存不足，又想正确分类文件，必须选我，唯一缺点仅支持文本。',
-      isMultiModal: false,
-      isDownloaded: true,
-      recommended: true,
-      localPath: 'D:\\AI_Models\\hub\\models\\OpenBMB\\MiniCPM5-2B-gguf\\minicpm5_2b_q4_k_m.gguf',
-      sha256: '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8'
-    },
-    {
-      id: 'unsloth/Qwen3.5-0.8B-GGUF:UD-Q5_K_XL',
-      name: 'Qwen 3.5 0.8B (中文更佳)',
-      author: 'unsloth',
-      source: 'huggingface',
-      quant: 'UD-Q5_K_XL',
-      fileSize: 579000000,
-      params: '0.8B',
-      description: '极速轻量文本模型，适合低配及 CPU 环境，中文分析表现均衡。',
-      isMultiModal: false,
-      isDownloaded: false,
-      recommended: true,
-      sha256: '4b227777d4dd1fc61c6f884f48641d02b4d121d3fd328cb08b5531fcacdabf8a'
-    }
-  ]
+  private engines: EngineItem[] = JSON.parse(JSON.stringify(INITIAL_ENGINES))
+  private models: ModelItem[] = JSON.parse(JSON.stringify(INITIAL_MODELS))
 
   private runtimeParams: RuntimeParams = {
     n_gpu_layers: 24,
@@ -141,6 +146,7 @@ export class MockApiClient implements IEngineApiClient {
   }
 
   private activeTasks = new Map<string, { intervalId: any; isPaused: boolean }>()
+  private activeEngineIntervals = new Set<any>()
 
   async getEngineStatus(): Promise<EngineStatusResponse> {
     return {
@@ -168,10 +174,13 @@ export class MockApiClient implements IEngineApiClient {
     }
   }
 
-  async switchEngine(backend: string): Promise<{ success: boolean; message?: string; error?: string }> {
+  async switchEngine(
+    backend: string
+  ): Promise<{ success: boolean; message?: string; error?: string }> {
     const target = this.engines.find(e => e.backend === backend)
     if (!target) return { success: false, message: '未找到指定引擎', error: '未找到指定引擎' }
-    if (!target.isInstalled) return { success: false, message: '引擎尚未安装，请先下载', error: '引擎尚未安装，请先下载' }
+    if (!target.isInstalled)
+      return { success: false, message: '引擎尚未安装，请先下载', error: '引擎尚未安装，请先下载' }
 
     this.currentBackend = backend as any
     this.engines = this.engines.map(e => ({
@@ -226,6 +235,7 @@ export class MockApiClient implements IEngineApiClient {
 
         if (percent >= 100) {
           clearInterval(interval)
+          this.activeEngineIntervals.delete(interval)
           engine.isInstalled = true
           engine.hasUpdate = false
           if (engine.latestVersion) {
@@ -238,6 +248,7 @@ export class MockApiClient implements IEngineApiClient {
           resolve({ success: true })
         }
       }, 100)
+      this.activeEngineIntervals.add(interval)
     })
   }
 
@@ -324,7 +335,7 @@ export class MockApiClient implements IEngineApiClient {
         onProgress({
           taskId,
           modelId,
-          source: options?.source as any || model.source,
+          source: (options?.source as any) || model.source,
           percent,
           receivedBytes: Math.min(received, totalBytes),
           totalBytes,
@@ -378,7 +389,9 @@ export class MockApiClient implements IEngineApiClient {
     return []
   }
 
-  async updateModelStoragePath(newPath: string): Promise<{ success: boolean; scannedModelsCount: number }> {
+  async updateModelStoragePath(
+    newPath: string
+  ): Promise<{ success: boolean; scannedModelsCount: number }> {
     this.modelsDir = resolveToAbsolutePath(newPath)
     return {
       success: true,
@@ -406,7 +419,9 @@ export class MockApiClient implements IEngineApiClient {
     return { enableThinking: this.enableThinking }
   }
 
-  async setThinkingMode(enableThinking: boolean): Promise<{ success: boolean; enableThinking: boolean }> {
+  async setThinkingMode(
+    enableThinking: boolean
+  ): Promise<{ success: boolean; enableThinking: boolean }> {
     this.enableThinking = enableThinking
     return { success: true, enableThinking }
   }
@@ -433,15 +448,15 @@ export class MockApiClient implements IEngineApiClient {
         parallel: 1,
         enableVision: true,
         enableDraft: true,
-        draftMaxTokens: 6,
+        draftMaxTokens: 6
       },
       budget: {
         budget_ctx: 32768,
         max_train_ctx: 131072,
         usable_memory_gb: 10.0,
         fixed_overhead_gb: 4.0,
-        tier: 'cuda',
-      },
+        tier: 'cuda'
+      }
     }
   }
 
@@ -456,7 +471,9 @@ export class MockApiClient implements IEngineApiClient {
     if (!org || !repoName || !fileName.endsWith('.gguf')) {
       throw new Error('URL 形态不受支持（mock）')
     }
-    const quantMatch = fileName.toUpperCase().match(/(Q\d_[KMS]_[A-Z]+|Q\d_\d|IQ\d_[A-Z]+|BF16|F16)/)
+    const quantMatch = fileName
+      .toUpperCase()
+      .match(/(Q\d_[KMS]_[A-Z]+|Q\d_\d|IQ\d_[A-Z]+|BF16|F16)/)
     const tag = quantMatch ? quantMatch[1] : fileName
     const id = `${org}/${repoName}:${tag}`
     if (this.models.some(m => m.id === id)) {
@@ -590,6 +607,52 @@ export class MockApiClient implements IEngineApiClient {
   /** 沙盒模式无真实引擎进程，不存在待消费的深链意图 */
   async consumeUiIntent(): Promise<UiIntentConsumeResponse> {
     return { intent: null }
+  }
+
+  /**
+   * 重置 Mock 客户端所有状态与后台异步定时任务（用于单测隔离）
+   */
+  reset(): void {
+    for (const [, task] of this.activeTasks) {
+      clearInterval(task.intervalId)
+    }
+    this.activeTasks.clear()
+
+    for (const interval of this.activeEngineIntervals) {
+      clearInterval(interval)
+    }
+    this.activeEngineIntervals.clear()
+
+    this.currentBackend = 'vulkan'
+    this.currentModel = 'Qwen 3.5 0.8B (轻量识图)'
+    this.status = 'ready'
+    this.vramUsageMb = 1420
+    this.engines = JSON.parse(JSON.stringify(INITIAL_ENGINES))
+    this.models = JSON.parse(JSON.stringify(INITIAL_MODELS))
+    this.mockLogs = [
+      '[stdout] llama-server initialized on http://127.0.0.1:38400',
+      '[stdout] all slots are idle and ready to accept inference requests'
+    ]
+  }
+
+  /** 测试用：设定引擎列表 */
+  setEngines(engines: EngineItem[]): void {
+    this.engines = JSON.parse(JSON.stringify(engines))
+  }
+
+  /** 测试用：设定模型列表 */
+  setModels(models: ModelItem[]): void {
+    this.models = JSON.parse(JSON.stringify(models))
+  }
+
+  /** 测试用：设定当前激活的 backend */
+  setCurrentBackend(backend: 'vulkan' | 'cuda' | 'cpu' | 'metal'): void {
+    this.currentBackend = backend
+  }
+
+  /** 测试用：设定引擎服务状态 */
+  setStatus(status: 'ready' | 'starting' | 'stopped' | 'error'): void {
+    this.status = status
   }
 }
 
