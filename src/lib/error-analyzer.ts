@@ -168,10 +168,9 @@ export function classifyEngineErrorCode(rawText: string): EngineErrorCode {
 }
 
 /** 按错误码返回用户可读分析与建议（移植 desktop getCompleteErrorInfo 关键条目） */
-export function getEngineErrorInfo(code: EngineErrorCode): Omit<
-  EngineErrorAnalysis,
-  'code' | 'rawMessage'
-> {
+export function getEngineErrorInfo(
+  code: EngineErrorCode
+): Omit<EngineErrorAnalysis, 'code' | 'rawMessage'> {
   switch (code) {
     case 'INSUFFICIENT_VRAM':
       return {
@@ -181,7 +180,7 @@ export function getEngineErrorInfo(code: EngineErrorCode): Omit<
         solutions: [
           t('关闭其他占用显存的应用程序'),
           t('尝试切换到更小的模型（如 0.8B 或更小）'),
-          t('在「引擎与硬件」中切换到 CPU 或兼容模式'),
+          t('在「引擎与硬件」中切换为 CPU 引擎'),
           t('查看运行日志获取更多技术细节')
         ],
         canRetry: true
@@ -194,7 +193,7 @@ export function getEngineErrorInfo(code: EngineErrorCode): Omit<
         solutions: [
           t('升级显卡驱动至最新版本'),
           t('在「引擎与硬件」中切换计算引擎（如 CUDA → Vulkan → CPU）'),
-          t('启用兼容模式后重试启动'),
+          t('在「引擎与硬件」中切换为 CPU 引擎后重试启动'),
           t('查看运行日志获取更多技术细节')
         ],
         canRetry: true
@@ -206,7 +205,7 @@ export function getEngineErrorInfo(code: EngineErrorCode): Omit<
         userMessage: t('系统环境发生致命错误，本地引擎无法继续运行'),
         solutions: [
           t('重启应用后重试'),
-          t('在「引擎与硬件」中强制使用 CPU 模式'),
+          t('在「引擎与硬件」中切换为 CPU 引擎'),
           t('检查系统内存与磁盘空间是否充足'),
           t('查看运行日志获取更多技术细节')
         ],
@@ -216,7 +215,7 @@ export function getEngineErrorInfo(code: EngineErrorCode): Omit<
       return {
         severity: 'critical',
         title: t('引擎程序缺失'),
-        userMessage: t('未找到 llama.cpp 引擎可执行文件，部署可能不完整'),
+        userMessage: t('未找到引擎可执行文件，部署可能不完整'),
         solutions: [
           t('重新安装应用或恢复引擎组件'),
           t('检查模型与引擎安装目录是否被安全软件隔离'),
@@ -246,7 +245,7 @@ export function getEngineErrorInfo(code: EngineErrorCode): Omit<
           t('重新下载模型文件或切换其他模型'),
           t('检查磁盘空间和系统显存是否充足'),
           t('尝试使用更小尺寸的模型'),
-          t('在「引擎与硬件」中切换到 CPU 模式'),
+          t('在「引擎与硬件」中切换为 CPU 引擎'),
           t('查看运行日志获取更多技术细节')
         ],
         canRetry: true
@@ -255,11 +254,11 @@ export function getEngineErrorInfo(code: EngineErrorCode): Omit<
       return {
         severity: 'critical',
         title: t('引擎服务启动失败'),
-        userMessage: t('llama.cpp 服务未能成功启动或端口异常'),
+        userMessage: t('引擎推理服务未能成功启动或端口异常'),
         solutions: [
           t('检查端口是否被占用，稍后重试启动'),
           t('确认模型文件完整且已正确选择'),
-          t('切换计算引擎或强制 CPU 模式后重试'),
+          t('在「引擎与硬件」中切换计算引擎或选择 CPU 引擎后重试'),
           t('查看运行日志获取更多技术细节')
         ],
         canRetry: true
@@ -272,7 +271,7 @@ export function getEngineErrorInfo(code: EngineErrorCode): Omit<
         solutions: [
           t('切换到占用显存更小的模型'),
           t('停止其他占用显存的程序后重试'),
-          t('尝试手动配置引擎为 CPU 模式'),
+          t('在「引擎与硬件」中切换为 CPU 引擎'),
           t('查看运行日志获取更多技术细节')
         ],
         canRetry: true
@@ -307,11 +306,7 @@ export function getEngineErrorInfo(code: EngineErrorCode): Omit<
         severity: 'medium',
         title: t('引擎运行异常'),
         userMessage: t('引擎运行出现异常，建议查看日志并重试'),
-        solutions: [
-          t('重试启动服务'),
-          t('切换模型或计算引擎'),
-          t('查看运行日志获取更多技术细节')
-        ],
+        solutions: [t('重试启动服务'), t('切换模型或计算引擎'), t('查看运行日志获取更多技术细节')],
         canRetry: true
       }
   }
@@ -320,7 +315,9 @@ export function getEngineErrorInfo(code: EngineErrorCode): Omit<
 /**
  * 分析原始引擎错误文本，输出侧边栏展示结构
  */
-export function analyzeEngineError(rawError: string | null | undefined): EngineErrorAnalysis | null {
+export function analyzeEngineError(
+  rawError: string | null | undefined
+): EngineErrorAnalysis | null {
   if (!rawError || !String(rawError).trim()) return null
   const rawMessage = cleanErrorText(String(rawError))
   if (!rawMessage) return null
