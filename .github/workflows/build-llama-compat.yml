@@ -215,6 +215,58 @@ jobs:
         run: |
           node scripts/publish-engine-r2.cjs --tag ${{ needs.resolve-tag.outputs.tag }} --dir dist/all
 
+  publish-unisource:
+    name: Publish llama.cpp to firefly-resources & R2
+    needs: [resolve-tag, build-compat-matrix, sync-official-assets]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.UNISOURCE_RELEASE_TOKEN || secrets.PRO_SUBMODULE_TOKEN || secrets.PRIVATE_MONOREPO_PAT || secrets.PAT || secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Download Custom Compat Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: llama-${{ needs.resolve-tag.outputs.tag }}-bin-win-*-x64
+          path: dist/all
+          merge-multiple: true
+
+      - name: Download Official Mirror Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: llama-${{ needs.resolve-tag.outputs.tag }}-official-mirror
+          path: dist/all
+
+      - name: Clone firefly-resources
+        shell: bash
+        env:
+          PAT: ${{ secrets.UNISOURCE_RELEASE_TOKEN || secrets.PRO_SUBMODULE_TOKEN || secrets.PRIVATE_MONOREPO_PAT || secrets.PAT || secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+        run: |
+          git clone --depth 1 --branch main \
+            "https://x-access-token:${PAT}@github.com/Leonard-Li777/firefly-resources.git" \
+            "$GITHUB_WORKSPACE/unisource-repo"
+
+      - name: Publish llama.cpp to firefly-resources (GitHub Release + R2)
+        env:
+          GH_TOKEN: ${{ secrets.UNISOURCE_RELEASE_TOKEN || secrets.PRO_SUBMODULE_TOKEN || secrets.PRIVATE_MONOREPO_PAT || secrets.PAT || secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.UNISOURCE_RELEASE_TOKEN || secrets.PRO_SUBMODULE_TOKEN || secrets.PRIVATE_MONOREPO_PAT || secrets.PAT || secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+        run: |
+          node scripts/publish-llama-to-firefly-resources.cjs \
+            --tag ${{ needs.resolve-tag.outputs.tag }} \
+            --dir dist/all \
+            --fr "$GITHUB_WORKSPACE/unisource-repo" \
+            --force
+
   publish-github-release:
     name: Publish Custom Compat to GitHub Release
     needs: [resolve-tag, build-compat-matrix]
@@ -231,8 +283,8 @@ jobs:
       - name: Publish to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: "llama-compat-${{ needs.resolve-tag.outputs.tag }}"
-          name: "llama.cpp ${{ needs.resolve-tag.outputs.tag }} Compatibility Builds (Legacy CPU, Vulkan & Low-End Support)"
+          tag_name: 'llama-compat-${{ needs.resolve-tag.outputs.tag }}'
+          name: 'llama.cpp ${{ needs.resolve-tag.outputs.tag }} Compatibility Builds (Legacy CPU, Vulkan & Low-End Support)'
           draft: false
           prerelease: false
           files: |
@@ -240,9 +292,9 @@ jobs:
             dist/release/*.sha256
           body: |
             ### llama.cpp ${{ needs.resolve-tag.outputs.tag }} 兼容性长尾硬件补全包
-            
+
             本 Release 专为解决低配或老旧硬件无法运行官方 AVX2 构建而生：
-            
+
             - `llama-${{ needs.resolve-tag.outputs.tag }}-bin-win-cpu-avx-x64.zip`: 仅开启基础 AVX1，适配二代/三代酷睿（SNB/IVB）及初代至强 E5。
             - `llama-${{ needs.resolve-tag.outputs.tag }}-bin-win-cpu-noavx-x64.zip`: 关闭所有 AVX 指令集（纯 SSE4.2 兜底），拯救老奔腾/赛扬等全系无 AVX 机器，杜绝 `0xC000001D` 崩溃。
             - `llama-${{ needs.resolve-tag.outputs.tag }}-bin-win-vulkan-compat-x64.zip`: 宽容型 Vulkan 1.2 规范构建，锁定 AVX1 主机端代码，适配 Pascal 架构老 N 卡（GTX 1060 等）及老驱动/旧核显。
