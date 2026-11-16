@@ -607,9 +607,19 @@ impl EngineCoordinator {
             match coordinator.start_service_inner().await {
                 Ok(()) => Ok(()),
                 Err(e) => {
-                    let message = e.to_string();
-                    tracing::error!("引擎服务启动失败: {}", message);
-                    coordinator.guard.set_last_error(message).await;
+                    let is_no_engine = e.downcast_ref::<crate::engine::scheduler::SchedulerError>()
+                        .map(|se| matches!(se, crate::engine::scheduler::SchedulerError::NoEngineInstalled | crate::engine::scheduler::SchedulerError::NoCompatibleEngine))
+                        .unwrap_or(false)
+                        || e.to_string().contains("未发现任何 llama-server 引擎")
+                        || e.to_string().contains("硬件指令集兼容");
+
+                    if is_no_engine {
+                        tracing::info!("未安装或无兼容计算引擎，保持 Stopped 待命态: {}", e);
+                    } else {
+                        let message = e.to_string();
+                        tracing::error!("引擎服务启动失败: {}", message);
+                        coordinator.guard.set_last_error(message).await;
+                    }
                     Err(e)
                 }
             }

@@ -2,7 +2,7 @@
 // 多引擎优先级调度与自动降级熔断
 // 1:1 移植桌面端 BinaryManager + GpuDriverComplianceService 降级流
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -14,6 +14,17 @@ use crate::hardware::{
     AccelerationTier, DowngradeInfo, DowngradeReason, DriverComplianceService, get_fallback_tier,
     SystemResources,
 };
+
+/// 引擎调度错误分类
+#[derive(Debug, thiserror::Error)]
+pub enum SchedulerError {
+    #[error("bin/ 目录下未发现任何 llama-server 引擎")]
+    NoEngineInstalled,
+    #[error("没有任何与当前硬件指令集兼容的可用引擎")]
+    NoCompatibleEngine,
+    #[error("引擎选择失败: {0}")]
+    Other(String),
+}
 
 /// 已安装引擎信息
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -251,7 +262,7 @@ impl EngineScheduler {
     ) -> Result<InstalledEngine> {
         let installed = self.scan_installed_engines().await;
         if installed.is_empty() {
-            return Err(anyhow!("bin/ 目录下未发现任何 llama-server 引擎"));
+            return Err(SchedulerError::NoEngineInstalled.into());
         }
 
         // 若指定了偏好后端，优先从偏好层级开始调度
@@ -374,7 +385,7 @@ impl EngineScheduler {
                             return Ok(engine.clone());
                         }
                     }
-                    return Err(anyhow!("没有任何与当前硬件指令集兼容的可用引擎"));
+                    return Err(SchedulerError::NoCompatibleEngine.into());
                 }
             }
         }
@@ -942,5 +953,37 @@ mod tests {
 
         // 画像意图：独显优先评估 —— best_tier 输入为 Cuda 时调度器首选 CUDA 层级
         assert!(dgpu.supports_cuda);
+    }
+
+    /// 空 bin/ 目录返回 NoEngineInstalled，不污染进程崩溃状态
+    #[tokio::test]
+    async fn test_empty_bin_dirs_returns_no_engine_installed_without_failed_status() {
+        use crate::hardware::{CpuInfo, MemoryInfo};
+
+        let temp = tempfile::tempdir().unwrap();
+        let compliance = DriverComplianceService::new();
+        let scheduler = EngineScheduler::new(vec![temp.path().to_path_buf()], compliance);
+        let resources = SystemResources {
+            cpu: CpuInfo {
+                model: "Test CPU".to_string(),
+                cores: 4,
+                threads: 4,
+                speed_mhz: 3000,
+                has_avx2: true,
+                has_avx: true,
+                has_fma: true,
+            },
+            memory: MemoryInfo { total_mb: 8192, available_mb: 4096 },
+            gpus: vec![],
+            best_acceleration_tier: AccelerationTier::Cpu,
+        };
+
+        let result = scheduler.select_engine(&resources, None).await;
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        let is_no_engine = err.downcast_ref::<SchedulerError>()
+            .map(|se| matches!(se, SchedulerError::NoEngineInstalled))
+            .unwrap_or(false);
+        assert!(is_no_engine, "空 bin 目录必须精准返回 NoEngineInstalled 错误变体");
     }
 }
