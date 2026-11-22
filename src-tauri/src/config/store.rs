@@ -359,7 +359,44 @@ impl ConfigStore {
     }
 }
 
-/// 查找 38400~38419 范围内第一个可用端口
+/// 在 `base_port..=(base_port + range - 1)` 范围内执行 `bind-first` 原子滑动绑定：
+/// 直接顺序调用 `TcpListener::bind`，返回首个成功的 `(TcpListener, actual_port)`，
+/// 消除「先 bind 探测再释放、后再正式 bind」的 TOCTOU 竞态窗口。
+pub async fn bind_first_available_port(
+    base_port: u16,
+    range: u16,
+) -> Result<(tokio::net::TcpListener, u16)> {
+    if range == 0 {
+        anyhow::bail!("端口滑动范围不能为 0 (base_port={})", base_port);
+    }
+    let end_port = base_port.saturating_add(range - 1);
+    let mut last_err: Option<std::io::Error> = None;
+
+    for port in base_port..=end_port {
+        let addr = std::net::SocketAddr::from(([127, 0, 0, 1], port));
+        match tokio::net::TcpListener::bind(addr).await {
+            Ok(listener) => {
+                debug!("bind-first 成功绑定端口: {}", port);
+                return Ok((listener, port));
+            }
+            Err(e) => {
+                warn!("端口 {} 绑定失败，尝试下一个: {}", port, e);
+                last_err = Some(e);
+            }
+        }
+    }
+
+    Err(anyhow::anyhow!(
+        "端口范围 {}..={} 均绑定失败: {}",
+        base_port,
+        end_port,
+        last_err
+            .map(|e| e.to_string())
+            .unwrap_or_else(|| "unknown error".to_string())
+    ))
+}
+
+/// 查找 38400~38419 范围内第一个可用端口（供子进程命令行 --port 参数使用）
 pub async fn find_available_port(base: u16) -> u16 {
     for port in base..=(base + 19) {
         if is_port_available(port).await {

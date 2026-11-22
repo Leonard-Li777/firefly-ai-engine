@@ -110,9 +110,16 @@ fn setup_tray_menu(app: &tauri::AppHandle) {
                 info!("收到托盘「退出」请求，准备优雅关闭...");
                 let handle = app_handle.clone();
                 tauri::async_runtime::spawn(async move {
-                    // 先停掉 llama-server 子进程，再退出（对齐 /api/engine/shutdown）
+                    // 触发停机信号闭合 SSE 流、停掉 llama-server 子进程并按 pid 自删发现文件
                     if let Some(coordinator) = handle.try_state::<Arc<EngineCoordinator>>() {
+                        coordinator.trigger_shutdown();
                         let _ = coordinator.guard.stop().await;
+                        if !coordinator.user_data_dir.is_empty() {
+                            server::remove_discovery_file_if_owned(
+                                std::path::Path::new(&coordinator.user_data_dir),
+                                std::process::id(),
+                            );
+                        }
                     }
                     tokio::time::sleep(std::time::Duration::from_millis(300)).await;
                     std::process::exit(0);

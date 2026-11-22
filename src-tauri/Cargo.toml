@@ -69,6 +69,9 @@ regex = "1"
 # 时间
 chrono = { version = "0.4", features = ["serde"] }
 
+# 实例唯一标识（UUID v4）
+uuid = { version = "1", features = ["v4"] }
+
 # bytes（反代流）
 bytes = "1"
 

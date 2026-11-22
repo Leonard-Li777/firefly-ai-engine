@@ -965,38 +965,145 @@ async fn engine_status(State(state): State<AppState>) -> impl IntoResponse {
     Json(status)
 }
 
+/// 构造引擎状态 SSE 帧流（返回原始 JSON 文本帧，供路由 handler 与单元测试共用）：
+/// 1. 先 `subscribe()` 再取 `get_status().await` 作为首帧，消除首帧与广播间隙丢帧；
+/// 2. 循环内 `tokio::select!` 同时监听广播与停机信号：
+///    - 收到新状态：仅当 `status.revision > last_sent_revision` 时下发（防乱序/重复）；
+///    - 遇到 `RecvError::Lagged(skipped)`：`tracing::warn!` 记录并立即重新拉取权威快照补发；
+///    - 收到停机信号：立即下发 `status = "stopping"` 终帧并返回 `None` 闭合流，保障 `axum::serve` `<500ms` 优雅退出。
+pub(crate) async fn build_engine_status_json_stream(
+    coordinator: Arc<EngineCoordinator>,
+) -> impl futures::Stream<Item = String> {
+    // 铁律：先订阅广播与停机信号，再抓取权威初始快照，避免间隙漏帧
+    let rx = coordinator.status_broadcast.subscribe();
+    let shutdown_rx = coordinator.subscribe_shutdown();
+    let initial = coordinator.get_status().await;
+    let initial_rev = initial.revision;
+    let initial_is_stopping = initial.status == "stopping" || *shutdown_rx.borrow();
+    let initial_data = serde_json::to_string(&initial).unwrap_or_default();
+
+    futures::stream::unfold(
+        (
+            coordinator,
+            rx,
+            shutdown_rx,
+            Some((initial_data, initial_is_stopping)),
+            initial_rev,
+            false,
+        ),
+        |(coordinator, mut rx, mut shutdown_rx, pending_initial, mut last_sent_revision, terminated)| async move {
+            if terminated {
+                return None;
+            }
+            if let Some((first, is_stopping)) = pending_initial {
+                return Some((
+                    first,
+                    (
+                        coordinator,
+                        rx,
+                        shutdown_rx,
+                        None,
+                        last_sent_revision,
+                        is_stopping,
+                    ),
+                ));
+            }
+
+            loop {
+                if *shutdown_rx.borrow() {
+                    let mut stopping = coordinator.get_status().await;
+                    stopping.status = "stopping".to_string();
+                    let data = serde_json::to_string(&stopping).unwrap_or_default();
+                    return Some((
+                        data,
+                        (
+                            coordinator,
+                            rx,
+                            shutdown_rx,
+                            None,
+                            stopping.revision.max(last_sent_revision),
+                            true,
+                        ),
+                    ));
+                }
+
+                tokio::select! {
+                    biased;
+                    changed = shutdown_rx.changed() => {
+                        if *shutdown_rx.borrow() || changed.is_err() {
+                            let mut stopping = coordinator.get_status().await;
+                            stopping.status = "stopping".to_string();
+                            let data = serde_json::to_string(&stopping).unwrap_or_default();
+                            return Some((
+                                data,
+                                (
+                                    coordinator,
+                                    rx,
+                                    shutdown_rx,
+                                    None,
+                                    stopping.revision.max(last_sent_revision),
+                                    true,
+                                ),
+                            ));
+                        }
+                    }
+                    recv = rx.recv() => {
+                        match recv {
+                            Ok(status) => {
+                                if status.revision > last_sent_revision {
+                                    last_sent_revision = status.revision;
+                                    let is_stopping = status.status == "stopping";
+                                    let data = serde_json::to_string(&status).unwrap_or_default();
+                                    return Some((
+                                        data,
+                                        (
+                                            coordinator,
+                                            rx,
+                                            shutdown_rx,
+                                            None,
+                                            last_sent_revision,
+                                            is_stopping,
+                                        ),
+                                    ));
+                                }
+                            }
+                            Err(tokio::sync::broadcast::error::RecvError::Lagged(skipped)) => {
+                                warn!("SSE 状态订阅滞后 {} 条广播，立即重取最新权威快照补发", skipped);
+                                let fresh = coordinator.get_status().await;
+                                let next_rev = fresh.revision.max(last_sent_revision);
+                                let is_stopping = fresh.status == "stopping";
+                                let data = serde_json::to_string(&fresh).unwrap_or_default();
+                                return Some((
+                                    data,
+                                    (
+                                        coordinator,
+                                        rx,
+                                        shutdown_rx,
+                                        None,
+                                        next_rev,
+                                        is_stopping,
+                                    ),
+                                ));
+                            }
+                            Err(tokio::sync::broadcast::error::RecvError::Closed) => {
+                                return None;
+                            }
+                        }
+                    }
+                }
+            }
+        },
+    )
+}
+
 /// GET /api/engine/events
 /// SSE 实时事件流：实时向连接端（如 Desktop）广播状态变更快照
 async fn engine_status_events(
     State(state): State<AppState>,
 ) -> Sse<impl futures::Stream<Item = Result<Event, std::convert::Infallible>>> {
-    let initial = state.coordinator.get_status().await;
-    let initial_data = serde_json::to_string(&initial).unwrap_or_default();
-    let rx = state.coordinator.status_broadcast.subscribe();
-
-    let stream = futures::stream::unfold(
-        (rx, Some(initial_data)),
-        |(mut rx, initial)| async move {
-            if let Some(first) = initial {
-                return Some((Ok(Event::default().data(first)), (rx, None)));
-            }
-            loop {
-                match rx.recv().await {
-                    Ok(status) => {
-                        let data = serde_json::to_string(&status).unwrap_or_default();
-                        return Some((Ok(Event::default().data(data)), (rx, None)));
-                    }
-                    Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => {
-                        continue;
-                    }
-                    Err(tokio::sync::broadcast::error::RecvError::Closed) => {
-                        return None;
-                    }
-                }
-            }
-        },
-    );
-
+    use futures::StreamExt;
+    let json_stream = build_engine_status_json_stream(state.coordinator.clone()).await;
+    let stream = json_stream.map(|data| Ok(Event::default().data(data)));
     Sse::new(stream).keep_alive(KeepAlive::default())
 }
 
@@ -4293,9 +4400,19 @@ async fn take_ui_intent(store: &UiIntentStore) -> Option<UiIntentRecord> {
 /// 优雅关闭引擎服务
 async fn shutdown(State(state): State<AppState>) -> impl IntoResponse {
     info!("收到 shutdown 请求，准备优雅关闭...");
-    let _ = state.coordinator.guard.stop().await;
-    tokio::spawn(async {
-        tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+    let coordinator = state.coordinator.clone();
+    tokio::spawn(async move {
+        // 留出极短窗口让 HTTP 200 响应先发回客户端，随后触发 shutdown 信号断开 SSE 与 axum::serve
+        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+        coordinator.trigger_shutdown();
+        let _ = coordinator.guard.stop().await;
+        if !coordinator.user_data_dir.is_empty() {
+            crate::server::remove_discovery_file_if_owned(
+                std::path::Path::new(&coordinator.user_data_dir),
+                std::process::id(),
+            );
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(350)).await;
         std::process::exit(0);
     });
     Json(json!({ "status": "shutting_down" }))
@@ -4833,6 +4950,10 @@ mod tests {
     fn test_engine_status_serializes_dual_slots() {
         let status = crate::engine::EngineStatus {
             status: "stopped".to_string(),
+            pid: 4242,
+            instance_id: "test-instance-uuid".to_string(),
+            revision: 3,
+            user_data_dir: "C:\\Users\\test\\firefly-ai-folder".to_string(),
             active_backend: "cuda".to_string(),
             current_model: None,
             current_model_name: None,
@@ -4864,6 +4985,10 @@ mod tests {
 
         let val = serde_json::to_value(&status).expect("序列化失败");
         assert_eq!(val["status"], "stopped");
+        assert_eq!(val["pid"], 4242);
+        assert_eq!(val["instance_id"], "test-instance-uuid");
+        assert_eq!(val["revision"], 3);
+        assert_eq!(val["user_data_dir"], "C:\\Users\\test\\firefly-ai-folder");
         assert_eq!(val["current_model"], serde_json::Value::Null);
         assert_eq!(val["active_language_model"], "qwen2.5-7b@modelscope");
         assert_eq!(val["active_embedding_model"], "wemm-2b@modelscope");

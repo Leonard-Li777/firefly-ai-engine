@@ -12,8 +12,8 @@ pub use param_builder::{EngineParams, ModelInfo, ParamBuilder};
 pub use process_guard::{ProcessError, ProcessEvent, ProcessGuard, ProcessStatus};
 pub use scheduler::{EngineScheduler, InstalledEngine};
 
-use std::path::PathBuf;
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::Mutex;
@@ -49,10 +49,55 @@ impl Drop for RequestGuard {
     }
 }
 
+/// 解析服务发现与同源身份校验使用的 `user_data_dir`：
+/// 优先级：`$FIREFLY_USER_DATA_DIR` > CLI `--discovery-dir` > 引擎自身 `fallback_data_dir`
+pub fn resolve_user_data_dir(fallback_data_dir: &Path) -> String {
+    let env_val = std::env::var("FIREFLY_USER_DATA_DIR").ok();
+    let args: Vec<String> = std::env::args().collect();
+    resolve_user_data_dir_with(env_val, &args, fallback_data_dir)
+}
+
+/// 可单测纯函数版 `user_data_dir` 解析逻辑（避免测试污染进程环境变量）
+pub(crate) fn resolve_user_data_dir_with(
+    env_val: Option<String>,
+    args: &[String],
+    fallback_data_dir: &Path,
+) -> String {
+    if let Some(val) = env_val {
+        let trimmed = val.trim();
+        if !trimmed.is_empty() {
+            return trimmed.to_string();
+        }
+    }
+
+    let mut iter = args.iter();
+    while let Some(arg) = iter.next() {
+        if arg == "--discovery-dir" {
+            if let Some(next_val) = iter.next() {
+                let trimmed = next_val.trim();
+                if !trimmed.is_empty() {
+                    return trimmed.to_string();
+                }
+            }
+        } else if let Some(rest) = arg.strip_prefix("--discovery-dir=") {
+            let trimmed = rest.trim();
+            if !trimmed.is_empty() {
+                return trimmed.to_string();
+            }
+        }
+    }
+
+    fallback_data_dir.to_string_lossy().to_string()
+}
+
 /// 引擎服务状态（对外暴露）
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct EngineStatus {
-    pub status: String,         // "starting" | "ready" | "processing" | "error" | "stopped"
+    pub status: String,         // "starting" | "ready" | "processing" | "error" | "stopped" | "stopping"
+    pub pid: u32,               // std::process::id()
+    pub instance_id: String,    // 进程启动期生成的 UUID v4
+    pub revision: u64,          // 每次状态变更单调递增 (AtomicU64)
+    pub user_data_dir: String,  // 所属 Desktop userData 目录（供 isPathEqual 同源校验）
     pub active_backend: String, // "cuda" | "vulkan" | "cpu" | ...
     pub current_model: Option<String>,
     pub current_model_name: Option<String>,
@@ -145,6 +190,14 @@ pub struct EngineCoordinator {
     pub diffusion_guard: Arc<ProcessGuard>,
     /// Audio 语音 Worker 子进程守护器
     pub audio_guard: Arc<ProcessGuard>,
+    /// 进程启动期生成的唯一实例 ID（UUID v4，防 PID 复用与同端口快速重启串连）
+    pub instance_id: String,
+    /// 状态单调递增版本号（每次 `notify_status_changed` 或停机广播前原子递增）
+    pub revision: Arc<AtomicU64>,
+    /// 所属 Desktop `userData` 目录（用于服务发现文件落盘及同源身份核验）
+    pub user_data_dir: String,
+    /// 优雅停机广播信号（`false` -> `true` 时通知 SSE 端点立即下发 stopping 终帧并断流，释放 axum::serve）
+    pub shutdown_tx: tokio::sync::watch::Sender<bool>,
 }
 
 impl EngineCoordinator {
@@ -178,6 +231,13 @@ impl EngineCoordinator {
         let aud_log_dir = log_dir.as_ref().map(|d| d.join("audio"));
         let audio_guard = ProcessGuard::new_with_log_dir(compliance.clone(), aud_log_dir);
         let (status_broadcast, _) = tokio::sync::broadcast::channel(32);
+        let (shutdown_tx, _) = tokio::sync::watch::channel(false);
+        let instance_id = uuid::Uuid::new_v4().to_string();
+        let fallback_data_dir = config
+            .try_lock()
+            .map(|c| c.data_dir.clone())
+            .unwrap_or_default();
+        let user_data_dir = resolve_user_data_dir(&fallback_data_dir);
 
         let coordinator = Arc::new(EngineCoordinator {
             hardware,
@@ -205,9 +265,34 @@ impl EngineCoordinator {
             arbiter,
             diffusion_guard,
             audio_guard,
+            instance_id,
+            revision: Arc::new(AtomicU64::new(1)),
+            user_data_dir,
+            shutdown_tx,
         });
 
         coordinator
+    }
+
+    /// 订阅优雅停机信号（供 SSE 流与 `axum::serve(...).with_graceful_shutdown(...)` 监听）
+    pub fn subscribe_shutdown(&self) -> tokio::sync::watch::Receiver<bool> {
+        self.shutdown_tx.subscribe()
+    }
+
+    /// 当前是否已进入优雅停机流程
+    pub fn is_shutting_down(&self) -> bool {
+        *self.shutdown_tx.borrow()
+    }
+
+    /// 获取当前最新状态版本号
+    pub fn current_revision(&self) -> u64 {
+        self.revision.load(Ordering::SeqCst)
+    }
+
+    /// 触发优雅停机：递增状态版本号并广播停机信号，令所有 SSE 流下发 `stopping` 终帧并立即断开
+    pub fn trigger_shutdown(&self) {
+        self.revision.fetch_add(1, Ordering::SeqCst);
+        let _ = self.shutdown_tx.send(true);
     }
 
     /// 惰性启动崩溃自愈守护。
@@ -363,6 +448,7 @@ impl EngineCoordinator {
 
     /// 向所有订阅方（SSE 连接、前端 WebView）实时广播最新状态快照
     pub async fn notify_status_changed(&self) {
+        self.revision.fetch_add(1, Ordering::SeqCst);
         let status = self.get_status().await;
         let _ = self.status_broadcast.send(status.clone());
         if let Some(ref handle) = *self.app_handle.lock().await {
@@ -374,17 +460,21 @@ impl EngineCoordinator {
     /// 获取当前引擎状态（用于 /api/engine/status 端点）
     pub async fn get_status(&self) -> EngineStatus {
         let proc_status = self.guard.status().await;
-        let status_str = match proc_status {
-            ProcessStatus::Starting => "starting",
-            ProcessStatus::Running => {
-                if self.active_requests.load(Ordering::Relaxed) > 0 {
-                    "processing"
-                } else {
-                    "ready"
+        let status_str = if self.is_shutting_down() {
+            "stopping"
+        } else {
+            match proc_status {
+                ProcessStatus::Starting => "starting",
+                ProcessStatus::Running => {
+                    if self.active_requests.load(Ordering::Relaxed) > 0 {
+                        "processing"
+                    } else {
+                        "ready"
+                    }
                 }
+                ProcessStatus::Failed => "error",
+                ProcessStatus::Stopped => "stopped",
             }
-            ProcessStatus::Failed => "error",
-            ProcessStatus::Stopped => "stopped",
         };
 
         let config = self.config.lock().await;
@@ -562,6 +652,10 @@ impl EngineCoordinator {
 
         EngineStatus {
             status: status_str.to_string(),
+            pid: std::process::id(),
+            instance_id: self.instance_id.clone(),
+            revision: self.revision.load(Ordering::SeqCst),
+            user_data_dir: self.user_data_dir.clone(),
             active_backend,
             current_model,
             current_model_name,

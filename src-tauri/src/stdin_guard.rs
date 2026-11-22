@@ -56,6 +56,19 @@ pub fn spawn_if_requested(app_handle: AppHandle) {
             }
 
             tracing::warn!("宿主 stdin 已关闭（桌面端进程已退出），引擎主动退出以避免孤儿残留");
+            {
+                use std::sync::Arc;
+                use tauri::Manager;
+                if let Some(coordinator) = app_handle.try_state::<Arc<crate::engine::EngineCoordinator>>() {
+                    coordinator.trigger_shutdown();
+                    if !coordinator.user_data_dir.is_empty() {
+                        crate::server::remove_discovery_file_if_owned(
+                            std::path::Path::new(&coordinator.user_data_dir),
+                            std::process::id(),
+                        );
+                    }
+                }
+            }
             app_handle.exit(0);
 
             // 兜底：托盘常驻 / 隐藏窗口可能让事件循环未及时响应退出请求，

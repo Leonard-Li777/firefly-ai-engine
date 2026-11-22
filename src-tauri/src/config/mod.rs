@@ -2,5 +2,6 @@
 pub mod store;
 
 pub use store::{
-    find_available_port, migrate_deprecated_models, ConfigStore, CustomModelEntry, EngineConfig,
+    bind_first_available_port, find_available_port, migrate_deprecated_models, ConfigStore,
+    CustomModelEntry, EngineConfig,
 };
