@@ -36,7 +36,8 @@ function parseArgs() {
   const args = process.argv.slice(2)
   const out = {
     tag: '',
-    dir: path.resolve(__dirname, '../dist/all'),
+    // 不传 --dir 时只校验清单契约本身（供流水线的幂等闸复用），传了才核对本地产物字节数
+    dir: '',
     report: '',
     url: MANIFEST_URL
   }
@@ -132,7 +133,11 @@ async function run() {
 
   errors.push(...assertManifestComplete(packages, { report: mirrorReport }))
 
-  const localPackages = collectLocalPackages(dir)
+  // 传 --dir 才做「清单体积 = 本地产物字节」核对；不传则只校验清单契约本身（供流水线幂等闸复用）
+  const localPackages = dir ? collectLocalPackages(dir) : {}
+  if (dir && !fs.existsSync(dir)) {
+    errors.push(`产物目录不存在: ${dir}`)
+  }
   for (const [key, expected] of Object.entries(localPackages)) {
     const entry = packages[key]
     if (!entry) {

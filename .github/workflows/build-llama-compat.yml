@@ -39,6 +39,9 @@ jobs:
       tag: ${{ steps.get-tag.outputs.tag }}
       needed: ${{ steps.check-published.outputs.needed }}
     steps:
+      - name: Checkout repository scripts
+        uses: actions/checkout@v4
+
       - name: Get target tag
         id: get-tag
         shell: bash
@@ -60,7 +63,7 @@ jobs:
           echo "Resolved tag: $LATEST_TAG"
           echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
 
-      - name: Check whether this tag is already published (idempotent gate)
+      - name: Check published manifest (idempotent + contract gate)
         id: check-published
         shell: bash
         run: |
@@ -71,17 +74,12 @@ jobs:
             echo "needed=true" >> $GITHUB_OUTPUT
             exit 0
           fi
-          MANIFEST=""
-          if ! MANIFEST=$(curl -sS --max-time 20 "https://download.iocn.cn/llama-cpp/manifest.json?t=$(date +%s)"); then
-            echo "::warning::无法读取线上 manifest.json，无法做幂等判断，按“需要发布”继续执行"
-            echo "needed=true" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-          LATEST=$(echo "$MANIFEST" | jq -r '.latestVersion // empty')
-          echo "线上清单 latestVersion: ${LATEST:-<空>} / 本次目标: $TAG"
-          if [ "$LATEST" = "$TAG" ]; then
+          # 幂等闸不能只看版本号：版本对得上但清单缺必需档位键（历史遗留半套清单）也必须重发。
+          # 判定逻辑复用发布后自检脚本，避免在 workflow 里再抄一份键列表。
+          if node scripts/verify-llama-manifest.cjs --tag "$TAG"; then
             echo "needed=false" >> $GITHUB_OUTPUT
           else
+            echo "::warning::线上清单未通过契约自检（版本未更新、缺必需档位键或不可读），按“需要发布”继续"
             echo "needed=true" >> $GITHUB_OUTPUT
           fi
 
