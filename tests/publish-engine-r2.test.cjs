@@ -36,14 +36,14 @@ test('inferPackageFlavor: 准确推断所有增补包与官方包 Flavor', () =>
   assert.equal(inferPackageFlavor('llama-b11095-bin-win-vulkan-compat-x64.zip'), 'vulkan-compat')
   assert.equal(inferPackageFlavor('llama-b11095-bin-win-cpu-avx-x64.zip'), 'cpu-avx')
   assert.equal(inferPackageFlavor('llama-b11095-bin-win-cpu-noavx-x64.zip'), 'cpu-noavx')
-  assert.equal(inferPackageFlavor('llama-b11095-bin-win-cuda-12.4-x64.zip'), 'cuda124')
-  assert.equal(inferPackageFlavor('cudart-llama-bin-win-cuda-12.4-x64.zip'), 'cudart-cuda124')
-  assert.equal(inferPackageFlavor('llama-b11095-bin-win-cuda-13.4-x64.zip'), 'cuda134')
-  // CUDA 13 小版本会随官方 Toolkit 前进（13.3 → 13.4 → 13.5），家族归一后必须仍落 cuda134 键，
+  assert.equal(inferPackageFlavor('llama-b11095-bin-win-cuda-12.4-x64.zip'), 'cuda12')
+  assert.equal(inferPackageFlavor('cudart-llama-bin-win-cuda-12.4-x64.zip'), 'cudart-cuda12')
+  assert.equal(inferPackageFlavor('llama-b11095-bin-win-cuda-13.4-x64.zip'), 'cuda13')
+  // CUDA 13 小版本会随官方 Toolkit 前进（13.3 → 13.4 → 13.5），家族归一后必须仍落 cuda13 键，
   // 否则清单缺键会让客户端体积回落到硬编码常量。
-  assert.equal(inferPackageFlavor('llama-b11095-bin-win-cuda-13.5-x64.zip'), 'cuda134')
-  assert.equal(inferPackageFlavor('cudart-llama-bin-win-cuda-13.5-x64.zip'), 'cudart-cuda134')
-  assert.equal(inferPackageFlavor('llama-b11095-bin-win-cuda-13.3-x64.zip'), 'cuda134')
+  assert.equal(inferPackageFlavor('llama-b11095-bin-win-cuda-13.5-x64.zip'), 'cuda13')
+  assert.equal(inferPackageFlavor('cudart-llama-bin-win-cuda-13.5-x64.zip'), 'cudart-cuda13')
+  assert.equal(inferPackageFlavor('llama-b11095-bin-win-cuda-13.3-x64.zip'), 'cuda13')
   assert.equal(inferPackageFlavor('llama-b11095-bin-win-vulkan-x64.zip'), 'vulkan')
   assert.equal(inferPackageFlavor('llama-b11095-bin-win-sycl-x64.zip'), 'sycl')
   assert.equal(inferPackageFlavor('llama-b11095-bin-win-rocm-10.0-x64.zip'), 'rocm')

@@ -13,6 +13,11 @@ const path = require('path')
 const https = require('https')
 const crypto = require('crypto')
 const { createProxyAgent, delay, isNetworkError, detectProxy } = require('./utils/proxy-utils.cjs')
+const {
+  isTargetOfficialAsset,
+  buildMirrorReport,
+  detectUnsupportedCudaMajors
+} = require('./llama-package-contract.cjs')
 
 const MAX_RETRIES = 3
 const RETRY_DELAY = 3000
@@ -139,26 +144,7 @@ function downloadFile(url, destPath, retryCount = 0) {
   })
 }
 
-// 目标包匹配器
-function isTargetOfficialAsset(name) {
-  const lower = name.toLowerCase()
-  // Windows x64 相关
-  if (lower.includes('win') && lower.includes('x64')) {
-    // CUDA 小版本随官方 Toolkit 升级前进（13.3 → 13.4 → 13.5…），按家族匹配而非枚举具体版本，
-    // 否则官方一升级，整档 CUDA 包就不会被镜像，R2 清单缺键 → 客户端体积回落到硬编码常量。
-    if (/cuda-(12|13)\.\d/.test(lower)) return true
-    if (lower.includes('vulkan')) return true
-    if (lower.includes('sycl')) return true
-    if (lower.includes('rocm')) return true
-    if (lower.includes('cpu') || lower.includes('avx2') || lower.endsWith('-bin-win-x64.zip'))
-      return true
-  }
-  // macOS Metal 相关
-  if (lower.includes('macos')) {
-    if (lower.includes('arm64') || lower.includes('x64')) return true
-  }
-  return false
-}
+// 目标包匹配器：统一走发布包契约（按家族/平台判定，不枚举 CUDA 小版本）
 
 async function run() {
   const { tag: inputTag, outDir } = parseArgs()
@@ -204,6 +190,15 @@ async function run() {
     throw new Error(`在版本 ${targetTag} 中未找到任何符合条件的官方二进制资产！`)
   }
 
+  // 上游出现契约尚未支持的 CUDA 大版本时，必须在下载前失败（否则会静默少一整个档位）
+  const unsupportedCudaMajors = detectUnsupportedCudaMajors(allAssets.map(a => a.name))
+  if (unsupportedCudaMajors.length > 0) {
+    throw new Error(
+      `上游版本 ${targetTag} 出现引擎尚未支持的 CUDA 大版本资产: ${unsupportedCudaMajors.join(', ')}。` +
+        '请先扩展 scripts/llama-package-contract.cjs 与引擎读侧契约后再镜像。'
+    )
+  }
+
   const manifestEntries = []
 
   for (const asset of matchedAssets) {
@@ -235,8 +230,24 @@ async function run() {
     'utf-8'
   )
 
+  // 镜像报告：上游应有 vs 本地落地 的差集，是发布阶段「缺包必须红灯」的唯一事实来源
+  const mirrorReport = buildMirrorReport({
+    tag: targetTag,
+    upstreamAssets: allAssets.map(a => a.name),
+    mirrored: manifestEntries.map(e => e.name)
+  })
+  const reportPath = path.join(outDir, '_mirror-report.json')
+  fs.writeFileSync(reportPath, JSON.stringify(mirrorReport, null, 2), 'utf-8')
+
   log(`----------------------------------------`)
   log(`全量官方资产镜像完成！清单已输出至: ${manifestPath}`)
+  log(`镜像报告已输出至: ${reportPath}`)
+
+  if (mirrorReport.missing.length > 0 || mirrorReport.orphanCudaAssets.length > 0) {
+    for (const name of mirrorReport.missing) console.error(`❌ 上游应有但未镜像: ${name}`)
+    for (const msg of mirrorReport.orphanCudaAssets) console.error(`❌ ${msg}`)
+    throw new Error('镜像完整性校验未通过：存在未落地的上游资产，拒绝进入发布阶段')
+  }
 }
 
 if (require.main === module) {

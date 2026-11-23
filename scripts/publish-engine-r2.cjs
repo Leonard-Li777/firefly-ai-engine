@@ -13,6 +13,11 @@ const https = require('https')
 const crypto = require('crypto')
 const { getEnvValues } = require('./utils/env-utils.cjs')
 const { createProxyAgent, delay, isNetworkError, detectProxy } = require('./utils/proxy-utils.cjs')
+const {
+  inferPackageFlavor,
+  PACKAGE_FLAVOR_ALIASES,
+  assertManifestComplete
+} = require('./llama-package-contract.cjs')
 
 const MAX_RETRIES = 3
 const RETRY_DELAY = 3000
@@ -76,43 +81,6 @@ function identifyPrunableVersions(allVersions, keepCount = 2) {
     activeVersions: sorted.slice(0, keepCount),
     prunableVersions: sorted.slice(keepCount)
   }
-}
-
-/**
- * 根据包名推断 Flavor 标识
- *
- * CUDA 小版本会随官方 Toolkit 升级前进（13.3 → 13.4 → 13.5…），因此这里按「家族」归一，
- * 不允许再枚举具体小版本：13.x 统一落到 `cuda134` / `cudart-cuda134`（对老客户端保持键名兼容），
- * 12.x 统一落到 `cuda124` / `cudart-cuda124`。
- */
-function inferPackageFlavor(filename) {
-  const lower = filename.toLowerCase()
-  if (lower.includes('vulkan-compat')) return 'vulkan-compat'
-  if (lower.includes('cpu-avx-x64')) return 'cpu-avx'
-  if (lower.includes('cpu-noavx-x64')) return 'cpu-noavx'
-  if (/cuda-13\.\d/.test(lower)) {
-    return lower.includes('cudart') ? 'cudart-cuda134' : 'cuda134'
-  }
-  if (/cuda-12\.\d/.test(lower)) {
-    return lower.includes('cudart') ? 'cudart-cuda124' : 'cuda124'
-  }
-  if (lower.includes('vulkan')) return 'vulkan'
-  if (lower.includes('sycl')) return 'sycl'
-  if (lower.includes('rocm')) return 'rocm'
-  if (lower.includes('cpu') || lower.includes('avx2') || lower.endsWith('-bin-win-x64.zip'))
-    return 'cpu'
-  if (lower.includes('macos-arm64')) return 'metal-arm64'
-  if (lower.includes('macos-x64')) return 'metal-x64'
-  return path.basename(filename, path.extname(filename))
-}
-
-/**
- * Flavor 家族别名：读侧（引擎体积解析）按 `cuda13` / `cudart-cuda13` 家族前缀消费，
- * 写侧同时登记具体键与家族键，两边都不再依赖某一具体 CUDA 小版本。
- */
-const PACKAGE_FLAVOR_ALIASES = {
-  cuda134: 'cuda13',
-  'cudart-cuda134': 'cudart-cuda13'
 }
 
 /**
@@ -269,6 +237,7 @@ async function run() {
   const args = process.argv.slice(2)
   let targetTag = process.env.LLAMA_TAG || ''
   let artifactsDir = path.resolve(__dirname, '../dist')
+  let reportPath = ''
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--tag' && args[i + 1]) {
@@ -276,6 +245,9 @@ async function run() {
       i++
     } else if (args[i] === '--dir' && args[i + 1]) {
       artifactsDir = path.resolve(process.cwd(), args[i + 1])
+      i++
+    } else if (args[i] === '--report' && args[i + 1]) {
+      reportPath = path.resolve(process.cwd(), args[i + 1])
       i++
     }
   }
@@ -332,6 +304,41 @@ async function run() {
   }
 
   const currentVersionPackages = {}
+
+  // 1.5 发布前硬闸：先用「待上传文件 + 镜像报告」核对契约完整性，
+  // 缺任一必需档位 / 上游应有而未落地 / CUDA 主包与 cudart 未成对，一律拒绝发布。
+  // 这一步必须在上传与写 manifest 之前，避免出现「清单已覆盖、键却缺失」的半套发布。
+  let mirrorReport = null
+  if (reportPath) {
+    if (!fs.existsSync(reportPath)) {
+      throw new Error(`镜像报告不存在: ${reportPath}（sync 阶段未产出报告，拒绝发布）`)
+    }
+    mirrorReport = JSON.parse(fs.readFileSync(reportPath, 'utf-8'))
+    if (mirrorReport.tag && mirrorReport.tag !== targetTag) {
+      throw new Error(`镜像报告版本 ${mirrorReport.tag} 与发布版本 ${targetTag} 不一致，拒绝发布`)
+    }
+  } else {
+    log('⚠️ 未提供 --report，跳过「上游应有包」差集校验，仅校验必需档位键')
+  }
+
+  const plannedPackages = {}
+  for (const file of filesToUpload) {
+    const filename = path.basename(file)
+    if (!filename.endsWith('.zip') && !filename.endsWith('.tar.gz')) continue
+    const flavor = inferPackageFlavor(filename)
+    plannedPackages[flavor] = { file: filename }
+    const alias = PACKAGE_FLAVOR_ALIASES[flavor]
+    if (alias) plannedPackages[alias] = { file: filename }
+  }
+
+  const contractErrors = assertManifestComplete(plannedPackages, { report: mirrorReport })
+  if (contractErrors.length > 0) {
+    for (const err of contractErrors) console.error(`❌ 契约校验失败: ${err}`)
+    throw new Error(
+      `发布包契约校验未通过（${contractErrors.length} 项），已中止发布且未写入 manifest.json`
+    )
+  }
+  log(`✓ 发布包契约校验通过（${Object.keys(plannedPackages).length} 个档位键）`)
 
   // 2. 执行批量上传
   for (const file of filesToUpload) {

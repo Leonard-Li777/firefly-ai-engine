@@ -18,6 +18,15 @@ on:
         required: false
         type: boolean
         default: true
+      force_publish:
+        description: '强制发布（忽略“该 tag 已发布”的幂等早退）'
+        required: false
+        type: boolean
+        default: false
+  # 定时检测上游新版本：无需任何人本地执行脚本，上游出 bXXXX 即自动镜像并发布。
+  # 每个 job 都会先经过 resolve-tag 的幂等闸（清单已是最新则整条流水线空跑退出）。
+  schedule:
+    - cron: '0 */6 * * *'
 
 permissions:
   contents: write
@@ -28,6 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.get-tag.outputs.tag }}
+      needed: ${{ steps.check-published.outputs.needed }}
     steps:
       - name: Get target tag
         id: get-tag
@@ -37,24 +47,48 @@ jobs:
           if [ -n "$INPUT_TAG" ]; then
             echo "Using manual input tag: $INPUT_TAG"
             echo "tag=$INPUT_TAG" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          echo "Fetching latest official release tag from ggml-org/llama.cpp (matching bXXXX)..."
+          LATEST_TAG=$(curl -sS --max-time 30 "https://api.github.com/repos/ggml-org/llama.cpp/releases" \
+            | jq -r '[.[] | select(.tag_name | test("^b[0-9]+$"))][0].tag_name // empty')
+          if [ -z "$LATEST_TAG" ] || [ "$LATEST_TAG" = "null" ]; then
+            # 禁止回退到硬编码 tag：静默发布一个与上游无关的版本比失败更危险
+            echo "::error::无法从 GitHub API 解析上游 bXXXX tag，终止本次发布"
+            exit 1
+          fi
+          echo "Resolved tag: $LATEST_TAG"
+          echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+
+      - name: Check whether this tag is already published (idempotent gate)
+        id: check-published
+        shell: bash
+        run: |
+          TAG="${{ steps.get-tag.outputs.tag }}"
+          FORCE="${{ github.event.inputs.force_publish }}"
+          if [ "$FORCE" = "true" ]; then
+            echo "Force publish requested, bypassing idempotent gate."
+            echo "needed=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          MANIFEST=""
+          if ! MANIFEST=$(curl -sS --max-time 20 "https://download.iocn.cn/llama-cpp/manifest.json?t=$(date +%s)"); then
+            echo "::warning::无法读取线上 manifest.json，无法做幂等判断，按“需要发布”继续执行"
+            echo "needed=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          LATEST=$(echo "$MANIFEST" | jq -r '.latestVersion // empty')
+          echo "线上清单 latestVersion: ${LATEST:-<空>} / 本次目标: $TAG"
+          if [ "$LATEST" = "$TAG" ]; then
+            echo "needed=false" >> $GITHUB_OUTPUT
           else
-            echo "Fetching latest official release tag from ggml-org/llama.cpp (matching bXXXX)..."
-            LATEST_TAG=$(curl -s "https://api.github.com/repos/ggml-org/llama.cpp/releases" | jq -r '[.[] | select(.tag_name | test("^b[0-9]+$"))][0].tag_name // empty')
-            if [ -z "$LATEST_TAG" ] || [ "$LATEST_TAG" = "null" ]; then
-              echo "Warning: Failed to fetch bXXXX tag, trying latest release fallback..."
-              LATEST_TAG=$(curl -s "https://api.github.com/repos/ggml-org/llama.cpp/releases/latest" | jq -r '.tag_name // empty')
-            fi
-            if [ -z "$LATEST_TAG" ] || [ "$LATEST_TAG" = "null" ]; then
-              echo "Error: Failed to fetch tag from GitHub API, fallback to default b11160"
-              LATEST_TAG="b11160"
-            fi
-            echo "Resolved tag: $LATEST_TAG"
-            echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+            echo "needed=true" >> $GITHUB_OUTPUT
           fi
 
   build-compat-matrix:
     name: Build Windows x64 (${{ matrix.target_name }})
     needs: resolve-tag
+    if: needs.resolve-tag.outputs.needed == 'true'
     runs-on: windows-latest
     strategy:
       fail-fast: false
@@ -154,7 +188,7 @@ jobs:
     name: Mirror Official Releases (${{ needs.resolve-tag.outputs.tag }})
     needs: resolve-tag
     runs-on: ubuntu-latest
-    if: ${{ github.event.inputs.upload_r2 == 'true' || github.event.inputs.upload_r2 == true }}
+    if: needs.resolve-tag.outputs.needed == 'true' && (github.event_name != 'workflow_dispatch' || inputs.upload_r2)
     steps:
       - name: Checkout repository scripts
         uses: actions/checkout@v4
@@ -165,13 +199,15 @@ jobs:
           node-version: 20
 
       - name: Install Dependencies
-        run: pnpm install --frozen-lockfile || true
+        run: pnpm install --frozen-lockfile
 
       - name: Mirror Official Assets
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          node scripts/sync-official-llama-assets.cjs --tag ${{ needs.resolve-tag.outputs.tag }} --out dist/official
+          node scripts/sync-official-llama-assets.cjs \
+            --tag ${{ needs.resolve-tag.outputs.tag }} \
+            --out dist/official
 
       - name: Upload Official Staged Artifacts
         uses: actions/upload-artifact@v4
@@ -183,7 +219,7 @@ jobs:
     name: Publish R2 & Two-Version Rotation
     needs: [resolve-tag, build-compat-matrix, sync-official-assets]
     runs-on: ubuntu-latest
-    if: ${{ github.event.inputs.upload_r2 == 'true' || github.event.inputs.upload_r2 == true }}
+    if: needs.resolve-tag.outputs.needed == 'true' && (github.event_name != 'workflow_dispatch' || inputs.upload_r2)
     steps:
       - name: Checkout repository scripts
         uses: actions/checkout@v4
@@ -213,12 +249,17 @@ jobs:
           R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
         run: |
-          node scripts/publish-engine-r2.cjs --tag ${{ needs.resolve-tag.outputs.tag }} --dir dist/all
+          # --report 让发布脚本具备「上游应有 vs 本地落地」差集：缺包即中止，绝不写半套清单
+          node scripts/publish-engine-r2.cjs \
+            --tag ${{ needs.resolve-tag.outputs.tag }} \
+            --dir dist/all \
+            --report dist/all/_mirror-report.json
 
   publish-unisource:
     name: Publish llama.cpp to firefly-resources & R2
     needs: [resolve-tag, build-compat-matrix, sync-official-assets]
     runs-on: ubuntu-latest
+    if: needs.resolve-tag.outputs.needed == 'true' && (github.event_name != 'workflow_dispatch' || inputs.upload_r2)
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -271,7 +312,7 @@ jobs:
     name: Publish Custom Compat to GitHub Release
     needs: [resolve-tag, build-compat-matrix]
     runs-on: ubuntu-latest
-    if: ${{ github.event.inputs.upload_release == 'true' || github.event.inputs.upload_release == true }}
+    if: needs.resolve-tag.outputs.needed == 'true' && github.event_name == 'workflow_dispatch' && inputs.upload_release
     steps:
       - name: Download Custom Compat Artifacts
         uses: actions/download-artifact@v4
@@ -298,3 +339,37 @@ jobs:
             - `llama-${{ needs.resolve-tag.outputs.tag }}-bin-win-cpu-avx-x64.zip`: 仅开启基础 AVX1，适配二代/三代酷睿（SNB/IVB）及初代至强 E5。
             - `llama-${{ needs.resolve-tag.outputs.tag }}-bin-win-cpu-noavx-x64.zip`: 关闭所有 AVX 指令集（纯 SSE4.2 兜底），拯救老奔腾/赛扬等全系无 AVX 机器，杜绝 `0xC000001D` 崩溃。
             - `llama-${{ needs.resolve-tag.outputs.tag }}-bin-win-vulkan-compat-x64.zip`: 宽容型 Vulkan 1.2 规范构建，锁定 AVX1 主机端代码，适配 Pascal 架构老 N 卡（GTX 1060 等）及老驱动/旧核显。
+
+  verify-manifest:
+    name: Verify Published Manifest (Contract + Size Truth)
+    needs: [resolve-tag, publish-r2-and-rotate]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository scripts
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Download Custom Compat Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: llama-${{ needs.resolve-tag.outputs.tag }}-bin-win-*-x64
+          path: dist/all
+          merge-multiple: true
+
+      - name: Download Official Mirror Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: llama-${{ needs.resolve-tag.outputs.tag }}-official-mirror
+          path: dist/all
+
+      # 发布成功 = 线上清单可验证：latestVersion 对得上、必需档位键齐全、体积与产物字节一致
+      - name: Verify live manifest
+        run: |
+          node scripts/verify-llama-manifest.cjs \
+            --tag ${{ needs.resolve-tag.outputs.tag }} \
+            --dir dist/all \
+            --report dist/all/_mirror-report.json
