@@ -23,10 +23,10 @@ on:
         required: false
         type: boolean
         default: false
-  # 定时检测上游新版本：无需任何人本地执行脚本，上游出 bXXXX 即自动镜像并发布。
-  # 每个 job 都会先经过 resolve-tag 的幂等闸（清单已是最新则整条流水线空跑退出）。
-  schedule:
-    - cron: '0 */6 * * *'
+  # 注意：本流水线只跑在 release 分支（只读受控晋升目标），因此不能在这里写 schedule ——
+  # GitHub 的 cron 只认仓库默认分支（master）上的 workflow 文件与代码。
+  # 定时探测由默认分支上的 .github/workflows/dispatch-llama-release.yml 负责，
+  # 它用 workflow_dispatch --ref release 触发本流水线；幂等/完整性闸仍在本文件内。
 
 permissions:
   contents: write

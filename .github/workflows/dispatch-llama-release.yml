@@ -1,0 +1,64 @@
+name: dispatch-llama-release
+
+# 为什么需要这个"薄触发器"？
+#
+# GitHub 的 schedule 只能在【仓库默认分支】上生效：cron 到点运行时，取的是默认分支
+# 上那一版 workflow 文件与代码。而 llama.cpp 发布流水线（build-llama-compat.yml）属于
+# 发版侧产物，按 release-sop.md 的铁律只能在 release 分支上跑（release 是只读受控晋升目标）。
+#
+# 若把 schedule: 直接写在 build-llama-compat.yml 里，除非释放分支被设为默认分支，
+# 否则永远不会触发；即使两个分支都有该文件，cron 跑的也是 master 那一份。
+#
+# 因此把"定时探测"与"真正发布"拆开：
+#   - 本工作流常驻默认分支 master，只负责按 cron 触发（零构建、秒级结束）；
+#   - 通过 workflow_dispatch 显式指定 --ref release，让发布流水线跑 release 分支上的那一版。
+#
+# 幂等与完整性闸仍在 build-llama-compat.yml 内（resolve-tag → verify-llama-manifest），
+# 因此本触发器可以放心地每 6 小时盲触发一次。
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: dispatch-llama-release
+  cancel-in-progress: false
+
+jobs:
+  dispatch:
+    name: Dispatch llama.cpp release pipeline on release branch
+    runs-on: ubuntu-latest
+    steps:
+      - name: Skip if a release run is already in progress
+        id: guard
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_DISPATCH_TOKEN || secrets.UNISOURCE_RELEASE_TOKEN || secrets.PRO_SUBMODULE_TOKEN || secrets.PAT || secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          STATUS=$(gh run list --repo "$REPO" --workflow build-llama-compat.yml --limit 1 \
+            --json status --jq '.[0].status // "none"')
+          echo "最近一次发布流水线状态: $STATUS"
+          if [ "$STATUS" = "in_progress" ] || [ "$STATUS" = "queued" ] || [ "$STATUS" = "waiting" ]; then
+            echo "run=false" >> $GITHUB_OUTPUT
+          else
+            echo "run=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Trigger pipeline on release branch
+        if: steps.guard.outputs.run == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_DISPATCH_TOKEN || secrets.UNISOURCE_RELEASE_TOKEN || secrets.PRO_SUBMODULE_TOKEN || secrets.PAT || secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          gh workflow run build-llama-compat.yml \
+            --repo "$REPO" \
+            --ref release \
+            --field upload_r2=true \
+            --field upload_release=true
+          echo "已在 release 分支触发 build-llama-compat（是否真正发布由内部契约闸决定）"
