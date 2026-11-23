@@ -80,16 +80,20 @@ function identifyPrunableVersions(allVersions, keepCount = 2) {
 
 /**
  * 根据包名推断 Flavor 标识
+ *
+ * CUDA 小版本会随官方 Toolkit 升级前进（13.3 → 13.4 → 13.5…），因此这里按「家族」归一，
+ * 不允许再枚举具体小版本：13.x 统一落到 `cuda134` / `cudart-cuda134`（对老客户端保持键名兼容），
+ * 12.x 统一落到 `cuda124` / `cudart-cuda124`。
  */
 function inferPackageFlavor(filename) {
   const lower = filename.toLowerCase()
   if (lower.includes('vulkan-compat')) return 'vulkan-compat'
   if (lower.includes('cpu-avx-x64')) return 'cpu-avx'
   if (lower.includes('cpu-noavx-x64')) return 'cpu-noavx'
-  if (lower.includes('cuda-13.4') || lower.includes('cuda-13.3')) {
+  if (/cuda-13\.\d/.test(lower)) {
     return lower.includes('cudart') ? 'cudart-cuda134' : 'cuda134'
   }
-  if (lower.includes('cuda-12.4')) {
+  if (/cuda-12\.\d/.test(lower)) {
     return lower.includes('cudart') ? 'cudart-cuda124' : 'cuda124'
   }
   if (lower.includes('vulkan')) return 'vulkan'
@@ -100,6 +104,15 @@ function inferPackageFlavor(filename) {
   if (lower.includes('macos-arm64')) return 'metal-arm64'
   if (lower.includes('macos-x64')) return 'metal-x64'
   return path.basename(filename, path.extname(filename))
+}
+
+/**
+ * Flavor 家族别名：读侧（引擎体积解析）按 `cuda13` / `cudart-cuda13` 家族前缀消费，
+ * 写侧同时登记具体键与家族键，两边都不再依赖某一具体 CUDA 小版本。
+ */
+const PACKAGE_FLAVOR_ALIASES = {
+  cuda134: 'cuda13',
+  'cudart-cuda134': 'cudart-cuda13'
 }
 
 /**
@@ -330,11 +343,15 @@ async function run() {
     if (filename.endsWith('.zip') || filename.endsWith('.tar.gz')) {
       const flavor = inferPackageFlavor(filename)
       const sha256 = crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex')
-      currentVersionPackages[flavor] = {
+      const entry = {
         file: filename,
         size: fs.statSync(file).size,
         sha256
       }
+      currentVersionPackages[flavor] = entry
+      // 同时登记家族别名键（cuda13 / cudart-cuda13），读侧按家族前缀即可命中任一 CUDA 13.x 包
+      const alias = PACKAGE_FLAVOR_ALIASES[flavor]
+      if (alias) currentVersionPackages[alias] = entry
     }
   }
   log(`✓ 版本 ${targetTag} 全量资产上传 R2 完成！`)

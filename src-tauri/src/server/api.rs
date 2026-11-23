@@ -1188,8 +1188,8 @@ async fn engine_list(State(state): State<AppState>) -> impl IntoResponse {
 
     if is_darwin {
         // macOS 平台：输出 Metal (Apple Silicon) 与 CPU
-        let metal_size = resolve_package_size_mb(manifest.as_ref(), "metal", 180.0);
-        let cpu_size = resolve_package_size_mb(manifest.as_ref(), "cpu", 120.0);
+        let metal_size = resolve_package_size_mb(manifest.as_ref(), "metal");
+        let cpu_size = resolve_package_size_mb(manifest.as_ref(), "cpu");
         // 推荐与适配类型基于硬件最佳层级判定，与是否已下载无关
         let metal_recommended = best_tier == "metal";
 
@@ -1221,12 +1221,12 @@ async fn engine_list(State(state): State<AppState>) -> impl IntoResponse {
         }));
     } else {
         // Windows / Linux 平台：绝对不展示 Apple Metal
-        let vulkan_size = resolve_package_size_mb(manifest.as_ref(), "vulkan", 31.0);
-        let cpu_size = resolve_package_size_mb(manifest.as_ref(), cpu_backend, 18.0);
+        let vulkan_size = resolve_package_size_mb(manifest.as_ref(), "vulkan");
+        let cpu_size = resolve_package_size_mb(manifest.as_ref(), cpu_backend);
 
         if is_nvidia {
-            let cuda13_size = resolve_package_size_mb(manifest.as_ref(), "cuda134", 150.2);
-            let cuda12_size = resolve_package_size_mb(manifest.as_ref(), "cuda", 254.7);
+            let cuda13_size = resolve_package_size_mb(manifest.as_ref(), "cuda134");
+            let cuda12_size = resolve_package_size_mb(manifest.as_ref(), "cuda");
 
             // 推荐与适配类型基于驱动合规性判定，与是否已下载无关：
             // 驱动合规的 CUDA 就是"最佳适配"，即使它尚未下载；Vulkan 仅在驱动不达标时推荐
@@ -1234,10 +1234,10 @@ async fn engine_list(State(state): State<AppState>) -> impl IntoResponse {
             let recommend_cuda12 = !cuda13_compliant && cuda12_compliant;
             let recommend_vulkan = !cuda13_compliant && !cuda12_compliant;
 
-            // CUDA 13.4（最新驱动）
+            // CUDA 13.x（最新驱动，具体小版本随官方 Toolkit 升级前进）
             list.push(json!({
                 "id": "cuda134",
-                "name": "CUDA 13.4",
+                "name": "CUDA 13.x",
                 "backend": "cuda134",
                 "matchType": if recommend_cuda13 { "best" } else { "compatible" },
                 "matchText": if recommend_cuda13 { "最新最佳" } else { "兼容模式" },
@@ -1293,7 +1293,7 @@ async fn engine_list(State(state): State<AppState>) -> impl IntoResponse {
                 "driverCompliant": true
             }));
         } else if is_amd {
-            let hip_size = resolve_package_size_mb(manifest.as_ref(), "hip", 252.6);
+            let hip_size = resolve_package_size_mb(manifest.as_ref(), "hip");
             // 推荐与适配类型基于硬件最佳层级判定，与是否已下载无关
             let hip_recommended = best_tier == "hip" || best_tier == "rocm";
 
@@ -1338,7 +1338,7 @@ async fn engine_list(State(state): State<AppState>) -> impl IntoResponse {
                 "driverCompliant": true
             }));
         } else if is_intel {
-            let sycl_size = resolve_package_size_mb(manifest.as_ref(), "sycl", 120.2);
+            let sycl_size = resolve_package_size_mb(manifest.as_ref(), "sycl");
             // 推荐与适配类型基于硬件最佳层级判定，与是否已下载无关
             let sycl_recommended = best_tier == "sycl";
 
@@ -1692,7 +1692,11 @@ async fn start_engine_download(
     let target_initial_name = if cfg!(windows) {
         match backend.as_str() {
             "cuda" | "cuda12" => Some("llama-bin-win-cuda-12.4-x64.zip".to_string()),
-            "cuda13" | "cuda134" => Some("llama-bin-win-cuda-13.4-x64.zip".to_string()),
+            // 仅作为下载任务的首帧占位名：真实文件名由候选链解析后覆盖，勿在此写死某一个小版本。
+            "cuda13" | "cuda134" => Some(format!(
+                "llama-bin-win-cuda-{}-x64.zip",
+                CUDA13_WIN_VERSION_SUFFIXES[0]
+            )),
             "vulkan" => Some("llama-bin-win-vulkan-x64.zip".to_string()),
             "vulkan-compat" => Some("llama-bin-win-vulkan-compat-x64.zip".to_string()),
             "rocm" | "hip" => Some("llama-bin-win-rocm-10.0-x64.zip".to_string()),
@@ -1824,7 +1828,11 @@ fn resolve_engine_target_package(backend: &str) -> Option<(&'static str, Vec<&'s
                 "llama-*-bin-win-cuda-12.4-x64.zip",
                 "cudart-llama-bin-win-cuda-12.4-x64.zip"
             ])),
-            "cuda13" | "cuda134" => Some(("cuda-13.4", vec![
+            // CUDA 13.x 家族：小版本随 Toolkit 升级前进（13.5 → 13.4 → 13.3），
+            // 这里的 tier 仅是「包名解析失败」时的兜底目录名，正常路径以实际包名反解为准。
+            "cuda13" | "cuda134" => Some(("cuda-13.5", vec![
+                "llama-*-bin-win-cuda-13.5-x64.zip",
+                "cudart-llama-bin-win-cuda-13.5-x64.zip",
                 "llama-*-bin-win-cuda-13.4-x64.zip",
                 "cudart-llama-bin-win-cuda-13.4-x64.zip",
                 "llama-*-bin-win-cuda-13.3-x64.zip",
@@ -1911,62 +1919,87 @@ pub async fn get_cached_manifest() -> Option<RemoteManifest> {
     guard.as_ref().map(|(m, _)| m.clone())
 }
 
+/// Windows CUDA 13 官方包小版本候选链（新 → 旧）
+///
+/// llama.cpp 只对 Windows 产出 CUDA 12.x 与 13.x 两档，而 13.x 的具体小版本会随 CUDA Toolkit
+/// 升级前进（13.3 → 13.4 → 13.5）。下载候选必须沿这条链依次尝试，禁止再把单一小版本
+/// （如 13.4）写死在下载/清单逻辑里，否则官方一升级就整档失效。
+pub const CUDA13_WIN_VERSION_SUFFIXES: &[&str] = &["13.5", "13.4", "13.3"];
+
+/// Windows CUDA 12 官方包小版本（官方长期稳定在 12.4）
+pub const CUDA12_WIN_VERSION_SUFFIX: &str = "12.4";
+
+/// 按清单键查找包：精确键优先；`allow_family` 为真时再按「家族前缀」回落。
+///
+/// 镜像清单既可能用统一家族键登记（`cuda13` / `cudart-cuda13`），也可能用具体小版本键登记
+/// （`cuda134` / `cuda135`），读侧必须同时兼容；同族多键时取字典序最大者（13.5 > 13.4 > 13.3）。
+fn find_manifest_package<'a>(
+    packages: &'a HashMap<String, ManifestPackageInfo>,
+    key: &str,
+    allow_family: bool,
+) -> Option<&'a ManifestPackageInfo> {
+    if let Some(pkg) = packages.get(key) {
+        return Some(pkg);
+    }
+    if !allow_family {
+        return None;
+    }
+    packages
+        .iter()
+        .filter(|(k, _)| k.starts_with(key))
+        .max_by(|a, b| a.0.cmp(b.0))
+        .map(|(_, v)| v)
+}
+
 /// 根据 backend 与 manifest 计算精确的文件大小（MB，保留 1 位小数）
-pub fn resolve_package_size_mb(manifest: Option<&RemoteManifest>, backend: &str, fallback_mb: f64) -> f64 {
-    let manifest = match manifest {
-        Some(m) => m,
-        None => return fallback_mb,
+///
+/// 返回值语义严格：清单缺失、版本缺失或对应包未登记时一律返回 `None`（前端展示「-」）。
+/// 严禁再用硬编码常量（150.2 / 254.7 等）兜底——那会把「清单没这个包」的真实故障
+/// 伪装成一个看似精确的体积，并让两个后端的体积对比彻底失真。
+pub fn resolve_package_size_mb(manifest: Option<&RemoteManifest>, backend: &str) -> Option<f64> {
+    let manifest = manifest?;
+    let ver = manifest.latest_version.as_deref()?;
+    let ver_info = manifest.versions.get(ver)?;
+
+    // 返回 (清单键, 是否允许按家族前缀回落)
+    let (key, allow_family) = match backend {
+        "cuda134" | "cuda13" => ("cuda13", true),
+        "cuda" | "cuda12" | "cuda124" => ("cuda12", true),
+        "vulkan" => ("vulkan", false),
+        "vulkan-compat" => ("vulkan-compat", false),
+        "rocm" | "hip" => ("rocm", false),
+        "sycl" => ("sycl", false),
+        "metal" => (
+            if cfg!(target_arch = "aarch64") { "metal-arm64" } else { "metal-x64" },
+            false,
+        ),
+        "cpu-avx" => ("cpu-avx", false),
+        "cpu-noavx" => ("cpu-noavx", false),
+        "cpu" | "cpu-avx2" => ("cpu", false),
+        _ => (backend, false),
     };
 
-    let ver = match manifest.latest_version.as_deref() {
-        Some(v) => v,
-        None => return fallback_mb,
-    };
+    let pkg = find_manifest_package(&ver_info.packages, key, allow_family)?;
+    let mut total_bytes = pkg.size?;
 
-    let ver_info = match manifest.versions.get(ver) {
-        Some(info) => info,
-        None => return fallback_mb,
-    };
-
-    let key = match backend {
-        "cuda134" | "cuda13" => "cuda134",
-        "cuda" | "cuda12" | "cuda124" => "cuda124",
-        "vulkan" => "vulkan",
-        "vulkan-compat" => "vulkan-compat",
-        "rocm" | "hip" => "rocm",
-        "sycl" => "sycl",
-        "metal" => if cfg!(target_arch = "aarch64") { "metal-arm64" } else { "metal-x64" },
-        "cpu-avx" => "cpu-avx",
-        "cpu-noavx" => "cpu-noavx",
-        "cpu" | "cpu-avx2" => "cpu",
-        _ => backend,
-    };
-
-    if let Some(pkg) = ver_info.packages.get(key) {
-        if let Some(bytes) = pkg.size {
-            let mut total_bytes = bytes;
-            // Windows 下 CUDA 引擎包含配套的 cudart 运行库包，合并计算精确总大小
-            if cfg!(windows) {
-                if key == "cuda134" {
-                    if let Some(cudart_pkg) = ver_info.packages.get("cudart-cuda134") {
-                        if let Some(cb) = cudart_pkg.size {
-                            total_bytes += cb;
-                        }
-                    }
-                } else if key == "cuda124" {
-                    if let Some(cudart_pkg) = ver_info.packages.get("cudart-cuda124") {
-                        if let Some(cb) = cudart_pkg.size {
-                            total_bytes += cb;
-                        }
-                    }
+    // Windows 下 CUDA 引擎包含配套的 cudart 运行库包，合并计算精确总大小
+    if cfg!(windows) {
+        let cudart_key = match key {
+            "cuda13" => Some("cudart-cuda13"),
+            "cuda12" => Some("cudart-cuda12"),
+            _ => None,
+        };
+        if let Some(cudart_key) = cudart_key {
+            if let Some(cudart_pkg) = find_manifest_package(&ver_info.packages, cudart_key, true) {
+                if let Some(cb) = cudart_pkg.size {
+                    total_bytes += cb;
                 }
             }
-            let mb = (total_bytes as f64) / (1024.0 * 1024.0);
-            return (mb * 10.0).round() / 10.0;
         }
     }
 
-    fallback_mb
+    let mb = (total_bytes as f64) / (1024.0 * 1024.0);
+    Some((mb * 10.0).round() / 10.0)
 }
 
 /// 构造候选下载源列表（严格遵循：GitHub 优先，国内 EdgeOne R2 故障转移降级）
@@ -2025,21 +2058,30 @@ pub fn resolve_download_candidates(backend: &str, versions: &[String]) -> Vec<En
 
     for ver in versions {
         if is_win {
-            let filename = match backend {
-                "cuda13" | "cuda134" => format!("llama-{}-bin-win-cuda-13.4-x64.zip", ver),
-                "cuda" | "cuda12" => format!("llama-{}-bin-win-cuda-12.4-x64.zip", ver),
-                "vulkan" => format!("llama-{}-bin-win-vulkan-x64.zip", ver),
-                "vulkan-compat" => format!("llama-{}-bin-win-vulkan-compat-x64.zip", ver),
-                "rocm" | "hip" => format!("llama-{}-bin-win-rocm-10.0-x64.zip", ver),
-                "sycl" => format!("llama-{}-bin-win-sycl-x64.zip", ver),
-                "cpu-avx" => format!("llama-{}-bin-win-cpu-avx-x64.zip", ver),
-                "cpu-noavx" => format!("llama-{}-bin-win-cpu-noavx-x64.zip", ver),
-                _ => format!("llama-{}-bin-win-cpu-x64.zip", ver),
+            let filenames: Vec<String> = match backend {
+                // CUDA 13.x 小版本随 Toolkit 升级前进，沿候选链（13.5 → 13.4 → 13.3）依次尝试
+                "cuda13" | "cuda134" => CUDA13_WIN_VERSION_SUFFIXES
+                    .iter()
+                    .map(|suffix| format!("llama-{}-bin-win-cuda-{}-x64.zip", ver, suffix))
+                    .collect(),
+                "cuda" | "cuda12" => vec![format!(
+                    "llama-{}-bin-win-cuda-{}-x64.zip",
+                    ver, CUDA12_WIN_VERSION_SUFFIX
+                )],
+                "vulkan" => vec![format!("llama-{}-bin-win-vulkan-x64.zip", ver)],
+                "vulkan-compat" => vec![format!("llama-{}-bin-win-vulkan-compat-x64.zip", ver)],
+                "rocm" | "hip" => vec![format!("llama-{}-bin-win-rocm-10.0-x64.zip", ver)],
+                "sycl" => vec![format!("llama-{}-bin-win-sycl-x64.zip", ver)],
+                "cpu-avx" => vec![format!("llama-{}-bin-win-cpu-avx-x64.zip", ver)],
+                "cpu-noavx" => vec![format!("llama-{}-bin-win-cpu-noavx-x64.zip", ver)],
+                _ => vec![format!("llama-{}-bin-win-cpu-x64.zip", ver)],
             };
-            candidates.push(EngineDownloadCandidate {
-                version: ver.clone(),
-                filename,
-            });
+            for filename in filenames {
+                candidates.push(EngineDownloadCandidate {
+                    version: ver.clone(),
+                    filename,
+                });
+            }
         } else if is_darwin {
             candidates.push(EngineDownloadCandidate {
                 version: ver.clone(),
@@ -2061,16 +2103,72 @@ pub fn resolve_download_candidates(backend: &str, versions: &[String]) -> Vec<En
         }
     }
 
-    if is_win && (backend == "cuda13" || backend == "cuda134") {
-        for ver in versions {
-            candidates.push(EngineDownloadCandidate {
-                version: ver.clone(),
-                filename: format!("llama-{}-bin-win-cuda-13.3-x64.zip", ver),
-            });
+    candidates
+}
+
+/// 从官方主包文件名反解 CUDA 小版本（`llama-b12345-bin-win-cuda-13.5-x64.zip` → `13.5`）
+pub fn extract_win_cuda_version(filename: &str) -> Option<String> {
+    let pos = filename.find("cuda-")?;
+    let rest = &filename[pos + "cuda-".len()..];
+    let version: String = rest
+        .chars()
+        .take_while(|c| c.is_ascii_digit() || *c == '.')
+        .collect();
+    let version = version.trim_end_matches('.').to_string();
+    if version.is_empty() {
+        None
+    } else {
+        Some(version)
+    }
+}
+
+/// 生成 CUDA 配套 cudart 运行时包的候选链：同小版本优先，其次按同族候选链降级。
+///
+/// 之前这里按 `cuda-13.4` / `cuda-13.3` 两个字符串分支硬判断，官方一旦出 13.5 就直接
+/// 落到 12.4 的 cudart 分支（下载错版本运行库），必须改为从实际主包名反解小版本。
+pub fn resolve_cudart_candidates(version: &str, main_filename: &str) -> Vec<EngineDownloadCandidate> {
+    let main_cuda_version = extract_win_cuda_version(main_filename);
+    let is_cuda13 = main_cuda_version
+        .as_deref()
+        .map(|v| v.starts_with("13."))
+        .unwrap_or(false);
+
+    let mut suffixes: Vec<String> = Vec::new();
+    if let Some(v) = main_cuda_version.clone() {
+        suffixes.push(v);
+    }
+    if is_cuda13 {
+        for suffix in CUDA13_WIN_VERSION_SUFFIXES {
+            if !suffixes.iter().any(|s| s == suffix) {
+                suffixes.push((*suffix).to_string());
+            }
         }
+    } else if !suffixes.iter().any(|s| s == CUDA12_WIN_VERSION_SUFFIX) {
+        suffixes.push(CUDA12_WIN_VERSION_SUFFIX.to_string());
     }
 
-    candidates
+    suffixes
+        .into_iter()
+        .map(|suffix| EngineDownloadCandidate {
+            version: version.to_string(),
+            filename: format!("cudart-llama-bin-win-cuda-{}-x64.zip", suffix),
+        })
+        .collect()
+}
+
+/// 从官方包文件名解析 Windows 引擎目录的 tier 片段
+/// （`llama-b12345-bin-win-cuda-13.5-x64.zip` → `cuda-13.5`），解析失败返回 `None`。
+pub fn resolve_win_tier_from_filename(filename: &str) -> Option<String> {
+    let tail = filename.split_once("-bin-win-")?.1;
+    let tail = tail
+        .strip_suffix(".zip")
+        .or_else(|| tail.strip_suffix(".tar.gz"))?;
+    let tier = tail.strip_suffix("-x64")?;
+    if tier.is_empty() {
+        None
+    } else {
+        Some(tier.to_string())
+    }
 }
 
 /// 分块下载元数据（伴随 .part.meta.json）
@@ -2763,6 +2861,9 @@ async fn run_engine_download(
         }
     };
 
+    // 目录 tier 必须以「实际下载到的包」为准反解（如 cuda-13.5），否则小版本一升级，
+    // 目录名就会与实际包内容错位（下载 13.5、目录却叫 13.4）。
+    let tier_name = resolve_win_tier_from_filename(&final_filename).unwrap_or_else(|| tier_name.to_string());
     let target_dest_dir = base_engine_dir.join(format!("llama-{}-bin-win-{}-x64", final_version, tier_name));
     debug!("[引擎下载] 成功获取包: {}，准备部署至 {:?}", final_filename, target_dest_dir);
 
@@ -2788,28 +2889,7 @@ async fn run_engine_download(
 
     // 3. 针对 Windows CUDA 引擎，自动下载并解压配套的 cudart 运行时依赖包合并到同一目录
     if cfg!(windows) && backend.starts_with("cuda") {
-        let cudart_candidates = if final_filename.contains("cuda-13.4") {
-            vec![
-                EngineDownloadCandidate {
-                    version: final_version.clone(),
-                    filename: "cudart-llama-bin-win-cuda-13.4-x64.zip".to_string(),
-                },
-                EngineDownloadCandidate {
-                    version: final_version.clone(),
-                    filename: "cudart-llama-bin-win-cuda-13.3-x64.zip".to_string(),
-                },
-            ]
-        } else if final_filename.contains("cuda-13.3") {
-            vec![EngineDownloadCandidate {
-                version: final_version.clone(),
-                filename: "cudart-llama-bin-win-cuda-13.3-x64.zip".to_string(),
-            }]
-        } else {
-            vec![EngineDownloadCandidate {
-                version: final_version.clone(),
-                filename: "cudart-llama-bin-win-cuda-12.4-x64.zip".to_string(),
-            }]
-        };
+        let cudart_candidates = resolve_cudart_candidates(&final_version, &final_filename);
 
         debug!("[引擎下载] Windows CUDA 引擎需要配套 cudart 库，开始连带下载: {:?}", cudart_candidates);
         {

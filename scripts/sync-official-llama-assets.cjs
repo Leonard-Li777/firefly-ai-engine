@@ -144,8 +144,9 @@ function isTargetOfficialAsset(name) {
   const lower = name.toLowerCase()
   // Windows x64 相关
   if (lower.includes('win') && lower.includes('x64')) {
-    if (lower.includes('cuda-12.4') || lower.includes('cuda-13.4') || lower.includes('cuda-13.3'))
-      return true
+    // CUDA 小版本随官方 Toolkit 升级前进（13.3 → 13.4 → 13.5…），按家族匹配而非枚举具体版本，
+    // 否则官方一升级，整档 CUDA 包就不会被镜像，R2 清单缺键 → 客户端体积回落到硬编码常量。
+    if (/cuda-(12|13)\.\d/.test(lower)) return true
     if (lower.includes('vulkan')) return true
     if (lower.includes('sycl')) return true
     if (lower.includes('rocm')) return true
