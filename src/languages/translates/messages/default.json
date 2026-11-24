@@ -10,8 +10,8 @@
     "fr-FR": "Moteur AI Firefly",
     "ko-KR": "Firefly AI Folder 엔진",
     "$files": [
-      "src/App.tsx(8244-8254)",
-      "src/App.tsx(8613-8623)"
+      "src/App.tsx(8460-8470)",
+      "src/App.tsx(8836-8846)"
     ],
     "$id": 440
   },
@@ -25,7 +25,7 @@
     "de-DE": "Unabhängige hochverfügbare endseitige KI-Inferenz-Engine und Modellverwaltungsplattform",
     "fr-FR": "Moteur d'inférence d'IA end-side indépendant à haute disponibilité et plateforme de gestion de modèles",
     "ko-KR": "독립적인 고가용성 최종 AI 추론 엔진 및 모델 관리 플랫폼",
-    "$files": ["src/App.tsx(8891-8917)"],
+    "$files": ["src/App.tsx(9120-9146)"],
     "$id": 441
   },
   "沙盒 Mock": {
@@ -38,7 +38,7 @@
     "de-DE": "Sandbox-Mock",
     "fr-FR": "Maquette de bac à sable",
     "ko-KR": "샌드박스 모의",
-    "$files": ["src/App.tsx(9198-9209)"],
+    "$files": ["src/App.tsx(9434-9445)"],
     "$id": 442
   },
   "就绪": {
@@ -52,8 +52,8 @@
     "fr-FR": "Prêt",
     "ko-KR": "준비가 된",
     "$files": [
-      "src/App.tsx(10768-10774)",
-      "src/components/dashboard/dashboard-view.tsx(26955-26961)"
+      "src/App.tsx(11040-11046)",
+      "src/components/dashboard/dashboard-view.tsx(27606-27612)"
     ],
     "$id": 443
   },
@@ -68,9 +68,9 @@
     "fr-FR": "Traitement en cours...",
     "ko-KR": "처리 중...",
     "$files": [
-      "src/App.tsx(10853-10863)",
+      "src/App.tsx(11127-11137)",
       "src/components/chat/local-chat-view.tsx(2445-2455)",
-      "src/components/model/custom-model-add-card.tsx(9660-9670)"
+      "src/components/model/custom-model-add-card.tsx(9939-9949)"
     ],
     "$id": 1227
   },
@@ -85,8 +85,8 @@
     "fr-FR": "Le démarrage a échoué",
     "ko-KR": "시작 실패",
     "$files": [
-      "src/App.tsx(10938-10946)",
-      "src/components/dashboard/dashboard-view.tsx(4424-4432)"
+      "src/App.tsx(11214-11222)",
+      "src/components/dashboard/dashboard-view.tsx(4565-4573)"
     ],
     "$id": 444
   },
@@ -100,7 +100,7 @@
     "de-DE": "Nicht gestartet",
     "fr-FR": "Pas commencé",
     "ko-KR": "시작되지 않음",
-    "$files": ["src/App.tsx(11000-11007)"],
+    "$files": ["src/App.tsx(11278-11285)"],
     "$id": 445
   },
   "启动中...": {
@@ -114,13 +114,13 @@
     "fr-FR": "Démarrage en cours...",
     "ko-KR": "시작 중...",
     "$files": [
-      "src/App.tsx(11031-11041)",
+      "src/App.tsx(11310-11320)",
       "src/components/chat/local-chat-view.tsx(5169-5179)",
-      "src/components/dashboard/dashboard-view.tsx(12881-12891)",
-      "src/components/model/custom-model-add-card.tsx(14768-14778)",
-      "src/components/model/custom-model-add-card.tsx(15194-15204)",
-      "src/components/model/model-list-panel.tsx(30192-30202)",
-      "src/components/model/model-list-panel.tsx(30662-30672)"
+      "src/components/dashboard/dashboard-view.tsx(13244-13254)",
+      "src/components/model/custom-model-add-card.tsx(15170-15180)",
+      "src/components/model/custom-model-add-card.tsx(15607-15617)",
+      "src/components/model/model-list-panel.tsx(31000-31010)",
+      "src/components/model/model-list-panel.tsx(31481-31491)"
     ],
     "$id": 446
   },
@@ -134,7 +134,7 @@
     "de-DE": "Wechseln Sie in den Hellmodus",
     "fr-FR": "Passer en mode lumineux",
     "ko-KR": "밝은 모드로 전환",
-    "$files": ["src/App.tsx(12573-12584)"],
+    "$files": ["src/App.tsx(12886-12897)"],
     "$id": 447
   },
   "切换至暗色模式": {
@@ -147,7 +147,7 @@
     "de-DE": "Wechseln Sie in den Dunkelmodus",
     "fr-FR": "Passer en mode sombre",
     "ko-KR": "어두운 모드로 전환",
-    "$files": ["src/App.tsx(12588-12599)"],
+    "$files": ["src/App.tsx(12901-12912)"],
     "$id": 448
   },
   "暗色": {
@@ -160,7 +160,7 @@
     "de-DE": "Dunkle Farbe",
     "fr-FR": "Couleur foncée",
     "ko-KR": "어두운 색",
-    "$files": ["src/App.tsx(12934-12940)"],
+    "$files": ["src/App.tsx(13255-13261)"],
     "$id": 449
   },
   "明亮": {
@@ -173,7 +173,7 @@
     "de-DE": "Hell",
     "fr-FR": "Brillant",
     "ko-KR": "밝은",
-    "$files": ["src/App.tsx(12944-12950)"],
+    "$files": ["src/App.tsx(13265-13271)"],
     "$id": 450
   },
   "切换明暗主题": {
@@ -186,7 +186,7 @@
     "de-DE": "Wechseln Sie zwischen hellen und dunklen Themen",
     "fr-FR": "Basculer entre les thèmes clairs et sombres",
     "ko-KR": "밝은 테마와 어두운 테마 간 전환",
-    "$files": ["src/App.tsx(13104-13114)"],
+    "$files": ["src/App.tsx(13430-13440)"],
     "$id": 451
   },
   "仪表盘": {
@@ -199,7 +199,7 @@
     "de-DE": "Armaturenbrett",
     "fr-FR": "Tableau de bord",
     "ko-KR": "계기판",
-    "$files": ["src/App.tsx(14328-14335)"],
+    "$files": ["src/App.tsx(14672-14679)"],
     "$id": 452
   },
   "模型管理": {
@@ -212,7 +212,7 @@
     "de-DE": "Modellmanagement",
     "fr-FR": "Gestion des modèles",
     "ko-KR": "모델 관리",
-    "$files": ["src/App.tsx(14963-14971)"],
+    "$files": ["src/App.tsx(15316-15324)"],
     "$id": 453
   },
   "下载中": {
@@ -225,7 +225,7 @@
     "de-DE": "Herunterladen",
     "fr-FR": "Téléchargement",
     "ko-KR": "다운로드 중",
-    "$files": ["src/App.tsx(15248-15255)"],
+    "$files": ["src/App.tsx(15607-15614)"],
     "$id": 1210
   },
   "引擎与硬件": {
@@ -238,7 +238,7 @@
     "de-DE": "Motor und Hardware",
     "fr-FR": "Moteur et matériel",
     "ko-KR": "엔진 및 하드웨어",
-    "$files": ["src/App.tsx(15947-15956)"],
+    "$files": ["src/App.tsx(16317-16326)"],
     "$id": 454
   },
   "与本地AI私密聊天": {
@@ -252,7 +252,7 @@
     "fr-FR": "Discutez en privé avec l'IA locale",
     "ko-KR": "로컬 AI와 비공개 채팅",
     "$files": [
-      "src/App.tsx(16632-16645)",
+      "src/App.tsx(17011-17024)",
       "src/components/chat/local-chat-view.tsx(1887-1900)"
     ],
     "$id": 455
@@ -268,7 +268,7 @@
     "fr-FR": "Journal d'exécution",
     "ko-KR": "로그 실행",
     "$files": [
-      "src/App.tsx(17271-17279)",
+      "src/App.tsx(17659-17667)",
       "src/components/logs/engine-logs-view.tsx(10151-10159)"
     ],
     "$id": 456
@@ -283,7 +283,7 @@
     "de-DE": "Andocken an Dritte",
     "fr-FR": "Station d'accueil tierce",
     "ko-KR": "타사 도킹",
-    "$files": ["src/App.tsx(17923-17932)"],
+    "$files": ["src/App.tsx(18320-18329)"],
     "$id": 457
   },
   "欢迎使用萤核AI引擎！首次使用请先下载一个模型，才能启动本地AI推理服务。": {
@@ -296,7 +296,7 @@
     "de-DE": "Willkommen bei der Firefly AI-Engine! Laden Sie bei der ersten Verwendung bitte ein Modell herunter, bevor Sie den lokalen KI-Inferenzdienst starten.",
     "fr-FR": "Bienvenue sur le moteur Firefly AI ! Pour une première utilisation, veuillez télécharger un modèle avant de démarrer le service d'inférence d'IA local.",
     "ko-KR": "Firefly AI ​​엔진에 오신 것을 환영합니다! 처음 사용하시는 경우, 로컬 AI 추론 서비스를 시작하기 전에 모델을 다운로드하시기 바랍니다.",
-    "$files": ["src/App.tsx(18540-18581)"],
+    "$files": ["src/App.tsx(18951-18992)"],
     "$id": 458
   },
   "前往下载模型": {
@@ -310,8 +310,8 @@
     "fr-FR": "Aller au téléchargement du modèle",
     "ko-KR": "모델 다운로드하러 가기",
     "$files": [
-      "src/App.tsx(19119-19129)",
-      "src/components/dashboard/dashboard-view.tsx(18242-18252)"
+      "src/App.tsx(19541-19551)",
+      "src/components/dashboard/dashboard-view.tsx(18710-18720)"
     ],
     "$id": 459
   },
@@ -325,7 +325,7 @@
     "de-DE": "Noch keine Anleitung",
     "fr-FR": "Pas encore de conseils",
     "ko-KR": "아직 안내가 없습니다.",
-    "$files": ["src/App.tsx(19420-19428)"],
+    "$files": ["src/App.tsx(19848-19856)"],
     "$id": 460
   },
   "显存不足": {
@@ -339,9 +339,9 @@
     "fr-FR": "Mémoire vidéo insuffisante",
     "ko-KR": "비디오 메모리가 부족합니다.",
     "$files": [
-      "src/lib/error-analyzer.ts(4808-4816)",
-      "src/components/model/model-list-panel.tsx(28886-28894)",
-      "src/components/model/model-list-panel.tsx(31333-31341)"
+      "src/lib/error-analyzer.ts(4985-4993)",
+      "src/components/model/model-list-panel.tsx(29670-29678)",
+      "src/components/model/model-list-panel.tsx(32168-32176)"
     ],
     "$id": 466
   },
@@ -355,7 +355,7 @@
     "de-DE": "Nicht genügend Videospeicher oder Arbeitsspeicher zum Laden des aktuellen Modells",
     "fr-FR": "Mémoire vidéo ou mémoire insuffisante pour charger le modèle actuel",
     "ko-KR": "현재 모델을 로드하기에는 비디오 메모리 또는 메모리가 부족합니다.",
-    "$files": ["src/lib/error-analyzer.ts(4840-4860)"],
+    "$files": ["src/lib/error-analyzer.ts(5018-5038)"],
     "$id": 467
   },
   "关闭其他占用显存的应用程序": {
@@ -368,7 +368,7 @@
     "de-DE": "Schließen Sie andere Anwendungen, die Videospeicher belegen  ",
     "fr-FR": "Fermez les autres applications utilisant la mémoire vidéo  ",
     "ko-KR": "VRAM을 사용 중인 다른 애플리케이션을 종료하세요",
-    "$files": ["src/lib/error-analyzer.ts(4894-4911)"],
+    "$files": ["src/lib/error-analyzer.ts(5074-5091)"],
     "$id": 468
   },
   "尝试切换到更小的模型（如 0.8B 或更小）": {
@@ -381,7 +381,7 @@
     "de-DE": "Versuchen Sie, auf ein kleineres Modell umzusteigen (z. B. 0,8B oder kleiner).",
     "fr-FR": "Essayez de passer à un modèle plus petit (comme 0,8 B ou moins)",
     "ko-KR": "더 작은 모델(예: 0.8B 이하)로 전환해 보세요.",
-    "$files": ["src/lib/error-analyzer.ts(4924-4950)"],
+    "$files": ["src/lib/error-analyzer.ts(5105-5131)"],
     "$id": 469
   },
   "在「引擎与硬件」中切换为 CPU 引擎": {
@@ -395,10 +395,10 @@
     "fr-FR": "Passer au moteur CPU dans \"Moteur et matériel\"",
     "ko-KR": "\"엔진 및 하드웨어\"에서 중앙 처리 장치 엔진으로 전환",
     "$files": [
-      "src/lib/error-analyzer.ts(4963-4986)",
-      "src/lib/error-analyzer.ts(5662-5685)",
-      "src/lib/error-analyzer.ts(6735-6758)",
-      "src/lib/error-analyzer.ts(7428-7451)"
+      "src/lib/error-analyzer.ts(5145-5168)",
+      "src/lib/error-analyzer.ts(5869-5892)",
+      "src/lib/error-analyzer.ts(6982-7005)",
+      "src/lib/error-analyzer.ts(7701-7724)"
     ],
     "$id": 1431
   },
@@ -413,17 +413,17 @@
     "fr-FR": "Consultez le journal d'exécution pour plus de détails techniques",
     "ko-KR": "자세한 기술 세부정보는 실행 로그를 확인하세요.",
     "$files": [
-      "src/lib/error-analyzer.ts(4999-5017)",
-      "src/lib/error-analyzer.ts(5383-5401)",
-      "src/lib/error-analyzer.ts(5730-5748)",
-      "src/lib/error-analyzer.ts(6038-6056)",
-      "src/lib/error-analyzer.ts(6395-6413)",
-      "src/lib/error-analyzer.ts(6771-6789)",
-      "src/lib/error-analyzer.ts(7125-7143)",
-      "src/lib/error-analyzer.ts(7464-7482)",
-      "src/lib/error-analyzer.ts(7782-7800)",
+      "src/lib/error-analyzer.ts(5182-5200)",
+      "src/lib/error-analyzer.ts(5579-5597)",
+      "src/lib/error-analyzer.ts(5939-5957)",
+      "src/lib/error-analyzer.ts(6259-6277)",
+      "src/lib/error-analyzer.ts(6629-6647)",
+      "src/lib/error-analyzer.ts(7019-7037)",
+      "src/lib/error-analyzer.ts(7386-7404)",
+      "src/lib/error-analyzer.ts(7738-7756)",
       "src/lib/error-analyzer.ts(8069-8087)",
-      "src/lib/error-analyzer.ts(8310-8328)"
+      "src/lib/error-analyzer.ts(8368-8386)",
+      "src/lib/error-analyzer.ts(8618-8636)"
     ],
     "$id": 471
   },
@@ -437,7 +437,7 @@
     "de-DE": "Anomalie beim Grafikkartentreiber oder in der Beschleunigungsschicht",
     "fr-FR": "Anomalie du pilote de la carte graphique ou de la couche d'accélération",
     "ko-KR": "그래픽 카드 드라이버 또는 가속 레이어 이상",
-    "$files": ["src/lib/error-analyzer.ts(5153-5167)"],
+    "$files": ["src/lib/error-analyzer.ts(5343-5357)"],
     "$id": 472
   },
   "当前 GPU 驱动/加速后端与模型运行不兼容，引擎可能已降级": {
@@ -450,7 +450,7 @@
     "de-DE": "Der aktuelle GPU-Treiber/Beschleunigungs-Backend ist nicht mit dem laufenden Modell kompatibel und die Engine wurde möglicherweise herabgestuft",
     "fr-FR": "Le pilote GPU/backend d'accélération actuel est incompatible avec le modèle en cours d'exécution et le moteur a peut-être été rétrogradé.",
     "ko-KR": "현재 GPU 드라이버/가속 백엔드는 실행 중인 모델과 호환되지 않으며 엔진이 다운그레이드되었을 수 있습니다.",
-    "$files": ["src/lib/error-analyzer.ts(5191-5225)"],
+    "$files": ["src/lib/error-analyzer.ts(5382-5416)"],
     "$id": 473
   },
   "升级显卡驱动至最新版本": {
@@ -463,7 +463,7 @@
     "de-DE": "Aktualisieren Sie den Grafikkartentreiber auf die neueste Version",
     "fr-FR": "Mettez à niveau le pilote de la carte graphique vers la dernière version",
     "ko-KR": "그래픽 카드 드라이버를 최신 버전으로 업그레이드하세요.",
-    "$files": ["src/lib/error-analyzer.ts(5259-5274)"],
+    "$files": ["src/lib/error-analyzer.ts(5452-5467)"],
     "$id": 474
   },
   "在「引擎与硬件」中切换计算引擎（如 CUDA → Vulkan → CPU）": {
@@ -476,7 +476,7 @@
     "de-DE": "Wechseln Sie die Computer-Engine unter „Engine und Hardware“ (z. B. CUDA → Vulkan → CPU).",
     "fr-FR": "Changez le moteur de calcul dans \"Moteur et matériel\" (tel que CUDA → Vulkan → CPU)",
     "ko-KR": "\"엔진 및 하드웨어\"(예: CUDA → Vulkan → CPU)에서 컴퓨팅 엔진을 전환합니다.",
-    "$files": ["src/lib/error-analyzer.ts(5287-5329)"],
+    "$files": ["src/lib/error-analyzer.ts(5481-5523)"],
     "$id": 475
   },
   "在「引擎与硬件」中切换为 CPU 引擎后重试启动": {
@@ -489,7 +489,7 @@
     "de-DE": "Wechseln Sie unter \"Engine und Hardware\" zu CPU Engine und versuchen Sie erneut zu starten",
     "fr-FR": "Basculez vers le moteur CPU dans \"Moteur et matériel\" et réessayez de démarrer",
     "ko-KR": "\"엔진 및 하드웨어\"에서 중앙 처리 장치 엔진으로 전환하고 다시 시작하십시오",
-    "$files": ["src/lib/error-analyzer.ts(5342-5370)"],
+    "$files": ["src/lib/error-analyzer.ts(5537-5565)"],
     "$id": 1432
   },
   "当前环境无法运行本地 AI": {
@@ -502,7 +502,7 @@
     "de-DE": "Die aktuelle Umgebung kann keine lokale KI ausführen",
     "fr-FR": "L'environnement actuel ne peut pas exécuter l'IA locale",
     "ko-KR": "현재 환경에서는 로컬 AI를 실행할 수 없습니다.",
-    "$files": ["src/lib/error-analyzer.ts(5538-5555)"],
+    "$files": ["src/lib/error-analyzer.ts(5741-5758)"],
     "$id": 477
   },
   "系统环境发生致命错误，本地引擎无法继续运行": {
@@ -515,7 +515,7 @@
     "de-DE": "In der Systemumgebung ist ein schwerwiegender Fehler aufgetreten und die lokale Engine kann nicht weiter ausgeführt werden.",
     "fr-FR": "Une erreur fatale s'est produite dans l'environnement système et le moteur local ne peut pas continuer à fonctionner.",
     "ko-KR": "시스템 환경에 치명적인 오류가 발생하여 로컬 엔진을 계속 실행할 수 없습니다.",
-    "$files": ["src/lib/error-analyzer.ts(5579-5604)"],
+    "$files": ["src/lib/error-analyzer.ts(5783-5808)"],
     "$id": 478
   },
   "重启应用后重试": {
@@ -528,7 +528,7 @@
     "de-DE": "Starten Sie die App neu und versuchen Sie es erneut",
     "fr-FR": "Redémarrez l'application et réessayez",
     "ko-KR": "앱을 다시 시작한 후 다시 시도해 보세요.",
-    "$files": ["src/lib/error-analyzer.ts(5638-5649)"],
+    "$files": ["src/lib/error-analyzer.ts(5844-5855)"],
     "$id": 479
   },
   "检查系统内存与磁盘空间是否充足": {
@@ -541,7 +541,7 @@
     "de-DE": "Prüfen Sie, ob Systemspeicher und Festplattenspeicher ausreichend sind",
     "fr-FR": "Vérifiez si la mémoire système et l'espace disque sont suffisants",
     "ko-KR": "시스템 메모리와 디스크 공간이 충분한지 확인하세요.",
-    "$files": ["src/lib/error-analyzer.ts(5698-5717)"],
+    "$files": ["src/lib/error-analyzer.ts(5906-5925)"],
     "$id": 481
   },
   "引擎程序缺失": {
@@ -554,7 +554,7 @@
     "de-DE": "Motorprogramm fehlt",
     "fr-FR": "Programme moteur manquant",
     "ko-KR": "엔진 프로그램 누락",
-    "$files": ["src/lib/error-analyzer.ts(5881-5891)"],
+    "$files": ["src/lib/error-analyzer.ts(6097-6107)"],
     "$id": 482
   },
   "未找到引擎可执行文件，部署可能不完整": {
@@ -567,7 +567,7 @@
     "de-DE": "Die ausführbare Engine-Datei wurde nicht gefunden und die Bereitstellung ist möglicherweise unvollständig",
     "fr-FR": "Le fichier exécutable du moteur n'a pas été trouvé et le déploiement est peut-être incomplet",
     "ko-KR": "엔진 실행 파일을 찾을 수 없으며 배포가 완료되지 않았을 수 있습니다",
-    "$files": ["src/lib/error-analyzer.ts(5915-5937)"],
+    "$files": ["src/lib/error-analyzer.ts(6132-6154)"],
     "$id": 1433
   },
   "重新安装应用或恢复引擎组件": {
@@ -580,7 +580,7 @@
     "de-DE": "Installieren Sie Anwendungen neu oder stellen Sie Engine-Komponenten wieder her",
     "fr-FR": "Réinstaller des applications ou restaurer les composants du moteur",
     "ko-KR": "애플리케이션 재설치 또는 엔진 구성 요소 복원",
-    "$files": ["src/lib/error-analyzer.ts(5971-5988)"],
+    "$files": ["src/lib/error-analyzer.ts(6190-6207)"],
     "$id": 484
   },
   "检查模型与引擎安装目录是否被安全软件隔离": {
@@ -593,7 +593,7 @@
     "de-DE": "Überprüfen Sie, ob die Modell- und Engine-Installationsverzeichnisse durch Sicherheitssoftware isoliert sind",
     "fr-FR": "Vérifiez si les répertoires d'installation du modèle et du moteur sont isolés par un logiciel de sécurité",
     "ko-KR": "모델 및 엔진 설치 디렉터리가 보안 소프트웨어에 의해 격리되어 있는지 확인",
-    "$files": ["src/lib/error-analyzer.ts(6001-6025)"],
+    "$files": ["src/lib/error-analyzer.ts(6221-6245)"],
     "$id": 485
   },
   "尚未下载模型": {
@@ -606,7 +606,7 @@
     "de-DE": "Noch kein Modell heruntergeladen",
     "fr-FR": "Aucun modèle téléchargé pour le moment",
     "ko-KR": "아직 다운로드된 모델이 없습니다.",
-    "$files": ["src/lib/error-analyzer.ts(6184-6194)"],
+    "$files": ["src/lib/error-analyzer.ts(6412-6422)"],
     "$id": 486
   },
   "当前模型存储目录下没有可用的 GGUF 模型文件，引擎无法启动": {
@@ -619,7 +619,7 @@
     "de-DE": "Im aktuellen Modellspeicherverzeichnis ist keine GGUF-Modelldatei verfügbar und die Engine kann nicht gestartet werden.",
     "fr-FR": "Aucun fichier de modèle GGUF n'est disponible dans le répertoire de stockage de modèle actuel et le moteur ne peut pas être démarré.",
     "ko-KR": "현재 모델 저장 디렉터리에 사용 가능한 GGUF 모델 파일이 없어 엔진을 시작할 수 없습니다.",
-    "$files": ["src/lib/error-analyzer.ts(6218-6253)"],
+    "$files": ["src/lib/error-analyzer.ts(6447-6482)"],
     "$id": 487
   },
   "前往「模型管理」下载一个模型后重试": {
@@ -632,7 +632,7 @@
     "de-DE": "Gehen Sie zu „Modellverwaltung“, um ein Modell herunterzuladen, und versuchen Sie es erneut",
     "fr-FR": "Allez dans \"Gestion des modèles\" pour télécharger un modèle et réessayez",
     "ko-KR": "\"모델 관리\"로 이동하여 모델을 다운로드하고 다시 시도하세요.",
-    "$files": ["src/lib/error-analyzer.ts(6287-6308)"],
+    "$files": ["src/lib/error-analyzer.ts(6518-6539)"],
     "$id": 488
   },
   "在「模型管理」中重新扫描存储目录": {
@@ -645,7 +645,7 @@
     "de-DE": "Scannen Sie das Speicherverzeichnis in „Model Management“ erneut.",
     "fr-FR": "Analysez à nouveau le répertoire de stockage dans « Gestion des modèles »",
     "ko-KR": "\"모델 관리\"에서 저장소 디렉터리를 다시 검색합니다.",
-    "$files": ["src/lib/error-analyzer.ts(6321-6341)"],
+    "$files": ["src/lib/error-analyzer.ts(6553-6573)"],
     "$id": 489
   },
   "确认模型存储目录设置正确且包含 .gguf 文件": {
@@ -658,7 +658,7 @@
     "de-DE": "Stellen Sie sicher, dass das Modellspeicherverzeichnis richtig eingestellt ist und .gguf-Dateien enthält",
     "fr-FR": "Confirmez que le répertoire de stockage du modèle est correctement défini et contient les fichiers .gguf",
     "ko-KR": "모델 저장소 디렉터리가 올바르게 설정되어 있고 .gguf 파일이 포함되어 있는지 확인하세요.",
-    "$files": ["src/lib/error-analyzer.ts(6354-6382)"],
+    "$files": ["src/lib/error-analyzer.ts(6587-6615)"],
     "$id": 490
   },
   "模型加载失败": {
@@ -671,7 +671,7 @@
     "de-DE": "Das Laden des Modells ist fehlgeschlagen",
     "fr-FR": "Échec du chargement du modèle",
     "ko-KR": "모델 로드 실패",
-    "$files": ["src/lib/error-analyzer.ts(6543-6553)"],
+    "$files": ["src/lib/error-analyzer.ts(6784-6794)"],
     "$id": 491
   },
   "模型文件存在但加载失败，通常是文件损坏、不兼容或资源不足": {
@@ -684,7 +684,7 @@
     "de-DE": "Die Modelldatei ist vorhanden, kann jedoch nicht geladen werden. Dies ist in der Regel auf Dateibeschädigung, Inkompatibilität oder unzureichende Ressourcen zurückzuführen.",
     "fr-FR": "Le fichier modèle existe mais ne parvient pas à se charger. Cela est généralement dû à une corruption de fichiers, à une incompatibilité ou à des ressources insuffisantes.",
     "ko-KR": "모델 파일이 존재하지만 로드에 실패했습니다. 이는 일반적으로 파일 손상, 비호환성 또는 리소스 부족으로 인해 발생합니다.",
-    "$files": ["src/lib/error-analyzer.ts(6577-6609)"],
+    "$files": ["src/lib/error-analyzer.ts(6819-6851)"],
     "$id": 492
   },
   "重新下载模型文件或切换其他模型": {
@@ -697,7 +697,7 @@
     "de-DE": "Laden Sie die Modelldatei erneut herunter oder wechseln Sie zu einem anderen Modell",
     "fr-FR": "Re-téléchargez le fichier modèle ou passez à un autre modèle",
     "ko-KR": "모델 파일을 다시 다운로드하거나 다른 모델로 전환하세요.",
-    "$files": ["src/lib/error-analyzer.ts(6643-6662)"],
+    "$files": ["src/lib/error-analyzer.ts(6887-6906)"],
     "$id": 493
   },
   "检查磁盘空间和系统显存是否充足": {
@@ -710,7 +710,7 @@
     "de-DE": "Prüfen Sie, ob der Festplattenspeicher und der Systemspeicher ausreichend sind",
     "fr-FR": "Vérifiez si l'espace disque et la mémoire système sont suffisants",
     "ko-KR": "디스크 공간과 시스템 메모리가 충분한지 확인하세요.",
-    "$files": ["src/lib/error-analyzer.ts(6675-6694)"],
+    "$files": ["src/lib/error-analyzer.ts(6920-6939)"],
     "$id": 494
   },
   "尝试使用更小尺寸的模型": {
@@ -723,7 +723,7 @@
     "de-DE": "Versuchen Sie es mit einem kleineren Modell",
     "fr-FR": "Essayez un modèle de plus petite taille",
     "ko-KR": "더 작은 크기의 모델을 사용해 보세요",
-    "$files": ["src/lib/error-analyzer.ts(6707-6722)"],
+    "$files": ["src/lib/error-analyzer.ts(6953-6968)"],
     "$id": 495
   },
   "引擎服务启动失败": {
@@ -736,7 +736,7 @@
     "de-DE": "Der Motorservice konnte nicht gestartet werden",
     "fr-FR": "Le service moteur n'a pas pu démarrer",
     "ko-KR": "엔진 서비스를 시작하지 못했습니다.",
-    "$files": ["src/lib/error-analyzer.ts(6925-6937)"],
+    "$files": ["src/lib/error-analyzer.ts(7180-7192)"],
     "$id": 497
   },
   "引擎推理服务未能成功启动或端口异常": {
@@ -749,7 +749,7 @@
     "de-DE": "Der Engine-Inferenzdienst konnte nicht erfolgreich gestartet werden, oder der Port war abnormal",
     "fr-FR": "Le service d'inférence du moteur n'a pas réussi à démarrer ou le port était anormal",
     "ko-KR": "엔진 추론 서비스가 성공적으로 시작되지 않았거나 포트가 비정상이었습니다",
-    "$files": ["src/lib/error-analyzer.ts(6961-6982)"],
+    "$files": ["src/lib/error-analyzer.ts(7217-7238)"],
     "$id": 1434
   },
   "检查端口是否被占用，稍后重试启动": {
@@ -762,7 +762,7 @@
     "de-DE": "Überprüfen Sie, ob der Port belegt ist, und versuchen Sie es später erneut",
     "fr-FR": "Vérifiez si le port est occupé et essayez de redémarrer plus tard",
     "ko-KR": "포트가 사용 중인지 확인하고 나중에 다시 시작해 보세요.",
-    "$files": ["src/lib/error-analyzer.ts(7016-7036)"],
+    "$files": ["src/lib/error-analyzer.ts(7274-7294)"],
     "$id": 499
   },
   "确认模型文件完整且已正确选择": {
@@ -775,7 +775,7 @@
     "de-DE": "Bestätigen Sie, dass die Modelldatei vollständig und richtig ausgewählt ist",
     "fr-FR": "Confirmez que le fichier modèle est complet et correctement sélectionné",
     "ko-KR": "모델 파일이 완전하고 올바르게 선택되었는지 확인",
-    "$files": ["src/lib/error-analyzer.ts(7049-7067)"],
+    "$files": ["src/lib/error-analyzer.ts(7308-7326)"],
     "$id": 500
   },
   "在「引擎与硬件」中切换计算引擎或选择 CPU 引擎后重试": {
@@ -788,7 +788,7 @@
     "de-DE": "Schalten Sie die Rechenengine unter \"Engine und Hardware\" um oder wählen Sie die CPU-Engine aus und versuchen Sie es erneut",
     "fr-FR": "Basculez le moteur de calcul dans \"Moteur et matériel\" ou sélectionnez le moteur CPU et réessayez",
     "ko-KR": "\"엔진 및 하드웨어\"에서 컴퓨팅 엔진을 전환하거나 프로세서 엔진을 선택하고 다시 시도하십시오",
-    "$files": ["src/lib/error-analyzer.ts(7080-7112)"],
+    "$files": ["src/lib/error-analyzer.ts(7340-7372)"],
     "$id": 1435
   },
   "引擎异常崩溃": {
@@ -801,7 +801,7 @@
     "de-DE": "Motor stürzt unerwartet ab",
     "fr-FR": "Le moteur tombe en panne de manière inattendue",
     "ko-KR": "엔진이 예기치 않게 충돌함",
-    "$files": ["src/lib/error-analyzer.ts(7274-7284)"],
+    "$files": ["src/lib/error-analyzer.ts(7542-7552)"],
     "$id": 502
   },
   "推理进程意外退出，可能与驱动、显存或模型有关": {
@@ -814,7 +814,7 @@
     "de-DE": "Der Rückschlussvorgang wurde unerwartet beendet, was möglicherweise mit dem Treiber, dem Videospeicher oder dem Modell zusammenhängt.",
     "fr-FR": "Le processus d'inférence s'est terminé de manière inattendue, ce qui peut être lié au pilote, à la mémoire vidéo ou au modèle.",
     "ko-KR": "추론 프로세스가 예기치 않게 종료되었습니다. 이는 드라이버, 비디오 메모리 또는 모델과 관련이 있을 수 있습니다.",
-    "$files": ["src/lib/error-analyzer.ts(7308-7334)"],
+    "$files": ["src/lib/error-analyzer.ts(7577-7603)"],
     "$id": 503
   },
   "切换到占用显存更小的模型": {
@@ -827,7 +827,7 @@
     "de-DE": "Wechseln Sie zu einem Modell, das weniger Videospeicher benötigt",
     "fr-FR": "Passez à un modèle qui utilise moins de mémoire vidéo",
     "ko-KR": "비디오 메모리를 덜 차지하는 모델로 전환하세요",
-    "$files": ["src/lib/error-analyzer.ts(7368-7384)"],
+    "$files": ["src/lib/error-analyzer.ts(7639-7655)"],
     "$id": 504
   },
   "停止其他占用显存的程序后重试": {
@@ -840,7 +840,7 @@
     "de-DE": "Stoppen Sie, dass andere Programme Videospeicher belegen, und versuchen Sie es erneut.",
     "fr-FR": "Arrêtez les autres programmes d'utiliser la mémoire vidéo et réessayez.",
     "ko-KR": "비디오 메모리를 차지하는 다른 프로그램을 중지하고 다시 시도하십시오.",
-    "$files": ["src/lib/error-analyzer.ts(7397-7415)"],
+    "$files": ["src/lib/error-analyzer.ts(7669-7687)"],
     "$id": 505
   },
   "请求超时": {
@@ -853,7 +853,7 @@
     "de-DE": "Anfragezeitüberschreitung",
     "fr-FR": "Délai de demande dépassé",
     "ko-KR": "요청 시간 초과",
-    "$files": ["src/lib/error-analyzer.ts(7612-7620)"],
+    "$files": ["src/lib/error-analyzer.ts(7893-7901)"],
     "$id": 507
   },
   "引擎响应超时，可能是负载过高或服务未就绪": {
@@ -866,7 +866,7 @@
     "de-DE": "Die Reaktion des Motors ist abgelaufen, möglicherweise weil die Last zu hoch ist oder der Dienst nicht bereit ist.",
     "fr-FR": "Le délai de réponse du moteur a expiré, peut-être parce que la charge est trop élevée ou que le service n'est pas prêt.",
     "ko-KR": "엔진 응답 시간이 초과되었습니다. 로드가 너무 높거나 서비스가 준비되지 않았기 때문일 수 있습니다.",
-    "$files": ["src/lib/error-analyzer.ts(7644-7668)"],
+    "$files": ["src/lib/error-analyzer.ts(7926-7950)"],
     "$id": 508
   },
   "等待服务就绪后重试": {
@@ -879,7 +879,7 @@
     "de-DE": "Warten Sie, bis der Dienst bereit ist, und versuchen Sie es erneut",
     "fr-FR": "Attendez que le service soit prêt et réessayez",
     "ko-KR": "서비스가 준비될 때까지 기다린 후 다시 시도하세요.",
-    "$files": ["src/lib/error-analyzer.ts(7702-7715)"],
+    "$files": ["src/lib/error-analyzer.ts(7986-7999)"],
     "$id": 509
   },
   "切换到更轻量的模型": {
@@ -892,7 +892,7 @@
     "de-DE": "Wechseln Sie zu einem leichteren Modell",
     "fr-FR": "Passer à un modèle plus léger",
     "ko-KR": "더 가벼운 모델로 전환하세요",
-    "$files": ["src/lib/error-analyzer.ts(7728-7741)"],
+    "$files": ["src/lib/error-analyzer.ts(8013-8026)"],
     "$id": 510
   },
   "减少正在运行的后台任务": {
@@ -905,7 +905,7 @@
     "de-DE": "Reduzieren Sie laufende Hintergrundaufgaben",
     "fr-FR": "Réduire les tâches en arrière-plan en cours d'exécution",
     "ko-KR": "실행 중인 백그라운드 작업 줄이기",
-    "$files": ["src/lib/error-analyzer.ts(7754-7769)"],
+    "$files": ["src/lib/error-analyzer.ts(8040-8055)"],
     "$id": 511
   },
   "磁盘空间不足": {
@@ -918,7 +918,7 @@
     "de-DE": "Nicht genügend Speicherplatz",
     "fr-FR": "Pas assez d'espace disque",
     "ko-KR": "디스크 공간이 부족합니다.",
-    "$files": ["src/lib/error-analyzer.ts(7922-7932)"],
+    "$files": ["src/lib/error-analyzer.ts(8216-8226)"],
     "$id": 512
   },
   "磁盘空间不足，无法完成模型或日志写入": {
@@ -931,7 +931,7 @@
     "de-DE": "Nicht genügend Speicherplatz, um das Schreiben des Modells oder Protokolls abzuschließen",
     "fr-FR": "Espace disque insuffisant pour terminer l'écriture du modèle ou du journal",
     "ko-KR": "모델 또는 로그 쓰기를 완료하기에는 디스크 공간이 부족합니다.",
-    "$files": ["src/lib/error-analyzer.ts(7956-7978)"],
+    "$files": ["src/lib/error-analyzer.ts(8251-8273)"],
     "$id": 513
   },
   "清理磁盘空间后重试": {
@@ -944,7 +944,7 @@
     "de-DE": "Machen Sie Speicherplatz frei und versuchen Sie es erneut",
     "fr-FR": "Libérez de l'espace disque et réessayez",
     "ko-KR": "디스크 공간을 비운 후 다시 시도하세요.",
-    "$files": ["src/lib/error-analyzer.ts(8012-8025)"],
+    "$files": ["src/lib/error-analyzer.ts(8309-8322)"],
     "$id": 514
   },
   "将模型存储路径迁移到更大磁盘": {
@@ -957,7 +957,7 @@
     "de-DE": "Modellspeicherpfad auf eine größere Festplatte migrieren",
     "fr-FR": "Migrer le chemin de stockage du modèle vers un disque plus grand",
     "ko-KR": "모델 스토리지 경로를 더 큰 디스크로 마이그레이션",
-    "$files": ["src/lib/error-analyzer.ts(8038-8056)"],
+    "$files": ["src/lib/error-analyzer.ts(8336-8354)"],
     "$id": 515
   },
   "引擎运行异常": {
@@ -970,7 +970,7 @@
     "de-DE": "Motor läuft ungewöhnlich",
     "fr-FR": "Le moteur tourne anormalement",
     "ko-KR": "엔진이 비정상적으로 작동 중",
-    "$files": ["src/lib/error-analyzer.ts(8202-8212)"],
+    "$files": ["src/lib/error-analyzer.ts(8508-8518)"],
     "$id": 516
   },
   "引擎运行出现异常，建议查看日志并重试": {
@@ -983,7 +983,7 @@
     "de-DE": "Der Motor läuft ungewöhnlich. Es wird empfohlen, das Protokoll zu überprüfen und es erneut zu versuchen.",
     "fr-FR": "Le moteur tourne anormalement. Il est recommandé de vérifier le journal et de réessayer.",
     "ko-KR": "엔진이 비정상적으로 작동하고 있습니다. 로그를 확인하고 다시 시도하는 것이 좋습니다.",
-    "$files": ["src/lib/error-analyzer.ts(8236-8258)"],
+    "$files": ["src/lib/error-analyzer.ts(8543-8565)"],
     "$id": 517
   },
   "重试启动服务": {
@@ -997,7 +997,7 @@
     "fr-FR": "Réessayez de démarrer le service",
     "ko-KR": "서비스 시작을 다시 시도하세요.",
     "$files": [
-      "src/lib/error-analyzer.ts(8281-8291)",
+      "src/lib/error-analyzer.ts(8589-8599)",
       "src/components/errors/error-analysis-sidebar.tsx(7077-7087)"
     ],
     "$id": 518
@@ -1012,7 +1012,7 @@
     "de-DE": "Wechseln Sie Modelle oder Berechnungs-Engines",
     "fr-FR": "Changer de modèle ou de moteur de calcul",
     "ko-KR": "모델 또는 계산 엔진 전환",
-    "$files": ["src/lib/error-analyzer.ts(8294-8307)"],
+    "$files": ["src/lib/error-analyzer.ts(8602-8615)"],
     "$id": 519
   },
   "主语言模型": {
@@ -1025,7 +1025,7 @@
     "de-DE": "Hauptsprachmodell",
     "fr-FR": "Modèle de langage principal",
     "ko-KR": "주요 언어 모델",
-    "$files": ["src/lib/model-component-recommender.ts(1121-1130)"],
+    "$files": ["src/lib/model-component-recommender.ts(1167-1176)"],
     "$id": 1381
   },
   "核心中枢": {
@@ -1038,7 +1038,7 @@
     "de-DE": "Kernzentrum",
     "fr-FR": "Centre central",
     "ko-KR": "핵심 센터",
-    "$files": ["src/lib/model-component-recommender.ts(1149-1157)"],
+    "$files": ["src/lib/model-component-recommender.ts(1196-1204)"],
     "$id": 1382
   },
   "负责文本理解、实体识别、分类打标与智能总结（核心必备底座）": {
@@ -1051,7 +1051,7 @@
     "de-DE": "Verantwortlich für Textverständnis, Entitätserkennung, Klassifizierungskennzeichnung und intelligente Zusammenfassung (wesentliche Kernbasis)",
     "fr-FR": "Responsable de la compréhension du texte, de la reconnaissance des entités, de l'étiquetage de la classification et du résumé intelligent (base essentielle de base)",
     "ko-KR": "텍스트 이해, 개체 인식, 분류 라벨링 및 지능형 요약을 담당합니다(핵심 필수 기반).",
-    "$files": ["src/lib/model-component-recommender.ts(1176-1209)"],
+    "$files": ["src/lib/model-component-recommender.ts(1224-1257)"],
     "$id": 1383
   },
   "识图多模态模型": {
@@ -1064,7 +1064,7 @@
     "de-DE": "Multimodales Modell der Bilderkennung",
     "fr-FR": "Modèle multimodal de reconnaissance d'images",
     "ko-KR": "이미지 인식의 다중 모드 모델",
-    "$files": ["src/lib/model-component-recommender.ts(1244-1255)"],
+    "$files": ["src/lib/model-component-recommender.ts(1295-1306)"],
     "$id": 1384
   },
   "视觉之眼": {
@@ -1077,7 +1077,7 @@
     "de-DE": "Auge des Sehens",
     "fr-FR": "Oeil de vue",
     "ko-KR": "시력의 눈",
-    "$files": ["src/lib/model-component-recommender.ts(1274-1282)"],
+    "$files": ["src/lib/model-component-recommender.ts(1326-1334)"],
     "$id": 1385
   },
   "赋予模型看图能力，用于图片理解、图表分析与 OCR 图文提取；若无需看图可取消以节约显存": {
@@ -1090,7 +1090,7 @@
     "de-DE": "Geben Sie dem Modell die Fähigkeit, Bilder zu lesen, die zum Bildverständnis, zur Diagrammanalyse und zur OCR-Bild- und Textextraktion verwendet werden können. Wenn Sie keine Bilder lesen müssen, können Sie den Vorgang abbrechen, um Videospeicher zu sparen.",
     "fr-FR": "Donner au modèle la capacité de lire des images, qui peuvent être utilisées pour la compréhension d'images, l'analyse de graphiques et l'extraction d'images et de texte OCR ; si vous n'avez pas besoin de lire les images, vous pouvez l'annuler pour économiser la mémoire vidéo.",
     "ko-KR": "그림 이해, 차트 분석, OCR 이미지 및 텍스트 추출에 사용할 수 있는 그림을 읽을 수 있는 기능을 모델에 부여합니다. 사진을 읽을 필요가 없으면 취소하여 비디오 메모리를 절약할 수 있습니다.",
-    "$files": ["src/lib/model-component-recommender.ts(1301-1349)"],
+    "$files": ["src/lib/model-component-recommender.ts(1354-1402)"],
     "$id": 1386
   },
   "DSpark 加速模型": {
@@ -1103,7 +1103,7 @@
     "de-DE": "DSpark-Beschleunigungsmodell",
     "fr-FR": "Modèle d'accélération DSpark",
     "ko-KR": "DSpark 가속 모델",
-    "$files": ["src/lib/model-component-recommender.ts(1384-1399)"],
+    "$files": ["src/lib/model-component-recommender.ts(1440-1455)"],
     "$id": 1387
   },
   "提速 50%": {
@@ -1116,7 +1116,7 @@
     "de-DE": "50 % schneller",
     "fr-FR": "50% plus rapide",
     "ko-KR": "50% 더 빨라짐",
-    "$files": ["src/lib/model-component-recommender.ts(1418-1428)"],
+    "$files": ["src/lib/model-component-recommender.ts(1475-1485)"],
     "$id": 1388
   },
   "轻量投机草稿头，大幅提升生成速度 30%~70%，仅占用微小显存，极力推荐": {
@@ -1129,7 +1129,7 @@
     "de-DE": "Ein leichter spekulativer Draft-Header, der die Generierungsgeschwindigkeit um 30–70 % erheblich erhöht und nur wenig Videospeicher beansprucht. Es ist sehr zu empfehlen.",
     "fr-FR": "Un en-tête de projet spéculatif léger qui augmente considérablement la vitesse de génération de 30 à 70 % et n'occupe qu'une petite quantité de mémoire vidéo. C'est fortement recommandé.",
     "ko-KR": "생성 속도를 30%~70% 크게 높이고 비디오 메모리를 적게 차지하는 경량 추측 초안 헤더입니다. 적극 권장됩니다.",
-    "$files": ["src/lib/model-component-recommender.ts(1447-1488)"],
+    "$files": ["src/lib/model-component-recommender.ts(1505-1546)"],
     "$id": 1389
   },
   "MTP 草稿模型": {
@@ -1142,7 +1142,7 @@
     "de-DE": "MTP-Entwurfsmodell",
     "fr-FR": "Projet de modèle MTP",
     "ko-KR": "MTP 초안 모델",
-    "$files": ["src/lib/model-component-recommender.ts(1522-1534)"],
+    "$files": ["src/lib/model-component-recommender.ts(1583-1595)"],
     "$id": 1390
   },
   "推测加速": {
@@ -1155,7 +1155,7 @@
     "de-DE": "Spekulierte Beschleunigung",
     "fr-FR": "Accélération spéculée",
     "ko-KR": "추측된 가속도",
-    "$files": ["src/lib/model-component-recommender.ts(1553-1561)"],
+    "$files": ["src/lib/model-component-recommender.ts(1615-1623)"],
     "$id": 1391
   },
   "独立辅助小模型进行多 Token 投机验证，提升长文本与代码分析速率": {
@@ -1168,7 +1168,7 @@
     "de-DE": "Unterstützen Sie kleine Modelle unabhängig bei der Überprüfung von Multi-Token-Spekulationen und verbessern Sie so die Geschwindigkeit der Langtext- und Codeanalyse",
     "fr-FR": "Assister de manière indépendante les petits modèles pour la vérification de la spéculation multi-token, améliorant ainsi la vitesse d'analyse des textes longs et du code",
     "ko-KR": "다중 토큰 추측 검증을 위한 소규모 모델을 독립적으로 지원하여 긴 텍스트 및 코드 분석 속도를 향상시킵니다.",
-    "$files": ["src/lib/model-component-recommender.ts(1580-1618)"],
+    "$files": ["src/lib/model-component-recommender.ts(1643-1681)"],
     "$id": 1392
   },
   "正在检测硬件环境，默认展示完整推荐包": {
@@ -1181,7 +1181,7 @@
     "de-DE": "Die Hardwareumgebung wird erkannt und das vollständige empfohlene Paket wird standardmäßig angezeigt.",
     "fr-FR": "L'environnement matériel est détecté et le package complet recommandé est affiché par défaut.",
     "ko-KR": "하드웨어 환경이 감지되고 전체 권장 패키지가 기본적으로 표시됩니다.",
-    "$files": ["src/lib/model-component-recommender.ts(3283-3305)"],
+    "$files": ["src/lib/model-component-recommender.ts(3392-3414)"],
     "$id": 1393
   },
   "本机显存/内存充裕，已推荐全选以获得完整多模态与极速推理能力": {
@@ -1194,7 +1194,7 @@
     "de-DE": "Das Gerät verfügt über ausreichend Videospeicher und es wird empfohlen, „Alle“ auszuwählen, um vollständige multimodale und extrem schnelle Argumentationsfunktionen zu erhalten.",
     "fr-FR": "La machine dispose d'une mémoire vidéo/mémoire suffisante, et il est recommandé de tout sélectionner pour obtenir des capacités de raisonnement multimodales complètes et extrêmement rapides.",
     "ko-KR": "기계에는 충분한 비디오 메모리/메모리가 있으므로 완전한 다중 모드 및 매우 빠른 추론 기능을 얻으려면 모두 선택하는 것이 좋습니다.",
-    "$files": ["src/lib/model-component-recommender.ts(3588-3622)"],
+    "$files": ["src/lib/model-component-recommender.ts(3703-3737)"],
     "$id": 1394
   },
   "显存适中，推荐启用加速模型；识图模型已设为可选，如需处理图片可手动开启": {
@@ -1207,7 +1207,7 @@
     "de-DE": "Der Videospeicher ist mäßig. Es wird empfohlen, das Beschleunigungsmodell zu aktivieren; Das Bilderkennungsmodell wurde als optional eingestellt. Wenn Sie Bilder verarbeiten müssen, können Sie es manuell aktivieren.",
     "fr-FR": "La mémoire vidéo est modérée. Il est recommandé d'activer le modèle d'accélération ; le modèle de reconnaissance d'image a été défini comme facultatif. Si vous devez traiter des images, vous pouvez l'activer manuellement.",
     "ko-KR": "비디오 메모리는 보통입니다. 가속 모델을 활성화하는 것이 좋습니다. 이미지 인식 모델이 선택사항으로 설정되었습니다. 이미지를 처리해야 하는 경우 수동으로 활성화할 수 있습니다.",
-    "$files": ["src/lib/model-component-recommender.ts(3884-3923)"],
+    "$files": ["src/lib/model-component-recommender.ts(4005-4044)"],
     "$id": 1395
   },
   "当前使用系统内存/显存受限，已为您精简为仅主模型以防止运行卡死": {
@@ -1220,7 +1220,7 @@
     "de-DE": "Die aktuelle Nutzung des Systemspeichers/Videospeichers ist begrenzt und wurde auf das Hauptmodell beschränkt, damit Sie ein Einfrieren vermeiden können.",
     "fr-FR": "L'utilisation actuelle de la mémoire système/mémoire vidéo est limitée et a été rationalisée uniquement pour le modèle principal afin d'éviter les blocages.",
     "ko-KR": "현재 시스템 메모리/비디오 메모리의 사용은 제한되어 있으며 실행 정지를 방지하기 위해 메인 모델로만 간소화되었습니다.",
-    "$files": ["src/lib/model-component-recommender.ts(4242-4277)"],
+    "$files": ["src/lib/model-component-recommender.ts(4372-4407)"],
     "$id": 1396
   },
   "显存较为紧张，建议仅下载主模型以保证基础分类稳定": {
@@ -1233,7 +1233,7 @@
     "de-DE": "Der Videospeicher ist relativ knapp bemessen. Es wird empfohlen, nur das Hauptmodell herunterzuladen, um die Stabilität der Grundklassifizierung sicherzustellen.",
     "fr-FR": "La mémoire vidéo est relativement restreinte. Il est recommandé de télécharger uniquement le modèle principal pour garantir la stabilité de la classification de base.",
     "ko-KR": "비디오 메모리가 상대적으로 부족합니다. 기본분류의 안정성을 확보하기 위해 메인모델만 다운로드하는 것을 권장합니다.",
-    "$files": ["src/lib/model-component-recommender.ts(4287-4315)"],
+    "$files": ["src/lib/model-component-recommender.ts(4418-4446)"],
     "$id": 1397
   },
   "获取引擎状态失败": {
@@ -1246,7 +1246,7 @@
     "de-DE": "Der Motorstatus konnte nicht abgerufen werden",
     "fr-FR": "Impossible d'obtenir l'état du moteur",
     "ko-KR": "엔진 상태를 가져오지 못했습니다.",
-    "$files": ["src/stores/engine-store.ts(7809-7821)"],
+    "$files": ["src/stores/engine-store.ts(8033-8045)"],
     "$id": 520
   },
   "引擎更新并部署成功": {
@@ -1259,7 +1259,7 @@
     "de-DE": "Engine wurde erfolgreich aktualisiert und bereitgestellt",
     "fr-FR": "Moteur mis à jour et déployé avec succès",
     "ko-KR": "엔진이 업데이트되고 성공적으로 배포되었습니다.",
-    "$files": ["src/stores/engine-store.ts(9969-9982)"],
+    "$files": ["src/stores/engine-store.ts(10267-10280)"],
     "$id": 461
   },
   "下载未正常完成": {
@@ -1272,7 +1272,7 @@
     "de-DE": "Der Download wurde nicht normal abgeschlossen",
     "fr-FR": "Le téléchargement ne s'est pas terminé normalement",
     "ko-KR": "다운로드가 정상적으로 완료되지 않았습니다",
-    "$files": ["src/stores/engine-store.ts(10044-10055)"],
+    "$files": ["src/stores/engine-store.ts(10345-10356)"],
     "$id": 462
   },
   "引擎下载失败": {
@@ -1285,7 +1285,7 @@
     "de-DE": "Der Engine-Download ist fehlgeschlagen",
     "fr-FR": "Échec du téléchargement du moteur",
     "ko-KR": "엔진 다운로드 실패",
-    "$files": ["src/stores/engine-store.ts(10128-10138)"],
+    "$files": ["src/stores/engine-store.ts(10432-10442)"],
     "$id": 463
   },
   "硬件最佳适配引擎": {
@@ -1298,7 +1298,7 @@
     "de-DE": "Die beste Hardware-Anpassungs-Engine",
     "fr-FR": "Le meilleur moteur d'adaptation matérielle",
     "ko-KR": "최고의 하드웨어 적응 엔진",
-    "$files": ["src/stores/engine-store.ts(11259-11271)"],
+    "$files": ["src/stores/engine-store.ts(11597-11609)"],
     "$id": 1448
   },
   "已为您自动匹配并开始下载最佳引擎包（{name}），可在「模型」与「引擎」标签页查看下载进度": {
@@ -1311,7 +1311,7 @@
     "de-DE": "Das beste Engine-Paket ({name}) wurde automatisch abgeglichen und für Sie heruntergeladen. Sie können den Download-Fortschritt auf den Registerkarten „Modell“ und „Engine“ überprüfen.",
     "fr-FR": "Le meilleur package de moteur ({name}) a été automatiquement sélectionné et téléchargé pour vous. Vous pouvez vérifier la progression du téléchargement dans les onglets « Modèle » et « Moteur ».",
     "ko-KR": "최고의 엔진 패키지({name})가 자동으로 일치되어 다운로드되었습니다. \"모델\" 및 \"엔진\" 탭에서 다운로드 진행 상황을 확인할 수 있습니다.",
-    "$files": ["src/stores/engine-store.ts(11352-11413)"],
+    "$files": ["src/stores/engine-store.ts(11694-11756)"],
     "$id": 759
   },
   "已开始下载模型「{name}」，可在「模型」标签页查看下载进度": {
@@ -1324,7 +1324,7 @@
     "de-DE": "Der Download des Modells „{name}“ hat begonnen. Sie können den Download-Fortschritt auf der Registerkarte „Modell“ überprüfen.",
     "fr-FR": "Le téléchargement du modèle \"{name}\" a commencé. Vous pouvez vérifier la progression du téléchargement dans l'onglet \"Modèle\".",
     "ko-KR": "모델 \"{name}\" 다운로드가 시작되었습니다. \"모델\" 탭에서 다운로드 진행 상황을 확인할 수 있습니다.",
-    "$files": ["src/stores/engine-store.ts(11548-11583)"],
+    "$files": ["src/stores/engine-store.ts(11899-11934)"],
     "$id": 760
   },
   "已开始下载模型，可在「模型」标签页查看下载进度": {
@@ -1337,7 +1337,7 @@
     "de-DE": "Der Download des Modells hat begonnen. Sie können den Download-Fortschritt auf der Registerkarte „Modell“ überprüfen.",
     "fr-FR": "Le téléchargement du modèle a commencé. Vous pouvez vérifier la progression du téléchargement dans l'onglet \"Modèle\".",
     "ko-KR": "모델 다운로드가 시작되었습니다. \"모델\" 탭에서 다운로드 진행 상황을 확인할 수 있습니다.",
-    "$files": ["src/stores/engine-store.ts(11650-11677)"],
+    "$files": ["src/stores/engine-store.ts(12004-12031)"],
     "$id": 761
   },
   "已成功切换引擎": {
@@ -1350,7 +1350,7 @@
     "de-DE": "Motor erfolgreich umgeschaltet",
     "fr-FR": "Moteur commuté avec succès",
     "ko-KR": "엔진이 성공적으로 전환되었습니다",
-    "$files": ["src/stores/engine-store.ts(18586-18597)"],
+    "$files": ["src/stores/engine-store.ts(19129-19140)"],
     "$id": 521
   },
   "切换引擎失败": {
@@ -1363,7 +1363,7 @@
     "de-DE": "Motorwechsel fehlgeschlagen",
     "fr-FR": "Impossible de changer de moteur",
     "ko-KR": "엔진을 전환하지 못했습니다.",
-    "$files": ["src/stores/engine-store.ts(18674-18684)"],
+    "$files": ["src/stores/engine-store.ts(19220-19230)"],
     "$id": 522
   },
   "切换引擎异常": {
@@ -1376,7 +1376,7 @@
     "de-DE": "Anomalie beim Schalten des Motors",
     "fr-FR": "Anomalie de commutation du moteur",
     "ko-KR": "스위칭 엔진 이상",
-    "$files": ["src/stores/engine-store.ts(18794-18804)"],
+    "$files": ["src/stores/engine-store.ts(19344-19354)"],
     "$id": 523
   },
   "添加模型失败": {
@@ -1390,8 +1390,8 @@
     "fr-FR": "Échec de l'ajout du modèle",
     "ko-KR": "모델을 추가하지 못했습니다.",
     "$files": [
-      "src/stores/engine-store.ts(22537-22547)",
-      "src/components/model/custom-model-add-card.tsx(18828-18838)"
+      "src/stores/engine-store.ts(23213-23223)",
+      "src/components/model/custom-model-add-card.tsx(19347-19357)"
     ],
     "$id": 524
   },
@@ -1405,7 +1405,7 @@
     "de-DE": "Modell konnte nicht gelöscht werden",
     "fr-FR": "Échec de la suppression du modèle",
     "ko-KR": "모델을 삭제하지 못했습니다.",
-    "$files": ["src/stores/engine-store.ts(23733-23743)"],
+    "$files": ["src/stores/engine-store.ts(24443-24453)"],
     "$id": 525
   },
   "移除模型失败": {
@@ -1418,7 +1418,7 @@
     "de-DE": "Modell konnte nicht entfernt werden",
     "fr-FR": "Échec de la suppression du modèle",
     "ko-KR": "모델을 삭제하지 못했습니다.",
-    "$files": ["src/stores/engine-store.ts(24883-24893)"],
+    "$files": ["src/stores/engine-store.ts(25627-25637)"],
     "$id": 526
   },
   "模型下载并校验完成！已就绪使用。": {
@@ -1446,8 +1446,8 @@
     "ko-KR": "다운로드 실패",
     "$files": [
       "src/stores/model-download-store.ts(7716-7724)",
-      "src/components/model/custom-model-add-card.tsx(8471-8479)",
-      "src/components/model/model-list-panel.tsx(19304-19312)"
+      "src/components/model/custom-model-add-card.tsx(8721-8729)",
+      "src/components/model/model-list-panel.tsx(19863-19871)"
     ],
     "$id": 464
   },
@@ -1673,7 +1673,7 @@
       "src/components/api/third-party-api-view.tsx(3528-3535)",
       "src/components/api/third-party-api-view.tsx(4712-4719)",
       "src/components/api/third-party-api-view.tsx(5887-5894)",
-      "src/components/dashboard/dashboard-view.tsx(23733-23740)",
+      "src/components/dashboard/dashboard-view.tsx(24318-24325)",
       "src/components/logs/engine-logs-view.tsx(15683-15690)",
       "src/components/logs/engine-logs-view.tsx(21640-21647)"
     ],
@@ -1693,7 +1693,7 @@
       "src/components/api/third-party-api-view.tsx(3680-3686)",
       "src/components/api/third-party-api-view.tsx(4864-4870)",
       "src/components/api/third-party-api-view.tsx(6039-6045)",
-      "src/components/dashboard/dashboard-view.tsx(23921-23927)"
+      "src/components/dashboard/dashboard-view.tsx(24511-24517)"
     ],
     "$id": 543
   },
@@ -2064,6 +2064,387 @@
     "$files": ["src/components/common/language-selector.tsx(1125-1153)"],
     "$id": 614
   },
+  "切换本地AI引擎": {
+    "en-US": "Switch local AI engine",
+    "es-ES": "Cambiar el motor de IA local",
+    "ar-EG": "تبديل محرك الذكاء الاصطناعي المحلي",
+    "pt-PT": "Alternar mecanismo de IA local",
+    "ru-RU": "Переключить локальный движок искусственного интеллекта",
+    "ja-JP": "ローカル AI エンジンを切り替える",
+    "de-DE": "Lokale KI-Engine wechseln",
+    "fr-FR": "Changer de moteur d'IA local",
+    "ko-KR": "로컬 AI 엔진 전환",
+    "$files": ["src/components/engine/engine-table.tsx(2447-2459)"],
+    "$id": 615
+  },
+  "您的 {vendor} 显卡可切换以下引擎": {
+    "en-US": "Your {vendor} graphics card can switch the following engines",
+    "es-ES": "Su tarjeta gráfica {vendor} puede cambiar los siguientes motores",
+    "ar-EG": "يمكن لبطاقة الرسومات {vendor} الخاصة بك تبديل المحركات التالية",
+    "pt-PT": "Sua placa gráfica {vendor} pode alternar entre os seguintes mecanismos",
+    "ru-RU": "Ваша видеокарта {vendor} может переключать следующие процессоры",
+    "ja-JP": "{vendor} グラフィック カードは次のエンジンを切り替えることができます",
+    "de-DE": "Ihre {vendor}-Grafikkarte kann die folgenden Engines umschalten",
+    "fr-FR": "Votre carte graphique {vendor} peut changer les moteurs suivants",
+    "ko-KR": "{vendor} 그래픽 카드는 다음 엔진을 전환할 수 있습니다.",
+    "$files": ["src/components/engine/engine-table.tsx(2596-2621)"],
+    "$id": 616
+  },
+  "AI 引擎": {
+    "en-US": "AI engine",
+    "es-ES": "Motor de IA",
+    "ar-EG": "محرك الذكاء الاصطناعي",
+    "pt-PT": "Motor de IA",
+    "ru-RU": "движок искусственного интеллекта",
+    "ja-JP": "AIエンジン",
+    "de-DE": "KI-Engine",
+    "fr-FR": "Moteur d'IA",
+    "ko-KR": "AI 엔진",
+    "$files": ["src/components/engine/engine-table.tsx(3350-3359)"],
+    "$id": 617
+  },
+  "适配类型": {
+    "en-US": "Adaptation type",
+    "es-ES": "Tipo de adaptación",
+    "ar-EG": "نوع التكيف",
+    "pt-PT": "Tipo de adaptação",
+    "ru-RU": "Тип адаптации",
+    "ja-JP": "適応タイプ",
+    "de-DE": "Anpassungstyp",
+    "fr-FR": "Type d'adaptation",
+    "ko-KR": "적응 유형",
+    "$files": ["src/components/engine/engine-table.tsx(3511-3519)"],
+    "$id": 619
+  },
+  "引擎大小": {
+    "en-US": "Engine size",
+    "es-ES": "Tamaño del motor",
+    "ar-EG": "حجم المحرك",
+    "pt-PT": "Tamanho do motor",
+    "ru-RU": "Объем двигателя",
+    "ja-JP": "エンジンサイズ",
+    "de-DE": "Motorgröße",
+    "fr-FR": "Cylindrée du moteur",
+    "ko-KR": "엔진 크기",
+    "$files": ["src/components/engine/engine-table.tsx(3671-3679)"],
+    "$id": 620
+  },
+  "性能说明": {
+    "en-US": "Performance Notes",
+    "es-ES": "Notas de rendimiento",
+    "ar-EG": "ملاحظات الأداء",
+    "pt-PT": "Notas de Desempenho",
+    "ru-RU": "Примечания по производительности",
+    "ja-JP": "パフォーマンスノート",
+    "de-DE": "Leistungshinweise",
+    "fr-FR": "Notes de performances",
+    "ko-KR": "성능 노트",
+    "$files": ["src/components/engine/engine-table.tsx(3821-3829)"],
+    "$id": 621
+  },
+  "下载引擎": {
+    "en-US": "Download engine",
+    "es-ES": "Motor de descarga",
+    "ar-EG": "محرك التحميل",
+    "pt-PT": "Mecanismo de download",
+    "ru-RU": "скачать движок",
+    "ja-JP": "ダウンロードエンジン",
+    "de-DE": "Download-Engine",
+    "fr-FR": "Moteur de téléchargement",
+    "ko-KR": "다운로드 엔진",
+    "$files": [
+      "src/components/engine/engine-table.tsx(3980-3988)",
+      "src/components/engine/engine-table.tsx(11118-11126)"
+    ],
+    "$id": 622
+  },
+  "当前引擎": {
+    "en-US": "Current engine",
+    "es-ES": "Motor actual",
+    "ar-EG": "المحرك الحالي",
+    "pt-PT": "Motor atual",
+    "ru-RU": "Текущий двигатель",
+    "ja-JP": "現在のエンジン",
+    "de-DE": "Aktueller Motor",
+    "fr-FR": "Moteur actuel",
+    "ko-KR": "현재 엔진",
+    "$files": [
+      "src/components/engine/engine-table.tsx(4144-4152)",
+      "src/components/engine/engine-table.tsx(14185-14193)"
+    ],
+    "$id": 623
+  },
+  "正在扫描已安装计算引擎...": {
+    "en-US": "Scanning installed compute engines...",
+    "es-ES": "Escaneando motores informáticos instalados...",
+    "ar-EG": "جارٍ فحص محركات الحوسبة المثبتة...",
+    "pt-PT": "Verificando mecanismos de computação instalados...",
+    "ru-RU": "Сканирование установленных вычислительных механизмов...",
+    "ja-JP": "インストールされているコンピューティング エンジンをスキャンしています...",
+    "de-DE": "Installierte Rechen-Engines werden gescannt...",
+    "fr-FR": "Analyse des moteurs de calcul installés...",
+    "ko-KR": "설치된 컴퓨팅 엔진을 검색하는 중...",
+    "$files": ["src/components/engine/engine-table.tsx(4506-4524)"],
+    "$id": 624
+  },
+  "推荐": {
+    "en-US": "Recommend",
+    "es-ES": "Recomendar",
+    "ar-EG": "يوصي",
+    "pt-PT": "Recomendar",
+    "ru-RU": "рекомендовать",
+    "ja-JP": "おすすめ",
+    "de-DE": "Empfehlen",
+    "fr-FR": "Recommander",
+    "ko-KR": "추천하다",
+    "$files": [
+      "src/components/engine/engine-table.tsx(6698-6704)",
+      "src/components/model/model-list-panel.tsx(15100-15106)"
+    ],
+    "$id": 618
+  },
+  "更新显卡驱动": {
+    "en-US": "Update graphics card driver",
+    "es-ES": "Actualizar el controlador de la tarjeta gráfica",
+    "ar-EG": "تحديث برنامج تشغيل بطاقة الرسومات",
+    "pt-PT": "Atualizar driver da placa gráfica",
+    "ru-RU": "Обновить драйвер видеокарты",
+    "ja-JP": "グラフィックス カード ドライバーを更新する",
+    "de-DE": "Grafikkartentreiber aktualisieren",
+    "fr-FR": "Mettre à jour le pilote de la carte graphique",
+    "ko-KR": "그래픽 카드 드라이버 업데이트",
+    "$files": ["src/components/engine/engine-table.tsx(10449-10459)"],
+    "$id": 625
+  },
+  "删除此引擎目录以释放空间": {
+    "en-US": "Delete this engine directory to free up space",
+    "es-ES": "Elimine este directorio de motor para liberar espacio",
+    "ar-EG": "احذف دليل المحرك هذا لتحرير مساحة",
+    "pt-PT": "Exclua este diretório de mecanismo para liberar espaço",
+    "ru-RU": "Удалите этот каталог движка, чтобы освободить место.",
+    "ja-JP": "このエンジン ディレクトリを削除してスペースを解放します",
+    "de-DE": "Löschen Sie dieses Engine-Verzeichnis, um Speicherplatz freizugeben",
+    "fr-FR": "Supprimez ce répertoire du moteur pour libérer de l'espace",
+    "ko-KR": "공간을 확보하려면 이 엔진 디렉터리를 삭제하세요.",
+    "$files": ["src/components/engine/engine-table.tsx(11858-11874)"],
+    "$id": 626
+  },
+  "确定要删除引擎 {name} 吗？删除后可随时重新下载。": {
+    "en-US": "Are you sure you want to delete engine {name}? You can re-download it at any time after deletion.",
+    "es-ES": "¿Está seguro de que desea eliminar el motor {name}? Puede volver a descargarlo en cualquier momento después de eliminarlo.",
+    "ar-EG": "هل أنت متأكد أنك تريد حذف المحرك {name}؟ يمكنك إعادة تحميله في أي وقت بعد الحذف.",
+    "pt-PT": "Tem certeza de que deseja excluir o mecanismo {name}? Você pode baixá-lo novamente a qualquer momento após a exclusão.",
+    "ru-RU": "Вы уверены, что хотите удалить двигатель {name}? Вы можете повторно загрузить его в любое время после удаления.",
+    "ja-JP": "エンジン {name} を削除してもよろしいですか?削除後はいつでも再ダウンロードできます。",
+    "de-DE": "Sind Sie sicher, dass Sie die Engine {name} löschen möchten? Sie können es nach dem Löschen jederzeit erneut herunterladen.",
+    "fr-FR": "Êtes-vous sûr de vouloir supprimer le moteur {name} ? Vous pouvez le retélécharger à tout moment après la suppression.",
+    "ko-KR": "정말로 {name} 엔진을 삭제하시겠습니까? 삭제 후 언제든지 다시 다운로드할 수 있습니다.",
+    "$files": ["src/components/engine/engine-table.tsx(11983-12015)"],
+    "$id": 627
+  },
+  "更新引擎": {
+    "en-US": "Update engine",
+    "es-ES": "Actualizar motor",
+    "ar-EG": "تحديث المحرك",
+    "pt-PT": "Atualizar mecanismo",
+    "ru-RU": "Обновить движок",
+    "ja-JP": "アップデートエンジン",
+    "de-DE": "Motor aktualisieren",
+    "fr-FR": "Moteur de mise à jour",
+    "ko-KR": "엔진 업데이트",
+    "$files": ["src/components/engine/engine-table.tsx(13463-13471)"],
+    "$id": 628
+  },
+  "切换中...": {
+    "en-US": "Switching...",
+    "es-ES": "Traspuesta...",
+    "ar-EG": "التبديل...",
+    "pt-PT": "Trocando...",
+    "ru-RU": "Переключение...",
+    "ja-JP": "切り替え中...",
+    "de-DE": "Wechsel...",
+    "fr-FR": "Commutation...",
+    "ko-KR": "전환 중...",
+    "$files": [
+      "src/components/engine/engine-table.tsx(14881-14891)",
+      "src/components/model/model-list-panel.tsx(30155-30165)"
+    ],
+    "$id": 629
+  },
+  "切换引擎": {
+    "en-US": "Switch engine",
+    "es-ES": "Cambiar de motor",
+    "ar-EG": "تبديل المحرك",
+    "pt-PT": "Mudar de motor",
+    "ru-RU": "переключить двигатель",
+    "ja-JP": "スイッチエンジン",
+    "de-DE": "Motor wechseln",
+    "fr-FR": "Changer de moteur",
+    "ko-KR": "스위치 엔진",
+    "$files": ["src/components/engine/engine-table.tsx(14989-14997)"],
+    "$id": 630
+  },
+  "未安装": {
+    "en-US": "Not installed",
+    "es-ES": "No instalado",
+    "ar-EG": "غير مثبت",
+    "pt-PT": "Não instalado",
+    "ru-RU": "Не установлено",
+    "ja-JP": "インストールされていません",
+    "de-DE": "Nicht installiert",
+    "fr-FR": "Non installé",
+    "ko-KR": "설치되지 않음",
+    "$files": ["src/components/engine/engine-table.tsx(15187-15194)"],
+    "$id": 631
+  },
+  "模型思考模式": {
+    "en-US": "Model thinking mode",
+    "es-ES": "Modo de pensamiento modelo",
+    "ar-EG": "نمط التفكير النموذجي",
+    "pt-PT": "Modo de pensamento do modelo",
+    "ru-RU": "режим модельного мышления",
+    "ja-JP": "モデル思考モード",
+    "de-DE": "Modelldenkenmodus",
+    "fr-FR": "Mode de pensée modèle",
+    "ko-KR": "모델 사고 모드",
+    "$files": [
+      "src/components/engine/thinking-mode-card.tsx(4023-4033)",
+      "src/components/engine/thinking-mode-card.tsx(5135-5145)"
+    ],
+    "$id": 632
+  },
+  "会增加耗时": {
+    "en-US": "Will increase time consumption",
+    "es-ES": "Aumentará el consumo de tiempo.",
+    "ar-EG": "سيزيد من استهلاك الوقت",
+    "pt-PT": "Aumentará o consumo de tempo",
+    "ru-RU": "Увеличит затраты времени",
+    "ja-JP": "時間の消費が増える",
+    "de-DE": "Wird den Zeitverbrauch erhöhen",
+    "fr-FR": "Augmentera la consommation de temps",
+    "ko-KR": "시간 소모가 늘어나게 됩니다",
+    "$files": ["src/components/engine/thinking-mode-card.tsx(4240-4249)"],
+    "$id": 633
+  },
+  "开启后允许本地和云端模型开启思考模式，可能提升AI分析质量，但会大大增加响应时间。": {
+    "en-US": "After turning it on, local and cloud models are allowed to start thinking mode, which may improve the quality of AI analysis, but will greatly increase the response time.",
+    "es-ES": "Después de encenderlo, los modelos locales y en la nube pueden comenzar a pensar, lo que puede mejorar la calidad del análisis de IA, pero aumentará considerablemente el tiempo de respuesta.",
+    "ar-EG": "بعد تشغيله، يُسمح للنماذج المحلية والسحابية ببدء وضع التفكير، مما قد يؤدي إلى تحسين جودة تحليل الذكاء الاصطناعي، ولكنه سيزيد وقت الاستجابة بشكل كبير.",
+    "pt-PT": "Depois de ligá-lo, os modelos locais e de nuvem podem iniciar o modo de pensamento, o que pode melhorar a qualidade da análise de IA, mas aumentará muito o tempo de resposta.",
+    "ru-RU": "После его включения локальные и облачные модели могут перейти в режим мышления, что может улучшить качество анализа ИИ, но значительно увеличит время отклика.",
+    "ja-JP": "これをオンにすると、ローカル モデルとクラウド モデルは思考モードを開始できるようになり、AI 分析の品質が向上する可能性がありますが、応答時間が大幅に増加します。",
+    "de-DE": "Nach dem Einschalten können lokale und Cloud-Modelle in den Denkmodus wechseln, was möglicherweise die Qualität der KI-Analyse verbessert, aber auch die Reaktionszeit erheblich verlängert.",
+    "fr-FR": "Après l'avoir activé, les modèles locaux et cloud sont autorisés à passer en mode réflexion, ce qui peut améliorer la qualité de l'analyse de l'IA, mais augmentera considérablement le temps de réponse.",
+    "ko-KR": "이 기능을 켜면 로컬 및 클라우드 모델이 사고 모드를 시작할 수 있어 AI 분석 품질이 향상될 수 있지만 응답 시간이 크게 늘어납니다.",
+    "$files": ["src/components/engine/thinking-mode-card.tsx(4432-4477)"],
+    "$id": 634
+  },
+  "建议在需要与 AI 进行聊天时才开启。": {
+    "en-US": "It is recommended to turn it on only when you need to chat with AI.",
+    "es-ES": "Se recomienda activarlo sólo cuando necesites chatear con IA.",
+    "ar-EG": "يوصى بتشغيله فقط عندما تحتاج إلى الدردشة مع الذكاء الاصطناعي.",
+    "pt-PT": "Recomenda-se ativá-lo apenas quando precisar conversar com a IA.",
+    "ru-RU": "Рекомендуется включать его только тогда, когда вам нужно пообщаться с ИИ.",
+    "ja-JP": "AIとチャットする必要がある場合にのみオンにすることをお勧めします。",
+    "de-DE": "Es wird empfohlen, es nur einzuschalten, wenn Sie mit AI chatten müssen.",
+    "fr-FR": "Il est recommandé de l'activer uniquement lorsque vous avez besoin de discuter avec l'IA.",
+    "ko-KR": "AI와 채팅이 필요할 때만 켜는 것을 권장합니다.",
+    "$files": ["src/components/engine/thinking-mode-card.tsx(4613-4636)"],
+    "$id": 635
+  },
+  "不支持标记 Instruct 的模型。": {
+    "en-US": "Models tagged Instruct are not supported.",
+    "es-ES": "Los modelos etiquetados Instruct no son compatibles.",
+    "ar-EG": "النماذج التي تحمل علامة Instruct غير مدعومة.",
+    "pt-PT": "Os modelos marcados como Instruct não são suportados.",
+    "ru-RU": "Модели с пометкой Instruct не поддерживаются.",
+    "ja-JP": "Instruct タグが付けられたモデルはサポートされていません。",
+    "de-DE": "Modelle mit dem Tag „Instruct“ werden nicht unterstützt.",
+    "fr-FR": "Les modèles étiquetés Instruct ne sont pas pris en charge.",
+    "ko-KR": "Instruct 태그가 지정된 모델은 지원되지 않습니다.",
+    "$files": ["src/components/engine/thinking-mode-card.tsx(4775-4798)"],
+    "$id": 636
+  },
+  "参数已保存，需重启引擎后生效": {
+    "en-US": "The parameters have been saved and will take effect after restarting the engine.",
+    "es-ES": "Los parámetros se han guardado y entrarán en vigor después de reiniciar el motor.",
+    "ar-EG": "تم حفظ المعلمات وستدخل حيز التنفيذ بعد إعادة تشغيل المحرك.",
+    "pt-PT": "Os parâmetros foram salvos e entrarão em vigor após a reinicialização do motor.",
+    "ru-RU": "Параметры сохранены и вступят в силу после перезапуска двигателя.",
+    "ja-JP": "パラメータは保存されており、エンジンの再起動後に有効になります。",
+    "de-DE": "Die Parameter wurden gespeichert und werden nach einem Neustart des Motors wirksam.",
+    "fr-FR": "Les paramètres ont été enregistrés et prendront effet après le redémarrage du moteur.",
+    "ko-KR": "매개변수는 저장되었으며 엔진을 다시 시작한 후에 적용됩니다.",
+    "$files": [
+      "src/components/engine/thinking-mode-card.tsx(5572-5590)",
+      "src/components/model/model-param-drawer.tsx(33901-33919)"
+    ],
+    "$id": 803
+  },
+  "当前模型正在运行中，新启动参数需在服务重新拉起时生效。": {
+    "en-US": "The current model is running, and the new startup parameters need to take effect when the service is restarted.",
+    "es-ES": "El modelo actual se está ejecutando y los nuevos parámetros de inicio deben entrar en vigor cuando se reinicia el servicio.",
+    "ar-EG": "النموذج الحالي قيد التشغيل، ويجب أن تدخل معلمات بدء التشغيل الجديدة حيز التنفيذ عند إعادة تشغيل الخدمة.",
+    "pt-PT": "O modelo atual está em execução e os novos parâmetros de inicialização precisam entrar em vigor quando o serviço for reiniciado.",
+    "ru-RU": "Текущая модель работает, и новые параметры запуска должны вступить в силу при перезапуске службы.",
+    "ja-JP": "現在のモデルは実行中であり、サービスの再起動時に新しい起動パラメータが有効になる必要があります。",
+    "de-DE": "Das aktuelle Modell wird ausgeführt und die neuen Startparameter müssen wirksam werden, wenn der Dienst neu gestartet wird.",
+    "fr-FR": "Le modèle actuel est en cours d'exécution et les nouveaux paramètres de démarrage doivent prendre effet au redémarrage du service.",
+    "ko-KR": "현재 모델이 실행 중이며 서비스가 다시 시작되면 새 시작 매개변수가 적용되어야 합니다.",
+    "$files": [
+      "src/components/engine/thinking-mode-card.tsx(5686-5717)",
+      "src/components/model/model-param-drawer.tsx(34023-34054)"
+    ],
+    "$id": 804
+  },
+  "正在重启...": {
+    "en-US": "Restarting...",
+    "es-ES": "Reiniciando...",
+    "ar-EG": "جارٍ إعادة التشغيل...",
+    "pt-PT": "Reiniciando...",
+    "ru-RU": "Перезапуск...",
+    "ja-JP": "再起動中...",
+    "de-DE": "Neustart...",
+    "fr-FR": "Redémarrage...",
+    "ko-KR": "다시 시작하는 중...",
+    "$files": [
+      "src/components/engine/thinking-mode-card.tsx(6252-6263)",
+      "src/components/model/model-param-drawer.tsx(34621-34632)"
+    ],
+    "$id": 805
+  },
+  "立即重启生效": {
+    "en-US": "Restart immediately to take effect",
+    "es-ES": "Reinicie inmediatamente para que surta efecto",
+    "ar-EG": "أعد التشغيل فورًا ليصبح ساري المفعول",
+    "pt-PT": "Reinicie imediatamente para entrar em vigor",
+    "ru-RU": "Немедленно перезапустите, чтобы изменения вступили в силу.",
+    "ja-JP": "すぐに再起動して有効にします",
+    "de-DE": "Starten Sie sofort neu, damit es wirksam wird",
+    "fr-FR": "Redémarrez immédiatement pour prendre effet",
+    "ko-KR": "적용하려면 즉시 다시 시작하세요.",
+    "$files": [
+      "src/components/engine/thinking-mode-card.tsx(6267-6277)",
+      "src/components/model/model-param-drawer.tsx(34636-34646)"
+    ],
+    "$id": 806
+  },
+  "稍后重启": {
+    "en-US": "Restart later",
+    "es-ES": "Reiniciar más tarde",
+    "ar-EG": "أعد التشغيل لاحقًا",
+    "pt-PT": "Reinicie mais tarde",
+    "ru-RU": "Перезагрузить позже",
+    "ja-JP": "後で再起動する",
+    "de-DE": "Später neu starten",
+    "fr-FR": "Redémarrer plus tard",
+    "ko-KR": "나중에 다시 시작",
+    "$files": [
+      "src/components/engine/thinking-mode-card.tsx(6613-6621)",
+      "src/components/model/model-param-drawer.tsx(35058-35066)"
+    ],
+    "$id": 807
+  },
   "未选定": {
     "en-US": "Not selected",
     "es-ES": "No seleccionado",
@@ -2074,7 +2455,7 @@
     "de-DE": "Nicht ausgewählt",
     "fr-FR": "Non sélectionné",
     "ko-KR": "선택되지 않음",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(2745-2752)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(2837-2844)"],
     "$id": 557
   },
   "AI 推理引擎正在下载中，请等待下载解压完成后再启动服务": {
@@ -2087,7 +2468,7 @@
     "de-DE": "Die AI-Inferenz-Engine wird heruntergeladen.Bitte warten Sie, bis der Download und die Dekomprimierung abgeschlossen sind, bevor Sie den Dienst starten",
     "fr-FR": "Le moteur d'inférence IA est en cours de téléchargement, veuillez attendre la fin du téléchargement et de la décompression avant de démarrer le service",
     "ko-KR": "인공 지능 추론 엔진이 다운로드되고,서비스를 시작하기 전에 완료 다운로드 및 압축 해제를 기다려주십시오",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(5201-5233)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(5366-5398)"],
     "$id": 1449
   },
   "尚未安装 AI 推理引擎，请先前往「引擎与硬件」页面下载适配您硬件的引擎": {
@@ -2100,7 +2481,7 @@
     "de-DE": "Die KI-Inferenz-Engine wurde noch nicht installiert, bitte gehen Sie auf die Seite \"Engine und Hardware\", um die an Ihre Hardware angepasste Engine herunterzuladen",
     "fr-FR": "Le moteur d'inférence IA n'est pas encore installé, veuillez vous rendre sur la page \"Moteur et matériel\" pour télécharger le moteur adapté à votre matériel",
     "ko-KR": "인공 지능 추론 엔진이 아직 설치되지 않은,하드웨어에 맞게 엔진을 다운로드하려면\"엔진 및 하드웨어\"페이지로 이동하십시오",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(5544-5584)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(5718-5758)"],
     "$id": 1450
   },
   "模型正在下载中，请等待下载完成后再启动服务": {
@@ -2113,7 +2494,7 @@
     "de-DE": "Das Modell wird heruntergeladen.bitte warten Sie, bis der Download abgeschlossen ist, bevor Sie den Dienst starten",
     "fr-FR": "Le modèle est en cours de téléchargement, veuillez attendre la fin du téléchargement avant de démarrer le service",
     "ko-KR": "이 모델은 다운로드되고,서비스를 시작하기 전에 다운로드가 완료 될 때까지 기다려주십시오",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(6123-6148)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(6311-6336)"],
     "$id": 1451
   },
   "尚未下载 AI 模型，请先前往「模型管理」页面下载模型": {
@@ -2126,7 +2507,7 @@
     "de-DE": "Das KI-Modell wurde noch nicht heruntergeladen, bitte gehen Sie auf die Seite \"Modellverwaltung\", um das Modell herunterzuladen",
     "fr-FR": "Le modèle d'IA n'a pas encore été téléchargé, veuillez vous rendre sur la page \"Gestion des modèles\" pour télécharger le modèle",
     "ko-KR": "인공 지능 모델은 아직 다운로드되지 않았습니다,모델을 다운로드하려면\"모델 관리\"페이지로 이동하시기 바랍니다",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(6162-6193)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(6351-6382)"],
     "$id": 1452
   },
   "AI 推理服务已成功启动！": {
@@ -2139,7 +2520,7 @@
     "de-DE": "Der KI-Inferenzdienst wurde erfolgreich gestartet!",
     "fr-FR": "Le service d'inférence IA a été lancé avec succès !",
     "ko-KR": "AI 추론 서비스가 성공적으로 출시되었습니다!",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(6354-6371)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(6551-6568)"],
     "$id": 558
   },
   "启动失败，请检查模型文件或端口占用": {
@@ -2152,7 +2533,7 @@
     "de-DE": "Der Start ist fehlgeschlagen. Bitte überprüfen Sie die Modelldatei oder die Portbelegung",
     "fr-FR": "Le démarrage a échoué, veuillez vérifier le fichier modèle ou l'occupation du port",
     "ko-KR": "시작에 실패했습니다. 모델 파일이나 포트 점유를 확인하세요.",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(6505-6526)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(6707-6728)"],
     "$id": 559
   },
   "启动服务失败": {
@@ -2165,7 +2546,7 @@
     "de-DE": "Der Dienst konnte nicht gestartet werden",
     "fr-FR": "Échec du démarrage du service",
     "ko-KR": "서비스를 시작하지 못했습니다.",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(6587-6597)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(6791-6801)"],
     "$id": 560
   },
   "启动异常": {
@@ -2179,8 +2560,8 @@
     "fr-FR": "Exception de démarrage",
     "ko-KR": "시작 예외",
     "$files": [
-      "src/components/dashboard/dashboard-view.tsx(6683-6691)",
-      "src/components/dashboard/dashboard-view.tsx(6748-6756)"
+      "src/components/dashboard/dashboard-view.tsx(6890-6898)",
+      "src/components/dashboard/dashboard-view.tsx(6957-6965)"
     ],
     "$id": 561
   },
@@ -2194,7 +2575,7 @@
     "de-DE": "Der KI-Inferenzdienst wurde gestoppt",
     "fr-FR": "Le service d'inférence IA a été arrêté",
     "ko-KR": "AI 추론 서비스가 중지되었습니다",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(6974-6988)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(7194-7208)"],
     "$id": 562
   },
   "推理引擎后台服务": {
@@ -2207,7 +2588,7 @@
     "de-DE": "Hintergrunddienst der Inferenz-Engine",
     "fr-FR": "Service d'arrière-plan du moteur d'inférence",
     "ko-KR": "추론 엔진 백그라운드 서비스",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(9720-9732)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(10009-10021)"],
     "$id": 563
   },
   "运行中 (就绪)": {
@@ -2220,7 +2601,7 @@
     "de-DE": "Laufen (bereit)",
     "fr-FR": "En cours d'exécution (prêt)",
     "ko-KR": "실행중(준비)",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(11108-11120)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(11429-11441)"],
     "$id": 564
   },
   "正在启动...": {
@@ -2233,7 +2614,7 @@
     "de-DE": "Beginnt...",
     "fr-FR": "Départ...",
     "ko-KR": "시작 중...",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(11183-11194)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(11506-11517)"],
     "$id": 565
   },
   "异常": {
@@ -2246,7 +2627,7 @@
     "de-DE": "Fehlerhaft",
     "fr-FR": "Anormale",
     "ko-KR": "비정상",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(11272-11278)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(11597-11603)"],
     "$id": 566
   },
   "已停止": {
@@ -2259,7 +2640,7 @@
     "de-DE": "Angehalten",
     "fr-FR": "Arrêté",
     "ko-KR": "중지됨",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(11308-11315)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(11634-11641)"],
     "$id": 567
   },
   "核心 llama.cpp 推理进程，提供 OpenAI 兼容的 HTTP 接口响应": {
@@ -2272,7 +2653,7 @@
     "de-DE": "Der Kerninferenzprozess llama.cpp stellt OpenAI-kompatible HTTP-Schnittstellenantworten bereit",
     "fr-FR": "Le processus d'inférence principal llama.cpp fournit des réponses d'interface HTTP compatibles OpenAI",
     "ko-KR": "핵심 llama.cpp 추론 프로세스는 OpenAI 호환 HTTP 인터페이스 응답을 제공합니다.",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(11472-11517)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(11803-11848)"],
     "$id": 568
   },
   "停止服务": {
@@ -2285,7 +2666,7 @@
     "de-DE": "Service stoppen",
     "fr-FR": "Arrêter le service",
     "ko-KR": "서비스 중지",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(12264-12272)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(12614-12622)"],
     "$id": 569
   },
   "启动服务": {
@@ -2298,7 +2679,7 @@
     "de-DE": "Service starten",
     "fr-FR": "Démarrer le service",
     "ko-KR": "서비스 시작",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(12895-12903)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(13258-13266)"],
     "$id": 570
   },
   "AI 推理引擎正在下载中": {
@@ -2311,7 +2692,7 @@
     "de-DE": "KI-Inferenz-Engine wird heruntergeladen",
     "fr-FR": "Le moteur d'inférence d'IA est en cours de téléchargement",
     "ko-KR": "인공 지능 추론 엔진이 다운로드 중입니다",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(13612-13628)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(13990-14006)"],
     "$id": 1453
   },
   "模型已就绪，但硬件适配的 llama.cpp 引擎仍在下载与部署中（当前进度 {progress}%），请等待完成后启动服务。": {
@@ -2324,7 +2705,7 @@
     "de-DE": "Das Modell ist fertig, aber die Hardware ist an Lama angepasst.Die CPP-Engine wird noch heruntergeladen und bereitgestellt (aktueller Fortschritt {progress}%). Bitte warten Sie, bis der Dienst nach Abschluss gestartet ist.",
     "fr-FR": "Le modèle est prêt, mais le matériel est adapté au lama.Le moteur cpp est toujours en cours de téléchargement et de déploiement (progression actuelle {progress}%), veuillez attendre que le service démarre une fois terminé.",
     "ko-KR": "이 모델은 준비되었지만 하드웨어는 라마에 적합합니다.(현재 진행률{progress}%),완료 후 서비스가 시작될 때까지 기다려주십시오.",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(13776-13868)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(14157-14250)"],
     "$id": 1454
   },
   "前往查看引擎下载进度": {
@@ -2337,7 +2718,7 @@
     "de-DE": "Gehen Sie, um den Fortschritt des Engine-Downloads zu überprüfen",
     "fr-FR": "Allez vérifier la progression du téléchargement du moteur",
     "ko-KR": "엔진 다운로드 진행률 확인으로 이동",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(14414-14428)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(14808-14822)"],
     "$id": 1455
   },
   "未检测到已安装的 AI 推理引擎": {
@@ -2350,7 +2731,7 @@
     "de-DE": "Die installierte KI-Inferenz-Engine wird nicht erkannt",
     "fr-FR": "Le moteur d'inférence d'IA installé n'est pas détecté",
     "ko-KR": "설치된 인공지능 추론 엔진이 감지되지 않았습니다",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(15015-15035)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(15420-15440)"],
     "$id": 1456
   },
   "已检测到可用模型，但尚未安装推理引擎。本地运行 AI 模型需要先安装适配您当前硬件的 llama.cpp 引擎。": {
@@ -2363,7 +2744,7 @@
     "de-DE": "Ein verfügbares Modell wurde erkannt, aber die Inferenzengine wurde nicht erkannt installed.To führen Sie das KI-Modell lokal aus, Sie müssen Lama installieren, das an Ihre aktuelle Hardware angepasst ist.cpp-Motor.",
     "fr-FR": "Un modèle disponible a été détecté, mais le moteur d'inférence n'a pas été installed.To exécutez le modèle d'IA localement, vous devez installer llama adapté à votre matériel actuel.moteur cpp.",
     "ko-KR": "사용 가능한 모델이 검색되었지만 추론 엔진은 검색되지 않았습니다.installed.To 로컬 인공 지능 모델을 실행,당신은 당신의 현재 하드웨어에 맞게 라마를 설치해야합니다.엔진.",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(15183-15268)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(15591-15677)"],
     "$id": 1457
   },
   "前往下载引擎": {
@@ -2376,7 +2757,7 @@
     "de-DE": "Gehen Sie zum Download-Engine",
     "fr-FR": "Aller au moteur de téléchargement",
     "ko-KR": "다운로드 엔진으로 이동",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(15752-15762)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(16172-16182)"],
     "$id": 1458
   },
   "AI 模型正在下载中": {
@@ -2389,7 +2770,7 @@
     "de-DE": "Das KI-Modell wird heruntergeladen",
     "fr-FR": "Le modèle d'IA est en cours de téléchargement",
     "ko-KR": "인공지능 모델 다운로드 중",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(16310-16324)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(16741-16755)"],
     "$id": 1459
   },
   "当前尚未有就绪的本地模型，模型正在后台下载中，请等待完成后再启动服务。": {
@@ -2402,7 +2783,7 @@
     "de-DE": "Derzeit ist kein lokales Modell verfügbar, und das Modell wird im Hintergrund heruntergeladen. Bitte warten Sie, bis es abgeschlossen ist, bevor Sie den Dienst starten.",
     "fr-FR": "Il n'y a actuellement aucun modèle local prêt, et le modèle est en cours de téléchargement en arrière-plan. Veuillez attendre qu'il soit terminé avant de commencer le service.",
     "ko-KR": "현재 준비된 로컬 모델이 없으며 모델이 백그라운드에서 다운로드되고 있습니다. 이 서비스를 시작하기 전에 완료 될 때까지 기다려주십시오.",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(16472-16511)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(16906-16945)"],
     "$id": 1460
   },
   "前往查看模型进度": {
@@ -2415,7 +2796,7 @@
     "de-DE": "Gehe zu Modellfortschritt anzeigen",
     "fr-FR": "Aller pour voir la progression du modèle",
     "ko-KR": "모델 진행률 보기로 이동",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(16977-16989)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(17421-17433)"],
     "$id": 1461
   },
   "未检测到已下载的 AI 模型": {
@@ -2428,7 +2809,7 @@
     "de-DE": "Das heruntergeladene KI-Modell wurde nicht erkannt",
     "fr-FR": "Le modèle d'IA téléchargé n'a pas été détecté",
     "ko-KR": "다운로드한 인공지능 모델이 감지되지 않았습니다",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(17575-17593)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(18030-18048)"],
     "$id": 1462
   },
   "启动本地 AI 推理服务前，请先前往「模型管理」页面下载模型。": {
@@ -2441,7 +2822,7 @@
     "de-DE": "Bevor Sie den lokalen KI-Inferenzdienst starten, gehen Sie bitte auf die Seite \"Modellverwaltung\", um das Modell herunterzuladen.",
     "fr-FR": "Avant de démarrer le service d'inférence IA locale, veuillez vous rendre sur la page \"Gestion des modèles\" pour télécharger le modèle.",
     "ko-KR": "로컬 인공지능 추론 서비스를 시작하기 전에\"모델 관리\"페이지로 이동하여 모델을 다운로드하십시오.",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(17741-17776)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(18199-18234)"],
     "$id": 1463
   },
   "服务启动失败": {
@@ -2454,7 +2835,7 @@
     "de-DE": "Der Dienststart ist fehlgeschlagen",
     "fr-FR": "Le démarrage du service a échoué",
     "ko-KR": "서비스 시작 실패",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(18782-18792)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(19261-19271)"],
     "$id": 571
   },
   "查看运行日志": {
@@ -2468,7 +2849,7 @@
     "fr-FR": "Afficher le journal d'exécution",
     "ko-KR": "실행 로그 보기",
     "$files": [
-      "src/components/dashboard/dashboard-view.tsx(19410-19420)",
+      "src/components/dashboard/dashboard-view.tsx(19902-19912)",
       "src/components/errors/error-analysis-sidebar.tsx(7404-7414)"
     ],
     "$id": 643
@@ -2483,7 +2864,7 @@
     "de-DE": "Aktuelle Modellstartparameter",
     "fr-FR": "Paramètres de démarrage du modèle actuel",
     "ko-KR": "현재 모델 시작 매개변수",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(20062-20074)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(20572-20584)"],
     "$id": 572
   },
   "-ngl (GPU 层数)": {
@@ -2496,7 +2877,7 @@
     "de-DE": "-ngl (GPU-Layer-Nummer)",
     "fr-FR": "-ngl (numéro de couche GPU)",
     "ko-KR": "-ngl(GPU 레이어 번호)",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(20708-20725)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(21230-21247)"],
     "$id": 573
   },
   "-c (上下文窗口)": {
@@ -2509,7 +2890,7 @@
     "de-DE": "-c (Kontextfenster)",
     "fr-FR": "-c (fenêtre contextuelle)",
     "ko-KR": "-c(컨텍스트 창)",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(21159-21173)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(21690-21704)"],
     "$id": 574
   },
   "-t (线程数)": {
@@ -2522,7 +2903,7 @@
     "de-DE": "-t (Anzahl der Threads)",
     "fr-FR": "-t (nombre de threads)",
     "ko-KR": "-t(스레드 수)",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(21603-21615)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(22143-22155)"],
     "$id": 575
   },
   "-b (Batch Size)": {
@@ -2535,7 +2916,7 @@
     "de-DE": "-b (Batch-Größe)",
     "fr-FR": "-b (Taille du lot)",
     "ko-KR": "-b (배치 크기)",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(22044-22063)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(22593-22612)"],
     "$id": 576
   },
   "-ub (uBatch Size)": {
@@ -2548,7 +2929,7 @@
     "de-DE": "-ub (uBatch-Größe)",
     "fr-FR": "-ub (Taille du uLot)",
     "ko-KR": "-ub (u배치 크기)",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(22495-22516)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(23053-23074)"],
     "$id": 577
   },
   "完整启动命令": {
@@ -2561,7 +2942,7 @@
     "de-DE": "Vollständiger Startbefehl",
     "fr-FR": "Commande de démarrage complète",
     "ko-KR": "시작 명령 완료",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(23230-23240)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(23802-23812)"],
     "$id": 578
   },
   "暂无启动记录，服务启动后将展示完整命令行": {
@@ -2574,7 +2955,7 @@
     "de-DE": "Es gibt noch keinen Startdatensatz. Die vollständige Befehlszeile wird nach dem Start des Dienstes angezeigt.",
     "fr-FR": "Il n'y a pas encore d'enregistrement de démarrage. La ligne de commande complète sera affichée après le démarrage du service.",
     "ko-KR": "아직 시작 기록이 없습니다. 서비스가 시작된 후 전체 명령줄이 표시됩니다.",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(24439-24463)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(25041-25065)"],
     "$id": 579
   },
   "已安装模型": {
@@ -2587,7 +2968,7 @@
     "de-DE": "Installierte Modelle",
     "fr-FR": "Modèles installés",
     "ko-KR": "설치된 모델",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(25241-25250)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(25860-25869)"],
     "$id": 580
   },
   "个可用": {
@@ -2600,7 +2981,7 @@
     "de-DE": "Verfügbar",
     "fr-FR": "Disponibles",
     "ko-KR": "개 사용 가능",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(25547-25554)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(26171-26178)"],
     "$id": 581
   },
   "即时就绪，可无缝热切": {
@@ -2613,7 +2994,7 @@
     "de-DE": "Sofort bereit für nahtloses Erhitzen",
     "fr-FR": "Prêt instantanément pour un chauffage fluide",
     "ko-KR": "원활한 난방을 위한 즉각적인 준비",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(25780-25794)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(26409-26423)"],
     "$id": 582
   },
   "当前计算引擎": {
@@ -2626,7 +3007,7 @@
     "de-DE": "Aktuelle Berechnungs-Engine",
     "fr-FR": "Moteur de calcul actuel",
     "ko-KR": "현재 계산 엔진",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(26444-26454)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(27085-27095)"],
     "$id": 583
   },
   "运行中": {
@@ -2639,7 +3020,7 @@
     "de-DE": "Läuft",
     "fr-FR": "En cours d'exécution",
     "ko-KR": "달리기",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(26965-26972)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(27616-27623)"],
     "$id": 584
   },
   "通用加速硬件": {
@@ -2652,7 +3033,7 @@
     "de-DE": "Universelle Beschleunigungshardware",
     "fr-FR": "Matériel d'accélération universel",
     "ko-KR": "범용 가속 하드웨어",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(27195-27205)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(27853-27863)"],
     "$id": 585
   },
   "API 服务监听": {
@@ -2665,7 +3046,7 @@
     "de-DE": "Überwachung von API-Diensten",
     "fr-FR": "Surveillance des services API",
     "ko-KR": "API 서비스 모니터링",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(27843-27855)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(28513-28525)"],
     "$id": 586
   },
   "OpenAI 兼容协议": {
@@ -2678,7 +3059,7 @@
     "de-DE": "OpenAI-kompatibles Protokoll",
     "fr-FR": "Protocole compatible OpenAI",
     "ko-KR": "OpenAI 호환 프로토콜",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(28221-28236)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(28898-28913)"],
     "$id": 587
   },
   "GPU 独立显存 (VRAM)": {
@@ -2691,7 +3072,7 @@
     "de-DE": "Diskreter GPU-Videospeicher (VRAM)",
     "fr-FR": "Mémoire vidéo discrète GPU (VRAM)",
     "ko-KR": "GPU 개별 비디오 메모리(VRAM)",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(29032-29051)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(29726-29745)"],
     "$id": 588
   },
   "默认图形加速卡": {
@@ -2704,7 +3085,7 @@
     "de-DE": "Standard-Grafikbeschleunigerkarte",
     "fr-FR": "Carte accélératrice graphique par défaut",
     "ko-KR": "기본 그래픽 가속기 카드",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(29210-29221)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(29907-29918)"],
     "$id": 589
   },
   "已分配水位": {
@@ -2717,7 +3098,7 @@
     "de-DE": "Zugeordneter Wasserstand",
     "fr-FR": "Niveau d'eau assigné",
     "ko-KR": "할당된 수위",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(29613-29622)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(30321-30330)"],
     "$id": 590
   },
   "可用余量": {
@@ -2731,8 +3112,8 @@
     "fr-FR": "Marge disponible",
     "ko-KR": "사용 가능한 마진",
     "$files": [
-      "src/components/dashboard/dashboard-view.tsx(30130-30138)",
-      "src/components/dashboard/dashboard-view.tsx(32307-32315)"
+      "src/components/dashboard/dashboard-view.tsx(30850-30858)",
+      "src/components/dashboard/dashboard-view.tsx(33076-33084)"
     ],
     "$id": 591
   },
@@ -2746,7 +3127,7 @@
     "de-DE": "Gemeinsamer Systemspeicher",
     "fr-FR": "Mémoire système partagée",
     "ko-KR": "공유 시스템 메모리",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(30434-30444)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(31160-31170)"],
     "$id": 592
   },
   "独立显存": {
@@ -2759,7 +3140,7 @@
     "de-DE": "Unabhängiger Videospeicher",
     "fr-FR": "Mémoire vidéo indépendante",
     "ko-KR": "독립 비디오 메모리",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(30448-30456)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(31174-31182)"],
     "$id": 593
   },
   "系统物理内存 (RAM)": {
@@ -2772,7 +3153,7 @@
     "de-DE": "Physischer Systemspeicher (RAM)",
     "fr-FR": "Mémoire physique du système (RAM)",
     "ko-KR": "시스템 물리적 메모리(RAM)",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(31144-31160)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(31885-31901)"],
     "$id": 594
   },
   "核心": {
@@ -2785,7 +3166,7 @@
     "de-DE": "Kern",
     "fr-FR": "Cœur",
     "ko-KR": "핵심",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(31337-31343)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(32082-32088)"],
     "$id": 595
   },
   "线程": {
@@ -2798,7 +3179,7 @@
     "de-DE": "Faden",
     "fr-FR": "Fil",
     "ko-KR": "실",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(31388-31394)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(32133-32139)"],
     "$id": 596
   },
   "中央处理器": {
@@ -2811,7 +3192,7 @@
     "de-DE": "CPU",
     "fr-FR": "Processeur",
     "ko-KR": "CPU",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(31420-31429)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(32166-32175)"],
     "$id": 597
   },
   "已使用容量": {
@@ -2824,7 +3205,7 @@
     "de-DE": "Genutzte Kapazität",
     "fr-FR": "Capacité utilisée",
     "ko-KR": "사용 용량",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(31820-31829)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(32577-32586)"],
     "$id": 598
   },
   "系统统一调度": {
@@ -2837,8 +3218,203 @@
     "de-DE": "Systemeinheitliche Planung",
     "fr-FR": "Planification unifiée du système",
     "ko-KR": "시스템 통합 스케줄링",
-    "$files": ["src/components/dashboard/dashboard-view.tsx(32571-32581)"],
+    "$files": ["src/components/dashboard/dashboard-view.tsx(33345-33355)"],
     "$id": 599
+  },
+  "目前使用兼容模式，能发挥您显卡70% AI算力，显卡驱动需要升级，才能发挥满血性能": {
+    "en-US": "Currently using compatibility mode, 70% of the AI ​​computing power of your graphics card can be used. The graphics card driver needs to be upgraded to achieve full performance.",
+    "es-ES": "Actualmente, al utilizar el modo de compatibilidad, se puede utilizar el 70% de la potencia informática de IA de su tarjeta gráfica. Es necesario actualizar el controlador de la tarjeta gráfica para lograr el máximo rendimiento.",
+    "ar-EG": "باستخدام وضع التوافق حاليًا، يمكن استخدام 70% من قوة حوسبة الذكاء الاصطناعي لبطاقة الرسومات الخاصة بك. يحتاج برنامج تشغيل بطاقة الرسومات إلى الترقية لتحقيق الأداء الكامل.",
+    "pt-PT": "Atualmente usando o modo de compatibilidade, 70% do poder de computação AI da sua placa gráfica pode ser usado. O driver da placa gráfica precisa ser atualizado para atingir desempenho total.",
+    "ru-RU": "В настоящее время в режиме совместимости можно использовать 70% вычислительной мощности AI вашей видеокарты. Для достижения полной производительности необходимо обновить драйвер видеокарты.",
+    "ja-JP": "現在互換モードを使用すると、グラフィックス カードの AI 計算能力の 70% を使用できます。最大限のパフォーマンスを実現するには、グラフィック カード ドライバーをアップグレードする必要があります。",
+    "de-DE": "Im Kompatibilitätsmodus können derzeit 70 % der KI-Rechenleistung Ihrer Grafikkarte genutzt werden. Um die volle Leistung zu erreichen, muss der Grafikkartentreiber aktualisiert werden.",
+    "fr-FR": "En utilisant actuellement le mode de compatibilité, 70 % de la puissance de calcul IA de votre carte graphique peut être utilisée. Le pilote de la carte graphique doit être mis à niveau pour obtenir toutes les performances.",
+    "ko-KR": "현재 호환 모드를 사용하면 그래픽 카드의 AI 컴퓨팅 성능의 70%를 사용할 수 있습니다. 완전한 성능을 얻으려면 그래픽 카드 드라이버를 업그레이드해야 합니다.",
+    "$files": ["src/components/hardware/hardware-card.tsx(2389-2434)"],
+    "$id": 644
+  },
+  "升级显卡驱动": {
+    "en-US": "Upgrade graphics card driver",
+    "es-ES": "Actualizar el controlador de la tarjeta gráfica",
+    "ar-EG": "ترقية برنامج تشغيل بطاقة الرسومات",
+    "pt-PT": "Atualizar driver da placa gráfica",
+    "ru-RU": "Обновите драйвер видеокарты",
+    "ja-JP": "グラフィックカードドライバーをアップグレードする",
+    "de-DE": "Aktualisieren Sie den Grafikkartentreiber",
+    "fr-FR": "Mettre à niveau le pilote de la carte graphique",
+    "ko-KR": "그래픽 카드 드라이버 업그레이드",
+    "$files": ["src/components/hardware/hardware-card.tsx(2845-2855)"],
+    "$id": 645
+  },
+  "我已升级驱动，重新检测": {
+    "en-US": "I have upgraded the driver and re-tested",
+    "es-ES": "Actualicé el controlador y volví a realizar la prueba.",
+    "ar-EG": "لقد قمت بترقية برنامج التشغيل وإعادة اختباره",
+    "pt-PT": "Eu atualizei o driver e testei novamente",
+    "ru-RU": "Я обновил драйвер и повторно протестировал",
+    "ja-JP": "ドライバーをアップグレードして再テストしました",
+    "de-DE": "Ich habe den Treiber aktualisiert und erneut getestet",
+    "fr-FR": "J'ai mis à jour le pilote et re-testé",
+    "ko-KR": "드라이버를 업그레이드하고 다시 테스트했습니다.",
+    "$files": ["src/components/hardware/hardware-card.tsx(3285-3300)"],
+    "$id": 646
+  },
+  "显卡型号": {
+    "en-US": "Graphics card model",
+    "es-ES": "Modelo de tarjeta gráfica",
+    "ar-EG": "نموذج بطاقة الرسومات",
+    "pt-PT": "Modelo de placa gráfica",
+    "ru-RU": "Модель видеокарты",
+    "ja-JP": "グラフィックスカードのモデル",
+    "de-DE": "Grafikkartenmodell",
+    "fr-FR": "Modèle de carte graphique",
+    "ko-KR": "그래픽 카드 모델",
+    "$files": ["src/components/hardware/hardware-card.tsx(4148-4156)"],
+    "$id": 647
+  },
+  "探测中...": {
+    "en-US": "Detecting...",
+    "es-ES": "Detector...",
+    "ar-EG": "جارٍ الكشف...",
+    "pt-PT": "Detecção...",
+    "ru-RU": "Обнаружение...",
+    "ja-JP": "検出中...",
+    "de-DE": "Erkennen...",
+    "fr-FR": "Détection...",
+    "ko-KR": "감지 중...",
+    "$files": ["src/components/hardware/hardware-card.tsx(4330-4340)"],
+    "$id": 648
+  },
+  "通用加速设备": {
+    "en-US": "Universal acceleration equipment",
+    "es-ES": "Equipo de aceleración universal.",
+    "ar-EG": "معدات تسريع عالمية",
+    "pt-PT": "Equipamento de aceleração universal",
+    "ru-RU": "Универсальное ускорительное оборудование",
+    "ja-JP": "万能加速装置",
+    "de-DE": "Universelle Beschleunigungsausrüstung",
+    "fr-FR": "Équipement d'accélération universel",
+    "ko-KR": "범용 가속 장비",
+    "$files": ["src/components/hardware/hardware-card.tsx(4390-4400)"],
+    "$id": 649
+  },
+  "集成显卡 (核显)": {
+    "en-US": "Integrated graphics card (core graphics)",
+    "es-ES": "Tarjeta gráfica integrada (gráficos centrales)",
+    "ar-EG": "بطاقة الرسومات المدمجة (الرسومات الأساسية)",
+    "pt-PT": "Placa gráfica integrada (gráficos principais)",
+    "ru-RU": "Встроенная видеокарта (основная графика)",
+    "ja-JP": "統合グラフィックス カード (コア グラフィックス)",
+    "de-DE": "Integrierte Grafikkarte (Core Graphics)",
+    "fr-FR": "Carte graphique intégrée (graphiques de base)",
+    "ko-KR": "통합 그래픽 카드(코어 그래픽)",
+    "$files": ["src/components/hardware/hardware-card.tsx(4642-4655)"],
+    "$id": 650
+  },
+  "独立显卡 (dGPU)": {
+    "en-US": "Discrete graphics card (dGPU)",
+    "es-ES": "Tarjeta gráfica discreta (dGPU)",
+    "ar-EG": "بطاقة الرسومات المنفصلة (dGPU)",
+    "pt-PT": "Placa gráfica discreta (dGPU)",
+    "ru-RU": "Дискретная видеокарта (dGPU)",
+    "ja-JP": "ディスクリート グラフィックス カード (dGPU)",
+    "de-DE": "Separate Grafikkarte (dGPU)",
+    "fr-FR": "Carte graphique discrète (dGPU)",
+    "ko-KR": "개별 그래픽 카드(dGPU)",
+    "$files": ["src/components/hardware/hardware-card.tsx(4659-4674)"],
+    "$id": 651
+  },
+  "可用显存": {
+    "en-US": "Available VRAM",
+    "es-ES": "Memoria de vídeo disponible",
+    "ar-EG": "ذاكرة الفيديو المتاحة",
+    "pt-PT": "Memória de vídeo disponível",
+    "ru-RU": "Доступная видеопамять",
+    "ja-JP": "利用可能なビデオメモリ",
+    "de-DE": "Verfügbarer Videospeicher",
+    "fr-FR": "Mémoire vidéo disponible",
+    "ko-KR": "사용 가능한 비디오 메모리",
+    "$files": ["src/components/hardware/hardware-card.tsx(5592-5600)"],
+    "$id": 652
+  },
+  "(已用 {used} MB)": {
+    "en-US": "({used} MB used)",
+    "es-ES": "({used} MB utilizados)",
+    "ar-EG": "({used} ميغابايت مستخدمة)",
+    "pt-PT": "({used} MB usados)",
+    "ru-RU": "(Использовано {used} МБ)",
+    "ja-JP": "({used} MB 使用)",
+    "de-DE": "({used} MB verwendet)",
+    "fr-FR": "({used} Mo utilisés)",
+    "ko-KR": "({used}MB 사용됨)",
+    "$files": ["src/components/hardware/hardware-card.tsx(6094-6112)"],
+    "$id": 653
+  },
+  "当前活动后端": {
+    "en-US": "Current active backend",
+    "es-ES": "Backend activo actual",
+    "ar-EG": "الخلفية النشطة الحالية",
+    "pt-PT": "Back-end ativo atual",
+    "ru-RU": "Текущий активный бэкэнд",
+    "ja-JP": "現在アクティブなバックエンド",
+    "de-DE": "Derzeit aktives Backend",
+    "fr-FR": "Backend actif actuel",
+    "ko-KR": "현재 활성 백엔드",
+    "$files": ["src/components/hardware/hardware-card.tsx(6336-6346)"],
+    "$id": 654
+  },
+  "系统物理内存": {
+    "en-US": "System physical memory",
+    "es-ES": "Memoria física del sistema",
+    "ar-EG": "الذاكرة الفعلية للنظام",
+    "pt-PT": "Memória física do sistema",
+    "ru-RU": "Физическая память системы",
+    "ja-JP": "システム物理メモリ",
+    "de-DE": "Physischer Systemspeicher",
+    "fr-FR": "Mémoire physique du système",
+    "ko-KR": "시스템 물리적 메모리",
+    "$files": ["src/components/hardware/hardware-card.tsx(7131-7141)"],
+    "$id": 655
+  },
+  "{cores} 核 / {threads} 线程": {
+    "en-US": "{cores} core / {threads} thread",
+    "es-ES": "{cores} núcleo / {threads} hilo",
+    "ar-EG": "{cores} النواة / {threads} الموضوع",
+    "pt-PT": "{cores} núcleo / {threads} thread",
+    "ru-RU": "{cores} ядро ​​/ {threads} поток",
+    "ja-JP": "{cores} コア / {threads} スレッド",
+    "de-DE": "{cores} Kern / {threads} Thread",
+    "fr-FR": "{cores} noyau / {threads} fil de discussion",
+    "ko-KR": "{cores} 코어/{threads} 스레드",
+    "$files": ["src/components/hardware/hardware-card.tsx(7270-7298)"],
+    "$id": 656
+  },
+  "CPU 自适应": {
+    "en-US": "CPU adaptive",
+    "es-ES": "CPU adaptable",
+    "ar-EG": "وحدة المعالجة المركزية التكيفية",
+    "pt-PT": "CPU adaptável",
+    "ru-RU": "Адаптивный процессор",
+    "ja-JP": "CPU適応型",
+    "de-DE": "CPU-adaptiv",
+    "fr-FR": "Adaptatif du processeur",
+    "ko-KR": "CPU 적응형",
+    "$files": ["src/components/hardware/hardware-card.tsx(7372-7383)"],
+    "$id": 657
+  },
+  "平台": {
+    "en-US": "Platform",
+    "es-ES": "Plataforma",
+    "ar-EG": "منصة",
+    "pt-PT": "Plataforma",
+    "ru-RU": "платформа",
+    "ja-JP": "プラットフォーム",
+    "de-DE": "Plattform",
+    "fr-FR": "Plateforme",
+    "ko-KR": "플랫폼",
+    "$files": ["src/components/hardware/hardware-card.tsx(7515-7521)"],
+    "$id": 658
   },
   "错误分析与解决建议": {
     "en-US": "Error analysis and solution suggestions",
@@ -2878,7 +3454,7 @@
     "ko-KR": "폐쇄",
     "$files": [
       "src/components/errors/error-analysis-sidebar.tsx(3300-3306)",
-      "src/components/model/model-download-popover.tsx(6819-6825)"
+      "src/components/model/model-download-popover.tsx(7036-7042)"
     ],
     "$id": 639
   },
@@ -3327,582 +3903,6 @@
     "$files": ["src/components/logs/engine-logs-view.tsx(26136-26143)"],
     "$id": 689
   },
-  "切换本地AI引擎": {
-    "en-US": "Switch local AI engine",
-    "es-ES": "Cambiar el motor de IA local",
-    "ar-EG": "تبديل محرك الذكاء الاصطناعي المحلي",
-    "pt-PT": "Alternar mecanismo de IA local",
-    "ru-RU": "Переключить локальный движок искусственного интеллекта",
-    "ja-JP": "ローカル AI エンジンを切り替える",
-    "de-DE": "Lokale KI-Engine wechseln",
-    "fr-FR": "Changer de moteur d'IA local",
-    "ko-KR": "로컬 AI 엔진 전환",
-    "$files": ["src/components/engine/engine-table.tsx(2447-2459)"],
-    "$id": 615
-  },
-  "您的 {vendor} 显卡可切换以下引擎": {
-    "en-US": "Your {vendor} graphics card can switch the following engines",
-    "es-ES": "Su tarjeta gráfica {vendor} puede cambiar los siguientes motores",
-    "ar-EG": "يمكن لبطاقة الرسومات {vendor} الخاصة بك تبديل المحركات التالية",
-    "pt-PT": "Sua placa gráfica {vendor} pode alternar entre os seguintes mecanismos",
-    "ru-RU": "Ваша видеокарта {vendor} может переключать следующие процессоры",
-    "ja-JP": "{vendor} グラフィック カードは次のエンジンを切り替えることができます",
-    "de-DE": "Ihre {vendor}-Grafikkarte kann die folgenden Engines umschalten",
-    "fr-FR": "Votre carte graphique {vendor} peut changer les moteurs suivants",
-    "ko-KR": "{vendor} 그래픽 카드는 다음 엔진을 전환할 수 있습니다.",
-    "$files": ["src/components/engine/engine-table.tsx(2596-2621)"],
-    "$id": 616
-  },
-  "AI 引擎": {
-    "en-US": "AI engine",
-    "es-ES": "Motor de IA",
-    "ar-EG": "محرك الذكاء الاصطناعي",
-    "pt-PT": "Motor de IA",
-    "ru-RU": "движок искусственного интеллекта",
-    "ja-JP": "AIエンジン",
-    "de-DE": "KI-Engine",
-    "fr-FR": "Moteur d'IA",
-    "ko-KR": "AI 엔진",
-    "$files": ["src/components/engine/engine-table.tsx(3350-3359)"],
-    "$id": 617
-  },
-  "适配类型": {
-    "en-US": "Adaptation type",
-    "es-ES": "Tipo de adaptación",
-    "ar-EG": "نوع التكيف",
-    "pt-PT": "Tipo de adaptação",
-    "ru-RU": "Тип адаптации",
-    "ja-JP": "適応タイプ",
-    "de-DE": "Anpassungstyp",
-    "fr-FR": "Type d'adaptation",
-    "ko-KR": "적응 유형",
-    "$files": ["src/components/engine/engine-table.tsx(3511-3519)"],
-    "$id": 619
-  },
-  "引擎大小": {
-    "en-US": "Engine size",
-    "es-ES": "Tamaño del motor",
-    "ar-EG": "حجم المحرك",
-    "pt-PT": "Tamanho do motor",
-    "ru-RU": "Объем двигателя",
-    "ja-JP": "エンジンサイズ",
-    "de-DE": "Motorgröße",
-    "fr-FR": "Cylindrée du moteur",
-    "ko-KR": "엔진 크기",
-    "$files": ["src/components/engine/engine-table.tsx(3671-3679)"],
-    "$id": 620
-  },
-  "性能说明": {
-    "en-US": "Performance Notes",
-    "es-ES": "Notas de rendimiento",
-    "ar-EG": "ملاحظات الأداء",
-    "pt-PT": "Notas de Desempenho",
-    "ru-RU": "Примечания по производительности",
-    "ja-JP": "パフォーマンスノート",
-    "de-DE": "Leistungshinweise",
-    "fr-FR": "Notes de performances",
-    "ko-KR": "성능 노트",
-    "$files": ["src/components/engine/engine-table.tsx(3821-3829)"],
-    "$id": 621
-  },
-  "下载引擎": {
-    "en-US": "Download engine",
-    "es-ES": "Motor de descarga",
-    "ar-EG": "محرك التحميل",
-    "pt-PT": "Mecanismo de download",
-    "ru-RU": "скачать движок",
-    "ja-JP": "ダウンロードエンジン",
-    "de-DE": "Download-Engine",
-    "fr-FR": "Moteur de téléchargement",
-    "ko-KR": "다운로드 엔진",
-    "$files": [
-      "src/components/engine/engine-table.tsx(3980-3988)",
-      "src/components/engine/engine-table.tsx(11118-11126)"
-    ],
-    "$id": 622
-  },
-  "当前引擎": {
-    "en-US": "Current engine",
-    "es-ES": "Motor actual",
-    "ar-EG": "المحرك الحالي",
-    "pt-PT": "Motor atual",
-    "ru-RU": "Текущий двигатель",
-    "ja-JP": "現在のエンジン",
-    "de-DE": "Aktueller Motor",
-    "fr-FR": "Moteur actuel",
-    "ko-KR": "현재 엔진",
-    "$files": [
-      "src/components/engine/engine-table.tsx(4144-4152)",
-      "src/components/engine/engine-table.tsx(14185-14193)"
-    ],
-    "$id": 623
-  },
-  "正在扫描已安装计算引擎...": {
-    "en-US": "Scanning installed compute engines...",
-    "es-ES": "Escaneando motores informáticos instalados...",
-    "ar-EG": "جارٍ فحص محركات الحوسبة المثبتة...",
-    "pt-PT": "Verificando mecanismos de computação instalados...",
-    "ru-RU": "Сканирование установленных вычислительных механизмов...",
-    "ja-JP": "インストールされているコンピューティング エンジンをスキャンしています...",
-    "de-DE": "Installierte Rechen-Engines werden gescannt...",
-    "fr-FR": "Analyse des moteurs de calcul installés...",
-    "ko-KR": "설치된 컴퓨팅 엔진을 검색하는 중...",
-    "$files": ["src/components/engine/engine-table.tsx(4506-4524)"],
-    "$id": 624
-  },
-  "推荐": {
-    "en-US": "Recommend",
-    "es-ES": "Recomendar",
-    "ar-EG": "يوصي",
-    "pt-PT": "Recomendar",
-    "ru-RU": "рекомендовать",
-    "ja-JP": "おすすめ",
-    "de-DE": "Empfehlen",
-    "fr-FR": "Recommander",
-    "ko-KR": "추천하다",
-    "$files": [
-      "src/components/engine/engine-table.tsx(6698-6704)",
-      "src/components/model/model-list-panel.tsx(14665-14671)"
-    ],
-    "$id": 618
-  },
-  "更新显卡驱动": {
-    "en-US": "Update graphics card driver",
-    "es-ES": "Actualizar el controlador de la tarjeta gráfica",
-    "ar-EG": "تحديث برنامج تشغيل بطاقة الرسومات",
-    "pt-PT": "Atualizar driver da placa gráfica",
-    "ru-RU": "Обновить драйвер видеокарты",
-    "ja-JP": "グラフィックス カード ドライバーを更新する",
-    "de-DE": "Grafikkartentreiber aktualisieren",
-    "fr-FR": "Mettre à jour le pilote de la carte graphique",
-    "ko-KR": "그래픽 카드 드라이버 업데이트",
-    "$files": ["src/components/engine/engine-table.tsx(10449-10459)"],
-    "$id": 625
-  },
-  "删除此引擎目录以释放空间": {
-    "en-US": "Delete this engine directory to free up space",
-    "es-ES": "Elimine este directorio de motor para liberar espacio",
-    "ar-EG": "احذف دليل المحرك هذا لتحرير مساحة",
-    "pt-PT": "Exclua este diretório de mecanismo para liberar espaço",
-    "ru-RU": "Удалите этот каталог движка, чтобы освободить место.",
-    "ja-JP": "このエンジン ディレクトリを削除してスペースを解放します",
-    "de-DE": "Löschen Sie dieses Engine-Verzeichnis, um Speicherplatz freizugeben",
-    "fr-FR": "Supprimez ce répertoire du moteur pour libérer de l'espace",
-    "ko-KR": "공간을 확보하려면 이 엔진 디렉터리를 삭제하세요.",
-    "$files": ["src/components/engine/engine-table.tsx(11858-11874)"],
-    "$id": 626
-  },
-  "确定要删除引擎 {name} 吗？删除后可随时重新下载。": {
-    "en-US": "Are you sure you want to delete engine {name}? You can re-download it at any time after deletion.",
-    "es-ES": "¿Está seguro de que desea eliminar el motor {name}? Puede volver a descargarlo en cualquier momento después de eliminarlo.",
-    "ar-EG": "هل أنت متأكد أنك تريد حذف المحرك {name}؟ يمكنك إعادة تحميله في أي وقت بعد الحذف.",
-    "pt-PT": "Tem certeza de que deseja excluir o mecanismo {name}? Você pode baixá-lo novamente a qualquer momento após a exclusão.",
-    "ru-RU": "Вы уверены, что хотите удалить двигатель {name}? Вы можете повторно загрузить его в любое время после удаления.",
-    "ja-JP": "エンジン {name} を削除してもよろしいですか?削除後はいつでも再ダウンロードできます。",
-    "de-DE": "Sind Sie sicher, dass Sie die Engine {name} löschen möchten? Sie können es nach dem Löschen jederzeit erneut herunterladen.",
-    "fr-FR": "Êtes-vous sûr de vouloir supprimer le moteur {name} ? Vous pouvez le retélécharger à tout moment après la suppression.",
-    "ko-KR": "정말로 {name} 엔진을 삭제하시겠습니까? 삭제 후 언제든지 다시 다운로드할 수 있습니다.",
-    "$files": ["src/components/engine/engine-table.tsx(11983-12015)"],
-    "$id": 627
-  },
-  "更新引擎": {
-    "en-US": "Update engine",
-    "es-ES": "Actualizar motor",
-    "ar-EG": "تحديث المحرك",
-    "pt-PT": "Atualizar mecanismo",
-    "ru-RU": "Обновить движок",
-    "ja-JP": "アップデートエンジン",
-    "de-DE": "Motor aktualisieren",
-    "fr-FR": "Moteur de mise à jour",
-    "ko-KR": "엔진 업데이트",
-    "$files": ["src/components/engine/engine-table.tsx(13463-13471)"],
-    "$id": 628
-  },
-  "切换中...": {
-    "en-US": "Switching...",
-    "es-ES": "Traspuesta...",
-    "ar-EG": "التبديل...",
-    "pt-PT": "Trocando...",
-    "ru-RU": "Переключение...",
-    "ja-JP": "切り替え中...",
-    "de-DE": "Wechsel...",
-    "fr-FR": "Commutation...",
-    "ko-KR": "전환 중...",
-    "$files": [
-      "src/components/engine/engine-table.tsx(14881-14891)",
-      "src/components/model/model-list-panel.tsx(29360-29370)"
-    ],
-    "$id": 629
-  },
-  "切换引擎": {
-    "en-US": "Switch engine",
-    "es-ES": "Cambiar de motor",
-    "ar-EG": "تبديل المحرك",
-    "pt-PT": "Mudar de motor",
-    "ru-RU": "переключить двигатель",
-    "ja-JP": "スイッチエンジン",
-    "de-DE": "Motor wechseln",
-    "fr-FR": "Changer de moteur",
-    "ko-KR": "스위치 엔진",
-    "$files": ["src/components/engine/engine-table.tsx(14989-14997)"],
-    "$id": 630
-  },
-  "未安装": {
-    "en-US": "Not installed",
-    "es-ES": "No instalado",
-    "ar-EG": "غير مثبت",
-    "pt-PT": "Não instalado",
-    "ru-RU": "Не установлено",
-    "ja-JP": "インストールされていません",
-    "de-DE": "Nicht installiert",
-    "fr-FR": "Non installé",
-    "ko-KR": "설치되지 않음",
-    "$files": ["src/components/engine/engine-table.tsx(15187-15194)"],
-    "$id": 631
-  },
-  "模型思考模式": {
-    "en-US": "Model thinking mode",
-    "es-ES": "Modo de pensamiento modelo",
-    "ar-EG": "نمط التفكير النموذجي",
-    "pt-PT": "Modo de pensamento do modelo",
-    "ru-RU": "режим модельного мышления",
-    "ja-JP": "モデル思考モード",
-    "de-DE": "Modelldenkenmodus",
-    "fr-FR": "Mode de pensée modèle",
-    "ko-KR": "모델 사고 모드",
-    "$files": [
-      "src/components/engine/thinking-mode-card.tsx(4023-4033)",
-      "src/components/engine/thinking-mode-card.tsx(5135-5145)"
-    ],
-    "$id": 632
-  },
-  "会增加耗时": {
-    "en-US": "Will increase time consumption",
-    "es-ES": "Aumentará el consumo de tiempo.",
-    "ar-EG": "سيزيد من استهلاك الوقت",
-    "pt-PT": "Aumentará o consumo de tempo",
-    "ru-RU": "Увеличит затраты времени",
-    "ja-JP": "時間の消費が増える",
-    "de-DE": "Wird den Zeitverbrauch erhöhen",
-    "fr-FR": "Augmentera la consommation de temps",
-    "ko-KR": "시간 소모가 늘어나게 됩니다",
-    "$files": ["src/components/engine/thinking-mode-card.tsx(4240-4249)"],
-    "$id": 633
-  },
-  "开启后允许本地和云端模型开启思考模式，可能提升AI分析质量，但会大大增加响应时间。": {
-    "en-US": "After turning it on, local and cloud models are allowed to start thinking mode, which may improve the quality of AI analysis, but will greatly increase the response time.",
-    "es-ES": "Después de encenderlo, los modelos locales y en la nube pueden comenzar a pensar, lo que puede mejorar la calidad del análisis de IA, pero aumentará considerablemente el tiempo de respuesta.",
-    "ar-EG": "بعد تشغيله، يُسمح للنماذج المحلية والسحابية ببدء وضع التفكير، مما قد يؤدي إلى تحسين جودة تحليل الذكاء الاصطناعي، ولكنه سيزيد وقت الاستجابة بشكل كبير.",
-    "pt-PT": "Depois de ligá-lo, os modelos locais e de nuvem podem iniciar o modo de pensamento, o que pode melhorar a qualidade da análise de IA, mas aumentará muito o tempo de resposta.",
-    "ru-RU": "После его включения локальные и облачные модели могут перейти в режим мышления, что может улучшить качество анализа ИИ, но значительно увеличит время отклика.",
-    "ja-JP": "これをオンにすると、ローカル モデルとクラウド モデルは思考モードを開始できるようになり、AI 分析の品質が向上する可能性がありますが、応答時間が大幅に増加します。",
-    "de-DE": "Nach dem Einschalten können lokale und Cloud-Modelle in den Denkmodus wechseln, was möglicherweise die Qualität der KI-Analyse verbessert, aber auch die Reaktionszeit erheblich verlängert.",
-    "fr-FR": "Après l'avoir activé, les modèles locaux et cloud sont autorisés à passer en mode réflexion, ce qui peut améliorer la qualité de l'analyse de l'IA, mais augmentera considérablement le temps de réponse.",
-    "ko-KR": "이 기능을 켜면 로컬 및 클라우드 모델이 사고 모드를 시작할 수 있어 AI 분석 품질이 향상될 수 있지만 응답 시간이 크게 늘어납니다.",
-    "$files": ["src/components/engine/thinking-mode-card.tsx(4432-4477)"],
-    "$id": 634
-  },
-  "建议在需要与 AI 进行聊天时才开启。": {
-    "en-US": "It is recommended to turn it on only when you need to chat with AI.",
-    "es-ES": "Se recomienda activarlo sólo cuando necesites chatear con IA.",
-    "ar-EG": "يوصى بتشغيله فقط عندما تحتاج إلى الدردشة مع الذكاء الاصطناعي.",
-    "pt-PT": "Recomenda-se ativá-lo apenas quando precisar conversar com a IA.",
-    "ru-RU": "Рекомендуется включать его только тогда, когда вам нужно пообщаться с ИИ.",
-    "ja-JP": "AIとチャットする必要がある場合にのみオンにすることをお勧めします。",
-    "de-DE": "Es wird empfohlen, es nur einzuschalten, wenn Sie mit AI chatten müssen.",
-    "fr-FR": "Il est recommandé de l'activer uniquement lorsque vous avez besoin de discuter avec l'IA.",
-    "ko-KR": "AI와 채팅이 필요할 때만 켜는 것을 권장합니다.",
-    "$files": ["src/components/engine/thinking-mode-card.tsx(4613-4636)"],
-    "$id": 635
-  },
-  "不支持标记 Instruct 的模型。": {
-    "en-US": "Models tagged Instruct are not supported.",
-    "es-ES": "Los modelos etiquetados Instruct no son compatibles.",
-    "ar-EG": "النماذج التي تحمل علامة Instruct غير مدعومة.",
-    "pt-PT": "Os modelos marcados como Instruct não são suportados.",
-    "ru-RU": "Модели с пометкой Instruct не поддерживаются.",
-    "ja-JP": "Instruct タグが付けられたモデルはサポートされていません。",
-    "de-DE": "Modelle mit dem Tag „Instruct“ werden nicht unterstützt.",
-    "fr-FR": "Les modèles étiquetés Instruct ne sont pas pris en charge.",
-    "ko-KR": "Instruct 태그가 지정된 모델은 지원되지 않습니다.",
-    "$files": ["src/components/engine/thinking-mode-card.tsx(4775-4798)"],
-    "$id": 636
-  },
-  "参数已保存，需重启引擎后生效": {
-    "en-US": "The parameters have been saved and will take effect after restarting the engine.",
-    "es-ES": "Los parámetros se han guardado y entrarán en vigor después de reiniciar el motor.",
-    "ar-EG": "تم حفظ المعلمات وستدخل حيز التنفيذ بعد إعادة تشغيل المحرك.",
-    "pt-PT": "Os parâmetros foram salvos e entrarão em vigor após a reinicialização do motor.",
-    "ru-RU": "Параметры сохранены и вступят в силу после перезапуска двигателя.",
-    "ja-JP": "パラメータは保存されており、エンジンの再起動後に有効になります。",
-    "de-DE": "Die Parameter wurden gespeichert und werden nach einem Neustart des Motors wirksam.",
-    "fr-FR": "Les paramètres ont été enregistrés et prendront effet après le redémarrage du moteur.",
-    "ko-KR": "매개변수는 저장되었으며 엔진을 다시 시작한 후에 적용됩니다.",
-    "$files": [
-      "src/components/engine/thinking-mode-card.tsx(5572-5590)",
-      "src/components/model/model-param-drawer.tsx(33901-33919)"
-    ],
-    "$id": 803
-  },
-  "当前模型正在运行中，新启动参数需在服务重新拉起时生效。": {
-    "en-US": "The current model is running, and the new startup parameters need to take effect when the service is restarted.",
-    "es-ES": "El modelo actual se está ejecutando y los nuevos parámetros de inicio deben entrar en vigor cuando se reinicia el servicio.",
-    "ar-EG": "النموذج الحالي قيد التشغيل، ويجب أن تدخل معلمات بدء التشغيل الجديدة حيز التنفيذ عند إعادة تشغيل الخدمة.",
-    "pt-PT": "O modelo atual está em execução e os novos parâmetros de inicialização precisam entrar em vigor quando o serviço for reiniciado.",
-    "ru-RU": "Текущая модель работает, и новые параметры запуска должны вступить в силу при перезапуске службы.",
-    "ja-JP": "現在のモデルは実行中であり、サービスの再起動時に新しい起動パラメータが有効になる必要があります。",
-    "de-DE": "Das aktuelle Modell wird ausgeführt und die neuen Startparameter müssen wirksam werden, wenn der Dienst neu gestartet wird.",
-    "fr-FR": "Le modèle actuel est en cours d'exécution et les nouveaux paramètres de démarrage doivent prendre effet au redémarrage du service.",
-    "ko-KR": "현재 모델이 실행 중이며 서비스가 다시 시작되면 새 시작 매개변수가 적용되어야 합니다.",
-    "$files": [
-      "src/components/engine/thinking-mode-card.tsx(5686-5717)",
-      "src/components/model/model-param-drawer.tsx(34023-34054)"
-    ],
-    "$id": 804
-  },
-  "正在重启...": {
-    "en-US": "Restarting...",
-    "es-ES": "Reiniciando...",
-    "ar-EG": "جارٍ إعادة التشغيل...",
-    "pt-PT": "Reiniciando...",
-    "ru-RU": "Перезапуск...",
-    "ja-JP": "再起動中...",
-    "de-DE": "Neustart...",
-    "fr-FR": "Redémarrage...",
-    "ko-KR": "다시 시작하는 중...",
-    "$files": [
-      "src/components/engine/thinking-mode-card.tsx(6252-6263)",
-      "src/components/model/model-param-drawer.tsx(34621-34632)"
-    ],
-    "$id": 805
-  },
-  "立即重启生效": {
-    "en-US": "Restart immediately to take effect",
-    "es-ES": "Reinicie inmediatamente para que surta efecto",
-    "ar-EG": "أعد التشغيل فورًا ليصبح ساري المفعول",
-    "pt-PT": "Reinicie imediatamente para entrar em vigor",
-    "ru-RU": "Немедленно перезапустите, чтобы изменения вступили в силу.",
-    "ja-JP": "すぐに再起動して有効にします",
-    "de-DE": "Starten Sie sofort neu, damit es wirksam wird",
-    "fr-FR": "Redémarrez immédiatement pour prendre effet",
-    "ko-KR": "적용하려면 즉시 다시 시작하세요.",
-    "$files": [
-      "src/components/engine/thinking-mode-card.tsx(6267-6277)",
-      "src/components/model/model-param-drawer.tsx(34636-34646)"
-    ],
-    "$id": 806
-  },
-  "稍后重启": {
-    "en-US": "Restart later",
-    "es-ES": "Reiniciar más tarde",
-    "ar-EG": "أعد التشغيل لاحقًا",
-    "pt-PT": "Reinicie mais tarde",
-    "ru-RU": "Перезагрузить позже",
-    "ja-JP": "後で再起動する",
-    "de-DE": "Später neu starten",
-    "fr-FR": "Redémarrer plus tard",
-    "ko-KR": "나중에 다시 시작",
-    "$files": [
-      "src/components/engine/thinking-mode-card.tsx(6613-6621)",
-      "src/components/model/model-param-drawer.tsx(35058-35066)"
-    ],
-    "$id": 807
-  },
-  "目前使用兼容模式，能发挥您显卡70% AI算力，显卡驱动需要升级，才能发挥满血性能": {
-    "en-US": "Currently using compatibility mode, 70% of the AI ​​computing power of your graphics card can be used. The graphics card driver needs to be upgraded to achieve full performance.",
-    "es-ES": "Actualmente, al utilizar el modo de compatibilidad, se puede utilizar el 70% de la potencia informática de IA de su tarjeta gráfica. Es necesario actualizar el controlador de la tarjeta gráfica para lograr el máximo rendimiento.",
-    "ar-EG": "باستخدام وضع التوافق حاليًا، يمكن استخدام 70% من قوة حوسبة الذكاء الاصطناعي لبطاقة الرسومات الخاصة بك. يحتاج برنامج تشغيل بطاقة الرسومات إلى الترقية لتحقيق الأداء الكامل.",
-    "pt-PT": "Atualmente usando o modo de compatibilidade, 70% do poder de computação AI da sua placa gráfica pode ser usado. O driver da placa gráfica precisa ser atualizado para atingir desempenho total.",
-    "ru-RU": "В настоящее время в режиме совместимости можно использовать 70% вычислительной мощности AI вашей видеокарты. Для достижения полной производительности необходимо обновить драйвер видеокарты.",
-    "ja-JP": "現在互換モードを使用すると、グラフィックス カードの AI 計算能力の 70% を使用できます。最大限のパフォーマンスを実現するには、グラフィック カード ドライバーをアップグレードする必要があります。",
-    "de-DE": "Im Kompatibilitätsmodus können derzeit 70 % der KI-Rechenleistung Ihrer Grafikkarte genutzt werden. Um die volle Leistung zu erreichen, muss der Grafikkartentreiber aktualisiert werden.",
-    "fr-FR": "En utilisant actuellement le mode de compatibilité, 70 % de la puissance de calcul IA de votre carte graphique peut être utilisée. Le pilote de la carte graphique doit être mis à niveau pour obtenir toutes les performances.",
-    "ko-KR": "현재 호환 모드를 사용하면 그래픽 카드의 AI 컴퓨팅 성능의 70%를 사용할 수 있습니다. 완전한 성능을 얻으려면 그래픽 카드 드라이버를 업그레이드해야 합니다.",
-    "$files": ["src/components/hardware/hardware-card.tsx(2389-2434)"],
-    "$id": 644
-  },
-  "升级显卡驱动": {
-    "en-US": "Upgrade graphics card driver",
-    "es-ES": "Actualizar el controlador de la tarjeta gráfica",
-    "ar-EG": "ترقية برنامج تشغيل بطاقة الرسومات",
-    "pt-PT": "Atualizar driver da placa gráfica",
-    "ru-RU": "Обновите драйвер видеокарты",
-    "ja-JP": "グラフィックカードドライバーをアップグレードする",
-    "de-DE": "Aktualisieren Sie den Grafikkartentreiber",
-    "fr-FR": "Mettre à niveau le pilote de la carte graphique",
-    "ko-KR": "그래픽 카드 드라이버 업그레이드",
-    "$files": ["src/components/hardware/hardware-card.tsx(2845-2855)"],
-    "$id": 645
-  },
-  "我已升级驱动，重新检测": {
-    "en-US": "I have upgraded the driver and re-tested",
-    "es-ES": "Actualicé el controlador y volví a realizar la prueba.",
-    "ar-EG": "لقد قمت بترقية برنامج التشغيل وإعادة اختباره",
-    "pt-PT": "Eu atualizei o driver e testei novamente",
-    "ru-RU": "Я обновил драйвер и повторно протестировал",
-    "ja-JP": "ドライバーをアップグレードして再テストしました",
-    "de-DE": "Ich habe den Treiber aktualisiert und erneut getestet",
-    "fr-FR": "J'ai mis à jour le pilote et re-testé",
-    "ko-KR": "드라이버를 업그레이드하고 다시 테스트했습니다.",
-    "$files": ["src/components/hardware/hardware-card.tsx(3285-3300)"],
-    "$id": 646
-  },
-  "显卡型号": {
-    "en-US": "Graphics card model",
-    "es-ES": "Modelo de tarjeta gráfica",
-    "ar-EG": "نموذج بطاقة الرسومات",
-    "pt-PT": "Modelo de placa gráfica",
-    "ru-RU": "Модель видеокарты",
-    "ja-JP": "グラフィックスカードのモデル",
-    "de-DE": "Grafikkartenmodell",
-    "fr-FR": "Modèle de carte graphique",
-    "ko-KR": "그래픽 카드 모델",
-    "$files": ["src/components/hardware/hardware-card.tsx(4148-4156)"],
-    "$id": 647
-  },
-  "探测中...": {
-    "en-US": "Detecting...",
-    "es-ES": "Detector...",
-    "ar-EG": "جارٍ الكشف...",
-    "pt-PT": "Detecção...",
-    "ru-RU": "Обнаружение...",
-    "ja-JP": "検出中...",
-    "de-DE": "Erkennen...",
-    "fr-FR": "Détection...",
-    "ko-KR": "감지 중...",
-    "$files": ["src/components/hardware/hardware-card.tsx(4330-4340)"],
-    "$id": 648
-  },
-  "通用加速设备": {
-    "en-US": "Universal acceleration equipment",
-    "es-ES": "Equipo de aceleración universal.",
-    "ar-EG": "معدات تسريع عالمية",
-    "pt-PT": "Equipamento de aceleração universal",
-    "ru-RU": "Универсальное ускорительное оборудование",
-    "ja-JP": "万能加速装置",
-    "de-DE": "Universelle Beschleunigungsausrüstung",
-    "fr-FR": "Équipement d'accélération universel",
-    "ko-KR": "범용 가속 장비",
-    "$files": ["src/components/hardware/hardware-card.tsx(4390-4400)"],
-    "$id": 649
-  },
-  "集成显卡 (核显)": {
-    "en-US": "Integrated graphics card (core graphics)",
-    "es-ES": "Tarjeta gráfica integrada (gráficos centrales)",
-    "ar-EG": "بطاقة الرسومات المدمجة (الرسومات الأساسية)",
-    "pt-PT": "Placa gráfica integrada (gráficos principais)",
-    "ru-RU": "Встроенная видеокарта (основная графика)",
-    "ja-JP": "統合グラフィックス カード (コア グラフィックス)",
-    "de-DE": "Integrierte Grafikkarte (Core Graphics)",
-    "fr-FR": "Carte graphique intégrée (graphiques de base)",
-    "ko-KR": "통합 그래픽 카드(코어 그래픽)",
-    "$files": ["src/components/hardware/hardware-card.tsx(4642-4655)"],
-    "$id": 650
-  },
-  "独立显卡 (dGPU)": {
-    "en-US": "Discrete graphics card (dGPU)",
-    "es-ES": "Tarjeta gráfica discreta (dGPU)",
-    "ar-EG": "بطاقة الرسومات المنفصلة (dGPU)",
-    "pt-PT": "Placa gráfica discreta (dGPU)",
-    "ru-RU": "Дискретная видеокарта (dGPU)",
-    "ja-JP": "ディスクリート グラフィックス カード (dGPU)",
-    "de-DE": "Separate Grafikkarte (dGPU)",
-    "fr-FR": "Carte graphique discrète (dGPU)",
-    "ko-KR": "개별 그래픽 카드(dGPU)",
-    "$files": ["src/components/hardware/hardware-card.tsx(4659-4674)"],
-    "$id": 651
-  },
-  "可用显存": {
-    "en-US": "Available VRAM",
-    "es-ES": "Memoria de vídeo disponible",
-    "ar-EG": "ذاكرة الفيديو المتاحة",
-    "pt-PT": "Memória de vídeo disponível",
-    "ru-RU": "Доступная видеопамять",
-    "ja-JP": "利用可能なビデオメモリ",
-    "de-DE": "Verfügbarer Videospeicher",
-    "fr-FR": "Mémoire vidéo disponible",
-    "ko-KR": "사용 가능한 비디오 메모리",
-    "$files": ["src/components/hardware/hardware-card.tsx(5592-5600)"],
-    "$id": 652
-  },
-  "(已用 {used} MB)": {
-    "en-US": "({used} MB used)",
-    "es-ES": "({used} MB utilizados)",
-    "ar-EG": "({used} ميغابايت مستخدمة)",
-    "pt-PT": "({used} MB usados)",
-    "ru-RU": "(Использовано {used} МБ)",
-    "ja-JP": "({used} MB 使用)",
-    "de-DE": "({used} MB verwendet)",
-    "fr-FR": "({used} Mo utilisés)",
-    "ko-KR": "({used}MB 사용됨)",
-    "$files": ["src/components/hardware/hardware-card.tsx(6094-6112)"],
-    "$id": 653
-  },
-  "当前活动后端": {
-    "en-US": "Current active backend",
-    "es-ES": "Backend activo actual",
-    "ar-EG": "الخلفية النشطة الحالية",
-    "pt-PT": "Back-end ativo atual",
-    "ru-RU": "Текущий активный бэкэнд",
-    "ja-JP": "現在アクティブなバックエンド",
-    "de-DE": "Derzeit aktives Backend",
-    "fr-FR": "Backend actif actuel",
-    "ko-KR": "현재 활성 백엔드",
-    "$files": ["src/components/hardware/hardware-card.tsx(6336-6346)"],
-    "$id": 654
-  },
-  "系统物理内存": {
-    "en-US": "System physical memory",
-    "es-ES": "Memoria física del sistema",
-    "ar-EG": "الذاكرة الفعلية للنظام",
-    "pt-PT": "Memória física do sistema",
-    "ru-RU": "Физическая память системы",
-    "ja-JP": "システム物理メモリ",
-    "de-DE": "Physischer Systemspeicher",
-    "fr-FR": "Mémoire physique du système",
-    "ko-KR": "시스템 물리적 메모리",
-    "$files": ["src/components/hardware/hardware-card.tsx(7131-7141)"],
-    "$id": 655
-  },
-  "{cores} 核 / {threads} 线程": {
-    "en-US": "{cores} core / {threads} thread",
-    "es-ES": "{cores} núcleo / {threads} hilo",
-    "ar-EG": "{cores} النواة / {threads} الموضوع",
-    "pt-PT": "{cores} núcleo / {threads} thread",
-    "ru-RU": "{cores} ядро ​​/ {threads} поток",
-    "ja-JP": "{cores} コア / {threads} スレッド",
-    "de-DE": "{cores} Kern / {threads} Thread",
-    "fr-FR": "{cores} noyau / {threads} fil de discussion",
-    "ko-KR": "{cores} 코어/{threads} 스레드",
-    "$files": ["src/components/hardware/hardware-card.tsx(7270-7298)"],
-    "$id": 656
-  },
-  "CPU 自适应": {
-    "en-US": "CPU adaptive",
-    "es-ES": "CPU adaptable",
-    "ar-EG": "وحدة المعالجة المركزية التكيفية",
-    "pt-PT": "CPU adaptável",
-    "ru-RU": "Адаптивный процессор",
-    "ja-JP": "CPU適応型",
-    "de-DE": "CPU-adaptiv",
-    "fr-FR": "Adaptatif du processeur",
-    "ko-KR": "CPU 적응형",
-    "$files": ["src/components/hardware/hardware-card.tsx(7372-7383)"],
-    "$id": 657
-  },
-  "平台": {
-    "en-US": "Platform",
-    "es-ES": "Plataforma",
-    "ar-EG": "منصة",
-    "pt-PT": "Plataforma",
-    "ru-RU": "платформа",
-    "ja-JP": "プラットフォーム",
-    "de-DE": "Plattform",
-    "fr-FR": "Plateforme",
-    "ko-KR": "플랫폼",
-    "$files": ["src/components/hardware/hardware-card.tsx(7515-7521)"],
-    "$id": 658
-  },
   "路径格式不合法": {
     "en-US": "The path format is illegal",
     "es-ES": "El formato de ruta es ilegal.",
@@ -4044,8 +4044,8 @@
     "fr-FR": "Environ {value} secondes restantes",
     "ko-KR": "약 {value}초 남음",
     "$files": [
-      "src/components/model/custom-model-add-card.tsx(5154-5171)",
-      "src/components/model/model-list-panel.tsx(9398-9415)"
+      "src/components/model/custom-model-add-card.tsx(5319-5336)",
+      "src/components/model/model-list-panel.tsx(9710-9727)"
     ],
     "$id": 719
   },
@@ -4060,8 +4060,8 @@
     "fr-FR": "Environ {value} minutes {seconds} secondes restantes",
     "ko-KR": "약 {value}분 {seconds}초 남음",
     "$files": [
-      "src/components/model/custom-model-add-card.tsx(5279-5308)",
-      "src/components/model/model-list-panel.tsx(9519-9548)"
+      "src/components/model/custom-model-add-card.tsx(5446-5475)",
+      "src/components/model/model-list-panel.tsx(9833-9862)"
     ],
     "$id": 720
   },
@@ -4076,8 +4076,8 @@
     "fr-FR": "Environ {value} heures restantes",
     "ko-KR": "약 {value}시간 남음",
     "$files": [
-      "src/components/model/custom-model-add-card.tsx(5467-5485)",
-      "src/components/model/model-list-panel.tsx(9703-9721)"
+      "src/components/model/custom-model-add-card.tsx(5639-5657)",
+      "src/components/model/model-list-panel.tsx(10022-10040)"
     ],
     "$id": 721
   },
@@ -4092,8 +4092,8 @@
     "fr-FR": "En pause",
     "ko-KR": "일시 중지됨",
     "$files": [
-      "src/components/model/custom-model-add-card.tsx(8097-8104)",
-      "src/components/model/model-list-panel.tsx(18942-18949)"
+      "src/components/model/custom-model-add-card.tsx(8337-8344)",
+      "src/components/model/model-list-panel.tsx(19491-19498)"
     ],
     "$id": 726
   },
@@ -4108,9 +4108,9 @@
     "fr-FR": "Prêt à télécharger...",
     "ko-KR": "다운로드 준비 완료...",
     "$files": [
-      "src/components/model/custom-model-add-card.tsx(8168-8180)",
-      "src/components/model/model-list-panel.tsx(19009-19021)",
-      "src/components/model/model-list-panel.tsx(35988-36000)"
+      "src/components/model/custom-model-add-card.tsx(8410-8422)",
+      "src/components/model/model-list-panel.tsx(19560-19572)",
+      "src/components/model/model-list-panel.tsx(36927-36939)"
     ],
     "$id": 727
   },
@@ -4125,8 +4125,8 @@
     "fr-FR": "Téléchargement",
     "ko-KR": "다운로드 중",
     "$files": [
-      "src/components/model/custom-model-add-card.tsx(8205-8213)",
-      "src/components/model/model-list-panel.tsx(19044-19052)"
+      "src/components/model/custom-model-add-card.tsx(8448-8456)",
+      "src/components/model/model-list-panel.tsx(19596-19604)"
     ],
     "$id": 728
   },
@@ -4141,8 +4141,8 @@
     "fr-FR": "Prêt",
     "ko-KR": "준비가 된",
     "$files": [
-      "src/components/model/custom-model-add-card.tsx(8729-8736)",
-      "src/components/model/model-list-panel.tsx(19552-19559)"
+      "src/components/model/custom-model-add-card.tsx(8984-8991)",
+      "src/components/model/model-list-panel.tsx(20116-20123)"
     ],
     "$id": 729
   },
@@ -4157,8 +4157,8 @@
     "fr-FR": "Pas encore téléchargé en local",
     "ko-KR": "아직 로컬에 다운로드되지 않았습니다.",
     "$files": [
-      "src/components/model/custom-model-add-card.tsx(8872-8883)",
-      "src/components/model/model-list-panel.tsx(19708-19719)"
+      "src/components/model/custom-model-add-card.tsx(9131-9142)",
+      "src/components/model/model-list-panel.tsx(20276-20287)"
     ],
     "$id": 731
   },
@@ -4173,8 +4173,8 @@
     "fr-FR": "Confirmer la suppression  ",
     "ko-KR": "삭제 확인",
     "$files": [
-      "src/components/model/custom-model-add-card.tsx(9689-9697)",
-      "src/components/model/model-list-panel.tsx(21085-21093)"
+      "src/components/model/custom-model-add-card.tsx(9968-9976)",
+      "src/components/model/model-list-panel.tsx(21684-21692)"
     ],
     "$id": 734
   },
@@ -4189,8 +4189,8 @@
     "fr-FR": "Confirmer la suppression",
     "ko-KR": "제거 확인",
     "$files": [
-      "src/components/model/custom-model-add-card.tsx(9701-9709)",
-      "src/components/model/model-list-panel.tsx(20546-20554)"
+      "src/components/model/custom-model-add-card.tsx(9980-9988)",
+      "src/components/model/model-list-panel.tsx(21134-21142)"
     ],
     "$id": 733
   },
@@ -4205,11 +4205,11 @@
     "fr-FR": "Annuler",
     "ko-KR": "취소",
     "$files": [
-      "src/components/model/custom-model-add-card.tsx(10062-10068)",
-      "src/components/model/custom-model-add-card.tsx(13661-13667)",
-      "src/components/model/custom-model-add-card.tsx(22027-22033)",
-      "src/components/model/model-list-panel.tsx(21448-21454)",
-      "src/components/model/model-list-panel.tsx(25225-25231)",
+      "src/components/model/custom-model-add-card.tsx(10350-10356)",
+      "src/components/model/custom-model-add-card.tsx(14040-14046)",
+      "src/components/model/custom-model-add-card.tsx(22628-22634)",
+      "src/components/model/model-list-panel.tsx(22057-22063)",
+      "src/components/model/model-list-panel.tsx(25926-25932)",
       "src/components/model/model-param-drawer.tsx(37011-37017)"
     ],
     "$id": 697
@@ -4224,7 +4224,7 @@
     "de-DE": "Fisikalische Modelldateien löschen, um Speicherplatz zu freigeben",
     "fr-FR": "Supprimer le fichier de modèle physique et libérer de l'espace disque",
     "ko-KR": "물리 모델 파일 삭제 및 디스크 공간 확보",
-    "$files": ["src/components/model/custom-model-add-card.tsx(10473-10492)"],
+    "$files": ["src/components/model/custom-model-add-card.tsx(10771-10790)"],
     "$id": 1262
   },
   "删除": {
@@ -4238,8 +4238,8 @@
     "fr-FR": "Supprimer",
     "ko-KR": "삭제",
     "$files": [
-      "src/components/model/custom-model-add-card.tsx(10662-10668)",
-      "src/components/model/model-list-panel.tsx(22136-22142)"
+      "src/components/model/custom-model-add-card.tsx(10964-10970)",
+      "src/components/model/model-list-panel.tsx(22760-22766)"
     ],
     "$id": 736
   },
@@ -4253,7 +4253,7 @@
     "de-DE": "Diese benutzerdefinierte Modellregistrierung entfernen",
     "fr-FR": "Supprimer cette enregistrement de modèle personnalisé",
     "ko-KR": "이 사용자 정의 모델 기록 삭제",
-    "$files": ["src/components/model/custom-model-add-card.tsx(10993-11007)"],
+    "$files": ["src/components/model/custom-model-add-card.tsx(11302-11316)"],
     "$id": 1263
   },
   "移除": {
@@ -4267,8 +4267,8 @@
     "fr-FR": "Retirer",
     "ko-KR": "제거하다",
     "$files": [
-      "src/components/model/custom-model-add-card.tsx(11177-11183)",
-      "src/components/model/model-list-panel.tsx(22715-22721)"
+      "src/components/model/custom-model-add-card.tsx(11490-11496)",
+      "src/components/model/model-list-panel.tsx(23351-23357)"
     ],
     "$id": 738
   },
@@ -4283,8 +4283,8 @@
     "fr-FR": "Configuration des paramètres",
     "ko-KR": "매개변수 구성",
     "$files": [
-      "src/components/model/custom-model-add-card.tsx(11699-11707)",
-      "src/components/model/model-list-panel.tsx(23242-23250)"
+      "src/components/model/custom-model-add-card.tsx(12023-12031)",
+      "src/components/model/model-list-panel.tsx(23889-23897)"
     ],
     "$id": 739
   },
@@ -4299,9 +4299,9 @@
     "fr-FR": "Replier",
     "ko-KR": "접기",
     "$files": [
-      "src/components/model/custom-model-add-card.tsx(12047-12053)",
-      "src/components/model/model-list-panel.tsx(23590-23596)",
-      "src/components/model/model-list-panel.tsx(38421-38427)"
+      "src/components/model/custom-model-add-card.tsx(12380-12386)",
+      "src/components/model/model-list-panel.tsx(24246-24252)",
+      "src/components/model/model-list-panel.tsx(39433-39439)"
     ],
     "$id": 740
   },
@@ -4316,8 +4316,8 @@
     "fr-FR": "Avancé",
     "ko-KR": "고급의",
     "$files": [
-      "src/components/model/custom-model-add-card.tsx(12504-12510)",
-      "src/components/model/model-list-panel.tsx(24096-24102)"
+      "src/components/model/custom-model-add-card.tsx(12848-12854)",
+      "src/components/model/model-list-panel.tsx(24764-24770)"
     ],
     "$id": 742
   },
@@ -4332,8 +4332,8 @@
     "fr-FR": "Reprendre",
     "ko-KR": "계속",
     "$files": [
-      "src/components/model/custom-model-add-card.tsx(12954-12960)",
-      "src/components/model/model-list-panel.tsx(24518-24524)"
+      "src/components/model/custom-model-add-card.tsx(13313-13319)",
+      "src/components/model/model-list-panel.tsx(25199-25205)"
     ],
     "$id": 743
   },
@@ -4348,8 +4348,8 @@
     "fr-FR": "Suspendre",
     "ko-KR": "일시 중지",
     "$files": [
-      "src/components/model/custom-model-add-card.tsx(13299-13305)",
-      "src/components/model/model-list-panel.tsx(24863-24869)"
+      "src/components/model/custom-model-add-card.tsx(13668-13674)",
+      "src/components/model/model-list-panel.tsx(25554-25560)"
     ],
     "$id": 744
   },
@@ -4364,8 +4364,8 @@
     "fr-FR": "Réessayer",
     "ko-KR": "재시도",
     "$files": [
-      "src/components/model/custom-model-add-card.tsx(14025-14031)",
-      "src/components/model/model-list-panel.tsx(25589-25595)"
+      "src/components/model/custom-model-add-card.tsx(14415-14421)",
+      "src/components/model/model-list-panel.tsx(26301-26307)"
     ],
     "$id": 745
   },
@@ -4380,8 +4380,8 @@
     "fr-FR": "Démarré",
     "ko-KR": "시작됨",
     "$files": [
-      "src/components/model/custom-model-add-card.tsx(14424-14431)",
-      "src/components/model/model-list-panel.tsx(29834-29841)"
+      "src/components/model/custom-model-add-card.tsx(14821-14828)",
+      "src/components/model/model-list-panel.tsx(30637-30644)"
     ],
     "$id": 751
   },
@@ -4396,8 +4396,8 @@
     "fr-FR": "Activer et démarrer",
     "ko-KR": "활성화 및 시작",
     "$files": [
-      "src/components/model/custom-model-add-card.tsx(15208-15217)",
-      "src/components/model/model-list-panel.tsx(30676-30685)"
+      "src/components/model/custom-model-add-card.tsx(15621-15630)",
+      "src/components/model/model-list-panel.tsx(31495-31504)"
     ],
     "$id": 752
   },
@@ -4412,11 +4412,11 @@
     "fr-FR": "Télécharger le modèle",
     "ko-KR": "모델 다운로드",
     "$files": [
-      "src/components/model/custom-model-add-card.tsx(15751-15759)",
-      "src/components/model/model-list-panel.tsx(31770-31778)",
-      "src/components/model/model-list-panel.tsx(34146-34154)",
-      "src/components/model/model-list-panel.tsx(34596-34604)",
-      "src/components/model/model-list-panel.tsx(34626-34634)"
+      "src/components/model/custom-model-add-card.tsx(16179-16187)",
+      "src/components/model/model-list-panel.tsx(32613-32621)",
+      "src/components/model/model-list-panel.tsx(35039-35047)",
+      "src/components/model/model-list-panel.tsx(35498-35506)",
+      "src/components/model/model-list-panel.tsx(35528-35536)"
     ],
     "$id": 753
   },
@@ -4430,7 +4430,7 @@
     "de-DE": "Wird vorbereitet...",
     "fr-FR": "Préparation...",
     "ko-KR": "준비 중...",
-    "$files": ["src/components/model/custom-model-add-card.tsx(16261-16271)"],
+    "$files": ["src/components/model/custom-model-add-card.tsx(16704-16714)"],
     "$id": 1264
   },
   "下载中...": {
@@ -4443,7 +4443,7 @@
     "de-DE": "Wird heruntergeladen...",
     "fr-FR": "Téléchargement...",
     "ko-KR": "��운로드 중...",
-    "$files": ["src/components/model/custom-model-add-card.tsx(16275-16285)"],
+    "$files": ["src/components/model/custom-model-add-card.tsx(16718-16728)"],
     "$id": 1265
   },
   "已成功添加到自定义模型列表中": {
@@ -4456,7 +4456,7 @@
     "de-DE": "Erfolgreich zur Liste der benutzerdefinierten Modelle hinzugefügt",
     "fr-FR": "Ajouté avec succès à la liste des modèles personnalisés",
     "ko-KR": "사용자 정의 모델 목록에 성공적으로 추가됨",
-    "$files": ["src/components/model/custom-model-add-card.tsx(18648-18666)"],
+    "$files": ["src/components/model/custom-model-add-card.tsx(19163-19181)"],
     "$id": 1266
   },
   "嗅探完成，已加入下方自定义模型列表": {
@@ -4469,7 +4469,7 @@
     "de-DE": "Sniffing abgeschlossen, zum obenstehenden benutzerdefinierten Modellverzeichnis hinzugefügt",
     "fr-FR": "Analyse terminée, ajouté à la liste des modèles personnalisés ci-dessous",
     "ko-KR": "스니핑 완료, 아래 사용자 정의 모델 목록에 추가됨",
-    "$files": ["src/components/model/custom-model-add-card.tsx(18715-18736)"],
+    "$files": ["src/components/model/custom-model-add-card.tsx(19231-19252)"],
     "$id": 1267
   },
   "增加任意模型": {
@@ -4482,7 +4482,7 @@
     "de-DE": "Fügen Sie ein beliebiges Modell hinzu",
     "fr-FR": "Ajouter n'importe quel modèle",
     "ko-KR": "모델 추가",
-    "$files": ["src/components/model/custom-model-add-card.tsx(19273-19283)"],
+    "$files": ["src/components/model/custom-model-add-card.tsx(19803-19813)"],
     "$id": 692
   },
   "自由添加 ModelScope / HuggingFace 托管的任意 GGUF 模型文件，保存在本地配置并集中管理。": {
@@ -4495,7 +4495,7 @@
     "de-DE": "Fügen Sie beliebig viele GGUF-Modelldateien hinzu, die von ModelScope / HuggingFace gehostet werden; sie werden in der lokalen Konfiguration gespeichert und zentral verwaltet.",
     "fr-FR": "Ajoutez librement tout fichier de modèle GGUF hébergé sur ModelScope / HuggingFace, sauvegardez et gérez-les localement et centralisés.",
     "ko-KR": "ModelScope / HuggingFace에 호스팅된 임의의 GGUF 모델 파일을 자유롭게 추가하고 로컬 설정에 저장하여 통합 관리하세요.",
-    "$files": ["src/components/model/custom-model-add-card.tsx(19414-19492)"],
+    "$files": ["src/components/model/custom-model-add-card.tsx(19947-20026)"],
     "$id": 1268
   },
   "个自定义模型": {
@@ -4508,7 +4508,7 @@
     "de-DE": "Benutzerdefinierte Modelle",
     "fr-FR": "Modèles personnalisés",
     "ko-KR": "개 사용자 정의 모델",
-    "$files": ["src/components/model/custom-model-add-card.tsx(19710-19720)"],
+    "$files": ["src/components/model/custom-model-add-card.tsx(20250-20260)"],
     "$id": 1269
   },
   "自由添加指定模型": {
@@ -4521,7 +4521,7 @@
     "de-DE": "Fügen Sie bestimmte Modelle frei hinzu",
     "fr-FR": "Ajoutez librement les modèles spécifiés",
     "ko-KR": "지정된 모델을 자유롭게 추가",
-    "$files": ["src/components/model/custom-model-add-card.tsx(20216-20228)"],
+    "$files": ["src/components/model/custom-model-add-card.tsx(20771-20783)"],
     "$id": 694
   },
   "嗅探中...": {
@@ -4534,7 +4534,7 @@
     "de-DE": "Schnüffeln...",
     "fr-FR": "Reniflement...",
     "ko-KR": "스니핑 중...",
-    "$files": ["src/components/model/custom-model-add-card.tsx(21508-21518)"],
+    "$files": ["src/components/model/custom-model-add-card.tsx(22094-22104)"],
     "$id": 695
   },
   "添加并嗅探": {
@@ -4547,7 +4547,7 @@
     "de-DE": "Hinzufügen und schnüffeln",
     "fr-FR": "Ajouter et renifler",
     "ko-KR": "추가하고 냄새 맡기",
-    "$files": ["src/components/model/custom-model-add-card.tsx(21678-21687)"],
+    "$files": ["src/components/model/custom-model-add-card.tsx(22269-22278)"],
     "$id": 696
   },
   "支持如下三种模型文件地址格式：": {
@@ -4560,7 +4560,7 @@
     "de-DE": "Die folgenden drei Modelldateiadressformate werden unterstützt:",
     "fr-FR": "Les trois formats d'adresse de fichier modèle suivants sont pris en charge :",
     "ko-KR": "다음 세 가지 모델 파일 주소 형식이 지원됩니다.",
-    "$files": ["src/components/model/custom-model-add-card.tsx(22363-22382)"],
+    "$files": ["src/components/model/custom-model-add-card.tsx(22973-22992)"],
     "$id": 698
   },
   "正在通过网络探测模型文件大小与同目录投影文件，请稍候...": {
@@ -4573,7 +4573,7 @@
     "de-DE": "Modelldateigröße und Projektionsdateien im selben Verzeichnis werden über das Netzwerk erkannt. Bitte warten...",
     "fr-FR": "Détection de la taille du fichier modèle et des fichiers de projection dans le même répertoire via le réseau, veuillez patienter...",
     "ko-KR": "네트워크를 통해 동일한 디렉터리에 있는 모델 파일 크기와 투영 파일을 감지하는 중입니다. 잠시 기다려 주십시오...",
-    "$files": ["src/components/model/custom-model-add-card.tsx(22963-22996)"],
+    "$files": ["src/components/model/custom-model-add-card.tsx(23589-23622)"],
     "$id": 699
   },
   "可继续添加下一个模型，或收起本卡片。": {
@@ -4586,7 +4586,7 @@
     "de-DE": "Sie können mit dem Hinzufügen des nächsten Modells fortfahren oder diese Karte schließen.",
     "fr-FR": "Vous pouvez continuer à ajouter le modèle suivant ou fermer cette fiche.",
     "ko-KR": "계속해서 다음 모델을 추가하거나 이 카드를 닫을 수 있습니다.",
-    "$files": ["src/components/model/custom-model-add-card.tsx(23805-23827)"],
+    "$files": ["src/components/model/custom-model-add-card.tsx(24453-24475)"],
     "$id": 700
   },
   "已添加的自定义模型": {
@@ -4599,7 +4599,7 @@
     "de-DE": "Hinzugefügte benutzerdefinierte Modelle",
     "fr-FR": "Modèles personnalisés ajoutés",
     "ko-KR": "추가된 사용자 정의 모델",
-    "$files": ["src/components/model/custom-model-add-card.tsx(24258-24271)"],
+    "$files": ["src/components/model/custom-model-add-card.tsx(24918-24931)"],
     "$id": 1270
   },
   "下次进入仍会显示，直至完成首次模型下载": {
@@ -4666,8 +4666,8 @@
     "ko-KR": "지능",
     "$files": [
       "src/components/model/model-bubble-guide.tsx(2508-2516)",
-      "src/components/model/model-list-panel.tsx(3517-3525)",
-      "src/components/model/model-list-panel.tsx(15016-15024)"
+      "src/components/model/model-list-panel.tsx(3634-3642)",
+      "src/components/model/model-list-panel.tsx(15462-15470)"
     ],
     "$id": 705
   },
@@ -4696,9 +4696,9 @@
     "ko-KR": "예상 비디오 메모리",
     "$files": [
       "src/components/model/model-bubble-guide.tsx(2841-2849)",
-      "src/components/model/model-download-popover.tsx(10185-10193)",
-      "src/components/model/model-list-panel.tsx(3715-3723)",
-      "src/components/model/model-list-panel.tsx(17693-17701)"
+      "src/components/model/model-download-popover.tsx(10485-10493)",
+      "src/components/model/model-list-panel.tsx(3837-3845)",
+      "src/components/model/model-list-panel.tsx(18206-18214)"
     ],
     "$id": 707
   },
@@ -4738,7 +4738,7 @@
     "de-DE": "Einheitliches Gedächtnis",
     "fr-FR": "Mémoire unifiée",
     "ko-KR": "통합 메모리",
-    "$files": ["src/components/model/model-download-popover.tsx(5211-5219)"],
+    "$files": ["src/components/model/model-download-popover.tsx(5382-5390)"],
     "$id": 1398
   },
   "独立显卡": {
@@ -4751,7 +4751,7 @@
     "de-DE": "Separate Grafikkarte",
     "fr-FR": "Carte graphique discrète",
     "ko-KR": "개별 그래픽 카드",
-    "$files": ["src/components/model/model-download-popover.tsx(5324-5332)"],
+    "$files": ["src/components/model/model-download-popover.tsx(5498-5506)"],
     "$id": 1399
   },
   "显存": {
@@ -4764,7 +4764,7 @@
     "de-DE": "Videospeicher",
     "fr-FR": "Mémoire vidéo",
     "ko-KR": "비디오 메모리",
-    "$files": ["src/components/model/model-download-popover.tsx(5366-5372)"],
+    "$files": ["src/components/model/model-download-popover.tsx(5540-5546)"],
     "$id": 1400
   },
   "系统内存 / 核显模式": {
@@ -4777,7 +4777,7 @@
     "de-DE": "Systemspeicher/Core-Anzeigemodus",
     "fr-FR": "Mémoire système/mode d'affichage Core",
     "ko-KR": "시스템 메모리/코어 디스플레이 모드",
-    "$files": ["src/components/model/model-download-popover.tsx(5400-5415)"],
+    "$files": ["src/components/model/model-download-popover.tsx(5576-5591)"],
     "$id": 1401
   },
   "自定义模型组件下载": {
@@ -4790,7 +4790,7 @@
     "de-DE": "Herunterladen benutzerdefinierter Modellkomponenten",
     "fr-FR": "Téléchargement de composants de modèle personnalisé",
     "ko-KR": "커스텀 모델 구성요소 다운로드",
-    "$files": ["src/components/model/model-download-popover.tsx(6208-6221)"],
+    "$files": ["src/components/model/model-download-popover.tsx(6409-6422)"],
     "$id": 1402
   },
   "自定义组件下载": {
@@ -4803,7 +4803,7 @@
     "de-DE": "Benutzerdefinierter Komponenten-Download",
     "fr-FR": "Téléchargement de composants personnalisés",
     "ko-KR": "맞춤 구성요소 다운로드",
-    "$files": ["src/components/model/model-download-popover.tsx(6447-6458)"],
+    "$files": ["src/components/model/model-download-popover.tsx(6654-6665)"],
     "$id": 1403
   },
   "合计下载": {
@@ -4816,7 +4816,7 @@
     "de-DE": "Gesamtzahl der Downloads",
     "fr-FR": "Total des téléchargements",
     "ko-KR": "총 다운로드",
-    "$files": ["src/components/model/model-download-popover.tsx(9892-9900)"],
+    "$files": ["src/components/model/model-download-popover.tsx(10186-10194)"],
     "$id": 1404
   },
   "超出安全显存": {
@@ -4829,7 +4829,7 @@
     "de-DE": "Überschreitung des sicheren Videospeichers",
     "fr-FR": "Dépassement de la mémoire vidéo sécurisée",
     "ko-KR": "안전 비디오 메모리 초과",
-    "$files": ["src/components/model/model-download-popover.tsx(10676-10686)"],
+    "$files": ["src/components/model/model-download-popover.tsx(10987-10997)"],
     "$id": 1405
   },
   "按所选下载": {
@@ -4842,7 +4842,7 @@
     "de-DE": "Download nach Auswahl",
     "fr-FR": "Télécharger par sélection",
     "ko-KR": "선택하여 다운로드",
-    "$files": ["src/components/model/model-download-popover.tsx(10928-10937)"],
+    "$files": ["src/components/model/model-download-popover.tsx(11250-11259)"],
     "$id": 1406
   },
   "小学生": {
@@ -4855,7 +4855,7 @@
     "de-DE": "Grundschüler",
     "fr-FR": "élève du primaire",
     "ko-KR": "초등학생",
-    "$files": ["src/components/model/model-list-panel.tsx(2306-2313)"],
+    "$files": ["src/components/model/model-list-panel.tsx(2384-2391)"],
     "$id": 710
   },
   "初中生": {
@@ -4868,7 +4868,7 @@
     "de-DE": "Schüler der Mittelstufe",
     "fr-FR": "Lycéen",
     "ko-KR": "중학생",
-    "$files": ["src/components/model/model-list-panel.tsx(2444-2451)"],
+    "$files": ["src/components/model/model-list-panel.tsx(2526-2533)"],
     "$id": 711
   },
   "高中生": {
@@ -4881,7 +4881,7 @@
     "de-DE": "Gymnasiast",
     "fr-FR": "Lycéen",
     "ko-KR": "고등학생",
-    "$files": ["src/components/model/model-list-panel.tsx(2570-2577)"],
+    "$files": ["src/components/model/model-list-panel.tsx(2656-2663)"],
     "$id": 712
   },
   "大学生": {
@@ -4894,7 +4894,7 @@
     "de-DE": "Studierende",
     "fr-FR": "étudiant",
     "ko-KR": "대학생",
-    "$files": ["src/components/model/model-list-panel.tsx(2700-2707)"],
+    "$files": ["src/components/model/model-list-panel.tsx(2790-2797)"],
     "$id": 713
   },
   "模型名称": {
@@ -4907,7 +4907,7 @@
     "de-DE": "Modellname",
     "fr-FR": "Nom du modèle",
     "ko-KR": "모델명",
-    "$files": ["src/components/model/model-list-panel.tsx(3486-3494)"],
+    "$files": ["src/components/model/model-list-panel.tsx(3602-3610)"],
     "$id": 714
   },
   "能力": {
@@ -4920,7 +4920,7 @@
     "de-DE": "Fähigkeit",
     "fr-FR": "Capacité",
     "ko-KR": "능력",
-    "$files": ["src/components/model/model-list-panel.tsx(3548-3554)"],
+    "$files": ["src/components/model/model-list-panel.tsx(3666-3672)"],
     "$id": 715
   },
   "参数量": {
@@ -4933,7 +4933,7 @@
     "de-DE": "Parametermenge",
     "fr-FR": "Quantité de paramètres",
     "ko-KR": "매개변수 수량",
-    "$files": ["src/components/model/model-list-panel.tsx(3577-3584)"],
+    "$files": ["src/components/model/model-list-panel.tsx(3696-3703)"],
     "$id": 716
   },
   "量化精度": {
@@ -4946,7 +4946,7 @@
     "de-DE": "Quantisierungsgenauigkeit",
     "fr-FR": "Précision de quantification",
     "ko-KR": "양자화 정확도",
-    "$files": ["src/components/model/model-list-panel.tsx(3607-3615)"],
+    "$files": ["src/components/model/model-list-panel.tsx(3727-3735)"],
     "$id": 717
   },
   "模型大小": {
@@ -4959,7 +4959,7 @@
     "de-DE": "Modellgröße",
     "fr-FR": "Taille du modèle",
     "ko-KR": "모델 크기",
-    "$files": ["src/components/model/model-list-panel.tsx(3661-3669)"],
+    "$files": ["src/components/model/model-list-panel.tsx(3782-3790)"],
     "$id": 718
   },
   "高维修正需要该模型，请下载后启用": {
@@ -4972,7 +4972,7 @@
     "de-DE": "Dieses Modell erfordert einen hohen Wartungsaufwand. Bitte laden Sie es herunter und aktivieren Sie es",
     "fr-FR": "Une maintenance élevée nécessite ce modèle, veuillez le télécharger et l'activer",
     "ko-KR": "이 모델은 높은 유지 관리가 필요합니다. 다운로드하여 활성화하십시오.",
-    "$files": ["src/components/model/model-list-panel.tsx(13543-13563)"],
+    "$files": ["src/components/model/model-list-panel.tsx(13960-13980)"],
     "$id": 722
   },
   "自定义": {
@@ -4985,7 +4985,7 @@
     "de-DE": "Benutzerdefiniert",
     "fr-FR": "Personnalisé",
     "ko-KR": "사용자 지정",
-    "$files": ["src/components/model/model-list-panel.tsx(14286-14293)"],
+    "$files": ["src/components/model/model-list-panel.tsx(14716-14723)"],
     "$id": 723
   },
   "文本理解": {
@@ -4998,7 +4998,7 @@
     "de-DE": "Textverständnis",
     "fr-FR": "Compréhension du texte",
     "ko-KR": "텍스트 이해",
-    "$files": ["src/components/model/model-list-panel.tsx(16496-16504)"],
+    "$files": ["src/components/model/model-list-panel.tsx(16976-16984)"],
     "$id": 724
   },
   "图片识别": {
@@ -5011,7 +5011,7 @@
     "de-DE": "Bilderkennung",
     "fr-FR": "Reconnaissance d'images",
     "ko-KR": "이미지 인식",
-    "$files": ["src/components/model/model-list-panel.tsx(16518-16526)"],
+    "$files": ["src/components/model/model-list-panel.tsx(16998-17006)"],
     "$id": 725
   },
   "超出显存限制": {
@@ -5024,7 +5024,7 @@
     "de-DE": "Das Limit des Videospeichers wurde überschritten",
     "fr-FR": "Limite de mémoire vidéo dépassée",
     "ko-KR": "비디오 메모리 한도를 초과했습니다.",
-    "$files": ["src/components/model/model-list-panel.tsx(19694-19704)"],
+    "$files": ["src/components/model/model-list-panel.tsx(20262-20272)"],
     "$id": 730
   },
   "删除中...": {
@@ -5038,8 +5038,8 @@
     "fr-FR": "Suppression...",
     "ko-KR": "삭제 중...",
     "$files": [
-      "src/components/model/model-list-panel.tsx(20532-20542)",
-      "src/components/model/model-list-panel.tsx(21071-21081)"
+      "src/components/model/model-list-panel.tsx(21120-21130)",
+      "src/components/model/model-list-panel.tsx(21670-21680)"
     ],
     "$id": 732
   },
@@ -5053,7 +5053,7 @@
     "de-DE": "Löschen Sie Modelldateien und entfernen Sie zugehörige Konfigurationen, um Speicherplatz freizugeben",
     "fr-FR": "Supprimez les fichiers de modèle et supprimez les configurations associées pour libérer de l'espace disque",
     "ko-KR": "모델 파일을 삭제하고 관련 구성을 제거하여 디스크 공간을 확보합니다.",
-    "$files": ["src/components/model/model-list-panel.tsx(21950-21974)"],
+    "$files": ["src/components/model/model-list-panel.tsx(22570-22594)"],
     "$id": 735
   },
   "删除该自定义模型记录，不再显示于列表": {
@@ -5066,7 +5066,7 @@
     "de-DE": "Löschen Sie den benutzerdefinierten Modelldatensatz und zeigen Sie ihn nicht mehr in der Liste an",
     "fr-FR": "Supprimez l'enregistrement du modèle personnalisé et ne l'affichez plus dans la liste",
     "ko-KR": "사용자 정의 모델 레코드를 삭제하고 더 이상 목록에 표시하지 않습니다.",
-    "$files": ["src/components/model/model-list-panel.tsx(22531-22553)"],
+    "$files": ["src/components/model/model-list-panel.tsx(23163-23185)"],
     "$id": 737
   },
   "删除、移除与参数配置等高级操作": {
@@ -5079,7 +5079,7 @@
     "de-DE": "Erweiterte Vorgänge wie Löschen, Entfernen und Parameterkonfiguration",
     "fr-FR": "Opérations avancées telles que la suppression, la suppression et la configuration des paramètres",
     "ko-KR": "삭제, 제거, 매개변수 구성 등의 고급 작업",
-    "$files": ["src/components/model/model-list-panel.tsx(23917-23936)"],
+    "$files": ["src/components/model/model-list-panel.tsx(24581-24600)"],
     "$id": 741
   },
   "下载识图多模态投影模型，支持图片理解": {
@@ -5092,7 +5092,7 @@
     "de-DE": "Laden Sie das multimodale Projektionsmodell der Bilderkennung herunter, um das Bildverständnis zu unterstützen",
     "fr-FR": "Téléchargez le modèle de projection multimodale de reconnaissance d'image pour faciliter la compréhension des images",
     "ko-KR": "이미지 이해를 지원하기 위해 이미지 인식의 다중 모달 프로젝션 모델을 다운로드하십시오",
-    "$files": ["src/components/model/model-list-panel.tsx(26322-26344)"],
+    "$files": ["src/components/model/model-list-panel.tsx(27054-27076)"],
     "$id": 1288
   },
   "下载识图模型": {
@@ -5106,8 +5106,8 @@
     "fr-FR": "Télécharger le modèle de reconnaissance cartographique",
     "ko-KR": "지도 인식 모델 다운로드",
     "$files": [
-      "src/components/model/model-list-panel.tsx(26700-26710)",
-      "src/components/model/model-list-panel.tsx(26760-26770)"
+      "src/components/model/model-list-panel.tsx(27438-27448)",
+      "src/components/model/model-list-panel.tsx(27499-27509)"
     ],
     "$id": 1289
   },
@@ -5121,7 +5121,7 @@
     "de-DE": "Laden Sie das spekulative Sampling-Beschleunigungsmodell herunter, um die Inferenzgeschwindigkeit erheblich zu verbessern",
     "fr-FR": "Téléchargez le modèle d'accélération de l'échantillonnage spéculatif pour améliorer considérablement la vitesse d'inférence",
     "ko-KR": "추론 속도를 크게 향상하려면 추측 샘플링 가속화 모델을 다운로드하세요.",
-    "$files": ["src/components/model/model-list-panel.tsx(27513-27536)"],
+    "$files": ["src/components/model/model-list-panel.tsx(28271-28294)"],
     "$id": 746
   },
   "下载加速模型": {
@@ -5135,8 +5135,8 @@
     "fr-FR": "Télécharger le modèle d'accélération",
     "ko-KR": "가속 모델 다운로드",
     "$files": [
-      "src/components/model/model-list-panel.tsx(27915-27925)",
-      "src/components/model/model-list-panel.tsx(27994-28004)"
+      "src/components/model/model-list-panel.tsx(28679-28689)",
+      "src/components/model/model-list-panel.tsx(28759-28769)"
     ],
     "$id": 748
   },
@@ -5150,7 +5150,7 @@
     "de-DE": "Aktiviert",
     "fr-FR": "Activé",
     "ko-KR": "활성화됨",
-    "$files": ["src/components/model/model-list-panel.tsx(28417-28424)"],
+    "$files": ["src/components/model/model-list-panel.tsx(29191-29198)"],
     "$id": 749
   },
   "激活": {
@@ -5163,7 +5163,7 @@
     "de-DE": "Aktivieren",
     "fr-FR": "Activer",
     "ko-KR": "활성화",
-    "$files": ["src/components/model/model-list-panel.tsx(29374-29380)"],
+    "$files": ["src/components/model/model-list-panel.tsx(30169-30175)"],
     "$id": 750
   },
   "下载推荐组合": {
@@ -5176,7 +5176,7 @@
     "de-DE": "Laden Sie das empfohlene Portfolio herunter",
     "fr-FR": "Télécharger le portfolio recommandé",
     "ko-KR": "추천 포트폴리오 다운로드",
-    "$files": ["src/components/model/model-list-panel.tsx(32652-32662)"],
+    "$files": ["src/components/model/model-list-panel.tsx(33510-33520)"],
     "$id": 1407
   },
   "自定义下载组件与显存配置": {
@@ -5189,7 +5189,7 @@
     "de-DE": "Benutzerdefinierte Download-Komponenten und Videospeicherkonfiguration",
     "fr-FR": "Composants de téléchargement personnalisés et configuration de la mémoire vidéo",
     "ko-KR": "사용자 정의 다운로드 구성 요소 및 비디오 메모리 구성",
-    "$files": ["src/components/model/model-list-panel.tsx(32976-32992)"],
+    "$files": ["src/components/model/model-list-panel.tsx(33843-33859)"],
     "$id": 1408
   },
   "正在连接源站...": {
@@ -5202,7 +5202,7 @@
     "de-DE": "Verbindung zum Ursprung herstellen...",
     "fr-FR": "Connexion à l'origine...",
     "ko-KR": "원본에 연결 중...",
-    "$files": ["src/components/model/model-list-panel.tsx(35781-35794)"],
+    "$files": ["src/components/model/model-list-panel.tsx(36715-36728)"],
     "$id": 754
   },
   "正在下载...": {
@@ -5216,8 +5216,8 @@
     "fr-FR": "Téléchargement en cours...",
     "ko-KR": "다운로드 중...",
     "$files": [
-      "src/components/model/model-list-panel.tsx(35798-35809)",
-      "src/components/model/model-list-panel.tsx(36026-36037)"
+      "src/components/model/model-list-panel.tsx(36732-36743)",
+      "src/components/model/model-list-panel.tsx(36966-36977)"
     ],
     "$id": 755
   },
@@ -5231,7 +5231,7 @@
     "de-DE": "Download angehalten",
     "fr-FR": "Téléchargement interrompu",
     "ko-KR": "다운로드가 일시중지됨",
-    "$files": ["src/components/model/model-list-panel.tsx(35907-35916)"],
+    "$files": ["src/components/model/model-list-panel.tsx(36844-36853)"],
     "$id": 756
   },
   "等待继续": {
@@ -5244,7 +5244,7 @@
     "de-DE": "Warten Sie, um fortzufahren",
     "fr-FR": "Attendez pour continuer",
     "ko-KR": "계속하려면 기다려 주세요.",
-    "$files": ["src/components/model/model-list-panel.tsx(36698-36706)"],
+    "$files": ["src/components/model/model-list-panel.tsx(37651-37659)"],
     "$id": 757
   },
   "展开": {
@@ -5257,7 +5257,7 @@
     "de-DE": "Expandieren",
     "fr-FR": "Développer",
     "ko-KR": "확장하다",
-    "$files": ["src/components/model/model-list-panel.tsx(38431-38437)"],
+    "$files": ["src/components/model/model-list-panel.tsx(39443-39449)"],
     "$id": 758
   },
   "中国高速": {
@@ -5270,7 +5270,7 @@
     "de-DE": "China-Autobahn",
     "fr-FR": "Autoroute de la Chine",
     "ko-KR": "중국 고속도로",
-    "$files": ["src/components/model/model-list-panel.tsx(50543-50551)"],
+    "$files": ["src/components/model/model-list-panel.tsx(51874-51882)"],
     "$id": 762
   },
   "正在下载中": {
@@ -5284,8 +5284,8 @@
     "fr-FR": "Téléchargement",
     "ko-KR": "다운로드 중",
     "$files": [
-      "src/components/model/model-list-panel.tsx(51050-51059)",
-      "src/components/model/model-list-panel.tsx(52192-52201)"
+      "src/components/model/model-list-panel.tsx(52388-52397)",
+      "src/components/model/model-list-panel.tsx(53547-53556)"
     ],
     "$id": 1212
   },
@@ -5299,7 +5299,7 @@
     "de-DE": "Internationaler Beamter",
     "fr-FR": "Officiel international",
     "ko-KR": "국제공무원",
-    "$files": ["src/components/model/model-list-panel.tsx(51683-51691)"],
+    "$files": ["src/components/model/model-list-panel.tsx(53031-53039)"],
     "$id": 763
   },
   "仅显示推荐": {
@@ -5312,7 +5312,7 @@
     "de-DE": "Nur Empfehlungen anzeigen",
     "fr-FR": "Afficher uniquement les recommandations",
     "ko-KR": "권장 사항 만 표시",
-    "$files": ["src/components/model/model-list-panel.tsx(52757-52766)"],
+    "$files": ["src/components/model/model-list-panel.tsx(54129-54138)"],
     "$id": 764
   },
   "正在同步下载并部署硬件适配 AI 引擎（{backend}）：{progress}%{speed}": {
@@ -5325,7 +5325,7 @@
     "de-DE": "Synchrones Herunterladen und Bereitstellen der Hardware-Anpassungs-KI-Engine（{backend}）：{progress}%{speed}",
     "fr-FR": "Téléchargement et déploiement synchronisés du moteur d'IA d'adaptation matérielle（{backend}）：{progress}%{speed}",
     "ko-KR": "동 기적으로 다운로드 및 배포 하드웨어 적응 인공 지능 엔진（{backend}）：{progress}%{speed}",
-    "$files": ["src/components/model/model-list-panel.tsx(53486-53539)"],
+    "$files": ["src/components/model/model-list-panel.tsx(54871-54924)"],
     "$id": 1464
   },
   "查看引擎进度": {
@@ -5338,7 +5338,7 @@
     "de-DE": "Motorfortschritt überprüfen",
     "fr-FR": "Vérifier la progression du moteur",
     "ko-KR": "엔진 진행률 확인",
-    "$files": ["src/components/model/model-list-panel.tsx(54539-54549)"],
+    "$files": ["src/components/model/model-list-panel.tsx(55946-55956)"],
     "$id": 1465
   },
   "正在从 {source} 下载模型（进度 {progress}%，速度 {speed}），切回即可查看实时卡片。": {
@@ -5351,7 +5351,7 @@
     "de-DE": "Modell wird von {source} heruntergeladen (Fortschritt {progress} %, Geschwindigkeit {speed}). Wechseln Sie zurück, um die Echtzeitkarte anzuzeigen.",
     "fr-FR": "En téléchargeant le modèle depuis {source} (progression {progress} %, vitesse {speed}), revenez pour afficher la carte en temps réel.",
     "ko-KR": "{source}에서 모델을 다운로드하는 중입니다(진행률 {progress}%, 속도 {speed}). 실시간 카드를 보려면 다시 전환하세요.",
-    "$files": ["src/components/model/model-list-panel.tsx(55216-55299)"],
+    "$files": ["src/components/model/model-list-panel.tsx(56637-56721)"],
     "$id": 1213
   },
   "切回查看": {
@@ -5364,7 +5364,7 @@
     "de-DE": "Wechseln Sie zurück zur Ansicht",
     "fr-FR": "Revenir à la vue",
     "ko-KR": "다시 보기로 전환",
-    "$files": ["src/components/model/model-list-panel.tsx(56143-56151)"],
+    "$files": ["src/components/model/model-list-panel.tsx(57583-57591)"],
     "$id": 1214
   },
   "主程序已开启高维修正与视频检索，请先下载安装下方高亮的 {name} 嵌入模型。": {
@@ -5377,7 +5377,7 @@
     "de-DE": "Das Hauptprogramm ermöglicht eine wartungsintensive Korrektur und Videowiederherstellung. Bitte laden Sie das unten hervorgehobene eingebettete {name}-Modell herunter und installieren Sie es.",
     "fr-FR": "Le programme principal a permis une correction et une récupération vidéo nécessitant beaucoup de maintenance. Veuillez télécharger et installer le modèle intégré {name} mis en évidence ci-dessous.",
     "ko-KR": "메인 프로그램을 통해 유지 관리가 많이 필요한 수정 및 비디오 검색이 가능해졌습니다. 아래에 강조 표시된 {name} 임베디드 모델을 다운로드하여 설치하세요.",
-    "$files": ["src/components/model/model-list-panel.tsx(56785-56829)"],
+    "$files": ["src/components/model/model-list-panel.tsx(58235-58279)"],
     "$id": 765
   },
   "暂无官方推荐模型": {
@@ -5390,7 +5390,7 @@
     "de-DE": "Es gibt noch kein offiziell empfohlenes Modell",
     "fr-FR": "Il n'y a pas encore de modèle officiel recommandé",
     "ko-KR": "아직 공식 추천 모델은 없습니다.",
-    "$files": ["src/components/model/model-list-panel.tsx(57322-57334)"],
+    "$files": ["src/components/model/model-list-panel.tsx(58786-58798)"],
     "$id": 766
   },
   "该来源暂无可用模型": {
@@ -5403,7 +5403,7 @@
     "de-DE": "Von dieser Quelle sind derzeit keine Modelle verfügbar",
     "fr-FR": "Aucun modèle disponible pour cette source  ",
     "ko-KR": "이 소스에서는 사용 가능한 모델이 없습니다.",
-    "$files": ["src/components/model/model-list-panel.tsx(57338-57351)"],
+    "$files": ["src/components/model/model-list-panel.tsx(58802-58815)"],
     "$id": 767
   },
   "语言模型": {
@@ -5416,7 +5416,7 @@
     "de-DE": "Sprachmodell",
     "fr-FR": "Modèle de langage",
     "ko-KR": "언어 모델",
-    "$files": ["src/components/model/model-list-panel.tsx(58250-58258)"],
+    "$files": ["src/components/model/model-list-panel.tsx(59730-59738)"],
     "$id": 768
   },
   "用于文件内容理解、标签生成与智能描述。激活后引擎将加载该模型进行 AI 分析。": {
@@ -5429,7 +5429,7 @@
     "de-DE": "Wird zum Verständnis des Dateiinhalts, zur Tag-Generierung und zur intelligenten Beschreibung verwendet. Nach der Aktivierung lädt die Engine das Modell zur KI-Analyse.",
     "fr-FR": "Utilisé pour la compréhension du contenu des fichiers, la génération de balises et la description intelligente. Après l'activation, le moteur chargera le modèle pour l'analyse de l'IA.",
     "ko-KR": "파일 내용 이해, 태그 생성 및 지능형 설명에 사용됩니다. 활성화 후 엔진은 AI 분석을 위한 모델을 로드합니다.",
-    "$files": ["src/components/model/model-list-panel.tsx(58409-58479)"],
+    "$files": ["src/components/model/model-list-panel.tsx(59892-59963)"],
     "$id": 769
   },
   "已下载模型": {
@@ -5443,8 +5443,8 @@
     "fr-FR": "Modèle téléchargé",
     "ko-KR": "다운로드된 모델",
     "$files": [
-      "src/components/model/model-list-panel.tsx(59091-59100)",
-      "src/components/model/model-list-panel.tsx(62318-62327)"
+      "src/components/model/model-list-panel.tsx(60590-60599)",
+      "src/components/model/model-list-panel.tsx(63883-63892)"
     ],
     "$id": 770
   },
@@ -5459,8 +5459,8 @@
     "fr-FR": "Modèle à télécharger",
     "ko-KR": "다운로드할 모델",
     "$files": [
-      "src/components/model/model-list-panel.tsx(59618-59627)",
-      "src/components/model/model-list-panel.tsx(62848-62857)"
+      "src/components/model/model-list-panel.tsx(61128-61137)",
+      "src/components/model/model-list-panel.tsx(64424-64433)"
     ],
     "$id": 771
   },
@@ -5475,8 +5475,8 @@
     "fr-FR": "Mémoire vidéo insuffisante · Téléchargement impossible",
     "ko-KR": "비디오 메모리 부족 · 다운로드할 수 없음",
     "$files": [
-      "src/components/model/model-list-panel.tsx(60164-60179)",
-      "src/components/model/model-list-panel.tsx(63397-63412)"
+      "src/components/model/model-list-panel.tsx(61685-61700)",
+      "src/components/model/model-list-panel.tsx(64984-64999)"
     ],
     "$id": 772
   },
@@ -5490,7 +5490,7 @@
     "de-DE": "Einbettungsmodell einbetten",
     "fr-FR": "Modèle d'intégration d'intégration",
     "ko-KR": "임베딩 모델 임베딩",
-    "$files": ["src/components/model/model-list-panel.tsx(61428-61446)"],
+    "$files": ["src/components/model/model-list-panel.tsx(62974-62992)"],
     "$id": 773
   },
   "用于高维向量修正与视频内容语义检索。安装后可大幅提升标签精准度，并支持自然语言搜索视频内容。不参与语言模型的激活与推理流程，独立静默运行。": {
@@ -5503,7 +5503,7 @@
     "de-DE": "Wird für die hochdimensionale Vektorkorrektur und den semantischen Abruf von Videoinhalten verwendet. Nach der Installation kann es die Genauigkeit von Tags erheblich verbessern und die Suche nach Videoinhalten in natürlicher Sprache unterstützen. Es nimmt nicht am Aktivierungs- und Argumentationsprozess des Sprachmodells teil und läuft unabhängig und still.",
     "fr-FR": "Utilisé pour la correction vectorielle haute dimension et la récupération sémantique du contenu vidéo. Après l'installation, il peut considérablement améliorer la précision des balises et prendre en charge la recherche en langage naturel du contenu vidéo. Il ne participe pas au processus d’activation et de raisonnement du modèle de langage et s’exécute de manière indépendante et silencieuse.",
     "ko-KR": "비디오 콘텐츠의 고차원 벡터 수정 및 의미 검색에 사용됩니다. 설치 후 태그의 정확성을 크게 향상시키고 비디오 콘텐츠에 대한 자연어 검색을 지원할 수 있습니다. 언어 모델의 활성화 및 추론 프로세스에 참여하지 않으며 독립적으로 자동으로 실행됩니다.",
-    "$files": ["src/components/model/model-list-panel.tsx(61597-61697)"],
+    "$files": ["src/components/model/model-list-panel.tsx(63146-63247)"],
     "$id": 774
   },
   "模型专属启动参数": {
