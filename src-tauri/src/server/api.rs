@@ -852,6 +852,29 @@ pub(crate) fn verify_model_artifacts(
     (main_exists, mmproj_exists)
 }
 
+/// 模型下载终态裁决结果
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum ModelDownloadVerdict {
+    Completed,
+    Failed,
+}
+
+/// 模型下载终态裁决（纯函数，便于确定性回归测试）
+///
+/// 判定铁律：只有「下载进程成功退出」+「无流内错误上报」+「主模型真实落盘」三者同时成立才算完成。
+/// 严禁单独以「磁盘上存在同名 GGUF」兜底为成功——否则半截下载、旧版本残留或本次直接失败都会被伪装成已完成。
+pub(crate) fn judge_model_download_outcome(
+    process_succeeded: bool,
+    stream_error_reported: bool,
+    main_model_exists: bool,
+) -> ModelDownloadVerdict {
+    if process_succeeded && !stream_error_reported && main_model_exists {
+        ModelDownloadVerdict::Completed
+    } else {
+        ModelDownloadVerdict::Failed
+    }
+}
+
 /// 解析多模态模型所配套的视觉投影器文件名（mmproj）
 #[allow(dead_code)]
 pub(crate) fn resolve_mmproj_filename(model_id: &str, source_flag: &str) -> Option<String> {
@@ -3137,10 +3160,20 @@ async fn run_model_download(
         return;
     }
 
-    // 检查 downloader 是否存在，如果不存在则使用模拟兜底（仅限极早期开发环境）
+    // 硬性前置门禁：下载器缺失一律判定失败，严禁伪造进度欺骗用户。
+    // （历史上此处在开发态用「模拟下载」兜底并标记 Completed，导致磁盘上实际没有任何模型却提示下载成功）
     if !downloader_path.exists() {
-        warn!("llama-model-download 未找到于: {:?}，回退模拟下载", downloader_path);
-        simulate_download_progress(&task_id, &model_id, &tasks).await;
+        let detail = format!(
+            "未找到模型下载组件: {:?}（请重装引擎扩展或检查安装包完整性）",
+            downloader_path
+        );
+        error!("[模型下载] {}", detail);
+        let mut lock = tasks.lock().await;
+        if let Some(task) = lock.get_mut(&task_id) {
+            task.status = DownloadStatus::Error;
+            task.percent = 0.0;
+            task.error = Some(format!("下载组件缺失，模型未能下载。详情：{}", detail));
+        }
         return;
     }
 
@@ -3290,6 +3323,8 @@ async fn run_model_download(
     let mut speed_prev_bytes: Option<u64> = None;
     let mut speed_prev_time = std::time::Instant::now();
     let mut last_speed_bps: f64 = 0.0;
+    // 下载器在 JSON 流中显式上报的错误（即使进程随后以 0 退出，也不得翻转为成功）
+    let mut stream_error_reported = false;
 
     // 读取 stdout 解析 JSON 进度流
     if let Some(stdout) = child.stdout.take() {
@@ -3381,6 +3416,7 @@ async fn run_model_download(
                     if let Some(status) = progress.get("status").and_then(|v| v.as_str()) {
                         match status {
                             "error" | "failed" => {
+                                stream_error_reported = true;
                                 task.status = DownloadStatus::Error;
                                 task.error = progress.get("error").and_then(|v| v.as_str()).map(|s| s.to_string());
                             }
@@ -3414,74 +3450,67 @@ async fn run_model_download(
     }
 
     // 检查主模型落盘状态
-    let (main_exists, _mmproj_exists) = verify_model_artifacts(&models_dir, &model_id, is_multimodal);
+    let (main_exists, mmproj_exists) = verify_model_artifacts(&models_dir, &model_id, is_multimodal);
 
-    // 容错落盘判定：主模型存在即标记为 Completed，不因伴随文件缺失阻断
+    // 进程退出状态：只要子进程非 0 退出即视为本次下载失败，绝不因磁盘上残留旧文件而改判成功
+    let process_succeeded = matches!(&exit_status, Ok(status) if status.success());
+    let verdict = judge_model_download_outcome(process_succeeded, stream_error_reported, main_exists);
+
+    if verdict == ModelDownloadVerdict::Completed && is_multimodal && !mmproj_exists {
+        // 伴随投影文件缺失不阻断主模型可用性（历史产品口径），但必须留痕，禁止静默吞掉
+        warn!(
+            "[模型下载] 多模态投影文件未落盘，仅主模型可用: model={} dir={:?}",
+            model_id, models_dir
+        );
+    }
+
     let mut lock = tasks.lock().await;
     if let Some(task) = lock.get_mut(&task_id) {
         if task.status == DownloadStatus::Canceled {
             return;
         }
 
-        if main_exists {
-            task.status = DownloadStatus::Completed;
-            task.percent = 100.0;
-            task.file_index = total_files.saturating_sub(1);
-            debug!("主模型下载就绪并校验完整: {}", task.model_id);
-        } else {
-            task.status = DownloadStatus::Error;
-            let code_str = exit_status.map(|s| format!("{:?}", s.code())).unwrap_or_else(|e| e.to_string());
-            let stderr_summary = {
-                let lock = stderr_lines.lock().await;
-                if !lock.is_empty() {
-                    lock.join("; ")
-                } else {
-                    format!("主模型文件未完整写入或下载提前中断 (退出码: {})", code_str)
-                }
-            };
-            task.error = Some(stderr_summary);
-            error!("主模型下载未完全就绪: {} 详情: {:?}", task.model_id, task.error);
-        }
-    }
-}
-
-/// 开发模式下模拟下载进度（当 llama-model-download 不存在时）
-async fn simulate_download_progress(task_id: &str, model_id: &str, tasks: &DownloadTaskStore) {
-    debug!("模拟下载进度: {}", model_id);
-    let total_bytes: u64 = 500_000_000; // 500 MB 模拟
-
-    {
-        let mut lock = tasks.lock().await;
-        if let Some(task) = lock.get_mut(task_id) {
-            task.status = DownloadStatus::Downloading;
-            task.total_bytes = total_bytes;
-        }
-    }
-
-    // 模拟 10 秒下载，每秒更新一次进度
-    for i in 1..=10_u64 {
-        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-        let received = total_bytes * i / 10;
-        let percent = (i as f64) * 10.0;
-
-        let mut lock = tasks.lock().await;
-        if let Some(task) = lock.get_mut(task_id) {
-            if task.status == DownloadStatus::Canceled {
-                return;
+        match verdict {
+            ModelDownloadVerdict::Completed => {
+                task.status = DownloadStatus::Completed;
+                task.percent = 100.0;
+                task.file_index = total_files.saturating_sub(1);
+                debug!("主模型下载就绪并校验完整: {}", task.model_id);
             }
-            task.received_bytes = received;
-            task.percent = percent;
-            task.speed_bps = 5_000_000.0;
-            task.current_file_name = Some(format!("{}.gguf", model_id.split('/').last().unwrap_or(model_id)));
-        }
-    }
-
-    let mut lock = tasks.lock().await;
-    if let Some(task) = lock.get_mut(task_id) {
-        if task.status != DownloadStatus::Canceled {
-            task.status = DownloadStatus::Completed;
-            task.percent = 100.0;
-            task.received_bytes = total_bytes;
+            ModelDownloadVerdict::Failed => {
+                let exit_desc = match &exit_status {
+                    Ok(status) => format!("退出码 {:?}", status.code()),
+                    Err(e) => format!("等待进程失败: {}", e),
+                };
+                let stderr_summary = {
+                    let lock = stderr_lines.lock().await;
+                    if !lock.is_empty() {
+                        // 仅保留末尾 3 行，避免整段 stderr 淹没用户可见提示
+                        let tail: Vec<String> = lock.iter().rev().take(3).rev().cloned().collect();
+                        tail.join("; ")
+                    } else {
+                        String::new()
+                    }
+                };
+                let reason = if !process_succeeded {
+                    format!("下载进程未正常结束（{}）", exit_desc)
+                } else if stream_error_reported {
+                    "下载器上报下载失败".to_string()
+                } else {
+                    "主模型文件未完整写入（未找到符合目标量化与命名的 GGUF 文件）".to_string()
+                };
+                let detail = if stderr_summary.is_empty() {
+                    reason
+                } else {
+                    format!("{}；{}", reason, stderr_summary)
+                };
+                task.status = DownloadStatus::Error;
+                task.error = Some(detail.clone());
+                error!(
+                    "模型下载失败: {} 原因: {} 远程诊断: process_succeeded={} stream_error={} main_exists={}",
+                    task.model_id, detail, process_succeeded, stream_error_reported, main_exists
+                );
+            }
         }
     }
 }
@@ -4782,7 +4811,37 @@ pub fn management_routes() -> Router<AppState> {
 mod tests {
     use super::*;
 
-    // ── 零试探 Package Flavor 路由：6 种典型软硬件画像端到端推导 ──
+    // ── 模型下载终态裁决：失败绝不允许被磁盘残留文件兜底成「下载成功」 ──
+
+    /// 只有「进程成功 + 无流内错误 + 主模型落盘」三者齐备才算完成
+    #[test]
+    fn model_download_verdict_requires_all_three_conditions() {
+        assert_eq!(
+            judge_model_download_outcome(true, false, true),
+            ModelDownloadVerdict::Completed
+        );
+        // 进程非 0 退出：即使磁盘上残留了旧的同名 GGUF，也必须判失败
+        assert_eq!(
+            judge_model_download_outcome(false, false, true),
+            ModelDownloadVerdict::Failed
+        );
+        // 下载器在 JSON 流中显式报错：即使进程 0 退出且文件存在，也不得翻转成功
+        assert_eq!(
+            judge_model_download_outcome(true, true, true),
+            ModelDownloadVerdict::Failed
+        );
+        // 进程成功但主模型未落盘（如分片未写完、量化命名不匹配）
+        assert_eq!(
+            judge_model_download_outcome(true, false, false),
+            ModelDownloadVerdict::Failed
+        );
+        assert_eq!(
+            judge_model_download_outcome(false, true, false),
+            ModelDownloadVerdict::Failed
+        );
+    }
+
+    /// 零试探 Package Flavor 路由：6 种典型软硬件画像端到端推导 ──
 
     /// 画像 1：二代酷睿 / 初代至强 E5（仅 AVX1，无独显）→ 定制补全 cpu-avx
     #[test]

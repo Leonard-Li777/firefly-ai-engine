@@ -11,7 +11,11 @@ import { mockApiClient } from './mock-client'
 class FallbackEngineApiClient implements IEngineApiClient {
   constructor(private inner: IEngineApiClient) {}
 
-  private async withFallback<T>(label: string, op: () => Promise<T>, fallback: () => T | Promise<T>): Promise<T> {
+  private async withFallback<T>(
+    label: string,
+    op: () => Promise<T>,
+    fallback: () => T | Promise<T>
+  ): Promise<T> {
     try {
       return await op()
     } catch (e) {
@@ -21,68 +25,117 @@ class FallbackEngineApiClient implements IEngineApiClient {
   }
 
   getEngineStatus() {
-    return this.withFallback('getEngineStatus', () => this.inner.getEngineStatus(), () => mockApiClient.getEngineStatus())
-  }
-
-  switchEngine(backend: string) {
-    return this.withFallback('switchEngine', () => this.inner.switchEngine(backend), () => mockApiClient.switchEngine(backend))
-  }
-
-  getEngineList() {
-    return this.withFallback('getEngineList', () => this.inner.getEngineList(), () => mockApiClient.getEngineList())
-  }
-
-  deleteEngine(backend: string) {
-    return this.withFallback('deleteEngine', () => this.inner.deleteEngine(backend), () => mockApiClient.deleteEngine(backend))
-  }
-
-  downloadEngine(backend: string, onProgress?: (p: any) => void) {
-    return this.withFallback('downloadEngine', () => this.inner.downloadEngine(backend, onProgress), () => mockApiClient.downloadEngine(backend, onProgress))
-  }
-
-  listModels(source?: string) {
-    return this.withFallback('listModels', () => this.inner.listModels(source), () => mockApiClient.listModels(source))
-  }
-
-  startModelDownload(modelId: string, options?: StartModelDownloadOptions, onProgress?: (e: any) => void) {
     return this.withFallback(
-      'startModelDownload',
-      () => this.inner.startModelDownload(modelId, options, onProgress),
-      () => mockApiClient.startModelDownload(modelId, options, onProgress)
+      'getEngineStatus',
+      () => this.inner.getEngineStatus(),
+      () => mockApiClient.getEngineStatus()
     )
   }
 
+  switchEngine(backend: string) {
+    return this.withFallback(
+      'switchEngine',
+      () => this.inner.switchEngine(backend),
+      () => mockApiClient.switchEngine(backend)
+    )
+  }
+
+  getEngineList() {
+    return this.withFallback(
+      'getEngineList',
+      () => this.inner.getEngineList(),
+      () => mockApiClient.getEngineList()
+    )
+  }
+
+  deleteEngine(backend: string) {
+    return this.withFallback(
+      'deleteEngine',
+      () => this.inner.deleteEngine(backend),
+      () => mockApiClient.deleteEngine(backend)
+    )
+  }
+
+  downloadEngine(backend: string, onProgress?: (p: any) => void) {
+    return this.withFallback(
+      'downloadEngine',
+      () => this.inner.downloadEngine(backend, onProgress),
+      () => mockApiClient.downloadEngine(backend, onProgress)
+    )
+  }
+
+  listModels(source?: string) {
+    return this.withFallback(
+      'listModels',
+      () => this.inner.listModels(source),
+      () => mockApiClient.listModels(source)
+    )
+  }
+
+  startModelDownload(
+    modelId: string,
+    options?: StartModelDownloadOptions,
+    onProgress?: (e: any) => void
+  ) {
+    // 写操作刻意不走 mock 回退：下载会真实写入磁盘并驱动「已下载」状态。
+    // 一旦真实后端发起/轮询失败就降级到演示数据，会产生 0→100% 的假进度并提示「下载完成」，
+    // 但磁盘上没有任何模型文件（历史事故：失败被伪造为成功）。失败必须显式抛给调用方。
+    return this.inner.startModelDownload(modelId, options, onProgress)
+  }
+
   pauseModelDownload(taskId: string) {
-    return this.withFallback('pauseModelDownload', () => this.inner.pauseModelDownload(taskId), () => mockApiClient.pauseModelDownload(taskId))
+    // 写操作不走 mock 回退：暂停必须真实作用于后端下载任务
+    return this.inner.pauseModelDownload(taskId)
   }
 
   resumeModelDownload(taskId: string) {
     // 假契约修复：恢复下载不支持，明确报错而非伪装成功（hook 会以重新 start 方式绕过）
-    return this.withFallback('resumeModelDownload', () => this.inner.resumeModelDownload(taskId), () => mockApiClient.resumeModelDownload(taskId))
+    return this.inner.resumeModelDownload(taskId)
   }
 
   cancelModelDownload(taskId: string) {
-    return this.withFallback('cancelModelDownload', () => this.inner.cancelModelDownload(taskId), () => mockApiClient.cancelModelDownload(taskId))
+    // 写操作不走 mock 回退：取消必须真实终止后端子进程，否则磁盘写入仍在继续
+    return this.inner.cancelModelDownload(taskId)
   }
 
   getDownloadTasks() {
-    return this.withFallback('getDownloadTasks', () => this.inner.getDownloadTasks(), () => mockApiClient.getDownloadTasks())
+    return this.withFallback(
+      'getDownloadTasks',
+      () => this.inner.getDownloadTasks(),
+      () => mockApiClient.getDownloadTasks()
+    )
   }
 
   updateModelStoragePath(newPath: string) {
-    return this.withFallback('updateModelStoragePath', () => this.inner.updateModelStoragePath(newPath), () => mockApiClient.updateModelStoragePath(newPath))
+    return this.withFallback(
+      'updateModelStoragePath',
+      () => this.inner.updateModelStoragePath(newPath),
+      () => mockApiClient.updateModelStoragePath(newPath)
+    )
   }
 
   rescanModels() {
-    return this.withFallback('rescanModels', () => this.inner.rescanModels(), () => mockApiClient.rescanModels())
+    return this.withFallback(
+      'rescanModels',
+      () => this.inner.rescanModels(),
+      () => mockApiClient.rescanModels()
+    )
   }
 
   updateRuntimeParams(params: any) {
-    return this.withFallback('updateRuntimeParams', () => this.inner.updateRuntimeParams(params), () => mockApiClient.updateRuntimeParams(params))
+    return this.withFallback(
+      'updateRuntimeParams',
+      () => this.inner.updateRuntimeParams(params),
+      () => mockApiClient.updateRuntimeParams(params)
+    )
   }
 
   getThinkingMode() {
-    return this.withFallback('getThinkingMode', () => this.inner.getThinkingMode(), () => mockApiClient.getThinkingMode())
+    return this.withFallback(
+      'getThinkingMode',
+      () => this.inner.getThinkingMode(),
+      () => mockApiClient.getThinkingMode()
+    )
   }
 
   setThinkingMode(enableThinking: boolean) {
@@ -91,14 +144,28 @@ class FallbackEngineApiClient implements IEngineApiClient {
   }
 
   saveModelParams(modelId: string, params: any) {
-    return this.withFallback('saveModelParams', () => this.inner.saveModelParams(modelId, params), () => mockApiClient.saveModelParams(modelId, params))
+    return this.withFallback(
+      'saveModelParams',
+      () => this.inner.saveModelParams(modelId, params),
+      () => mockApiClient.saveModelParams(modelId, params)
+    )
   }
 
   async getModelParams(modelId: string): Promise<ModelParamsResponse> {
-    return this.withFallback('getModelParams', () => this.inner.getModelParams(modelId), () => mockApiClient.getModelParams(modelId))
+    return this.withFallback(
+      'getModelParams',
+      () => this.inner.getModelParams(modelId),
+      () => mockApiClient.getModelParams(modelId)
+    )
   }
 
-  switchModel(modelId: string, source?: string, localPath?: string, modelName?: string, isEmbedding?: boolean) {
+  switchModel(
+    modelId: string,
+    source?: string,
+    localPath?: string,
+    modelName?: string,
+    isEmbedding?: boolean
+  ) {
     return this.withFallback(
       'switchModel',
       () => this.inner.switchModel(modelId, source, localPath, modelName, isEmbedding),
@@ -107,23 +174,43 @@ class FallbackEngineApiClient implements IEngineApiClient {
   }
 
   resetDowngrade() {
-    return this.withFallback('resetDowngrade', () => this.inner.resetDowngrade(), () => mockApiClient.resetDowngrade())
+    return this.withFallback(
+      'resetDowngrade',
+      () => this.inner.resetDowngrade(),
+      () => mockApiClient.resetDowngrade()
+    )
   }
 
   startEngine(options?: { mode?: 'language' | 'embedding'; modelId?: string }) {
-    return this.withFallback('startEngine', () => this.inner.startEngine(options), () => mockApiClient.startEngine())
+    return this.withFallback(
+      'startEngine',
+      () => this.inner.startEngine(options),
+      () => mockApiClient.startEngine()
+    )
   }
 
   stopEngine() {
-    return this.withFallback('stopEngine', () => this.inner.stopEngine(), () => mockApiClient.stopEngine())
+    return this.withFallback(
+      'stopEngine',
+      () => this.inner.stopEngine(),
+      () => mockApiClient.stopEngine()
+    )
   }
 
   getEngineLogs() {
-    return this.withFallback('getEngineLogs', () => this.inner.getEngineLogs(), () => mockApiClient.getEngineLogs())
+    return this.withFallback(
+      'getEngineLogs',
+      () => this.inner.getEngineLogs(),
+      () => mockApiClient.getEngineLogs()
+    )
   }
 
   clearEngineLogs() {
-    return this.withFallback('clearEngineLogs', () => this.inner.clearEngineLogs(), () => mockApiClient.clearEngineLogs())
+    return this.withFallback(
+      'clearEngineLogs',
+      () => this.inner.clearEngineLogs(),
+      () => mockApiClient.clearEngineLogs()
+    )
   }
 
   addCustomModel(url: string) {
