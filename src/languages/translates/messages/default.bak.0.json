@@ -19,7 +19,9 @@
       "src/App.tsx(7807-7817)",
       "src/App.tsx(8128-8138)",
       "src/App.tsx(7592-7602)",
-      "src/App.tsx(7913-7923)"
+      "src/App.tsx(7913-7923)",
+      "src/App.tsx(8460-8470)",
+      "src/App.tsx(8836-8846)"
     ],
     "$id": 440
   },
@@ -38,7 +40,8 @@
       "src/App.tsx(8954-8980)",
       "src/App.tsx(8894-8920)",
       "src/App.tsx(8346-8372)",
-      "src/App.tsx(8131-8157)"
+      "src/App.tsx(8131-8157)",
+      "src/App.tsx(9120-9146)"
     ],
     "$id": 441
   },
@@ -57,7 +60,8 @@
       "src/App.tsx(9212-9223)",
       "src/App.tsx(9152-9163)",
       "src/App.tsx(8604-8615)",
-      "src/App.tsx(8389-8400)"
+      "src/App.tsx(8389-8400)",
+      "src/App.tsx(9434-9445)"
     ],
     "$id": 442
   },
@@ -81,7 +85,9 @@
       "src/App.tsx(10213-10219)",
       "src/App.tsx(9879-9885)",
       "src/components/dashboard/dashboard-view.tsx(17145-17151)",
-      "src/App.tsx(9664-9670)"
+      "src/App.tsx(9664-9670)",
+      "src/App.tsx(11040-11046)",
+      "src/components/dashboard/dashboard-view.tsx(27606-27612)"
     ],
     "$id": 443
   },
@@ -105,7 +111,9 @@
       "src/App.tsx(10308-10318)",
       "src/components/model/custom-model-add-card.tsx(9748-9758)",
       "src/components/model/custom-model-add-card.tsx(9489-9499)",
-      "src/components/model/custom-model-add-card.tsx(9510-9520)"
+      "src/components/model/custom-model-add-card.tsx(9510-9520)",
+      "src/App.tsx(11127-11137)",
+      "src/components/model/custom-model-add-card.tsx(9939-9949)"
     ],
     "$id": 1227
   },
@@ -129,7 +137,8 @@
       "src/App.tsx(10403-10411)",
       "src/App.tsx(9966-9974)",
       "src/components/dashboard/dashboard-view.tsx(3837-3845)",
-      "src/App.tsx(9751-9759)"
+      "src/App.tsx(9751-9759)",
+      "src/App.tsx(11214-11222)"
     ],
     "$id": 444
   },
@@ -149,7 +158,8 @@
       "src/App.tsx(10996-11003)",
       "src/App.tsx(10467-10474)",
       "src/App.tsx(10026-10033)",
-      "src/App.tsx(9811-9818)"
+      "src/App.tsx(9811-9818)",
+      "src/App.tsx(11278-11285)"
     ],
     "$id": 445
   },
@@ -207,7 +217,13 @@
       "src/components/model/model-list-panel.tsx(26103-26113)",
       "src/App.tsx(9841-9851)",
       "src/components/model/model-list-panel.tsx(25547-25557)",
-      "src/components/model/model-list-panel.tsx(26028-26038)"
+      "src/components/model/model-list-panel.tsx(26028-26038)",
+      "src/App.tsx(11310-11320)",
+      "src/components/dashboard/dashboard-view.tsx(13244-13254)",
+      "src/components/model/custom-model-add-card.tsx(15170-15180)",
+      "src/components/model/custom-model-add-card.tsx(15607-15617)",
+      "src/components/model/model-list-panel.tsx(31000-31010)",
+      "src/components/model/model-list-panel.tsx(31481-31491)"
     ],
     "$id": 446
   },
@@ -227,7 +243,8 @@
       "src/App.tsx(12469-12480)",
       "src/App.tsx(11943-11954)",
       "src/App.tsx(11498-11509)",
-      "src/App.tsx(11283-11294)"
+      "src/App.tsx(11283-11294)",
+      "src/App.tsx(12886-12897)"
     ],
     "$id": 447
   },
@@ -247,7 +264,8 @@
       "src/App.tsx(12484-12495)",
       "src/App.tsx(11958-11969)",
       "src/App.tsx(11513-11524)",
-      "src/App.tsx(11298-11309)"
+      "src/App.tsx(11298-11309)",
+      "src/App.tsx(12901-12912)"
     ],
     "$id": 448
   },
@@ -267,7 +285,8 @@
       "src/App.tsx(12838-12844)",
       "src/App.tsx(12312-12318)",
       "src/App.tsx(11867-11873)",
-      "src/App.tsx(11652-11658)"
+      "src/App.tsx(11652-11658)",
+      "src/App.tsx(13255-13261)"
     ],
     "$id": 449
   },
@@ -287,7 +306,8 @@
       "src/App.tsx(12848-12854)",
       "src/App.tsx(12322-12328)",
       "src/App.tsx(11877-11883)",
-      "src/App.tsx(11662-11668)"
+      "src/App.tsx(11662-11668)",
+      "src/App.tsx(13265-13271)"
     ],
     "$id": 450
   },
@@ -307,7 +327,8 @@
       "src/App.tsx(13013-13023)",
       "src/App.tsx(12487-12497)",
       "src/App.tsx(12042-12052)",
-      "src/App.tsx(11827-11837)"
+      "src/App.tsx(11827-11837)",
+      "src/App.tsx(13430-13440)"
     ],
     "$id": 451
   },
@@ -327,7 +348,8 @@
       "src/App.tsx(14306-14313)",
       "src/App.tsx(13780-13787)",
       "src/App.tsx(13335-13342)",
-      "src/App.tsx(13120-13127)"
+      "src/App.tsx(13120-13127)",
+      "src/App.tsx(14672-14679)"
     ],
     "$id": 452
   },
@@ -347,7 +369,8 @@
       "src/App.tsx(14950-14958)",
       "src/App.tsx(14424-14432)",
       "src/App.tsx(13979-13987)",
-      "src/App.tsx(13764-13772)"
+      "src/App.tsx(13764-13772)",
+      "src/App.tsx(15316-15324)"
     ],
     "$id": 453
   },
@@ -366,7 +389,8 @@
       "src/App.tsx(15239-15246)",
       "src/App.tsx(15179-15186)",
       "src/App.tsx(14653-14660)",
-      "src/App.tsx(14208-14215)"
+      "src/App.tsx(14208-14215)",
+      "src/App.tsx(15607-15614)"
     ],
     "$id": 1210
   },
@@ -386,7 +410,8 @@
       "src/App.tsx(15889-15898)",
       "src/App.tsx(15363-15372)",
       "src/App.tsx(14918-14927)",
-      "src/App.tsx(14409-14418)"
+      "src/App.tsx(14409-14418)",
+      "src/App.tsx(16317-16326)"
     ],
     "$id": 454
   },
@@ -408,7 +433,8 @@
       "src/App.tsx(16057-16070)",
       "src/App.tsx(15612-15625)",
       "src/components/chat/local-chat-view.tsx(1783-1796)",
-      "src/App.tsx(15103-15116)"
+      "src/App.tsx(15103-15116)",
+      "src/App.tsx(17011-17024)"
     ],
     "$id": 455
   },
@@ -429,7 +455,8 @@
       "src/App.tsx(17231-17239)",
       "src/App.tsx(16705-16713)",
       "src/App.tsx(16260-16268)",
-      "src/App.tsx(15751-15759)"
+      "src/App.tsx(15751-15759)",
+      "src/App.tsx(17659-17667)"
     ],
     "$id": 456
   },
@@ -449,7 +476,8 @@
       "src/App.tsx(17892-17901)",
       "src/App.tsx(17366-17375)",
       "src/App.tsx(16921-16930)",
-      "src/App.tsx(16412-16421)"
+      "src/App.tsx(16412-16421)",
+      "src/App.tsx(18320-18329)"
     ],
     "$id": 457
   },
@@ -469,7 +497,8 @@
       "src/App.tsx(18523-18564)",
       "src/App.tsx(17997-18038)",
       "src/App.tsx(17552-17593)",
-      "src/App.tsx(17043-17084)"
+      "src/App.tsx(17043-17084)",
+      "src/App.tsx(18951-18992)"
     ],
     "$id": 458
   },
@@ -491,7 +520,9 @@
       "src/App.tsx(19113-19123)",
       "src/App.tsx(18587-18597)",
       "src/App.tsx(18142-18152)",
-      "src/App.tsx(17633-17643)"
+      "src/App.tsx(17633-17643)",
+      "src/App.tsx(19541-19551)",
+      "src/components/dashboard/dashboard-view.tsx(18710-18720)"
     ],
     "$id": 459
   },
@@ -510,7 +541,8 @@
       "src/App.tsx(19480-19488)",
       "src/App.tsx(18894-18902)",
       "src/App.tsx(18449-18457)",
-      "src/App.tsx(17940-17948)"
+      "src/App.tsx(17940-17948)",
+      "src/App.tsx(19848-19856)"
     ],
     "$id": 460
   },
@@ -548,7 +580,10 @@
       "src/components/model/model-list-panel.tsx(24292-24300)",
       "src/components/model/model-list-panel.tsx(26790-26798)",
       "src/components/model/model-list-panel.tsx(24217-24225)",
-      "src/components/model/model-list-panel.tsx(26715-26723)"
+      "src/components/model/model-list-panel.tsx(26715-26723)",
+      "src/lib/error-analyzer.ts(4985-4993)",
+      "src/components/model/model-list-panel.tsx(29670-29678)",
+      "src/components/model/model-list-panel.tsx(32168-32176)"
     ],
     "$id": 466
   },
@@ -564,7 +599,8 @@
     "ko-KR": "현재 모델을 로드하기에는 비디오 메모리 또는 메모리가 부족합니다.",
     "$files": [
       "src/lib/error-analyzer.ts(4840-4860)",
-      "src/lib/error-analyzer.ts(5021-5041)"
+      "src/lib/error-analyzer.ts(5021-5041)",
+      "src/lib/error-analyzer.ts(5018-5038)"
     ],
     "$id": 467
   },
@@ -580,7 +616,8 @@
     "ko-KR": "VRAM을 사용 중인 다른 애플리케이션을 종료하세요",
     "$files": [
       "src/lib/error-analyzer.ts(4894-4911)",
-      "src/lib/error-analyzer.ts(5077-5094)"
+      "src/lib/error-analyzer.ts(5077-5094)",
+      "src/lib/error-analyzer.ts(5074-5091)"
     ],
     "$id": 468
   },
@@ -596,7 +633,8 @@
     "ko-KR": "더 작은 모델(예: 0.8B 이하)로 전환해 보세요.",
     "$files": [
       "src/lib/error-analyzer.ts(4924-4950)",
-      "src/lib/error-analyzer.ts(5108-5134)"
+      "src/lib/error-analyzer.ts(5108-5134)",
+      "src/lib/error-analyzer.ts(5105-5131)"
     ],
     "$id": 469
   },
@@ -614,7 +652,11 @@
       "src/lib/error-analyzer.ts(4963-4986)",
       "src/lib/error-analyzer.ts(5662-5685)",
       "src/lib/error-analyzer.ts(6735-6758)",
-      "src/lib/error-analyzer.ts(7428-7451)"
+      "src/lib/error-analyzer.ts(7428-7451)",
+      "src/lib/error-analyzer.ts(5145-5168)",
+      "src/lib/error-analyzer.ts(5869-5892)",
+      "src/lib/error-analyzer.ts(6982-7005)",
+      "src/lib/error-analyzer.ts(7701-7724)"
     ],
     "$id": 1431
   },
@@ -650,7 +692,17 @@
       "src/lib/error-analyzer.ts(7737-7755)",
       "src/lib/error-analyzer.ts(8068-8086)",
       "src/lib/error-analyzer.ts(8367-8385)",
-      "src/lib/error-analyzer.ts(8651-8669)"
+      "src/lib/error-analyzer.ts(8651-8669)",
+      "src/lib/error-analyzer.ts(5182-5200)",
+      "src/lib/error-analyzer.ts(5579-5597)",
+      "src/lib/error-analyzer.ts(5939-5957)",
+      "src/lib/error-analyzer.ts(6259-6277)",
+      "src/lib/error-analyzer.ts(6629-6647)",
+      "src/lib/error-analyzer.ts(7019-7037)",
+      "src/lib/error-analyzer.ts(7386-7404)",
+      "src/lib/error-analyzer.ts(7738-7756)",
+      "src/lib/error-analyzer.ts(8368-8386)",
+      "src/lib/error-analyzer.ts(8618-8636)"
     ],
     "$id": 471
   },
@@ -666,7 +718,8 @@
     "ko-KR": "그래픽 카드 드라이버 또는 가속 레이어 이상",
     "$files": [
       "src/lib/error-analyzer.ts(5153-5167)",
-      "src/lib/error-analyzer.ts(5349-5363)"
+      "src/lib/error-analyzer.ts(5349-5363)",
+      "src/lib/error-analyzer.ts(5343-5357)"
     ],
     "$id": 472
   },
@@ -682,7 +735,8 @@
     "ko-KR": "현재 GPU 드라이버/가속 백엔드는 실행 중인 모델과 호환되지 않으며 엔진이 다운그레이드되었을 수 있습니다.",
     "$files": [
       "src/lib/error-analyzer.ts(5191-5225)",
-      "src/lib/error-analyzer.ts(5388-5422)"
+      "src/lib/error-analyzer.ts(5388-5422)",
+      "src/lib/error-analyzer.ts(5382-5416)"
     ],
     "$id": 473
   },
@@ -698,7 +752,8 @@
     "ko-KR": "그래픽 카드 드라이버를 최신 버전으로 업그레이드하세요.",
     "$files": [
       "src/lib/error-analyzer.ts(5259-5274)",
-      "src/lib/error-analyzer.ts(5458-5473)"
+      "src/lib/error-analyzer.ts(5458-5473)",
+      "src/lib/error-analyzer.ts(5452-5467)"
     ],
     "$id": 474
   },
@@ -714,7 +769,8 @@
     "ko-KR": "\"엔진 및 하드웨어\"(예: CUDA → Vulkan → CPU)에서 컴퓨팅 엔진을 전환합니다.",
     "$files": [
       "src/lib/error-analyzer.ts(5287-5329)",
-      "src/lib/error-analyzer.ts(5487-5529)"
+      "src/lib/error-analyzer.ts(5487-5529)",
+      "src/lib/error-analyzer.ts(5481-5523)"
     ],
     "$id": 475
   },
@@ -729,7 +785,8 @@
     "fr-FR": "Basculez vers le moteur CPU dans \"Moteur et matériel\" et réessayez de démarrer",
     "ko-KR": "\"엔진 및 하드웨어\"에서 중앙 처리 장치 엔진으로 전환하고 다시 시작하십시오",
     "$files": [
-      "src/lib/error-analyzer.ts(5342-5370)"
+      "src/lib/error-analyzer.ts(5342-5370)",
+      "src/lib/error-analyzer.ts(5537-5565)"
     ],
     "$id": 1432
   },
@@ -745,7 +802,8 @@
     "ko-KR": "현재 환경에서는 로컬 AI를 실행할 수 없습니다.",
     "$files": [
       "src/lib/error-analyzer.ts(5538-5555)",
-      "src/lib/error-analyzer.ts(5734-5751)"
+      "src/lib/error-analyzer.ts(5734-5751)",
+      "src/lib/error-analyzer.ts(5741-5758)"
     ],
     "$id": 477
   },
@@ -761,7 +819,8 @@
     "ko-KR": "시스템 환경에 치명적인 오류가 발생하여 로컬 엔진을 계속 실행할 수 없습니다.",
     "$files": [
       "src/lib/error-analyzer.ts(5579-5604)",
-      "src/lib/error-analyzer.ts(5776-5801)"
+      "src/lib/error-analyzer.ts(5776-5801)",
+      "src/lib/error-analyzer.ts(5783-5808)"
     ],
     "$id": 478
   },
@@ -777,7 +836,8 @@
     "ko-KR": "앱을 다시 시작한 후 다시 시도해 보세요.",
     "$files": [
       "src/lib/error-analyzer.ts(5638-5649)",
-      "src/lib/error-analyzer.ts(5837-5848)"
+      "src/lib/error-analyzer.ts(5837-5848)",
+      "src/lib/error-analyzer.ts(5844-5855)"
     ],
     "$id": 479
   },
@@ -793,7 +853,8 @@
     "ko-KR": "시스템 메모리와 디스크 공간이 충분한지 확인하세요.",
     "$files": [
       "src/lib/error-analyzer.ts(5698-5717)",
-      "src/lib/error-analyzer.ts(5900-5919)"
+      "src/lib/error-analyzer.ts(5900-5919)",
+      "src/lib/error-analyzer.ts(5906-5925)"
     ],
     "$id": 481
   },
@@ -809,7 +870,8 @@
     "ko-KR": "엔진 프로그램 누락",
     "$files": [
       "src/lib/error-analyzer.ts(5881-5891)",
-      "src/lib/error-analyzer.ts(6091-6101)"
+      "src/lib/error-analyzer.ts(6091-6101)",
+      "src/lib/error-analyzer.ts(6097-6107)"
     ],
     "$id": 482
   },
@@ -824,7 +886,8 @@
     "fr-FR": "Le fichier exécutable du moteur n'a pas été trouvé et le déploiement est peut-être incomplet",
     "ko-KR": "엔진 실행 파일을 찾을 수 없으며 배포가 완료되지 않았을 수 있습니다",
     "$files": [
-      "src/lib/error-analyzer.ts(5915-5937)"
+      "src/lib/error-analyzer.ts(5915-5937)",
+      "src/lib/error-analyzer.ts(6132-6154)"
     ],
     "$id": 1433
   },
@@ -840,7 +903,8 @@
     "ko-KR": "애플리케이션 재설치 또는 엔진 구성 요소 복원",
     "$files": [
       "src/lib/error-analyzer.ts(5971-5988)",
-      "src/lib/error-analyzer.ts(6195-6212)"
+      "src/lib/error-analyzer.ts(6195-6212)",
+      "src/lib/error-analyzer.ts(6190-6207)"
     ],
     "$id": 484
   },
@@ -856,7 +920,8 @@
     "ko-KR": "모델 및 엔진 설치 디렉터리가 보안 소프트웨어에 의해 격리되어 있는지 확인",
     "$files": [
       "src/lib/error-analyzer.ts(6001-6025)",
-      "src/lib/error-analyzer.ts(6226-6250)"
+      "src/lib/error-analyzer.ts(6226-6250)",
+      "src/lib/error-analyzer.ts(6221-6245)"
     ],
     "$id": 485
   },
@@ -872,7 +937,8 @@
     "ko-KR": "아직 다운로드된 모델이 없습니다.",
     "$files": [
       "src/lib/error-analyzer.ts(6184-6194)",
-      "src/lib/error-analyzer.ts(6417-6427)"
+      "src/lib/error-analyzer.ts(6417-6427)",
+      "src/lib/error-analyzer.ts(6412-6422)"
     ],
     "$id": 486
   },
@@ -888,7 +954,8 @@
     "ko-KR": "현재 모델 저장 디렉터리에 사용 가능한 GGUF 모델 파일이 없어 엔진을 시작할 수 없습니다.",
     "$files": [
       "src/lib/error-analyzer.ts(6218-6253)",
-      "src/lib/error-analyzer.ts(6452-6487)"
+      "src/lib/error-analyzer.ts(6452-6487)",
+      "src/lib/error-analyzer.ts(6447-6482)"
     ],
     "$id": 487
   },
@@ -904,7 +971,8 @@
     "ko-KR": "\"모델 관리\"로 이동하여 모델을 다운로드하고 다시 시도하세요.",
     "$files": [
       "src/lib/error-analyzer.ts(6287-6308)",
-      "src/lib/error-analyzer.ts(6523-6544)"
+      "src/lib/error-analyzer.ts(6523-6544)",
+      "src/lib/error-analyzer.ts(6518-6539)"
     ],
     "$id": 488
   },
@@ -920,7 +988,8 @@
     "ko-KR": "\"모델 관리\"에서 저장소 디렉터리를 다시 검색합니다.",
     "$files": [
       "src/lib/error-analyzer.ts(6321-6341)",
-      "src/lib/error-analyzer.ts(6558-6578)"
+      "src/lib/error-analyzer.ts(6558-6578)",
+      "src/lib/error-analyzer.ts(6553-6573)"
     ],
     "$id": 489
   },
@@ -936,7 +1005,8 @@
     "ko-KR": "모델 저장소 디렉터리가 올바르게 설정되어 있고 .gguf 파일이 포함되어 있는지 확인하세요.",
     "$files": [
       "src/lib/error-analyzer.ts(6354-6382)",
-      "src/lib/error-analyzer.ts(6592-6620)"
+      "src/lib/error-analyzer.ts(6592-6620)",
+      "src/lib/error-analyzer.ts(6587-6615)"
     ],
     "$id": 490
   },
@@ -952,7 +1022,8 @@
     "ko-KR": "모델 로드 실패",
     "$files": [
       "src/lib/error-analyzer.ts(6543-6553)",
-      "src/lib/error-analyzer.ts(6789-6799)"
+      "src/lib/error-analyzer.ts(6789-6799)",
+      "src/lib/error-analyzer.ts(6784-6794)"
     ],
     "$id": 491
   },
@@ -968,7 +1039,8 @@
     "ko-KR": "모델 파일이 존재하지만 로드에 실패했습니다. 이는 일반적으로 파일 손상, 비호환성 또는 리소스 부족으로 인해 발생합니다.",
     "$files": [
       "src/lib/error-analyzer.ts(6577-6609)",
-      "src/lib/error-analyzer.ts(6824-6856)"
+      "src/lib/error-analyzer.ts(6824-6856)",
+      "src/lib/error-analyzer.ts(6819-6851)"
     ],
     "$id": 492
   },
@@ -984,7 +1056,8 @@
     "ko-KR": "모델 파일을 다시 다운로드하거나 다른 모델로 전환하세요.",
     "$files": [
       "src/lib/error-analyzer.ts(6643-6662)",
-      "src/lib/error-analyzer.ts(6892-6911)"
+      "src/lib/error-analyzer.ts(6892-6911)",
+      "src/lib/error-analyzer.ts(6887-6906)"
     ],
     "$id": 493
   },
@@ -1000,7 +1073,8 @@
     "ko-KR": "디스크 공간과 시스템 메모리가 충분한지 확인하세요.",
     "$files": [
       "src/lib/error-analyzer.ts(6675-6694)",
-      "src/lib/error-analyzer.ts(6925-6944)"
+      "src/lib/error-analyzer.ts(6925-6944)",
+      "src/lib/error-analyzer.ts(6920-6939)"
     ],
     "$id": 494
   },
@@ -1016,7 +1090,8 @@
     "ko-KR": "더 작은 크기의 모델을 사용해 보세요",
     "$files": [
       "src/lib/error-analyzer.ts(6707-6722)",
-      "src/lib/error-analyzer.ts(6958-6973)"
+      "src/lib/error-analyzer.ts(6958-6973)",
+      "src/lib/error-analyzer.ts(6953-6968)"
     ],
     "$id": 495
   },
@@ -1032,7 +1107,8 @@
     "ko-KR": "엔진 서비스를 시작하지 못했습니다.",
     "$files": [
       "src/lib/error-analyzer.ts(6925-6937)",
-      "src/lib/error-analyzer.ts(7185-7197)"
+      "src/lib/error-analyzer.ts(7185-7197)",
+      "src/lib/error-analyzer.ts(7180-7192)"
     ],
     "$id": 497
   },
@@ -1047,7 +1123,8 @@
     "fr-FR": "Le service d'inférence du moteur n'a pas réussi à démarrer ou le port était anormal",
     "ko-KR": "엔진 추론 서비스가 성공적으로 시작되지 않았거나 포트가 비정상이었습니다",
     "$files": [
-      "src/lib/error-analyzer.ts(6961-6982)"
+      "src/lib/error-analyzer.ts(6961-6982)",
+      "src/lib/error-analyzer.ts(7217-7238)"
     ],
     "$id": 1434
   },
@@ -1063,7 +1140,8 @@
     "ko-KR": "포트가 사용 중인지 확인하고 나중에 다시 시작해 보세요.",
     "$files": [
       "src/lib/error-analyzer.ts(7016-7036)",
-      "src/lib/error-analyzer.ts(7285-7305)"
+      "src/lib/error-analyzer.ts(7285-7305)",
+      "src/lib/error-analyzer.ts(7274-7294)"
     ],
     "$id": 499
   },
@@ -1079,7 +1157,8 @@
     "ko-KR": "모델 파일이 완전하고 올바르게 선택되었는지 확인",
     "$files": [
       "src/lib/error-analyzer.ts(7049-7067)",
-      "src/lib/error-analyzer.ts(7319-7337)"
+      "src/lib/error-analyzer.ts(7319-7337)",
+      "src/lib/error-analyzer.ts(7308-7326)"
     ],
     "$id": 500
   },
@@ -1094,7 +1173,8 @@
     "fr-FR": "Basculez le moteur de calcul dans \"Moteur et matériel\" ou sélectionnez le moteur CPU et réessayez",
     "ko-KR": "\"엔진 및 하드웨어\"에서 컴퓨팅 엔진을 전환하거나 프로세서 엔진을 선택하고 다시 시도하십시오",
     "$files": [
-      "src/lib/error-analyzer.ts(7080-7112)"
+      "src/lib/error-analyzer.ts(7080-7112)",
+      "src/lib/error-analyzer.ts(7340-7372)"
     ],
     "$id": 1435
   },
@@ -1110,7 +1190,8 @@
     "ko-KR": "엔진이 예기치 않게 충돌함",
     "$files": [
       "src/lib/error-analyzer.ts(7274-7284)",
-      "src/lib/error-analyzer.ts(7544-7554)"
+      "src/lib/error-analyzer.ts(7544-7554)",
+      "src/lib/error-analyzer.ts(7542-7552)"
     ],
     "$id": 502
   },
@@ -1126,7 +1207,8 @@
     "ko-KR": "추론 프로세스가 예기치 않게 종료되었습니다. 이는 드라이버, 비디오 메모리 또는 모델과 관련이 있을 수 있습니다.",
     "$files": [
       "src/lib/error-analyzer.ts(7308-7334)",
-      "src/lib/error-analyzer.ts(7579-7605)"
+      "src/lib/error-analyzer.ts(7579-7605)",
+      "src/lib/error-analyzer.ts(7577-7603)"
     ],
     "$id": 503
   },
@@ -1142,7 +1224,8 @@
     "ko-KR": "비디오 메모리를 덜 차지하는 모델로 전환하세요",
     "$files": [
       "src/lib/error-analyzer.ts(7368-7384)",
-      "src/lib/error-analyzer.ts(7641-7657)"
+      "src/lib/error-analyzer.ts(7641-7657)",
+      "src/lib/error-analyzer.ts(7639-7655)"
     ],
     "$id": 504
   },
@@ -1158,7 +1241,8 @@
     "ko-KR": "비디오 메모리를 차지하는 다른 프로그램을 중지하고 다시 시도하십시오.",
     "$files": [
       "src/lib/error-analyzer.ts(7397-7415)",
-      "src/lib/error-analyzer.ts(7671-7689)"
+      "src/lib/error-analyzer.ts(7671-7689)",
+      "src/lib/error-analyzer.ts(7669-7687)"
     ],
     "$id": 505
   },
@@ -1174,7 +1258,8 @@
     "ko-KR": "요청 시간 초과",
     "$files": [
       "src/lib/error-analyzer.ts(7612-7620)",
-      "src/lib/error-analyzer.ts(7892-7900)"
+      "src/lib/error-analyzer.ts(7892-7900)",
+      "src/lib/error-analyzer.ts(7893-7901)"
     ],
     "$id": 507
   },
@@ -1190,7 +1275,8 @@
     "ko-KR": "엔진 응답 시간이 초과되었습니다. 로드가 너무 높거나 서비스가 준비되지 않았기 때문일 수 있습니다.",
     "$files": [
       "src/lib/error-analyzer.ts(7644-7668)",
-      "src/lib/error-analyzer.ts(7925-7949)"
+      "src/lib/error-analyzer.ts(7925-7949)",
+      "src/lib/error-analyzer.ts(7926-7950)"
     ],
     "$id": 508
   },
@@ -1206,7 +1292,8 @@
     "ko-KR": "서비스가 준비될 때까지 기다린 후 다시 시도하세요.",
     "$files": [
       "src/lib/error-analyzer.ts(7702-7715)",
-      "src/lib/error-analyzer.ts(7985-7998)"
+      "src/lib/error-analyzer.ts(7985-7998)",
+      "src/lib/error-analyzer.ts(7986-7999)"
     ],
     "$id": 509
   },
@@ -1222,7 +1309,8 @@
     "ko-KR": "더 가벼운 모델로 전환하세요",
     "$files": [
       "src/lib/error-analyzer.ts(7728-7741)",
-      "src/lib/error-analyzer.ts(8012-8025)"
+      "src/lib/error-analyzer.ts(8012-8025)",
+      "src/lib/error-analyzer.ts(8013-8026)"
     ],
     "$id": 510
   },
@@ -1238,7 +1326,8 @@
     "ko-KR": "실행 중인 백그라운드 작업 줄이기",
     "$files": [
       "src/lib/error-analyzer.ts(7754-7769)",
-      "src/lib/error-analyzer.ts(8039-8054)"
+      "src/lib/error-analyzer.ts(8039-8054)",
+      "src/lib/error-analyzer.ts(8040-8055)"
     ],
     "$id": 511
   },
@@ -1254,7 +1343,8 @@
     "ko-KR": "디스크 공간이 부족합니다.",
     "$files": [
       "src/lib/error-analyzer.ts(7922-7932)",
-      "src/lib/error-analyzer.ts(8215-8225)"
+      "src/lib/error-analyzer.ts(8215-8225)",
+      "src/lib/error-analyzer.ts(8216-8226)"
     ],
     "$id": 512
   },
@@ -1270,7 +1360,8 @@
     "ko-KR": "모델 또는 로그 쓰기를 완료하기에는 디스크 공간이 부족합니다.",
     "$files": [
       "src/lib/error-analyzer.ts(7956-7978)",
-      "src/lib/error-analyzer.ts(8250-8272)"
+      "src/lib/error-analyzer.ts(8250-8272)",
+      "src/lib/error-analyzer.ts(8251-8273)"
     ],
     "$id": 513
   },
@@ -1286,7 +1377,8 @@
     "ko-KR": "디스크 공간을 비운 후 다시 시도하세요.",
     "$files": [
       "src/lib/error-analyzer.ts(8012-8025)",
-      "src/lib/error-analyzer.ts(8308-8321)"
+      "src/lib/error-analyzer.ts(8308-8321)",
+      "src/lib/error-analyzer.ts(8309-8322)"
     ],
     "$id": 514
   },
@@ -1302,7 +1394,8 @@
     "ko-KR": "모델 스토리지 경로를 더 큰 디스크로 마이그레이션",
     "$files": [
       "src/lib/error-analyzer.ts(8038-8056)",
-      "src/lib/error-analyzer.ts(8335-8353)"
+      "src/lib/error-analyzer.ts(8335-8353)",
+      "src/lib/error-analyzer.ts(8336-8354)"
     ],
     "$id": 515
   },
@@ -1318,7 +1411,8 @@
     "ko-KR": "엔진이 비정상적으로 작동 중",
     "$files": [
       "src/lib/error-analyzer.ts(8202-8212)",
-      "src/lib/error-analyzer.ts(8507-8517)"
+      "src/lib/error-analyzer.ts(8507-8517)",
+      "src/lib/error-analyzer.ts(8508-8518)"
     ],
     "$id": 516
   },
@@ -1334,7 +1428,8 @@
     "ko-KR": "엔진이 비정상적으로 작동하고 있습니다. 로그를 확인하고 다시 시도하는 것이 좋습니다.",
     "$files": [
       "src/lib/error-analyzer.ts(8236-8258)",
-      "src/lib/error-analyzer.ts(8542-8564)"
+      "src/lib/error-analyzer.ts(8542-8564)",
+      "src/lib/error-analyzer.ts(8543-8565)"
     ],
     "$id": 517
   },
@@ -1351,7 +1446,8 @@
     "$files": [
       "src/lib/error-analyzer.ts(8281-8291)",
       "src/components/errors/error-analysis-sidebar.tsx(7077-7087)",
-      "src/lib/error-analyzer.ts(8600-8610)"
+      "src/lib/error-analyzer.ts(8600-8610)",
+      "src/lib/error-analyzer.ts(8589-8599)"
     ],
     "$id": 518
   },
@@ -1367,7 +1463,8 @@
     "ko-KR": "모델 또는 계산 엔진 전환",
     "$files": [
       "src/lib/error-analyzer.ts(8294-8307)",
-      "src/lib/error-analyzer.ts(8624-8637)"
+      "src/lib/error-analyzer.ts(8624-8637)",
+      "src/lib/error-analyzer.ts(8602-8615)"
     ],
     "$id": 519
   },
@@ -1382,7 +1479,8 @@
     "fr-FR": "Modèle de langage principal",
     "ko-KR": "주요 언어 모델",
     "$files": [
-      "src/lib/model-component-recommender.ts(1121-1130)"
+      "src/lib/model-component-recommender.ts(1121-1130)",
+      "src/lib/model-component-recommender.ts(1167-1176)"
     ],
     "$id": 1381
   },
@@ -1397,7 +1495,8 @@
     "fr-FR": "Centre central",
     "ko-KR": "핵심 센터",
     "$files": [
-      "src/lib/model-component-recommender.ts(1149-1157)"
+      "src/lib/model-component-recommender.ts(1149-1157)",
+      "src/lib/model-component-recommender.ts(1196-1204)"
     ],
     "$id": 1382
   },
@@ -1412,7 +1511,8 @@
     "fr-FR": "Responsable de la compréhension du texte, de la reconnaissance des entités, de l'étiquetage de la classification et du résumé intelligent (base essentielle de base)",
     "ko-KR": "텍스트 이해, 개체 인식, 분류 라벨링 및 지능형 요약을 담당합니다(핵심 필수 기반).",
     "$files": [
-      "src/lib/model-component-recommender.ts(1176-1209)"
+      "src/lib/model-component-recommender.ts(1176-1209)",
+      "src/lib/model-component-recommender.ts(1224-1257)"
     ],
     "$id": 1383
   },
@@ -1427,7 +1527,8 @@
     "fr-FR": "Modèle multimodal de reconnaissance d'images",
     "ko-KR": "이미지 인식의 다중 모드 모델",
     "$files": [
-      "src/lib/model-component-recommender.ts(1244-1255)"
+      "src/lib/model-component-recommender.ts(1244-1255)",
+      "src/lib/model-component-recommender.ts(1295-1306)"
     ],
     "$id": 1384
   },
@@ -1442,7 +1543,8 @@
     "fr-FR": "Oeil de vue",
     "ko-KR": "시력의 눈",
     "$files": [
-      "src/lib/model-component-recommender.ts(1274-1282)"
+      "src/lib/model-component-recommender.ts(1274-1282)",
+      "src/lib/model-component-recommender.ts(1326-1334)"
     ],
     "$id": 1385
   },
@@ -1457,7 +1559,8 @@
     "fr-FR": "Donner au modèle la capacité de lire des images, qui peuvent être utilisées pour la compréhension d'images, l'analyse de graphiques et l'extraction d'images et de texte OCR ; si vous n'avez pas besoin de lire les images, vous pouvez l'annuler pour économiser la mémoire vidéo.",
     "ko-KR": "그림 이해, 차트 분석, OCR 이미지 및 텍스트 추출에 사용할 수 있는 그림을 읽을 수 있는 기능을 모델에 부여합니다. 사진을 읽을 필요가 없으면 취소하여 비디오 메모리를 절약할 수 있습니다.",
     "$files": [
-      "src/lib/model-component-recommender.ts(1301-1349)"
+      "src/lib/model-component-recommender.ts(1301-1349)",
+      "src/lib/model-component-recommender.ts(1354-1402)"
     ],
     "$id": 1386
   },
@@ -1472,7 +1575,8 @@
     "fr-FR": "Modèle d'accélération DSpark",
     "ko-KR": "DSpark 가속 모델",
     "$files": [
-      "src/lib/model-component-recommender.ts(1384-1399)"
+      "src/lib/model-component-recommender.ts(1384-1399)",
+      "src/lib/model-component-recommender.ts(1440-1455)"
     ],
     "$id": 1387
   },
@@ -1487,7 +1591,8 @@
     "fr-FR": "50% plus rapide",
     "ko-KR": "50% 더 빨라짐",
     "$files": [
-      "src/lib/model-component-recommender.ts(1418-1428)"
+      "src/lib/model-component-recommender.ts(1418-1428)",
+      "src/lib/model-component-recommender.ts(1475-1485)"
     ],
     "$id": 1388
   },
@@ -1502,7 +1607,8 @@
     "fr-FR": "Un en-tête de projet spéculatif léger qui augmente considérablement la vitesse de génération de 30 à 70 % et n'occupe qu'une petite quantité de mémoire vidéo. C'est fortement recommandé.",
     "ko-KR": "생성 속도를 30%~70% 크게 높이고 비디오 메모리를 적게 차지하는 경량 추측 초안 헤더입니다. 적극 권장됩니다.",
     "$files": [
-      "src/lib/model-component-recommender.ts(1447-1488)"
+      "src/lib/model-component-recommender.ts(1447-1488)",
+      "src/lib/model-component-recommender.ts(1505-1546)"
     ],
     "$id": 1389
   },
@@ -1517,7 +1623,8 @@
     "fr-FR": "Projet de modèle MTP",
     "ko-KR": "MTP 초안 모델",
     "$files": [
-      "src/lib/model-component-recommender.ts(1522-1534)"
+      "src/lib/model-component-recommender.ts(1522-1534)",
+      "src/lib/model-component-recommender.ts(1583-1595)"
     ],
     "$id": 1390
   },
@@ -1532,7 +1639,8 @@
     "fr-FR": "Accélération spéculée",
     "ko-KR": "추측된 가속도",
     "$files": [
-      "src/lib/model-component-recommender.ts(1553-1561)"
+      "src/lib/model-component-recommender.ts(1553-1561)",
+      "src/lib/model-component-recommender.ts(1615-1623)"
     ],
     "$id": 1391
   },
@@ -1547,7 +1655,8 @@
     "fr-FR": "Assister de manière indépendante les petits modèles pour la vérification de la spéculation multi-token, améliorant ainsi la vitesse d'analyse des textes longs et du code",
     "ko-KR": "다중 토큰 추측 검증을 위한 소규모 모델을 독립적으로 지원하여 긴 텍스트 및 코드 분석 속도를 향상시킵니다.",
     "$files": [
-      "src/lib/model-component-recommender.ts(1580-1618)"
+      "src/lib/model-component-recommender.ts(1580-1618)",
+      "src/lib/model-component-recommender.ts(1643-1681)"
     ],
     "$id": 1392
   },
@@ -1562,7 +1671,8 @@
     "fr-FR": "L'environnement matériel est détecté et le package complet recommandé est affiché par défaut.",
     "ko-KR": "하드웨어 환경이 감지되고 전체 권장 패키지가 기본적으로 표시됩니다.",
     "$files": [
-      "src/lib/model-component-recommender.ts(3283-3305)"
+      "src/lib/model-component-recommender.ts(3283-3305)",
+      "src/lib/model-component-recommender.ts(3392-3414)"
     ],
     "$id": 1393
   },
@@ -1577,7 +1687,8 @@
     "fr-FR": "La machine dispose d'une mémoire vidéo/mémoire suffisante, et il est recommandé de tout sélectionner pour obtenir des capacités de raisonnement multimodales complètes et extrêmement rapides.",
     "ko-KR": "기계에는 충분한 비디오 메모리/메모리가 있으므로 완전한 다중 모드 및 매우 빠른 추론 기능을 얻으려면 모두 선택하는 것이 좋습니다.",
     "$files": [
-      "src/lib/model-component-recommender.ts(3588-3622)"
+      "src/lib/model-component-recommender.ts(3588-3622)",
+      "src/lib/model-component-recommender.ts(3703-3737)"
     ],
     "$id": 1394
   },
@@ -1592,7 +1703,8 @@
     "fr-FR": "La mémoire vidéo est modérée. Il est recommandé d'activer le modèle d'accélération ; le modèle de reconnaissance d'image a été défini comme facultatif. Si vous devez traiter des images, vous pouvez l'activer manuellement.",
     "ko-KR": "비디오 메모리는 보통입니다. 가속 모델을 활성화하는 것이 좋습니다. 이미지 인식 모델이 선택사항으로 설정되었습니다. 이미지를 처리해야 하는 경우 수동으로 활성화할 수 있습니다.",
     "$files": [
-      "src/lib/model-component-recommender.ts(3884-3923)"
+      "src/lib/model-component-recommender.ts(3884-3923)",
+      "src/lib/model-component-recommender.ts(4005-4044)"
     ],
     "$id": 1395
   },
@@ -1607,7 +1719,8 @@
     "fr-FR": "L'utilisation actuelle de la mémoire système/mémoire vidéo est limitée et a été rationalisée uniquement pour le modèle principal afin d'éviter les blocages.",
     "ko-KR": "현재 시스템 메모리/비디오 메모리의 사용은 제한되어 있으며 실행 정지를 방지하기 위해 메인 모델로만 간소화되었습니다.",
     "$files": [
-      "src/lib/model-component-recommender.ts(4242-4277)"
+      "src/lib/model-component-recommender.ts(4242-4277)",
+      "src/lib/model-component-recommender.ts(4372-4407)"
     ],
     "$id": 1396
   },
@@ -1622,7 +1735,8 @@
     "fr-FR": "La mémoire vidéo est relativement restreinte. Il est recommandé de télécharger uniquement le modèle principal pour garantir la stabilité de la classification de base.",
     "ko-KR": "비디오 메모리가 상대적으로 부족합니다. 기본분류의 안정성을 확보하기 위해 메인모델만 다운로드하는 것을 권장합니다.",
     "$files": [
-      "src/lib/model-component-recommender.ts(4287-4315)"
+      "src/lib/model-component-recommender.ts(4287-4315)",
+      "src/lib/model-component-recommender.ts(4418-4446)"
     ],
     "$id": 1397
   },
@@ -1644,7 +1758,8 @@
       "src/stores/engine-store.ts(6038-6050)",
       "src/stores/engine-store.ts(6160-6172)",
       "src/stores/engine-store.ts(5780-5792)",
-      "src/stores/engine-store.ts(6164-6176)"
+      "src/stores/engine-store.ts(6164-6176)",
+      "src/stores/engine-store.ts(8033-8045)"
     ],
     "$id": 520
   },
@@ -1661,7 +1776,8 @@
     "$files": [
       "src/stores/engine-store.ts(9969-9982)",
       "src/stores/engine-store.ts(10064-10077)",
-      "src/hooks/use-engine-download.ts(2333-2346)"
+      "src/hooks/use-engine-download.ts(2333-2346)",
+      "src/stores/engine-store.ts(10267-10280)"
     ],
     "$id": 461
   },
@@ -1678,7 +1794,8 @@
     "$files": [
       "src/stores/engine-store.ts(10044-10055)",
       "src/stores/engine-store.ts(10142-10153)",
-      "src/hooks/use-engine-download.ts(2390-2401)"
+      "src/hooks/use-engine-download.ts(2390-2401)",
+      "src/stores/engine-store.ts(10345-10356)"
     ],
     "$id": 462
   },
@@ -1695,7 +1812,8 @@
     "$files": [
       "src/stores/engine-store.ts(10128-10138)",
       "src/stores/engine-store.ts(10229-10239)",
-      "src/hooks/use-engine-download.ts(2517-2527)"
+      "src/hooks/use-engine-download.ts(2517-2527)",
+      "src/stores/engine-store.ts(10432-10442)"
     ],
     "$id": 463
   },
@@ -1711,7 +1829,8 @@
     "ko-KR": "최고의 하드웨어 적응 엔진",
     "$files": [
       "src/stores/engine-store.ts(11259-11271)",
-      "src/stores/engine-store.ts(11394-11406)"
+      "src/stores/engine-store.ts(11394-11406)",
+      "src/stores/engine-store.ts(11597-11609)"
     ],
     "$id": 1448
   },
@@ -1736,7 +1855,8 @@
       "src/components/model/model-list-panel.tsx(34520-34570)",
       "src/components/model/model-list-panel.tsx(34137-34187)",
       "src/components/model/model-list-panel.tsx(33969-34019)",
-      "src/components/model/model-list-panel.tsx(33044-33094)"
+      "src/components/model/model-list-panel.tsx(33044-33094)",
+      "src/stores/engine-store.ts(11694-11756)"
     ],
     "$id": 759
   },
@@ -1761,7 +1881,8 @@
       "src/components/model/model-list-panel.tsx(34666-34701)",
       "src/components/model/model-list-panel.tsx(34283-34318)",
       "src/components/model/model-list-panel.tsx(34115-34150)",
-      "src/components/model/model-list-panel.tsx(33190-33225)"
+      "src/components/model/model-list-panel.tsx(33190-33225)",
+      "src/stores/engine-store.ts(11899-11934)"
     ],
     "$id": 760
   },
@@ -1786,7 +1907,8 @@
       "src/components/model/model-list-panel.tsx(34761-34788)",
       "src/components/model/model-list-panel.tsx(34378-34405)",
       "src/components/model/model-list-panel.tsx(34210-34237)",
-      "src/components/model/model-list-panel.tsx(33285-33312)"
+      "src/components/model/model-list-panel.tsx(33285-33312)",
+      "src/stores/engine-store.ts(12004-12031)"
     ],
     "$id": 761
   },
@@ -1809,7 +1931,8 @@
       "src/stores/engine-store.ts(12130-12141)",
       "src/stores/engine-store.ts(11488-11499)",
       "src/stores/engine-store.ts(11872-11883)",
-      "src/stores/engine-store.ts(11807-11818)"
+      "src/stores/engine-store.ts(11807-11818)",
+      "src/stores/engine-store.ts(19129-19140)"
     ],
     "$id": 521
   },
@@ -1832,7 +1955,8 @@
       "src/stores/engine-store.ts(12221-12231)",
       "src/stores/engine-store.ts(11579-11589)",
       "src/stores/engine-store.ts(11963-11973)",
-      "src/stores/engine-store.ts(11898-11908)"
+      "src/stores/engine-store.ts(11898-11908)",
+      "src/stores/engine-store.ts(19220-19230)"
     ],
     "$id": 522
   },
@@ -1855,7 +1979,8 @@
       "src/stores/engine-store.ts(12345-12355)",
       "src/stores/engine-store.ts(11703-11713)",
       "src/stores/engine-store.ts(12087-12097)",
-      "src/stores/engine-store.ts(12022-12032)"
+      "src/stores/engine-store.ts(12022-12032)",
+      "src/stores/engine-store.ts(19344-19354)"
     ],
     "$id": 523
   },
@@ -1886,7 +2011,9 @@
       "src/components/model/custom-model-add-card.tsx(17919-17929)",
       "src/stores/engine-store.ts(15816-15826)",
       "src/components/model/custom-model-add-card.tsx(2238-2248)",
-      "src/stores/engine-store.ts(15751-15761)"
+      "src/stores/engine-store.ts(15751-15761)",
+      "src/stores/engine-store.ts(23213-23223)",
+      "src/components/model/custom-model-add-card.tsx(19347-19357)"
     ],
     "$id": 524
   },
@@ -1910,7 +2037,8 @@
       "src/stores/engine-store.ts(16736-16746)",
       "src/stores/engine-store.ts(17120-17130)",
       "src/stores/engine-store.ts(16980-16990)",
-      "src/stores/engine-store.ts(16915-16925)"
+      "src/stores/engine-store.ts(16915-16925)",
+      "src/stores/engine-store.ts(24443-24453)"
     ],
     "$id": 525
   },
@@ -1934,7 +2062,8 @@
       "src/stores/engine-store.ts(17854-17864)",
       "src/stores/engine-store.ts(18238-18248)",
       "src/stores/engine-store.ts(18098-18108)",
-      "src/stores/engine-store.ts(18033-18043)"
+      "src/stores/engine-store.ts(18033-18043)",
+      "src/stores/engine-store.ts(25627-25637)"
     ],
     "$id": 526
   },
@@ -1987,7 +2116,9 @@
       "src/components/model/model-list-panel.tsx(16595-16603)",
       "src/components/model/model-list-panel.tsx(16427-16435)",
       "src/hooks/use-model-download.ts(5533-5541)",
-      "src/components/model/model-list-panel.tsx(16352-16360)"
+      "src/components/model/model-list-panel.tsx(16352-16360)",
+      "src/components/model/custom-model-add-card.tsx(8721-8729)",
+      "src/components/model/model-list-panel.tsx(19863-19871)"
     ],
     "$id": 464
   },
@@ -2254,7 +2385,8 @@
       "src/components/logs/engine-logs-view.tsx(21640-21647)",
       "src/components/dashboard/dashboard-view.tsx(24029-24036)",
       "src/components/dashboard/dashboard-view.tsx(14762-14769)",
-      "src/components/dashboard/dashboard-view.tsx(13873-13880)"
+      "src/components/dashboard/dashboard-view.tsx(13873-13880)",
+      "src/components/dashboard/dashboard-view.tsx(24318-24325)"
     ],
     "$id": 542
   },
@@ -2275,7 +2407,8 @@
       "src/components/dashboard/dashboard-view.tsx(23921-23927)",
       "src/components/dashboard/dashboard-view.tsx(24222-24228)",
       "src/components/dashboard/dashboard-view.tsx(14955-14961)",
-      "src/components/dashboard/dashboard-view.tsx(14066-14072)"
+      "src/components/dashboard/dashboard-view.tsx(14066-14072)",
+      "src/components/dashboard/dashboard-view.tsx(24511-24517)"
     ],
     "$id": 543
   },
@@ -2894,7 +3027,8 @@
       "src/components/model/model-list-panel.tsx(12021-12027)",
       "src/components/model/model-list-panel.tsx(11853-11859)",
       "src/components/model/model-list-panel.tsx(3184-3190)",
-      "src/components/model/model-list-panel.tsx(11778-11784)"
+      "src/components/model/model-list-panel.tsx(11778-11784)",
+      "src/components/model/model-list-panel.tsx(15100-15106)"
     ],
     "$id": 618
   },
@@ -2985,7 +3119,8 @@
       "src/components/model/model-list-panel.tsx(25328-25338)",
       "src/components/model/model-list-panel.tsx(24945-24955)",
       "src/components/model/model-list-panel.tsx(24777-24787)",
-      "src/components/model/model-list-panel.tsx(24702-24712)"
+      "src/components/model/model-list-panel.tsx(24702-24712)",
+      "src/components/model/model-list-panel.tsx(30155-30165)"
     ],
     "$id": 629
   },
@@ -3344,7 +3479,8 @@
       "src/components/dashboard/dashboard-view.tsx(6505-6526)",
       "src/components/dashboard/dashboard-view.tsx(6674-6695)",
       "src/components/dashboard/dashboard-view.tsx(4739-4760)",
-      "src/components/dashboard/dashboard-view.tsx(4260-4281)"
+      "src/components/dashboard/dashboard-view.tsx(4260-4281)",
+      "src/components/dashboard/dashboard-view.tsx(6707-6728)"
     ],
     "$id": 559
   },
@@ -3362,7 +3498,8 @@
       "src/components/dashboard/dashboard-view.tsx(6587-6597)",
       "src/components/dashboard/dashboard-view.tsx(6758-6768)",
       "src/components/dashboard/dashboard-view.tsx(4823-4833)",
-      "src/components/dashboard/dashboard-view.tsx(4344-4354)"
+      "src/components/dashboard/dashboard-view.tsx(4344-4354)",
+      "src/components/dashboard/dashboard-view.tsx(6791-6801)"
     ],
     "$id": 560
   },
@@ -3384,7 +3521,9 @@
       "src/components/dashboard/dashboard-view.tsx(4922-4930)",
       "src/components/dashboard/dashboard-view.tsx(4989-4997)",
       "src/components/dashboard/dashboard-view.tsx(4443-4451)",
-      "src/components/dashboard/dashboard-view.tsx(4510-4518)"
+      "src/components/dashboard/dashboard-view.tsx(4510-4518)",
+      "src/components/dashboard/dashboard-view.tsx(6890-6898)",
+      "src/components/dashboard/dashboard-view.tsx(6957-6965)"
     ],
     "$id": 561
   },
@@ -3402,7 +3541,8 @@
       "src/components/dashboard/dashboard-view.tsx(6974-6988)",
       "src/components/dashboard/dashboard-view.tsx(7161-7175)",
       "src/components/dashboard/dashboard-view.tsx(5226-5240)",
-      "src/components/dashboard/dashboard-view.tsx(4747-4761)"
+      "src/components/dashboard/dashboard-view.tsx(4747-4761)",
+      "src/components/dashboard/dashboard-view.tsx(7194-7208)"
     ],
     "$id": 562
   },
@@ -3420,7 +3560,8 @@
       "src/components/dashboard/dashboard-view.tsx(9720-9732)",
       "src/components/dashboard/dashboard-view.tsx(9925-9937)",
       "src/components/dashboard/dashboard-view.tsx(6342-6354)",
-      "src/components/dashboard/dashboard-view.tsx(5853-5865)"
+      "src/components/dashboard/dashboard-view.tsx(5853-5865)",
+      "src/components/dashboard/dashboard-view.tsx(10009-10021)"
     ],
     "$id": 563
   },
@@ -3438,7 +3579,8 @@
       "src/components/dashboard/dashboard-view.tsx(11108-11120)",
       "src/components/dashboard/dashboard-view.tsx(11293-11305)",
       "src/components/dashboard/dashboard-view.tsx(7710-7722)",
-      "src/components/dashboard/dashboard-view.tsx(6821-6833)"
+      "src/components/dashboard/dashboard-view.tsx(6821-6833)",
+      "src/components/dashboard/dashboard-view.tsx(11429-11441)"
     ],
     "$id": 564
   },
@@ -3456,7 +3598,8 @@
       "src/components/dashboard/dashboard-view.tsx(11183-11194)",
       "src/components/dashboard/dashboard-view.tsx(11370-11381)",
       "src/components/dashboard/dashboard-view.tsx(7787-7798)",
-      "src/components/dashboard/dashboard-view.tsx(6898-6909)"
+      "src/components/dashboard/dashboard-view.tsx(6898-6909)",
+      "src/components/dashboard/dashboard-view.tsx(11506-11517)"
     ],
     "$id": 565
   },
@@ -3474,7 +3617,8 @@
       "src/components/dashboard/dashboard-view.tsx(11272-11278)",
       "src/components/dashboard/dashboard-view.tsx(11461-11467)",
       "src/components/dashboard/dashboard-view.tsx(7878-7884)",
-      "src/components/dashboard/dashboard-view.tsx(6989-6995)"
+      "src/components/dashboard/dashboard-view.tsx(6989-6995)",
+      "src/components/dashboard/dashboard-view.tsx(11597-11603)"
     ],
     "$id": 566
   },
@@ -3492,7 +3636,8 @@
       "src/components/dashboard/dashboard-view.tsx(11308-11315)",
       "src/components/dashboard/dashboard-view.tsx(11498-11505)",
       "src/components/dashboard/dashboard-view.tsx(7915-7922)",
-      "src/components/dashboard/dashboard-view.tsx(7026-7033)"
+      "src/components/dashboard/dashboard-view.tsx(7026-7033)",
+      "src/components/dashboard/dashboard-view.tsx(11634-11641)"
     ],
     "$id": 567
   },
@@ -3510,7 +3655,8 @@
       "src/components/dashboard/dashboard-view.tsx(11472-11517)",
       "src/components/dashboard/dashboard-view.tsx(11667-11712)",
       "src/components/dashboard/dashboard-view.tsx(8084-8129)",
-      "src/components/dashboard/dashboard-view.tsx(7195-7240)"
+      "src/components/dashboard/dashboard-view.tsx(7195-7240)",
+      "src/components/dashboard/dashboard-view.tsx(11803-11848)"
     ],
     "$id": 568
   },
@@ -3528,7 +3674,8 @@
       "src/components/dashboard/dashboard-view.tsx(12264-12272)",
       "src/components/dashboard/dashboard-view.tsx(12478-12486)",
       "src/components/dashboard/dashboard-view.tsx(8895-8903)",
-      "src/components/dashboard/dashboard-view.tsx(8006-8014)"
+      "src/components/dashboard/dashboard-view.tsx(8006-8014)",
+      "src/components/dashboard/dashboard-view.tsx(12614-12622)"
     ],
     "$id": 569
   },
@@ -3546,7 +3693,8 @@
       "src/components/dashboard/dashboard-view.tsx(12895-12903)",
       "src/components/dashboard/dashboard-view.tsx(13122-13130)",
       "src/components/dashboard/dashboard-view.tsx(9539-9547)",
-      "src/components/dashboard/dashboard-view.tsx(8650-8658)"
+      "src/components/dashboard/dashboard-view.tsx(8650-8658)",
+      "src/components/dashboard/dashboard-view.tsx(13258-13266)"
     ],
     "$id": 570
   },
@@ -3562,7 +3710,8 @@
     "ko-KR": "인공 지능 추론 엔진이 다운로드 중입니다",
     "$files": [
       "src/components/dashboard/dashboard-view.tsx(13612-13628)",
-      "src/components/dashboard/dashboard-view.tsx(13854-13870)"
+      "src/components/dashboard/dashboard-view.tsx(13854-13870)",
+      "src/components/dashboard/dashboard-view.tsx(13990-14006)"
     ],
     "$id": 1453
   },
@@ -3578,7 +3727,8 @@
     "ko-KR": "이 모델은 준비되었지만 하드웨어는 라마에 적합합니다.(현재 진행률{progress}%),완료 후 서비스가 시작될 때까지 기다려주십시오.",
     "$files": [
       "src/components/dashboard/dashboard-view.tsx(13776-13868)",
-      "src/components/dashboard/dashboard-view.tsx(14021-14088)"
+      "src/components/dashboard/dashboard-view.tsx(14021-14088)",
+      "src/components/dashboard/dashboard-view.tsx(14157-14250)"
     ],
     "$id": 1454
   },
@@ -3594,7 +3744,8 @@
     "ko-KR": "엔진 다운로드 진행률 확인으로 이동",
     "$files": [
       "src/components/dashboard/dashboard-view.tsx(14414-14428)",
-      "src/components/dashboard/dashboard-view.tsx(14597-14611)"
+      "src/components/dashboard/dashboard-view.tsx(14597-14611)",
+      "src/components/dashboard/dashboard-view.tsx(14808-14822)"
     ],
     "$id": 1455
   },
@@ -3610,7 +3761,8 @@
     "ko-KR": "설치된 인공지능 추론 엔진이 감지되지 않았습니다",
     "$files": [
       "src/components/dashboard/dashboard-view.tsx(15015-15035)",
-      "src/components/dashboard/dashboard-view.tsx(15209-15229)"
+      "src/components/dashboard/dashboard-view.tsx(15209-15229)",
+      "src/components/dashboard/dashboard-view.tsx(15420-15440)"
     ],
     "$id": 1456
   },
@@ -3626,7 +3778,8 @@
     "ko-KR": "사용 가능한 모델이 검색되었지만 추론 엔진은 검색되지 않았습니다.installed.To 로컬 인공 지능 모델을 실행,당신은 당신의 현재 하드웨어에 맞게 라마를 설치해야합니다.엔진.",
     "$files": [
       "src/components/dashboard/dashboard-view.tsx(15183-15268)",
-      "src/components/dashboard/dashboard-view.tsx(15380-15440)"
+      "src/components/dashboard/dashboard-view.tsx(15380-15440)",
+      "src/components/dashboard/dashboard-view.tsx(15591-15677)"
     ],
     "$id": 1457
   },
@@ -3642,7 +3795,8 @@
     "ko-KR": "다운로드 엔진으로 이동",
     "$files": [
       "src/components/dashboard/dashboard-view.tsx(15752-15762)",
-      "src/components/dashboard/dashboard-view.tsx(15911-15921)"
+      "src/components/dashboard/dashboard-view.tsx(15911-15921)",
+      "src/components/dashboard/dashboard-view.tsx(16172-16182)"
     ],
     "$id": 1458
   },
@@ -3658,7 +3812,8 @@
     "ko-KR": "인공지능 모델 다운로드 중",
     "$files": [
       "src/components/dashboard/dashboard-view.tsx(16310-16324)",
-      "src/components/dashboard/dashboard-view.tsx(16480-16494)"
+      "src/components/dashboard/dashboard-view.tsx(16480-16494)",
+      "src/components/dashboard/dashboard-view.tsx(16741-16755)"
     ],
     "$id": 1459
   },
@@ -3674,7 +3829,8 @@
     "ko-KR": "현재 준비된 로컬 모델이 없으며 모델이 백그라운드에서 다운로드되고 있습니다. 이 서비스를 시작하기 전에 완료 될 때까지 기다려주십시오.",
     "$files": [
       "src/components/dashboard/dashboard-view.tsx(16472-16511)",
-      "src/components/dashboard/dashboard-view.tsx(16645-16684)"
+      "src/components/dashboard/dashboard-view.tsx(16645-16684)",
+      "src/components/dashboard/dashboard-view.tsx(16906-16945)"
     ],
     "$id": 1460
   },
@@ -3690,7 +3846,8 @@
     "ko-KR": "모델 진행률 보기로 이동",
     "$files": [
       "src/components/dashboard/dashboard-view.tsx(16977-16989)",
-      "src/components/dashboard/dashboard-view.tsx(17160-17172)"
+      "src/components/dashboard/dashboard-view.tsx(17160-17172)",
+      "src/components/dashboard/dashboard-view.tsx(17421-17433)"
     ],
     "$id": 1461
   },
@@ -3706,7 +3863,8 @@
     "ko-KR": "다운로드한 인공지능 모델이 감지되지 않았습니다",
     "$files": [
       "src/components/dashboard/dashboard-view.tsx(17575-17593)",
-      "src/components/dashboard/dashboard-view.tsx(17769-17787)"
+      "src/components/dashboard/dashboard-view.tsx(17769-17787)",
+      "src/components/dashboard/dashboard-view.tsx(18030-18048)"
     ],
     "$id": 1462
   },
@@ -3722,7 +3880,8 @@
     "ko-KR": "로컬 인공지능 추론 서비스를 시작하기 전에\"모델 관리\"페이지로 이동하여 모델을 다운로드하십시오.",
     "$files": [
       "src/components/dashboard/dashboard-view.tsx(17741-17776)",
-      "src/components/dashboard/dashboard-view.tsx(17938-17973)"
+      "src/components/dashboard/dashboard-view.tsx(17938-17973)",
+      "src/components/dashboard/dashboard-view.tsx(18199-18234)"
     ],
     "$id": 1463
   },
@@ -3740,7 +3899,8 @@
       "src/components/dashboard/dashboard-view.tsx(18782-18792)",
       "src/components/dashboard/dashboard-view.tsx(19000-19010)",
       "src/components/dashboard/dashboard-view.tsx(10196-10206)",
-      "src/components/dashboard/dashboard-view.tsx(9307-9317)"
+      "src/components/dashboard/dashboard-view.tsx(9307-9317)",
+      "src/components/dashboard/dashboard-view.tsx(19261-19271)"
     ],
     "$id": 571
   },
@@ -3757,7 +3917,8 @@
     "$files": [
       "src/components/dashboard/dashboard-view.tsx(19410-19420)",
       "src/components/errors/error-analysis-sidebar.tsx(7404-7414)",
-      "src/components/dashboard/dashboard-view.tsx(19641-19651)"
+      "src/components/dashboard/dashboard-view.tsx(19641-19651)",
+      "src/components/dashboard/dashboard-view.tsx(19902-19912)"
     ],
     "$id": 643
   },
@@ -3775,7 +3936,8 @@
       "src/components/dashboard/dashboard-view.tsx(20062-20074)",
       "src/components/dashboard/dashboard-view.tsx(20311-20323)",
       "src/components/dashboard/dashboard-view.tsx(11044-11056)",
-      "src/components/dashboard/dashboard-view.tsx(10155-10167)"
+      "src/components/dashboard/dashboard-view.tsx(10155-10167)",
+      "src/components/dashboard/dashboard-view.tsx(20572-20584)"
     ],
     "$id": 572
   },
@@ -3793,7 +3955,8 @@
       "src/components/dashboard/dashboard-view.tsx(20708-20725)",
       "src/components/dashboard/dashboard-view.tsx(20941-20958)",
       "src/components/dashboard/dashboard-view.tsx(11674-11691)",
-      "src/components/dashboard/dashboard-view.tsx(10785-10802)"
+      "src/components/dashboard/dashboard-view.tsx(10785-10802)",
+      "src/components/dashboard/dashboard-view.tsx(21230-21247)"
     ],
     "$id": 573
   },
@@ -3811,7 +3974,8 @@
       "src/components/dashboard/dashboard-view.tsx(21159-21173)",
       "src/components/dashboard/dashboard-view.tsx(21401-21415)",
       "src/components/dashboard/dashboard-view.tsx(12134-12148)",
-      "src/components/dashboard/dashboard-view.tsx(11245-11259)"
+      "src/components/dashboard/dashboard-view.tsx(11245-11259)",
+      "src/components/dashboard/dashboard-view.tsx(21690-21704)"
     ],
     "$id": 574
   },
@@ -3829,7 +3993,8 @@
       "src/components/dashboard/dashboard-view.tsx(21603-21615)",
       "src/components/dashboard/dashboard-view.tsx(21854-21866)",
       "src/components/dashboard/dashboard-view.tsx(12587-12599)",
-      "src/components/dashboard/dashboard-view.tsx(11698-11710)"
+      "src/components/dashboard/dashboard-view.tsx(11698-11710)",
+      "src/components/dashboard/dashboard-view.tsx(22143-22155)"
     ],
     "$id": 575
   },
@@ -3847,7 +4012,8 @@
       "src/components/dashboard/dashboard-view.tsx(22044-22063)",
       "src/components/dashboard/dashboard-view.tsx(22304-22323)",
       "src/components/dashboard/dashboard-view.tsx(13037-13056)",
-      "src/components/dashboard/dashboard-view.tsx(12148-12167)"
+      "src/components/dashboard/dashboard-view.tsx(12148-12167)",
+      "src/components/dashboard/dashboard-view.tsx(22593-22612)"
     ],
     "$id": 576
   },
@@ -3865,7 +4031,8 @@
       "src/components/dashboard/dashboard-view.tsx(22495-22516)",
       "src/components/dashboard/dashboard-view.tsx(22764-22785)",
       "src/components/dashboard/dashboard-view.tsx(13497-13518)",
-      "src/components/dashboard/dashboard-view.tsx(12608-12629)"
+      "src/components/dashboard/dashboard-view.tsx(12608-12629)",
+      "src/components/dashboard/dashboard-view.tsx(23053-23074)"
     ],
     "$id": 577
   },
@@ -3883,7 +4050,8 @@
       "src/components/dashboard/dashboard-view.tsx(23230-23240)",
       "src/components/dashboard/dashboard-view.tsx(23513-23523)",
       "src/components/dashboard/dashboard-view.tsx(14246-14256)",
-      "src/components/dashboard/dashboard-view.tsx(13357-13367)"
+      "src/components/dashboard/dashboard-view.tsx(13357-13367)",
+      "src/components/dashboard/dashboard-view.tsx(23802-23812)"
     ],
     "$id": 578
   },
@@ -3901,7 +4069,8 @@
       "src/components/dashboard/dashboard-view.tsx(24439-24463)",
       "src/components/dashboard/dashboard-view.tsx(24752-24776)",
       "src/components/dashboard/dashboard-view.tsx(15485-15509)",
-      "src/components/dashboard/dashboard-view.tsx(14596-14620)"
+      "src/components/dashboard/dashboard-view.tsx(14596-14620)",
+      "src/components/dashboard/dashboard-view.tsx(25041-25065)"
     ],
     "$id": 579
   },
@@ -3919,7 +4088,8 @@
       "src/components/dashboard/dashboard-view.tsx(25241-25250)",
       "src/components/dashboard/dashboard-view.tsx(25571-25580)",
       "src/components/dashboard/dashboard-view.tsx(16304-16313)",
-      "src/components/dashboard/dashboard-view.tsx(15415-15424)"
+      "src/components/dashboard/dashboard-view.tsx(15415-15424)",
+      "src/components/dashboard/dashboard-view.tsx(25860-25869)"
     ],
     "$id": 580
   },
@@ -3937,7 +4107,8 @@
       "src/components/dashboard/dashboard-view.tsx(25547-25554)",
       "src/components/dashboard/dashboard-view.tsx(25916-25923)",
       "src/components/dashboard/dashboard-view.tsx(16649-16656)",
-      "src/components/dashboard/dashboard-view.tsx(15760-15767)"
+      "src/components/dashboard/dashboard-view.tsx(15760-15767)",
+      "src/components/dashboard/dashboard-view.tsx(26171-26178)"
     ],
     "$id": 581
   },
@@ -3955,7 +4126,8 @@
       "src/components/dashboard/dashboard-view.tsx(25780-25794)",
       "src/components/dashboard/dashboard-view.tsx(26154-26168)",
       "src/components/dashboard/dashboard-view.tsx(16887-16901)",
-      "src/components/dashboard/dashboard-view.tsx(15998-16012)"
+      "src/components/dashboard/dashboard-view.tsx(15998-16012)",
+      "src/components/dashboard/dashboard-view.tsx(26409-26423)"
     ],
     "$id": 582
   },
@@ -3973,7 +4145,8 @@
       "src/components/dashboard/dashboard-view.tsx(26444-26454)",
       "src/components/dashboard/dashboard-view.tsx(26830-26840)",
       "src/components/dashboard/dashboard-view.tsx(17563-17573)",
-      "src/components/dashboard/dashboard-view.tsx(16674-16684)"
+      "src/components/dashboard/dashboard-view.tsx(16674-16684)",
+      "src/components/dashboard/dashboard-view.tsx(27085-27095)"
     ],
     "$id": 583
   },
@@ -3991,7 +4164,8 @@
       "src/components/dashboard/dashboard-view.tsx(26965-26972)",
       "src/components/dashboard/dashboard-view.tsx(27311-27318)",
       "src/components/dashboard/dashboard-view.tsx(18044-18051)",
-      "src/components/dashboard/dashboard-view.tsx(17155-17162)"
+      "src/components/dashboard/dashboard-view.tsx(17155-17162)",
+      "src/components/dashboard/dashboard-view.tsx(27616-27623)"
     ],
     "$id": 584
   },
@@ -4009,7 +4183,8 @@
       "src/components/dashboard/dashboard-view.tsx(27195-27205)",
       "src/components/dashboard/dashboard-view.tsx(27504-27514)",
       "src/components/dashboard/dashboard-view.tsx(18237-18247)",
-      "src/components/dashboard/dashboard-view.tsx(17348-17358)"
+      "src/components/dashboard/dashboard-view.tsx(17348-17358)",
+      "src/components/dashboard/dashboard-view.tsx(27853-27863)"
     ],
     "$id": 585
   },
@@ -4027,7 +4202,8 @@
       "src/components/dashboard/dashboard-view.tsx(27843-27855)",
       "src/components/dashboard/dashboard-view.tsx(28164-28176)",
       "src/components/dashboard/dashboard-view.tsx(18897-18909)",
-      "src/components/dashboard/dashboard-view.tsx(18008-18020)"
+      "src/components/dashboard/dashboard-view.tsx(18008-18020)",
+      "src/components/dashboard/dashboard-view.tsx(28513-28525)"
     ],
     "$id": 586
   },
@@ -4045,7 +4221,8 @@
       "src/components/dashboard/dashboard-view.tsx(28221-28236)",
       "src/components/dashboard/dashboard-view.tsx(28549-28564)",
       "src/components/dashboard/dashboard-view.tsx(19282-19297)",
-      "src/components/dashboard/dashboard-view.tsx(18393-18408)"
+      "src/components/dashboard/dashboard-view.tsx(18393-18408)",
+      "src/components/dashboard/dashboard-view.tsx(28898-28913)"
     ],
     "$id": 587
   },
@@ -4063,7 +4240,8 @@
       "src/components/dashboard/dashboard-view.tsx(29032-29051)",
       "src/components/dashboard/dashboard-view.tsx(29377-29396)",
       "src/components/dashboard/dashboard-view.tsx(20110-20129)",
-      "src/components/dashboard/dashboard-view.tsx(19221-19240)"
+      "src/components/dashboard/dashboard-view.tsx(19221-19240)",
+      "src/components/dashboard/dashboard-view.tsx(29726-29745)"
     ],
     "$id": 588
   },
@@ -4081,7 +4259,8 @@
       "src/components/dashboard/dashboard-view.tsx(29210-29221)",
       "src/components/dashboard/dashboard-view.tsx(29558-29569)",
       "src/components/dashboard/dashboard-view.tsx(20291-20302)",
-      "src/components/dashboard/dashboard-view.tsx(19402-19413)"
+      "src/components/dashboard/dashboard-view.tsx(19402-19413)",
+      "src/components/dashboard/dashboard-view.tsx(29907-29918)"
     ],
     "$id": 589
   },
@@ -4099,7 +4278,8 @@
       "src/components/dashboard/dashboard-view.tsx(29613-29622)",
       "src/components/dashboard/dashboard-view.tsx(29972-29981)",
       "src/components/dashboard/dashboard-view.tsx(20705-20714)",
-      "src/components/dashboard/dashboard-view.tsx(19816-19825)"
+      "src/components/dashboard/dashboard-view.tsx(19816-19825)",
+      "src/components/dashboard/dashboard-view.tsx(30321-30330)"
     ],
     "$id": 590
   },
@@ -4121,7 +4301,9 @@
       "src/components/dashboard/dashboard-view.tsx(21216-21224)",
       "src/components/dashboard/dashboard-view.tsx(23306-23314)",
       "src/components/dashboard/dashboard-view.tsx(20327-20335)",
-      "src/components/dashboard/dashboard-view.tsx(22417-22425)"
+      "src/components/dashboard/dashboard-view.tsx(22417-22425)",
+      "src/components/dashboard/dashboard-view.tsx(30850-30858)",
+      "src/components/dashboard/dashboard-view.tsx(33076-33084)"
     ],
     "$id": 591
   },
@@ -4139,7 +4321,8 @@
       "src/components/dashboard/dashboard-view.tsx(30434-30444)",
       "src/components/dashboard/dashboard-view.tsx(30717-30727)",
       "src/components/dashboard/dashboard-view.tsx(21450-21460)",
-      "src/components/dashboard/dashboard-view.tsx(20561-20571)"
+      "src/components/dashboard/dashboard-view.tsx(20561-20571)",
+      "src/components/dashboard/dashboard-view.tsx(31160-31170)"
     ],
     "$id": 592
   },
@@ -4157,7 +4340,8 @@
       "src/components/dashboard/dashboard-view.tsx(30448-30456)",
       "src/components/dashboard/dashboard-view.tsx(30731-30739)",
       "src/components/dashboard/dashboard-view.tsx(21464-21472)",
-      "src/components/dashboard/dashboard-view.tsx(20575-20583)"
+      "src/components/dashboard/dashboard-view.tsx(20575-20583)",
+      "src/components/dashboard/dashboard-view.tsx(31174-31182)"
     ],
     "$id": 593
   },
@@ -4175,7 +4359,8 @@
       "src/components/dashboard/dashboard-view.tsx(31144-31160)",
       "src/components/dashboard/dashboard-view.tsx(31442-31458)",
       "src/components/dashboard/dashboard-view.tsx(22175-22191)",
-      "src/components/dashboard/dashboard-view.tsx(21286-21302)"
+      "src/components/dashboard/dashboard-view.tsx(21286-21302)",
+      "src/components/dashboard/dashboard-view.tsx(31885-31901)"
     ],
     "$id": 594
   },
@@ -4193,7 +4378,8 @@
       "src/components/dashboard/dashboard-view.tsx(31337-31343)",
       "src/components/dashboard/dashboard-view.tsx(31618-31624)",
       "src/components/dashboard/dashboard-view.tsx(22351-22357)",
-      "src/components/dashboard/dashboard-view.tsx(21462-21468)"
+      "src/components/dashboard/dashboard-view.tsx(21462-21468)",
+      "src/components/dashboard/dashboard-view.tsx(32082-32088)"
     ],
     "$id": 595
   },
@@ -4211,7 +4397,8 @@
       "src/components/dashboard/dashboard-view.tsx(31388-31394)",
       "src/components/dashboard/dashboard-view.tsx(31669-31675)",
       "src/components/dashboard/dashboard-view.tsx(22402-22408)",
-      "src/components/dashboard/dashboard-view.tsx(21513-21519)"
+      "src/components/dashboard/dashboard-view.tsx(21513-21519)",
+      "src/components/dashboard/dashboard-view.tsx(32133-32139)"
     ],
     "$id": 596
   },
@@ -4229,7 +4416,8 @@
       "src/components/dashboard/dashboard-view.tsx(31420-31429)",
       "src/components/dashboard/dashboard-view.tsx(31681-31690)",
       "src/components/dashboard/dashboard-view.tsx(22414-22423)",
-      "src/components/dashboard/dashboard-view.tsx(21525-21534)"
+      "src/components/dashboard/dashboard-view.tsx(21525-21534)",
+      "src/components/dashboard/dashboard-view.tsx(32166-32175)"
     ],
     "$id": 597
   },
@@ -4247,7 +4435,8 @@
       "src/components/dashboard/dashboard-view.tsx(31820-31829)",
       "src/components/dashboard/dashboard-view.tsx(32092-32101)",
       "src/components/dashboard/dashboard-view.tsx(22825-22834)",
-      "src/components/dashboard/dashboard-view.tsx(21936-21945)"
+      "src/components/dashboard/dashboard-view.tsx(21936-21945)",
+      "src/components/dashboard/dashboard-view.tsx(32577-32586)"
     ],
     "$id": 598
   },
@@ -4265,7 +4454,8 @@
       "src/components/dashboard/dashboard-view.tsx(32571-32581)",
       "src/components/dashboard/dashboard-view.tsx(32784-32794)",
       "src/components/dashboard/dashboard-view.tsx(23517-23527)",
-      "src/components/dashboard/dashboard-view.tsx(22628-22638)"
+      "src/components/dashboard/dashboard-view.tsx(22628-22638)",
+      "src/components/dashboard/dashboard-view.tsx(33345-33355)"
     ],
     "$id": 599
   },
@@ -4311,7 +4501,8 @@
     "ko-KR": "폐쇄",
     "$files": [
       "src/components/errors/error-analysis-sidebar.tsx(3300-3306)",
-      "src/components/model/model-download-popover.tsx(6819-6825)"
+      "src/components/model/model-download-popover.tsx(6819-6825)",
+      "src/components/model/model-download-popover.tsx(7036-7042)"
     ],
     "$id": 639
   },
@@ -5076,7 +5267,9 @@
       "src/components/model/model-list-panel.tsx(7820-7837)",
       "src/components/model/model-list-panel.tsx(7437-7454)",
       "src/components/model/model-list-panel.tsx(7373-7390)",
-      "src/components/model/model-list-panel.tsx(7298-7315)"
+      "src/components/model/model-list-panel.tsx(7298-7315)",
+      "src/components/model/custom-model-add-card.tsx(5319-5336)",
+      "src/components/model/model-list-panel.tsx(9710-9727)"
     ],
     "$id": 719
   },
@@ -5105,7 +5298,9 @@
       "src/components/model/model-list-panel.tsx(7943-7972)",
       "src/components/model/model-list-panel.tsx(7560-7589)",
       "src/components/model/model-list-panel.tsx(7496-7525)",
-      "src/components/model/model-list-panel.tsx(7421-7450)"
+      "src/components/model/model-list-panel.tsx(7421-7450)",
+      "src/components/model/custom-model-add-card.tsx(5446-5475)",
+      "src/components/model/model-list-panel.tsx(9833-9862)"
     ],
     "$id": 720
   },
@@ -5134,7 +5329,9 @@
       "src/components/model/model-list-panel.tsx(8113-8131)",
       "src/components/model/model-list-panel.tsx(7730-7748)",
       "src/components/model/model-list-panel.tsx(7666-7684)",
-      "src/components/model/model-list-panel.tsx(7591-7609)"
+      "src/components/model/model-list-panel.tsx(7591-7609)",
+      "src/components/model/custom-model-add-card.tsx(5639-5657)",
+      "src/components/model/model-list-panel.tsx(10022-10040)"
     ],
     "$id": 721
   },
@@ -5164,7 +5361,9 @@
       "src/components/model/model-list-panel.tsx(16693-16700)",
       "src/components/model/model-list-panel.tsx(16310-16317)",
       "src/components/model/model-list-panel.tsx(16142-16149)",
-      "src/components/model/model-list-panel.tsx(16067-16074)"
+      "src/components/model/model-list-panel.tsx(16067-16074)",
+      "src/components/model/custom-model-add-card.tsx(8337-8344)",
+      "src/components/model/model-list-panel.tsx(19491-19498)"
     ],
     "$id": 726
   },
@@ -5205,7 +5404,10 @@
       "src/components/model/model-list-panel.tsx(16179-16191)",
       "src/components/model/model-list-panel.tsx(28286-28298)",
       "src/components/model/model-list-panel.tsx(16104-16116)",
-      "src/components/model/model-list-panel.tsx(28211-28223)"
+      "src/components/model/model-list-panel.tsx(28211-28223)",
+      "src/components/model/custom-model-add-card.tsx(8410-8422)",
+      "src/components/model/model-list-panel.tsx(19560-19572)",
+      "src/components/model/model-list-panel.tsx(36927-36939)"
     ],
     "$id": 727
   },
@@ -5235,7 +5437,9 @@
       "src/components/model/model-list-panel.tsx(16749-16757)",
       "src/components/model/model-list-panel.tsx(16366-16374)",
       "src/components/model/model-list-panel.tsx(16198-16206)",
-      "src/components/model/model-list-panel.tsx(16123-16131)"
+      "src/components/model/model-list-panel.tsx(16123-16131)",
+      "src/components/model/custom-model-add-card.tsx(8448-8456)",
+      "src/components/model/model-list-panel.tsx(19596-19604)"
     ],
     "$id": 728
   },
@@ -5265,7 +5469,9 @@
       "src/components/model/model-list-panel.tsx(17231-17238)",
       "src/components/model/model-list-panel.tsx(16848-16855)",
       "src/components/model/model-list-panel.tsx(16680-16687)",
-      "src/components/model/model-list-panel.tsx(16605-16612)"
+      "src/components/model/model-list-panel.tsx(16605-16612)",
+      "src/components/model/custom-model-add-card.tsx(8984-8991)",
+      "src/components/model/model-list-panel.tsx(20116-20123)"
     ],
     "$id": 729
   },
@@ -5295,7 +5501,9 @@
       "src/components/model/model-list-panel.tsx(17391-17402)",
       "src/components/model/model-list-panel.tsx(17008-17019)",
       "src/components/model/model-list-panel.tsx(16840-16851)",
-      "src/components/model/model-list-panel.tsx(16765-16776)"
+      "src/components/model/model-list-panel.tsx(16765-16776)",
+      "src/components/model/custom-model-add-card.tsx(9131-9142)",
+      "src/components/model/model-list-panel.tsx(20276-20287)"
     ],
     "$id": 731
   },
@@ -5325,7 +5533,9 @@
       "src/components/model/model-list-panel.tsx(18774-18782)",
       "src/components/model/model-list-panel.tsx(18391-18399)",
       "src/components/model/model-list-panel.tsx(18223-18231)",
-      "src/components/model/model-list-panel.tsx(18148-18156)"
+      "src/components/model/model-list-panel.tsx(18148-18156)",
+      "src/components/model/custom-model-add-card.tsx(9968-9976)",
+      "src/components/model/model-list-panel.tsx(21684-21692)"
     ],
     "$id": 734
   },
@@ -5355,7 +5565,9 @@
       "src/components/model/model-list-panel.tsx(18224-18232)",
       "src/components/model/model-list-panel.tsx(17841-17849)",
       "src/components/model/model-list-panel.tsx(17673-17681)",
-      "src/components/model/model-list-panel.tsx(17598-17606)"
+      "src/components/model/model-list-panel.tsx(17598-17606)",
+      "src/components/model/custom-model-add-card.tsx(9980-9988)",
+      "src/components/model/model-list-panel.tsx(21134-21142)"
     ],
     "$id": 733
   },
@@ -5414,7 +5626,12 @@
       "src/components/model/model-list-panel.tsx(18596-18602)",
       "src/components/model/model-list-panel.tsx(22205-22211)",
       "src/components/model/model-list-panel.tsx(18521-18527)",
-      "src/components/model/model-list-panel.tsx(22130-22136)"
+      "src/components/model/model-list-panel.tsx(22130-22136)",
+      "src/components/model/custom-model-add-card.tsx(10350-10356)",
+      "src/components/model/custom-model-add-card.tsx(14040-14046)",
+      "src/components/model/custom-model-add-card.tsx(22628-22634)",
+      "src/components/model/model-list-panel.tsx(22057-22063)",
+      "src/components/model/model-list-panel.tsx(25926-25932)"
     ],
     "$id": 697
   },
@@ -5433,7 +5650,8 @@
       "src/components/model/custom-model-add-card.tsx(10593-10612)",
       "src/components/model/custom-model-add-card.tsx(10580-10599)",
       "src/components/model/custom-model-add-card.tsx(10302-10321)",
-      "src/components/model/custom-model-add-card.tsx(10323-10342)"
+      "src/components/model/custom-model-add-card.tsx(10323-10342)",
+      "src/components/model/custom-model-add-card.tsx(10771-10790)"
     ],
     "$id": 1262
   },
@@ -5463,7 +5681,9 @@
       "src/components/model/model-list-panel.tsx(19850-19856)",
       "src/components/model/model-list-panel.tsx(19467-19473)",
       "src/components/model/model-list-panel.tsx(19299-19305)",
-      "src/components/model/model-list-panel.tsx(19224-19230)"
+      "src/components/model/model-list-panel.tsx(19224-19230)",
+      "src/components/model/custom-model-add-card.tsx(10964-10970)",
+      "src/components/model/model-list-panel.tsx(22760-22766)"
     ],
     "$id": 736
   },
@@ -5482,7 +5702,8 @@
       "src/components/model/custom-model-add-card.tsx(11124-11138)",
       "src/components/model/custom-model-add-card.tsx(11111-11125)",
       "src/components/model/custom-model-add-card.tsx(10822-10836)",
-      "src/components/model/custom-model-add-card.tsx(10843-10857)"
+      "src/components/model/custom-model-add-card.tsx(10843-10857)",
+      "src/components/model/custom-model-add-card.tsx(11302-11316)"
     ],
     "$id": 1263
   },
@@ -5512,7 +5733,9 @@
       "src/components/model/model-list-panel.tsx(20441-20447)",
       "src/components/model/model-list-panel.tsx(20058-20064)",
       "src/components/model/model-list-panel.tsx(19890-19896)",
-      "src/components/model/model-list-panel.tsx(19815-19821)"
+      "src/components/model/model-list-panel.tsx(19815-19821)",
+      "src/components/model/custom-model-add-card.tsx(11490-11496)",
+      "src/components/model/model-list-panel.tsx(23351-23357)"
     ],
     "$id": 738
   },
@@ -5542,7 +5765,9 @@
       "src/components/model/model-list-panel.tsx(20979-20987)",
       "src/components/model/model-list-panel.tsx(20596-20604)",
       "src/components/model/model-list-panel.tsx(20428-20436)",
-      "src/components/model/model-list-panel.tsx(20353-20361)"
+      "src/components/model/model-list-panel.tsx(20353-20361)",
+      "src/components/model/custom-model-add-card.tsx(12023-12031)",
+      "src/components/model/model-list-panel.tsx(23889-23897)"
     ],
     "$id": 739
   },
@@ -5583,7 +5808,10 @@
       "src/components/model/model-list-panel.tsx(20785-20791)",
       "src/components/model/model-list-panel.tsx(30575-30581)",
       "src/components/model/model-list-panel.tsx(20710-20716)",
-      "src/components/model/model-list-panel.tsx(30500-30506)"
+      "src/components/model/model-list-panel.tsx(30500-30506)",
+      "src/components/model/custom-model-add-card.tsx(12380-12386)",
+      "src/components/model/model-list-panel.tsx(24246-24252)",
+      "src/components/model/model-list-panel.tsx(39433-39439)"
     ],
     "$id": 740
   },
@@ -5613,7 +5841,9 @@
       "src/components/model/model-list-panel.tsx(21854-21860)",
       "src/components/model/model-list-panel.tsx(21471-21477)",
       "src/components/model/model-list-panel.tsx(21303-21309)",
-      "src/components/model/model-list-panel.tsx(21228-21234)"
+      "src/components/model/model-list-panel.tsx(21228-21234)",
+      "src/components/model/custom-model-add-card.tsx(12848-12854)",
+      "src/components/model/model-list-panel.tsx(24764-24770)"
     ],
     "$id": 742
   },
@@ -5643,7 +5873,9 @@
       "src/components/model/model-list-panel.tsx(22207-22213)",
       "src/components/model/model-list-panel.tsx(21824-21830)",
       "src/components/model/model-list-panel.tsx(21656-21662)",
-      "src/components/model/model-list-panel.tsx(21581-21587)"
+      "src/components/model/model-list-panel.tsx(21581-21587)",
+      "src/components/model/custom-model-add-card.tsx(13313-13319)",
+      "src/components/model/model-list-panel.tsx(25199-25205)"
     ],
     "$id": 743
   },
@@ -5673,7 +5905,9 @@
       "src/components/model/model-list-panel.tsx(22468-22474)",
       "src/components/model/model-list-panel.tsx(22085-22091)",
       "src/components/model/model-list-panel.tsx(21917-21923)",
-      "src/components/model/model-list-panel.tsx(21842-21848)"
+      "src/components/model/model-list-panel.tsx(21842-21848)",
+      "src/components/model/custom-model-add-card.tsx(13668-13674)",
+      "src/components/model/model-list-panel.tsx(25554-25560)"
     ],
     "$id": 744
   },
@@ -5703,7 +5937,9 @@
       "src/components/model/model-list-panel.tsx(23057-23063)",
       "src/components/model/model-list-panel.tsx(22674-22680)",
       "src/components/model/model-list-panel.tsx(22506-22512)",
-      "src/components/model/model-list-panel.tsx(22431-22437)"
+      "src/components/model/model-list-panel.tsx(22431-22437)",
+      "src/components/model/custom-model-add-card.tsx(14415-14421)",
+      "src/components/model/model-list-panel.tsx(26301-26307)"
     ],
     "$id": 745
   },
@@ -5733,7 +5969,9 @@
       "src/components/model/model-list-panel.tsx(25810-25817)",
       "src/components/model/model-list-panel.tsx(25427-25434)",
       "src/components/model/model-list-panel.tsx(25259-25266)",
-      "src/components/model/model-list-panel.tsx(25184-25191)"
+      "src/components/model/model-list-panel.tsx(25184-25191)",
+      "src/components/model/custom-model-add-card.tsx(14821-14828)",
+      "src/components/model/model-list-panel.tsx(30637-30644)"
     ],
     "$id": 751
   },
@@ -5763,7 +6001,9 @@
       "src/components/model/model-list-panel.tsx(26668-26677)",
       "src/components/model/model-list-panel.tsx(26285-26294)",
       "src/components/model/model-list-panel.tsx(26117-26126)",
-      "src/components/model/model-list-panel.tsx(26042-26051)"
+      "src/components/model/model-list-panel.tsx(26042-26051)",
+      "src/components/model/custom-model-add-card.tsx(15621-15630)",
+      "src/components/model/model-list-panel.tsx(31495-31504)"
     ],
     "$id": 752
   },
@@ -5802,7 +6042,12 @@
       "src/components/model/model-list-panel.tsx(28043-28051)",
       "src/components/model/model-list-panel.tsx(27660-27668)",
       "src/components/model/model-list-panel.tsx(27492-27500)",
-      "src/components/model/model-list-panel.tsx(27417-27425)"
+      "src/components/model/model-list-panel.tsx(27417-27425)",
+      "src/components/model/custom-model-add-card.tsx(16179-16187)",
+      "src/components/model/model-list-panel.tsx(32613-32621)",
+      "src/components/model/model-list-panel.tsx(35039-35047)",
+      "src/components/model/model-list-panel.tsx(35498-35506)",
+      "src/components/model/model-list-panel.tsx(35528-35536)"
     ],
     "$id": 753
   },
@@ -5822,7 +6067,8 @@
       "src/components/model/custom-model-add-card.tsx(16146-16156)",
       "src/components/model/custom-model-add-card.tsx(16133-16143)",
       "src/components/model/custom-model-add-card.tsx(15727-15737)",
-      "src/components/model/custom-model-add-card.tsx(15748-15758)"
+      "src/components/model/custom-model-add-card.tsx(15748-15758)",
+      "src/components/model/custom-model-add-card.tsx(16704-16714)"
     ],
     "$id": 1264
   },
@@ -5842,7 +6088,8 @@
       "src/components/model/custom-model-add-card.tsx(16160-16170)",
       "src/components/model/custom-model-add-card.tsx(16147-16157)",
       "src/components/model/custom-model-add-card.tsx(15741-15751)",
-      "src/components/model/custom-model-add-card.tsx(15762-15772)"
+      "src/components/model/custom-model-add-card.tsx(15762-15772)",
+      "src/components/model/custom-model-add-card.tsx(16718-16728)"
     ],
     "$id": 1265
   },
@@ -5862,7 +6109,8 @@
       "src/components/model/custom-model-add-card.tsx(18573-18591)",
       "src/components/model/custom-model-add-card.tsx(18187-18205)",
       "src/components/model/custom-model-add-card.tsx(17718-17736)",
-      "src/components/model/custom-model-add-card.tsx(17739-17757)"
+      "src/components/model/custom-model-add-card.tsx(17739-17757)",
+      "src/components/model/custom-model-add-card.tsx(19163-19181)"
     ],
     "$id": 1266
   },
@@ -5882,7 +6130,8 @@
       "src/components/model/custom-model-add-card.tsx(18641-18662)",
       "src/components/model/custom-model-add-card.tsx(18255-18276)",
       "src/components/model/custom-model-add-card.tsx(17785-17806)",
-      "src/components/model/custom-model-add-card.tsx(17806-17827)"
+      "src/components/model/custom-model-add-card.tsx(17806-17827)",
+      "src/components/model/custom-model-add-card.tsx(19231-19252)"
     ],
     "$id": 1267
   },
@@ -5903,7 +6152,8 @@
       "src/components/model/custom-model-add-card.tsx(18827-18837)",
       "src/components/model/custom-model-add-card.tsx(18343-18353)",
       "src/components/model/custom-model-add-card.tsx(18364-18374)",
-      "src/components/model/custom-model-add-card.tsx(2628-2638)"
+      "src/components/model/custom-model-add-card.tsx(2628-2638)",
+      "src/components/model/custom-model-add-card.tsx(19803-19813)"
     ],
     "$id": 692
   },
@@ -5923,7 +6173,8 @@
       "src/components/model/custom-model-add-card.tsx(19357-19420)",
       "src/components/model/custom-model-add-card.tsx(18971-19034)",
       "src/components/model/custom-model-add-card.tsx(18484-18547)",
-      "src/components/model/custom-model-add-card.tsx(18505-18568)"
+      "src/components/model/custom-model-add-card.tsx(18505-18568)",
+      "src/components/model/custom-model-add-card.tsx(19947-20026)"
     ],
     "$id": 1268
   },
@@ -5943,7 +6194,8 @@
       "src/components/model/custom-model-add-card.tsx(19630-19640)",
       "src/components/model/custom-model-add-card.tsx(19244-19254)",
       "src/components/model/custom-model-add-card.tsx(18752-18762)",
-      "src/components/model/custom-model-add-card.tsx(18773-18783)"
+      "src/components/model/custom-model-add-card.tsx(18773-18783)",
+      "src/components/model/custom-model-add-card.tsx(20250-20260)"
     ],
     "$id": 1269
   },
@@ -5964,7 +6216,8 @@
       "src/components/model/custom-model-add-card.tsx(19765-19777)",
       "src/components/model/custom-model-add-card.tsx(19258-19270)",
       "src/components/model/custom-model-add-card.tsx(19279-19291)",
-      "src/components/model/custom-model-add-card.tsx(3289-3301)"
+      "src/components/model/custom-model-add-card.tsx(3289-3301)",
+      "src/components/model/custom-model-add-card.tsx(20771-20783)"
     ],
     "$id": 694
   },
@@ -5985,7 +6238,8 @@
       "src/components/model/custom-model-add-card.tsx(21088-21098)",
       "src/components/model/custom-model-add-card.tsx(20550-20560)",
       "src/components/model/custom-model-add-card.tsx(20571-20581)",
-      "src/components/model/custom-model-add-card.tsx(4612-4622)"
+      "src/components/model/custom-model-add-card.tsx(4612-4622)",
+      "src/components/model/custom-model-add-card.tsx(22094-22104)"
     ],
     "$id": 695
   },
@@ -6006,7 +6260,8 @@
       "src/components/model/custom-model-add-card.tsx(21263-21272)",
       "src/components/model/custom-model-add-card.tsx(20720-20729)",
       "src/components/model/custom-model-add-card.tsx(20741-20750)",
-      "src/components/model/custom-model-add-card.tsx(4787-4796)"
+      "src/components/model/custom-model-add-card.tsx(4787-4796)",
+      "src/components/model/custom-model-add-card.tsx(22269-22278)"
     ],
     "$id": 696
   },
@@ -6027,7 +6282,8 @@
       "src/components/model/custom-model-add-card.tsx(21967-21986)",
       "src/components/model/custom-model-add-card.tsx(21405-21424)",
       "src/components/model/custom-model-add-card.tsx(21426-21445)",
-      "src/components/model/custom-model-add-card.tsx(5473-5492)"
+      "src/components/model/custom-model-add-card.tsx(5473-5492)",
+      "src/components/model/custom-model-add-card.tsx(22973-22992)"
     ],
     "$id": 698
   },
@@ -6048,7 +6304,8 @@
       "src/components/model/custom-model-add-card.tsx(22583-22616)",
       "src/components/model/custom-model-add-card.tsx(22005-22038)",
       "src/components/model/custom-model-add-card.tsx(22026-22059)",
-      "src/components/model/custom-model-add-card.tsx(6073-6106)"
+      "src/components/model/custom-model-add-card.tsx(6073-6106)",
+      "src/components/model/custom-model-add-card.tsx(23589-23622)"
     ],
     "$id": 699
   },
@@ -6069,7 +6326,8 @@
       "src/components/model/custom-model-add-card.tsx(23429-23451)",
       "src/components/model/custom-model-add-card.tsx(22830-22852)",
       "src/components/model/custom-model-add-card.tsx(22851-22873)",
-      "src/components/model/custom-model-add-card.tsx(6930-6952)"
+      "src/components/model/custom-model-add-card.tsx(6930-6952)",
+      "src/components/model/custom-model-add-card.tsx(24453-24475)"
     ],
     "$id": 700
   },
@@ -6089,7 +6347,8 @@
       "src/components/model/custom-model-add-card.tsx(24264-24277)",
       "src/components/model/custom-model-add-card.tsx(23878-23891)",
       "src/components/model/custom-model-add-card.tsx(23268-23281)",
-      "src/components/model/custom-model-add-card.tsx(23289-23302)"
+      "src/components/model/custom-model-add-card.tsx(23289-23302)",
+      "src/components/model/custom-model-add-card.tsx(24918-24931)"
     ],
     "$id": 1270
   },
@@ -6183,7 +6442,9 @@
       "src/components/model/model-list-panel.tsx(12421-12429)",
       "src/components/model/model-list-panel.tsx(12253-12261)",
       "src/components/model/model-list-panel.tsx(3214-3222)",
-      "src/components/model/model-list-panel.tsx(12178-12186)"
+      "src/components/model/model-list-panel.tsx(12178-12186)",
+      "src/components/model/model-list-panel.tsx(3634-3642)",
+      "src/components/model/model-list-panel.tsx(15462-15470)"
     ],
     "$id": 705
   },
@@ -6233,7 +6494,10 @@
       "src/components/model/model-list-panel.tsx(15135-15143)",
       "src/components/model/model-list-panel.tsx(14967-14975)",
       "src/components/model/model-list-panel.tsx(3417-3425)",
-      "src/components/model/model-list-panel.tsx(14892-14900)"
+      "src/components/model/model-list-panel.tsx(14892-14900)",
+      "src/components/model/model-download-popover.tsx(10485-10493)",
+      "src/components/model/model-list-panel.tsx(3837-3845)",
+      "src/components/model/model-list-panel.tsx(18206-18214)"
     ],
     "$id": 707
   },
@@ -6278,7 +6542,8 @@
     "fr-FR": "Mémoire unifiée",
     "ko-KR": "통합 메모리",
     "$files": [
-      "src/components/model/model-download-popover.tsx(5211-5219)"
+      "src/components/model/model-download-popover.tsx(5211-5219)",
+      "src/components/model/model-download-popover.tsx(5382-5390)"
     ],
     "$id": 1398
   },
@@ -6293,7 +6558,8 @@
     "fr-FR": "Carte graphique discrète",
     "ko-KR": "개별 그래픽 카드",
     "$files": [
-      "src/components/model/model-download-popover.tsx(5324-5332)"
+      "src/components/model/model-download-popover.tsx(5324-5332)",
+      "src/components/model/model-download-popover.tsx(5498-5506)"
     ],
     "$id": 1399
   },
@@ -6308,7 +6574,8 @@
     "fr-FR": "Mémoire vidéo",
     "ko-KR": "비디오 메모리",
     "$files": [
-      "src/components/model/model-download-popover.tsx(5366-5372)"
+      "src/components/model/model-download-popover.tsx(5366-5372)",
+      "src/components/model/model-download-popover.tsx(5540-5546)"
     ],
     "$id": 1400
   },
@@ -6323,7 +6590,8 @@
     "fr-FR": "Mémoire système/mode d'affichage Core",
     "ko-KR": "시스템 메모리/코어 디스플레이 모드",
     "$files": [
-      "src/components/model/model-download-popover.tsx(5400-5415)"
+      "src/components/model/model-download-popover.tsx(5400-5415)",
+      "src/components/model/model-download-popover.tsx(5576-5591)"
     ],
     "$id": 1401
   },
@@ -6338,7 +6606,8 @@
     "fr-FR": "Téléchargement de composants de modèle personnalisé",
     "ko-KR": "커스텀 모델 구성요소 다운로드",
     "$files": [
-      "src/components/model/model-download-popover.tsx(6208-6221)"
+      "src/components/model/model-download-popover.tsx(6208-6221)",
+      "src/components/model/model-download-popover.tsx(6409-6422)"
     ],
     "$id": 1402
   },
@@ -6353,7 +6622,8 @@
     "fr-FR": "Téléchargement de composants personnalisés",
     "ko-KR": "맞춤 구성요소 다운로드",
     "$files": [
-      "src/components/model/model-download-popover.tsx(6447-6458)"
+      "src/components/model/model-download-popover.tsx(6447-6458)",
+      "src/components/model/model-download-popover.tsx(6654-6665)"
     ],
     "$id": 1403
   },
@@ -6368,7 +6638,8 @@
     "fr-FR": "Total des téléchargements",
     "ko-KR": "총 다운로드",
     "$files": [
-      "src/components/model/model-download-popover.tsx(9892-9900)"
+      "src/components/model/model-download-popover.tsx(9892-9900)",
+      "src/components/model/model-download-popover.tsx(10186-10194)"
     ],
     "$id": 1404
   },
@@ -6383,7 +6654,8 @@
     "fr-FR": "Dépassement de la mémoire vidéo sécurisée",
     "ko-KR": "안전 비디오 메모리 초과",
     "$files": [
-      "src/components/model/model-download-popover.tsx(10676-10686)"
+      "src/components/model/model-download-popover.tsx(10676-10686)",
+      "src/components/model/model-download-popover.tsx(10987-10997)"
     ],
     "$id": 1405
   },
@@ -6398,7 +6670,8 @@
     "fr-FR": "Télécharger par sélection",
     "ko-KR": "선택하여 다운로드",
     "$files": [
-      "src/components/model/model-download-popover.tsx(10928-10937)"
+      "src/components/model/model-download-popover.tsx(10928-10937)",
+      "src/components/model/model-download-popover.tsx(11250-11259)"
     ],
     "$id": 1406
   },
@@ -6503,7 +6776,8 @@
       "src/components/model/model-list-panel.tsx(3258-3266)",
       "src/components/model/model-list-panel.tsx(3245-3253)",
       "src/components/model/model-list-panel.tsx(3227-3235)",
-      "src/components/model/model-list-panel.tsx(3152-3160)"
+      "src/components/model/model-list-panel.tsx(3152-3160)",
+      "src/components/model/model-list-panel.tsx(3602-3610)"
     ],
     "$id": 714
   },
@@ -6525,7 +6799,8 @@
       "src/components/model/model-list-panel.tsx(3309-3315)",
       "src/components/model/model-list-panel.tsx(3291-3297)",
       "src/components/model/model-list-panel.tsx(3321-3327)",
-      "src/components/model/model-list-panel.tsx(3246-3252)"
+      "src/components/model/model-list-panel.tsx(3246-3252)",
+      "src/components/model/model-list-panel.tsx(3666-3672)"
     ],
     "$id": 715
   },
@@ -6547,7 +6822,8 @@
       "src/components/model/model-list-panel.tsx(3339-3346)",
       "src/components/model/model-list-panel.tsx(3321-3328)",
       "src/components/model/model-list-panel.tsx(3351-3358)",
-      "src/components/model/model-list-panel.tsx(3276-3283)"
+      "src/components/model/model-list-panel.tsx(3276-3283)",
+      "src/components/model/model-list-panel.tsx(3696-3703)"
     ],
     "$id": 716
   },
@@ -6569,7 +6845,8 @@
       "src/components/model/model-list-panel.tsx(3370-3378)",
       "src/components/model/model-list-panel.tsx(3352-3360)",
       "src/components/model/model-list-panel.tsx(3382-3390)",
-      "src/components/model/model-list-panel.tsx(3307-3315)"
+      "src/components/model/model-list-panel.tsx(3307-3315)",
+      "src/components/model/model-list-panel.tsx(3727-3735)"
     ],
     "$id": 717
   },
@@ -6591,7 +6868,8 @@
       "src/components/model/model-list-panel.tsx(3425-3433)",
       "src/components/model/model-list-panel.tsx(3407-3415)",
       "src/components/model/model-list-panel.tsx(3437-3445)",
-      "src/components/model/model-list-panel.tsx(3362-3370)"
+      "src/components/model/model-list-panel.tsx(3362-3370)",
+      "src/components/model/model-list-panel.tsx(3782-3790)"
     ],
     "$id": 718
   },
@@ -6616,7 +6894,8 @@
       "src/components/model/model-list-panel.tsx(11337-11357)",
       "src/components/model/model-list-panel.tsx(10954-10974)",
       "src/components/model/model-list-panel.tsx(10786-10806)",
-      "src/components/model/model-list-panel.tsx(10711-10731)"
+      "src/components/model/model-list-panel.tsx(10711-10731)",
+      "src/components/model/model-list-panel.tsx(13960-13980)"
     ],
     "$id": 722
   },
@@ -6641,7 +6920,8 @@
       "src/components/model/model-list-panel.tsx(12032-12039)",
       "src/components/model/model-list-panel.tsx(11649-11656)",
       "src/components/model/model-list-panel.tsx(11481-11488)",
-      "src/components/model/model-list-panel.tsx(11406-11413)"
+      "src/components/model/model-list-panel.tsx(11406-11413)",
+      "src/components/model/model-list-panel.tsx(14716-14723)"
     ],
     "$id": 723
   },
@@ -6666,7 +6946,8 @@
       "src/components/model/model-list-panel.tsx(14300-14308)",
       "src/components/model/model-list-panel.tsx(13917-13925)",
       "src/components/model/model-list-panel.tsx(13749-13757)",
-      "src/components/model/model-list-panel.tsx(13674-13682)"
+      "src/components/model/model-list-panel.tsx(13674-13682)",
+      "src/components/model/model-list-panel.tsx(16976-16984)"
     ],
     "$id": 724
   },
@@ -6691,7 +6972,8 @@
       "src/components/model/model-list-panel.tsx(14322-14330)",
       "src/components/model/model-list-panel.tsx(13939-13947)",
       "src/components/model/model-list-panel.tsx(13771-13779)",
-      "src/components/model/model-list-panel.tsx(13696-13704)"
+      "src/components/model/model-list-panel.tsx(13696-13704)",
+      "src/components/model/model-list-panel.tsx(16998-17006)"
     ],
     "$id": 725
   },
@@ -6716,7 +6998,8 @@
       "src/components/model/model-list-panel.tsx(17377-17387)",
       "src/components/model/model-list-panel.tsx(16994-17004)",
       "src/components/model/model-list-panel.tsx(16826-16836)",
-      "src/components/model/model-list-panel.tsx(16751-16761)"
+      "src/components/model/model-list-panel.tsx(16751-16761)",
+      "src/components/model/model-list-panel.tsx(20262-20272)"
     ],
     "$id": 730
   },
@@ -6752,7 +7035,9 @@
       "src/components/model/model-list-panel.tsx(17659-17669)",
       "src/components/model/model-list-panel.tsx(18209-18219)",
       "src/components/model/model-list-panel.tsx(17584-17594)",
-      "src/components/model/model-list-panel.tsx(18134-18144)"
+      "src/components/model/model-list-panel.tsx(18134-18144)",
+      "src/components/model/model-list-panel.tsx(21120-21130)",
+      "src/components/model/model-list-panel.tsx(21670-21680)"
     ],
     "$id": 732
   },
@@ -6777,7 +7062,8 @@
       "src/components/model/model-list-panel.tsx(19660-19684)",
       "src/components/model/model-list-panel.tsx(19277-19301)",
       "src/components/model/model-list-panel.tsx(19109-19133)",
-      "src/components/model/model-list-panel.tsx(19034-19058)"
+      "src/components/model/model-list-panel.tsx(19034-19058)",
+      "src/components/model/model-list-panel.tsx(22570-22594)"
     ],
     "$id": 735
   },
@@ -6802,7 +7088,8 @@
       "src/components/model/model-list-panel.tsx(20253-20275)",
       "src/components/model/model-list-panel.tsx(19870-19892)",
       "src/components/model/model-list-panel.tsx(19702-19724)",
-      "src/components/model/model-list-panel.tsx(19627-19649)"
+      "src/components/model/model-list-panel.tsx(19627-19649)",
+      "src/components/model/model-list-panel.tsx(23163-23185)"
     ],
     "$id": 737
   },
@@ -6827,7 +7114,8 @@
       "src/components/model/model-list-panel.tsx(21671-21690)",
       "src/components/model/model-list-panel.tsx(21288-21307)",
       "src/components/model/model-list-panel.tsx(21120-21139)",
-      "src/components/model/model-list-panel.tsx(21045-21064)"
+      "src/components/model/model-list-panel.tsx(21045-21064)",
+      "src/components/model/model-list-panel.tsx(24581-24600)"
     ],
     "$id": 741
   },
@@ -6848,7 +7136,8 @@
       "src/components/model/model-list-panel.tsx(24105-24127)",
       "src/components/model/model-list-panel.tsx(24012-24034)",
       "src/components/model/model-list-panel.tsx(23994-24016)",
-      "src/components/model/model-list-panel.tsx(23518-23540)"
+      "src/components/model/model-list-panel.tsx(23518-23540)",
+      "src/components/model/model-list-panel.tsx(27054-27076)"
     ],
     "$id": 1288
   },
@@ -6872,7 +7161,9 @@
       "src/components/model/model-list-panel.tsx(24422-24432)",
       "src/components/model/model-list-panel.tsx(24329-24339)",
       "src/components/model/model-list-panel.tsx(24311-24321)",
-      "src/components/model/model-list-panel.tsx(23835-23845)"
+      "src/components/model/model-list-panel.tsx(23835-23845)",
+      "src/components/model/model-list-panel.tsx(27438-27448)",
+      "src/components/model/model-list-panel.tsx(27499-27509)"
     ],
     "$id": 1289
   },
@@ -6897,7 +7188,8 @@
       "src/components/model/model-list-panel.tsx(23523-23546)",
       "src/components/model/model-list-panel.tsx(23140-23163)",
       "src/components/model/model-list-panel.tsx(22972-22995)",
-      "src/components/model/model-list-panel.tsx(22897-22920)"
+      "src/components/model/model-list-panel.tsx(22897-22920)",
+      "src/components/model/model-list-panel.tsx(28271-28294)"
     ],
     "$id": 746
   },
@@ -6925,7 +7217,9 @@
       "src/components/model/model-list-panel.tsx(23952-23962)",
       "src/components/model/model-list-panel.tsx(23569-23579)",
       "src/components/model/model-list-panel.tsx(23401-23411)",
-      "src/components/model/model-list-panel.tsx(23326-23336)"
+      "src/components/model/model-list-panel.tsx(23326-23336)",
+      "src/components/model/model-list-panel.tsx(28679-28689)",
+      "src/components/model/model-list-panel.tsx(28759-28769)"
     ],
     "$id": 748
   },
@@ -6950,7 +7244,8 @@
       "src/components/model/model-list-panel.tsx(24364-24371)",
       "src/components/model/model-list-panel.tsx(23981-23988)",
       "src/components/model/model-list-panel.tsx(23813-23820)",
-      "src/components/model/model-list-panel.tsx(23738-23745)"
+      "src/components/model/model-list-panel.tsx(23738-23745)",
+      "src/components/model/model-list-panel.tsx(29191-29198)"
     ],
     "$id": 749
   },
@@ -6975,7 +7270,8 @@
       "src/components/model/model-list-panel.tsx(25342-25348)",
       "src/components/model/model-list-panel.tsx(24959-24965)",
       "src/components/model/model-list-panel.tsx(24791-24797)",
-      "src/components/model/model-list-panel.tsx(24716-24722)"
+      "src/components/model/model-list-panel.tsx(24716-24722)",
+      "src/components/model/model-list-panel.tsx(30169-30175)"
     ],
     "$id": 750
   },
@@ -6992,7 +7288,8 @@
     "$files": [
       "src/components/model/model-list-panel.tsx(32652-32662)",
       "src/components/model/model-list-panel.tsx(32307-32317)",
-      "src/components/model/model-list-panel.tsx(32348-32358)"
+      "src/components/model/model-list-panel.tsx(32348-32358)",
+      "src/components/model/model-list-panel.tsx(33510-33520)"
     ],
     "$id": 1407
   },
@@ -7009,7 +7306,8 @@
     "$files": [
       "src/components/model/model-list-panel.tsx(32976-32992)",
       "src/components/model/model-list-panel.tsx(32618-32634)",
-      "src/components/model/model-list-panel.tsx(32659-32675)"
+      "src/components/model/model-list-panel.tsx(32659-32675)",
+      "src/components/model/model-list-panel.tsx(33843-33859)"
     ],
     "$id": 1408
   },
@@ -7034,7 +7332,8 @@
       "src/components/model/model-list-panel.tsx(28709-28722)",
       "src/components/model/model-list-panel.tsx(28326-28339)",
       "src/components/model/model-list-panel.tsx(28158-28171)",
-      "src/components/model/model-list-panel.tsx(28083-28096)"
+      "src/components/model/model-list-panel.tsx(28083-28096)",
+      "src/components/model/model-list-panel.tsx(36715-36728)"
     ],
     "$id": 754
   },
@@ -7070,7 +7369,9 @@
       "src/components/model/model-list-panel.tsx(28175-28186)",
       "src/components/model/model-list-panel.tsx(28302-28313)",
       "src/components/model/model-list-panel.tsx(28100-28111)",
-      "src/components/model/model-list-panel.tsx(28227-28238)"
+      "src/components/model/model-list-panel.tsx(28227-28238)",
+      "src/components/model/model-list-panel.tsx(36732-36743)",
+      "src/components/model/model-list-panel.tsx(36966-36977)"
     ],
     "$id": 755
   },
@@ -7095,7 +7396,8 @@
       "src/components/model/model-list-panel.tsx(28798-28807)",
       "src/components/model/model-list-panel.tsx(28415-28424)",
       "src/components/model/model-list-panel.tsx(28247-28256)",
-      "src/components/model/model-list-panel.tsx(28172-28181)"
+      "src/components/model/model-list-panel.tsx(28172-28181)",
+      "src/components/model/model-list-panel.tsx(36844-36853)"
     ],
     "$id": 756
   },
@@ -7120,7 +7422,8 @@
       "src/components/model/model-list-panel.tsx(29441-29449)",
       "src/components/model/model-list-panel.tsx(29058-29066)",
       "src/components/model/model-list-panel.tsx(28890-28898)",
-      "src/components/model/model-list-panel.tsx(28815-28823)"
+      "src/components/model/model-list-panel.tsx(28815-28823)",
+      "src/components/model/model-list-panel.tsx(37651-37659)"
     ],
     "$id": 757
   },
@@ -7145,7 +7448,8 @@
       "src/components/model/model-list-panel.tsx(31136-31142)",
       "src/components/model/model-list-panel.tsx(30753-30759)",
       "src/components/model/model-list-panel.tsx(30585-30591)",
-      "src/components/model/model-list-panel.tsx(30510-30516)"
+      "src/components/model/model-list-panel.tsx(30510-30516)",
+      "src/components/model/model-list-panel.tsx(39443-39449)"
     ],
     "$id": 758
   },
@@ -7171,7 +7475,8 @@
       "src/components/model/model-list-panel.tsx(42071-42079)",
       "src/components/model/model-list-panel.tsx(41436-41444)",
       "src/components/model/model-list-panel.tsx(41268-41276)",
-      "src/components/model/model-list-panel.tsx(40343-40351)"
+      "src/components/model/model-list-panel.tsx(40343-40351)",
+      "src/components/model/model-list-panel.tsx(51874-51882)"
     ],
     "$id": 762
   },
@@ -7207,7 +7512,9 @@
       "src/components/model/model-list-panel.tsx(41912-41921)",
       "src/components/model/model-list-panel.tsx(43016-43025)",
       "src/components/model/model-list-panel.tsx(41744-41753)",
-      "src/components/model/model-list-panel.tsx(42848-42857)"
+      "src/components/model/model-list-panel.tsx(42848-42857)",
+      "src/components/model/model-list-panel.tsx(52388-52397)",
+      "src/components/model/model-list-panel.tsx(53547-53556)"
     ],
     "$id": 1212
   },
@@ -7233,7 +7540,8 @@
       "src/components/model/model-list-panel.tsx(43173-43181)",
       "src/components/model/model-list-panel.tsx(42538-42546)",
       "src/components/model/model-list-panel.tsx(42370-42378)",
-      "src/components/model/model-list-panel.tsx(41254-41262)"
+      "src/components/model/model-list-panel.tsx(41254-41262)",
+      "src/components/model/model-list-panel.tsx(53031-53039)"
     ],
     "$id": 763
   },
@@ -7259,7 +7567,8 @@
       "src/components/model/model-list-panel.tsx(44216-44225)",
       "src/components/model/model-list-panel.tsx(43581-43590)",
       "src/components/model/model-list-panel.tsx(43413-43422)",
-      "src/components/model/model-list-panel.tsx(42105-42114)"
+      "src/components/model/model-list-panel.tsx(42105-42114)",
+      "src/components/model/model-list-panel.tsx(54129-54138)"
     ],
     "$id": 764
   },
@@ -7275,7 +7584,8 @@
     "ko-KR": "동 기적으로 다운로드 및 배포 하드웨어 적응 인공 지능 엔진（{backend}）：{progress}%{speed}",
     "$files": [
       "src/components/model/model-list-panel.tsx(53486-53539)",
-      "src/components/model/model-list-panel.tsx(52850-52903)"
+      "src/components/model/model-list-panel.tsx(52850-52903)",
+      "src/components/model/model-list-panel.tsx(54871-54924)"
     ],
     "$id": 1464
   },
@@ -7291,7 +7601,8 @@
     "ko-KR": "엔진 진행률 확인",
     "$files": [
       "src/components/model/model-list-panel.tsx(54539-54549)",
-      "src/components/model/model-list-panel.tsx(53797-53807)"
+      "src/components/model/model-list-panel.tsx(53797-53807)",
+      "src/components/model/model-list-panel.tsx(55946-55956)"
     ],
     "$id": 1465
   },
@@ -7316,7 +7627,8 @@
       "src/components/model/model-list-panel.tsx(45152-45212)",
       "src/components/model/model-list-panel.tsx(44978-45038)",
       "src/components/model/model-list-panel.tsx(44343-44403)",
-      "src/components/model/model-list-panel.tsx(44175-44235)"
+      "src/components/model/model-list-panel.tsx(44175-44235)",
+      "src/components/model/model-list-panel.tsx(56637-56721)"
     ],
     "$id": 1213
   },
@@ -7341,7 +7653,8 @@
       "src/components/model/model-list-panel.tsx(45910-45918)",
       "src/components/model/model-list-panel.tsx(45736-45744)",
       "src/components/model/model-list-panel.tsx(45101-45109)",
-      "src/components/model/model-list-panel.tsx(44933-44941)"
+      "src/components/model/model-list-panel.tsx(44933-44941)",
+      "src/components/model/model-list-panel.tsx(57583-57591)"
     ],
     "$id": 1214
   },
@@ -7367,7 +7680,8 @@
       "src/components/model/model-list-panel.tsx(46382-46426)",
       "src/components/model/model-list-panel.tsx(45747-45791)",
       "src/components/model/model-list-panel.tsx(45579-45623)",
-      "src/components/model/model-list-panel.tsx(42895-42939)"
+      "src/components/model/model-list-panel.tsx(42895-42939)",
+      "src/components/model/model-list-panel.tsx(58235-58279)"
     ],
     "$id": 765
   },
@@ -7393,7 +7707,8 @@
       "src/components/model/model-list-panel.tsx(46893-46905)",
       "src/components/model/model-list-panel.tsx(46258-46270)",
       "src/components/model/model-list-panel.tsx(46090-46102)",
-      "src/components/model/model-list-panel.tsx(43406-43418)"
+      "src/components/model/model-list-panel.tsx(43406-43418)",
+      "src/components/model/model-list-panel.tsx(58786-58798)"
     ],
     "$id": 766
   },
@@ -7419,7 +7734,8 @@
       "src/components/model/model-list-panel.tsx(46909-46922)",
       "src/components/model/model-list-panel.tsx(46274-46287)",
       "src/components/model/model-list-panel.tsx(46106-46119)",
-      "src/components/model/model-list-panel.tsx(43422-43435)"
+      "src/components/model/model-list-panel.tsx(43422-43435)",
+      "src/components/model/model-list-panel.tsx(58802-58815)"
     ],
     "$id": 767
   },
@@ -7445,7 +7761,8 @@
       "src/components/model/model-list-panel.tsx(47837-47845)",
       "src/components/model/model-list-panel.tsx(47202-47210)",
       "src/components/model/model-list-panel.tsx(47034-47042)",
-      "src/components/model/model-list-panel.tsx(44350-44358)"
+      "src/components/model/model-list-panel.tsx(44350-44358)",
+      "src/components/model/model-list-panel.tsx(59730-59738)"
     ],
     "$id": 768
   },
@@ -7471,7 +7788,8 @@
       "src/components/model/model-list-panel.tsx(47999-48042)",
       "src/components/model/model-list-panel.tsx(47364-47407)",
       "src/components/model/model-list-panel.tsx(47196-47239)",
-      "src/components/model/model-list-panel.tsx(44512-44555)"
+      "src/components/model/model-list-panel.tsx(44512-44555)",
+      "src/components/model/model-list-panel.tsx(59892-59963)"
     ],
     "$id": 769
   },
@@ -7509,7 +7827,9 @@
       "src/components/model/model-list-panel.tsx(47840-47849)",
       "src/components/model/model-list-panel.tsx(51079-51088)",
       "src/components/model/model-list-panel.tsx(45156-45165)",
-      "src/components/model/model-list-panel.tsx(48395-48404)"
+      "src/components/model/model-list-panel.tsx(48395-48404)",
+      "src/components/model/model-list-panel.tsx(60590-60599)",
+      "src/components/model/model-list-panel.tsx(63883-63892)"
     ],
     "$id": 770
   },
@@ -7547,7 +7867,9 @@
       "src/components/model/model-list-panel.tsx(48378-48387)",
       "src/components/model/model-list-panel.tsx(51620-51629)",
       "src/components/model/model-list-panel.tsx(45694-45703)",
-      "src/components/model/model-list-panel.tsx(48936-48945)"
+      "src/components/model/model-list-panel.tsx(48936-48945)",
+      "src/components/model/model-list-panel.tsx(61128-61137)",
+      "src/components/model/model-list-panel.tsx(64424-64433)"
     ],
     "$id": 771
   },
@@ -7585,7 +7907,9 @@
       "src/components/model/model-list-panel.tsx(48935-48950)",
       "src/components/model/model-list-panel.tsx(52180-52195)",
       "src/components/model/model-list-panel.tsx(46251-46266)",
-      "src/components/model/model-list-panel.tsx(49496-49511)"
+      "src/components/model/model-list-panel.tsx(49496-49511)",
+      "src/components/model/model-list-panel.tsx(61685-61700)",
+      "src/components/model/model-list-panel.tsx(64984-64999)"
     ],
     "$id": 772
   },
@@ -7611,7 +7935,8 @@
       "src/components/model/model-list-panel.tsx(51027-51045)",
       "src/components/model/model-list-panel.tsx(50392-50410)",
       "src/components/model/model-list-panel.tsx(50224-50242)",
-      "src/components/model/model-list-panel.tsx(47540-47558)"
+      "src/components/model/model-list-panel.tsx(47540-47558)",
+      "src/components/model/model-list-panel.tsx(62974-62992)"
     ],
     "$id": 773
   },
@@ -7637,7 +7962,8 @@
       "src/components/model/model-list-panel.tsx(51199-51272)",
       "src/components/model/model-list-panel.tsx(50564-50637)",
       "src/components/model/model-list-panel.tsx(50396-50469)",
-      "src/components/model/model-list-panel.tsx(47712-47785)"
+      "src/components/model/model-list-panel.tsx(47712-47785)",
+      "src/components/model/model-list-panel.tsx(63146-63247)"
     ],
     "$id": 774
   },
