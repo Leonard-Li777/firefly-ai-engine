@@ -914,7 +914,7 @@ pub fn resolve_model_downloader(install_bin_dirs: &[PathBuf]) -> PathBuf {
                 let path = entry.path();
                 if path.is_dir() {
                     let dir_name = path.file_name().unwrap_or_default().to_string_lossy();
-                    if dir_name.starts_with("llama-model-download-") {
+                    if dir_name == "llama-model-download" || dir_name.starts_with("llama-model-download-") {
                         let target = path.join(exe_name);
                         if target.exists() {
                             out.push(target);

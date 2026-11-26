@@ -102,7 +102,7 @@ impl HardwareDetector {
                         let path = entry.path();
                         if path.is_dir() {
                             let name = path.file_name().unwrap_or_default().to_string_lossy();
-                            if name.starts_with("fastfetch-") {
+                            if name == "fastfetch" || name.starts_with("fastfetch-") {
                                 candidates.push(path.join(executable));
                             }
                         }

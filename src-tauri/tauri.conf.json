@@ -41,9 +41,9 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "resources": [
-      "../build/extraResources/**/*"
-    ]
+    "resources": {
+      "../build/extraResources/": "extraResources/"
+    }
   },
   "plugins": {
     "shell": {

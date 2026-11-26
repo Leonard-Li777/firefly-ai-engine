@@ -116,21 +116,15 @@ pub fn allowed_install_roots(resource_dir: Option<&Path>) -> Vec<PathBuf> {
     roots
 }
 
-/// 安装目录下标准 bin 子路径（不向父级扩散）
-///
-/// - `build/extraResources/bin`：desktop 集成目录 1:1 镜像（ADR-0033）与引擎自身
-///   `pnpm setup-resources` 产物落点
-/// - `_up_/build/extraResources/bin`：Tauri 对 `../build/extraResources/**/*` 资源模式的
-///   归一化落点（见 tauri-utils `ResourcePaths`：`..` 段被改写为 `_up_`），
-///   覆盖 `cargo tauri dev` 与引擎独立打包形态。该目录**物理上位于 exe 目录之内**，
-///   与「向父级探测」有本质区别。
+/// 安装目录下 bin 子路径（收敛后单层确定性相对目录，消除 5 种 `_up_` 排列探测）：
+/// - `extraResources/bin`：Tauri `{"../build/extraResources/": "extraResources/"}` 确定性映射根
+/// - `build/extraResources/bin`：desktop 集成目录 1:1 镜像与本地 dev 目录
+/// - `bin`：独立扁平布局兜底
 fn install_bin_subpaths(root: &Path) -> Vec<PathBuf> {
     vec![
-        root.join("build").join("extraResources").join("bin"),
-        root.join("_up_").join("build").join("extraResources").join("bin"),
         root.join("extraResources").join("bin"),
+        root.join("build").join("extraResources").join("bin"),
         root.join("bin"),
-        root.join("resources").join("bin"),
     ]
 }
 
@@ -153,16 +147,14 @@ pub fn allowed_install_bin_dirs(resource_dir: Option<&Path>) -> Vec<PathBuf> {
     dirs
 }
 
-/// 安装目录下模型元数据子路径（model_*.json 权威落点，generate:dims 产物）
-///
-/// - `build/extraResources/model`：engine 工程内 generate:dims 产物
-/// - `_up_/build/extraResources/model`：Tauri 对 `../build/extraResources/**/*` 的归一化落点
-/// - `extraResources/model` / `model`：独立打包扁平布局兜底
+/// 安装目录下模型元数据子路径（收敛后单层确定性相对目录，model_*.json 权威落点）：
+/// - `extraResources/model`：Tauri `{"../build/extraResources/": "extraResources/"}` 确定性映射根
+/// - `build/extraResources/model`：engine / integrated 工程内 generate:dims 产物
+/// - `model`：独立打包扁平布局兜底
 fn install_model_meta_subpaths(root: &Path) -> Vec<PathBuf> {
     vec![
-        root.join("build").join("extraResources").join("model"),
-        root.join("_up_").join("build").join("extraResources").join("model"),
         root.join("extraResources").join("model"),
+        root.join("build").join("extraResources").join("model"),
         root.join("model"),
     ]
 }
@@ -386,13 +378,17 @@ mod tests {
     }
 
     #[test]
-    fn test_up_prefix_subpath_covers_tauri_dev_layout() {
-        // cargo tauri dev / 引擎独立打包：Tauri 把 ../build/extraResources 归一化为 _up_/
+    fn test_deterministic_extra_resources_layout() {
+        // 收敛后不再包含 `_up_` 多重排列，统一收口到单层 `extraResources/bin` 与 `build/extraResources/bin`
         let exe_dir = Path::new("/repo/apps/firefly-ai-engine/src-tauri/target/debug");
         let subpaths = install_bin_subpaths(exe_dir);
         assert!(
-            subpaths.contains(&exe_dir.join("_up_").join("build").join("extraResources").join("bin")),
-            "应包含 Tauri `_up_` 归一化资源路径"
+            subpaths.contains(&exe_dir.join("extraResources").join("bin")),
+            "应包含收敛后的确定性 extraResources/bin 路径"
+        );
+        assert!(
+            !subpaths.iter().any(|p| p.to_string_lossy().contains("_up_")),
+            "不应再包含 _up_ 归一化路径探测"
         );
     }
 
