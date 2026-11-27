@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "product": "engine",
+  "mode": "release-locked",
+  "platform": "win32-x64",
+  "generatedAt": "2026-11-27T14:21:55.792Z",
+  "resources": {
+    "fastfetch": {
+      "version": "2.62.0",
+      "source": "shared",
+      "dest": "bin/fastfetch",
+      "platformKey": "win32-x64",
+      "asset": {
+        "name": "fastfetch-2.62.0-win32-x64.zip",
+        "sha256": "3381c3b208f9495e7c2954784e4340833e48bfbc1e448618c87d779cc7457378",
+        "size": 2908282
+      }
+    },
+    "llama-model-download": {
+      "version": "master-v1.0.2",
+      "source": "shared",
+      "dest": "bin/llama-model-download",
+      "platformKey": "win32-x64",
+      "asset": {
+        "name": "llama-model-download-master-v1.0.2-win32-x64.zip",
+        "sha256": "d2981eef3aeb854790835da99cc75562b5a59c743571e62030fb78966cd0b8d1",
+        "size": 862033
+      }
+    }
+  }
+}
